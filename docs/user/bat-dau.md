@@ -1,68 +1,68 @@
-# Bắt đầu ở đây
+# Start here
 
-Trang này cho người mới: hệ thống gồm những gì, hôm nay chạy được gì, và nên đọc gì tiếp.
-Đọc mất năm phút. Các mã như `Q-72` hay `TSK-I2d-25` trong tài liệu khác là mã quyết định và mã
-việc; lần đầu đọc thì bỏ qua được.
+This page is for newcomers: what the system consists of, what runs today, and what to read next.
+It takes five minutes to read. Codes like `Q-72` or `TSK-I2d-25` in other documents are decision codes and task
+codes; on first read they can be skipped.
 
-## 1. Hệ thống trong một hình
+## 1. The system in one picture
 
 ```text
-  📱 Bạn            🧠 Bộ não                 🛡️ Hộp NeuroEdge              💡 Thiết bị
-  nhắn tin  ──►  NeuroClaw: hiểu lời,  ──►  giữ luật: cho làm,      ──►  đèn, cửa, quạt…
-                 nhớ, nhắc lịch            hỏi bạn, hay từ chối;
-                                           ghi lại mọi quyết định
+  📱 You            🧠 Brain                  🛡️ NeuroEdge box              💡 Devices
+  message   ──►  NeuroClaw: understands  ──►  holds rules: allow,       ──►  lights, doors, fans…
+                 words, remembers,            ask you, or reject;
+                 reminds schedule             records every decision
 ```
 
-- **Bộ não (NeuroClaw)** nói chuyện với bạn qua Telegram và các kênh chat khác, gọi AI, nhớ việc,
-  nhắc lịch. Nó **không** chạm thẳng vào thiết bị: muốn bật đèn, nó phải xin hộp.
-- **Hộp NeuroEdge** giữ **luật** (gọi là *gate*). Với mỗi lệnh, luật cho một trong ba kết quả: làm
-  ngay; hỏi bạn trước; hoặc từ chối kèm lý do. Mọi quyết định được ghi lại và phát lại được.
-- **Thiết bị** là đèn, cửa, cảm biến. Hôm nay phần lớn là thiết bị ảo trên máy tính; bo mạch thật
-  chưa về.
+- **Brain (NeuroClaw)** talks to you via Telegram and other chat channels, calls AI, remembers tasks,
+  reminds schedules. It does **not** touch devices directly: to turn on a light, it must request the box.
+- **NeuroEdge box** holds the **rules** (called *gate*). For each command, the rule yields one of three outcomes: execute
+  immediately; ask you first; or reject with a reason. Every decision is recorded and replayable.
+- **Devices** are lights, doors, sensors. Today most are virtual devices on a computer; real boards
+  have not yet arrived.
 
-Vì sao tách bộ não khỏi hộp: AI có thể hiểu sai hoặc bị lừa. Chatbot nói sai thì bấm hỏi lại; cửa
-đã mở sai thì không bấm lại được. Nên AI chỉ được *xin*, còn luật trên hộp mới *quyết*.
+Why separate the brain from the box: AI can misunderstand or be tricked. If a chatbot speaks wrong, you click ask again; if a door
+has opened by mistake, you cannot click undo. Therefore AI can only *request*, while rules on the box *decide*.
 
-## 2. Hai repo
+## 2. Two repositories
 
-| Repo | Là gì | Viết bằng |
+| Repo | What it is | Written in |
 |:---|:---|:---|
-| `neuroedge-init` (repo này) | Hộp: luật, trình mô phỏng thiết bị, firmware cho chip ESP32-S3, máy chủ để bộ não gọi vào | Python, C |
-| [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw) | Bộ não: chat, AI, trí nhớ, lịch; có bản phát hành cho Linux, macOS, Windows, Pi, Android, Docker, và bản cho chip ESP32 | Go, C |
+| `neuroedge-init` (this repo) | Box: rules, device simulator, firmware for ESP32-S3 chip, server for the brain to call into | Python, C |
+| [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw) | Brain: chat, AI, memory, schedule; releases available for Linux, macOS, Windows, Pi, Android, Docker, and ESP32 chip | Go, C |
 
-Bộ não có thể chạy trên một máy riêng (VPS, Pi, laptop), hoặc chung một chip ESP32-S3 với hộp.
-Một bản do NeuroEdge vận hành hộ trên cloud là dự kiến, chưa mở.
+The brain can run on a separate machine (VPS, Pi, laptop), or share a single ESP32-S3 chip with the box.
+A version hosted by NeuroEdge on the cloud is planned, not yet opened.
 
-## 3. Hôm nay chạy được gì
+## 3. What runs today
 
-| Đã chạy | Chưa có |
+| Running today | Not yet available |
 |:---|:---|
-| Luật trên máy tính, với đèn, cửa, cảm biến ảo; xem trên trang web | Bo mạch thật (đang chờ hàng) |
-| Cùng luật đó trên Linux (chân GPIO giả lập) và trên chip ESP32-S3 giả lập | Giao việc dài hạn bằng lời ("trông bể cá giúp tôi") |
-| Ghi lại và phát lại mọi quyết định | Gói sản phẩm để chia sẻ hay bán (gọi là *Blueprint*) |
-| Nhắn Telegram cho NeuroClaw để bật đèn, mở cửa (có hỏi bạn); đã chạy trong bản demo | Gói cài cho người ngoài tự dựng hộp + bộ não (đang làm) |
-| NeuroClaw cho chip chạy trên chip giả lập | NeuroEdge Cloud |
+| Rules on computer, with virtual lights, doors, sensors; viewable on web page | Real boards (awaiting shipment) |
+| Same rules on Linux (emulated GPIO pins) and on emulated ESP32-S3 chip | Long-term verbal mission delegation ("trông bể cá giúp tôi" [watch the aquarium for me]) |
+| Record and replay every decision | Product package to share or sell (called *Blueprint*) |
+| Message Telegram to NeuroClaw to turn on lights, open doors (with ask/confirmation); ran in demo | Installer package for outsiders to self-build box + brain (in progress) |
+| NeuroClaw for chip running on emulated chip | NeuroEdge Cloud |
 
-Đây chưa phải sản phẩm an toàn có chứng nhận: luật không thay nút dừng khẩn hay khoá phần cứng.
+This is not yet a certified safety product: rules do not replace emergency stop buttons or hardware interlocks.
 
-## 4. Bạn muốn làm gì
+## 4. What you want to do
 
-| Muốn | Đọc |
+| Goal | Read |
 |:---|:---|
-| Thử luật trên laptop trong vài phút | [`python/README.md`](../../python/README.md), rồi [`huong-dan.md`](huong-dan.md) §6 |
-| Nhắn tin điều khiển nhà bằng NeuroClaw | [`chat-voi-nha.md`](chat-voi-nha.md) |
-| Nạp lên chip ESP32-S3 | [`nap-firmware.md`](nap-firmware.md); bộ não và hộp chung một chip: [`esp32-mot-chip.md`](esp32-mot-chip.md) |
-| Hiểu kiến trúc | [`00-overview.md`](../architecture/vi/00-overview.md) |
-| Xem tiến độ | [`trang-thai.md`](trang-thai.md) |
+| Try rules on a laptop in a few minutes | [`python/README.md`](../../python/README.md), then [`huong-dan.md`](huong-dan.md) §6 |
+| Message to control home using NeuroClaw | [`chat-voi-nha.md`](chat-voi-nha.md) |
+| Flash onto ESP32-S3 chip | [`nap-firmware.md`](nap-firmware.md); brain and box on one chip: [`esp32-mot-chip.md`](esp32-mot-chip.md) |
+| Understand architecture | [`00-overview.md`](../architecture/vi/00-overview.md) |
+| View progress | [`trang-thai.md`](trang-thai.md) |
 
-## 5. Năm từ cần biết
+## 5. Five terms to know
 
-| Từ | Nghĩa |
+| Term | Meaning |
 |:---|:---|
-| **Gate** (luật) | Chính sách an toàn viết bằng YAML; quyết định một lệnh được làm, phải hỏi, hay bị từ chối |
-| **Vết ghi** (trace) | Bản ghi mọi quyết định; phát lại được để kiểm tra |
-| **`sim`** | Trình mô phỏng thiết bị trên máy tính |
-| **Bộ não** | Phần chat và AI; bản dùng là NeuroClaw |
-| **MCP** | Cách bộ não (hay Claude Desktop, hay agent khác) gọi vào hộp để xin làm việc |
+| **Gate** (rules) | Safety policy written in YAML; decides whether a command is allowed, must ask, or is rejected |
+| **Trace** | Record of every decision; replayable for verification |
+| **`sim`** | Device simulator on computer |
+| **Brain** | Chat and AI component; the version used is NeuroClaw |
+| **MCP** | How the brain (or Claude Desktop, or other agents) calls into the box to request actions |
 
-Mọi từ và mã khác: [`thuat-ngu.md`](thuat-ngu.md).
+All other terms and codes: [`thuat-ngu.md`](thuat-ngu.md).

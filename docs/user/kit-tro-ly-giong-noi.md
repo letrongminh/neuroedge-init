@@ -1,105 +1,105 @@
-# Kit 2 — Trợ lý giọng nói trong nhà (`home-voice`)
+# Kit 2 — Home voice assistant (`home-voice`)
 
-> **Mã task:** TSK-I2b-01. Quy trình chung, quy tắc an toàn và danh sách việc chưa kiểm:
-> [`kit-phan-cung.md`](kit-phan-cung.md). Trang này chỉ nói riêng về kit.
+> **Task ID:** TSK-I2b-01. General workflow, safety rules, and unverified checklist:
+> [`kit-phan-cung.md`](kit-phan-cung.md). This page covers details specific to this kit.
 
-Một agent, ba loại việc, mỗi loại một hợp đồng: hỏi đáp trên kho kiến thức của gia đình (nói, không gate;
-mất mạng thì đọc câu trả lời cục bộ), đọc tin tức (cần mạng; mất mạng thì nói là không có, không bịa), và
-**bật/tắt đèn** (vật lý, qua gate): đèn không bao giờ tắt khi cảm biến chuyển động còn thấy người.
+One agent, three kinds of tasks, each with its own contract: Q&A over family knowledge base (voice, no gate;
+when offline, reads local answers), news reading (requires network; when offline, states unavailable, never hallucinates), and
+**bật/tắt đèn** (turn on/off lights: physical, through gates): lights never turn off while the motion sensor still detects occupants.
 
-## Gate đã khoá
+## Locked gates
 
-`light_on@1.0.0` và `light_off@1.0.0` nằm ở `fixtures/agents/home-voice/gates/` và có digest trong
-`digests.lock`. `light_off` đọc dữ kiện `room_empty` do cảm biến `motion` cấp; còn người ⇒ chặn và hỏi
-lại, người trên thiết bị nói "có" thì tắt (RFC-0006); mô hình hay MCP **không** trả lời thay được. Sửa gate
-cần RFC (`CONTRIBUTING.md` §3).
+`light_on@1.0.0` and `light_off@1.0.0` reside in `fixtures/agents/home-voice/gates/` and have digests in
+`digests.lock`. `light_off` reads the `room_empty` fact supplied by the `motion` sensor; if occupied ⇒ block and
+ask for confirmation, if the user on device says "có" (yes) then turn off (RFC-0006); models or MCP **cannot**
+answer on the user's behalf. Modifying gates requires an RFC (`CONTRIBUTING.md` §3).
 
 ## BOM
 
-Mô tả theo chức năng và thông số. **Không có mã hàng, giá hay nhà bán**; mọi dòng "chưa kiểm trên phần cứng thật".
+Described by function and specifications. **Không có mã hàng, giá hay nhà bán** (no part numbers, prices, or vendors); all rows "chưa kiểm trên phần cứng thật" (not verified on real hardware).
 
-| # | Hạng mục | Thông số | `esp32s3` | `linux` (Pi 5) |
+| # | Item | Specification | `esp32s3` | `linux` (Pi 5) |
 |:--|:---|:---|:---|:---|
-| 1 | Bo điều khiển | ESP32-S3-BOX-3 (loa và micro có sẵn) | có | — |
-| 2 | Bo điều khiển | Raspberry Pi 5 (profile `linux-rpi5`: "Raspberry Pi 5 + I2S HAT") | — | có |
-| 3 | Âm thanh ra | Loa của Box-3 (có sẵn); với Pi 5: đầu ra của HAT I2S mà profile mô tả, kèm loa có khuếch đại | có sẵn | có |
-| 4 | Mạch rơ-le | Một kênh, đầu vào 3,3 V tương thích, có opto cách ly, tiếp điểm chịu đủ dòng của đèn (đèn mạng 220 V cần rơ-le và dây đúng cấp điện áp, do thợ điện đấu) | có | có |
-| 5 | Đèn | Đèn của gia đình hoặc đèn thử 12 V; **thử bằng LED + điện trở trước** | có | có |
-| 6 | Cảm biến chuyển động | PIR ngõ ra số 3,3 V (profile khai cảm biến `motion`) | xem chú thích | xem chú thích |
-| 7 | Điện trở kéo xuống | 10 kΩ từ chân `porch_light` về GND | có | có |
-| 8 | Nguồn cho bo | Theo bo (USB-C cho Box-3; nguồn 5 V cho Pi 5) | có | có |
+| 1 | Control board | ESP32-S3-BOX-3 (built-in speaker and microphone) | yes | — |
+| 2 | Control board | Raspberry Pi 5 (`linux-rpi5` profile: "Raspberry Pi 5 + I2S HAT") | — | yes |
+| 3 | Audio output | Box-3 speaker (built-in); for Pi 5: output from I2S HAT described in profile, with amplified speaker | built-in | yes |
+| 4 | Relay module | 1-channel, 3.3 V compatible input, optically isolated, contacts rated for lamp current (220 V mains lamps require suitably rated relay and wiring, installed by an electrician) | yes | yes |
+| 5 | Light | Household lamp or 12 V test light; **test with LED + resistor first** | yes | yes |
+| 6 | Motion sensor | 3.3 V digital output PIR (profile declares `motion` sensor) | see note | see note |
+| 7 | Pull-down resistor | 10 kΩ from `porch_light` pin to GND | yes | yes |
+| 8 | Board power supply | Per board (USB-C for Box-3; 5 V supply for Pi 5) | yes | yes |
 
-Chú thích dòng 6 — **cảm biến `motion` chưa nối được thật**: `linux` đọc cảm biến qua sysfs (hwmon, IIO) và
-kho chưa có driver nào cho PIR nối GPIO. Phiên `--target linux` của agent này vì thế **bị từ chối trước khi
-yêu cầu bất kỳ line nào** (Q-16: không có nguồn thì không đoán) cho tới khi bạn khai một nguồn cho `motion`
-bằng `NEUROEDGE_LINUX_SENSORS="motion=hwmon:<tên>/<kênh>"`; và dù khai, số đọc của sysfs là số có đơn vị
-chứ không phải đúng/sai, nên dữ kiện `room_empty` **vẫn chưa xác định** và `light_off` luôn **chặn**
-(`criterion_unavailable`). Đèn bật được; **không tắt được qua agent trên `linux`**. Đó là hướng an toàn,
-nhưng kit chưa dùng được đầy đủ trên Pi cho tới khi có nguồn `motion` đúng kiểu. Firmware `esp32s3` chưa
-đọc cảm biến (TSK-S4-01).
+Note for row 6 — **`motion` sensor is not yet physically connected**: `linux` reads sensors via sysfs (hwmon, IIO) and
+the repository has no driver for a GPIO-connected PIR yet. A `--target linux` session for this agent is therefore
+**rejected before requesting any pin** (Q-16: do not guess without a source) until you declare a source for `motion`
+via `NEUROEDGE_LINUX_SENSORS="motion=hwmon:<name>/<channel>"`; and even when declared, sysfs readings are dimensional numbers
+rather than true/false, so the `room_empty` fact **remains undetermined** and `light_off` always **blocks**
+(`criterion_unavailable`). The light can turn on; **it cannot be turned off via the agent on `linux`**. This is fail-safe,
+but the kit cannot be fully used on Pi until a proper `motion` source exists. Firmware for `esp32s3` does not
+read sensors yet (TSK-S4-01).
 
-**Trên `linux`, nguồn `motion` chưa được nối, và việc sửa chờ giàn thật.** Hiện `light_off` luôn **chặn**
-theo hướng an toàn (`criterion_unavailable`); đèn chỉ bật được. Cách sửa dự kiến: nối PIR vào một line
-`digital.in` của `linux-rpi5` và khai `[sim.digital_facts] room_empty = { pin = "<line của PIR>", equals = false }`
-(line thấp là phòng trống). Gate không phải đổi (`room_empty` là `bool`), nhưng chân PIR là tham số của giàn
-thật, profile `linux-rpi5` chưa khai nó, và `digital.in` chỉ có trên `linux-rpi5`/`sim-rpi5` — nên việc này
-chờ bước dựng phần cứng, không làm trước khi có bo thật.
+**On `linux`, the `motion` source is not wired yet, and the fix awaits the real hardware rig.** Currently `light_off` always **blocks**
+fail-safe (`criterion_unavailable`); the light can only be turned on. Planned fix: connect PIR to a
+`digital.in` line of `linux-rpi5` and declare `[sim.digital_facts] room_empty = { pin = "<PIR line>", equals = false }`
+(low line means empty room). Gates do not change (`room_empty` is `bool`), but the PIR pin is a physical rig parameter,
+the `linux-rpi5` profile does not declare it yet, and `digital.in` only exists on `linux-rpi5`/`sim-rpi5` — so this
+awaits the hardware assembly step and will not be done before real boards arrive.
 
 ## Sơ đồ đấu dây
 
-Nhãn `line:<tên>` là tên chân của bo trong `boards/*.toml`; `sensor:<tên>` là tên cảm biến trong
-`[capabilities.sensor_read]`. Test `python/tests/test_kits.py` kiểm cả hai với profile bo tương ứng. Số
-chân vật lý của header Pi và GPIO của ESP32 chưa được gán trong kho.
+The label `line:<name>` is the board pin name in `boards/*.toml`; `sensor:<name>` is the sensor name in
+`[capabilities.sensor_read]`. Test `python/tests/test_kits.py` verifies both against corresponding board profiles.
+Physical header pin numbers on Pi and GPIO numbers on ESP32 are not assigned in the repository.
 
 <!-- wiring: linux-rpi5 -->
 ```mermaid
 flowchart LR
-  PI["Raspberry Pi 5 (linux-rpi5)"] -->|"line:porch_light"| RL["Mạch rơ-le 1 kênh, có opto"]
-  PI -. "GND chung" .- RL
-  PSU["Nguồn của đèn"] --> RL
-  RL -->|"tiếp điểm NO"| LAMP["Đèn"]
+  PI["Raspberry Pi 5 (linux-rpi5)"] -->|"line:porch_light"| RL["Relay module 1-channel, with optocoupler"]
+  PI -. "Common GND" .- RL
+  PSU["Light power supply"] --> RL
+  RL -->|"NO contacts"| LAMP["Light"]
   PSU --> LAMP
-  PD["10 kΩ kéo xuống"] -. "line:porch_light" .- PI
-  PIR["PIR 3,3 V (sensor:motion), chưa có nguồn đọc"] -.-> PI
-  SPK["Loa (audio.out qua HAT I2S)"] <--> PI
+  PD["10 kΩ pull-down"] -. "line:porch_light" .- PI
+  PIR["3.3 V PIR (sensor:motion), no read source yet"] -.-> PI
+  SPK["Speaker (audio.out via I2S HAT)"] <--> PI
 ```
 
 <!-- wiring: esp32s3-box-3 -->
 ```mermaid
 flowchart LR
-  BOX["ESP32-S3-BOX-3 (esp32s3-box-3), loa có sẵn"] -->|"line:porch_light"| RL["Mạch rơ-le 1 kênh, có opto"]
-  BOX -. "GND chung" .- RL
-  PSU["Nguồn của đèn"] --> RL
-  RL -->|"tiếp điểm NO"| LAMP["Đèn"]
+  BOX["ESP32-S3-BOX-3 (esp32s3-box-3), built-in speaker"] -->|"line:porch_light"| RL["Relay module 1-channel, with optocoupler"]
+  BOX -. "Common GND" .- RL
+  PSU["Light power supply"] --> RL
+  RL -->|"NO contacts"| LAMP["Light"]
   PSU --> LAMP
-  PD["10 kΩ kéo xuống"] -. "line:porch_light" .- BOX
-  PIR["PIR 3,3 V (sensor:motion), firmware chưa đọc"] -.-> BOX
+  PD["10 kΩ pull-down"] -. "line:porch_light" .- BOX
+  PIR["3.3 V PIR (sensor:motion), firmware does not read yet"] -.-> BOX
 ```
 
 ## Từ hộp tới chạy thật
 
-Quy trình chung ở [`kit-phan-cung.md`](kit-phan-cung.md) §2. Riêng kit này:
+General workflow in [`kit-phan-cung.md`](kit-phan-cung.md) §2. Specifically for this kit:
 
 ```bash
 neuroedge new nha --template home-voice && cd nha
-neuroedge run -c "bật đèn"                    # ALLOW: porch_light bật
-neuroedge run -c "wifi nhà mình là gì"        # trả lời từ knowledge.toml, không gate
+neuroedge run -c "bật đèn"                    # ALLOW: porch_light turns on
+neuroedge run -c "wifi nhà mình là gì"        # answered from knowledge.toml, no gate
 neuroedge test
 ```
 
-Trong REPL (`neuroedge run`): `:sensor motion true` rồi `tắt đèn` ⇒ BLOCK `room_empty`, hỏi lại; `có` ⇒
-tắt. System 2 và tin tức dùng khoá API của bạn nếu bạn bật `[system_two]` (đã chú thích sẵn trong
-`agent.toml`); không bật thì mọi thứ chạy offline.
+In REPL (`neuroedge run`): `:sensor motion true` then `tắt đèn` (turn off light) ⇒ BLOCK `room_empty`, ask for confirmation; `có` (yes) ⇒
+turns off. System 2 and news use your API key if you enable `[system_two]` (pre-commented in
+`agent.toml`); if not enabled, everything runs offline.
 
-- **`linux` trên Pi 5**: line `porch_light` điều khiển được. Không khai nguồn `motion` ⇒ phiên bị từ chối,
-  không line nào bị yêu cầu. Khai một nguồn ⇒ `light_on` ALLOW và cấp chân, `light_off` BLOCK và chân không
-  bao giờ đổi (xem chú thích BOM dòng 6). Test: `python/tests_linux/test_kit_home_voice.py`; nguồn `motion`
-  trong test là một thiết bị hwmon giả dựng trong thư mục tạm, vì kernel không có driver PIR.
-- **`esp32s3`**: `neuroedge build --target esp32s3 --board esp32s3-box-3` ra project ESP-IDF; chưa có âm
-  thanh (I5) và chưa điều khiển chân (TSK-S4-01).
+- **`linux` on Pi 5**: the `porch_light` line is controllable. If `motion` source is not declared ⇒ session is rejected,
+  no lines are requested. Declaring a source ⇒ `light_on` ALLOW and claims pin, `light_off` BLOCK and pin never
+  changes (see BOM note row 6). Test: `python/tests_linux/test_kit_home_voice.py`; the `motion` source
+  in tests is a dummy hwmon device created in a temporary directory, because the kernel lacks a PIR driver.
+- **`esp32s3`**: `neuroedge build --target esp32s3 --board esp32s3-box-3` outputs an ESP-IDF project; lacks audio
+  (I5) and does not control pins yet (TSK-S4-01).
 
-## Vết golden
+## Golden traces
 
-`fixtures/traces/kits/home-voice-allow.json` (bật đèn, tắt đèn khi phòng trống ⇒ ALLOW),
-`home-voice-block.json` (tắt đèn khi còn người, khi không đọc được cảm biến ⇒ BLOCK, chân không đổi).
-Sinh bằng `scripts/gen_kit_traces.py`; `neuroedge verify` phát lại.
+`fixtures/traces/kits/home-voice-allow.json` (turn on light, turn off light when room is empty ⇒ ALLOW),
+`home-voice-block.json` (turn off light while occupied or sensor unreadable ⇒ BLOCK, pin does not change).
+Generated with `scripts/gen_kit_traces.py`; replayed by `neuroedge verify`.

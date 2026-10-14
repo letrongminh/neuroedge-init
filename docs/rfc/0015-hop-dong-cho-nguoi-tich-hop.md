@@ -1,70 +1,70 @@
-# RFC-0015: Đóng băng hợp đồng cho người tích hợp — Gated Tool Profile, định danh phiên bản `board.v1`, danh mục mã lỗi `NE*`
+# RFC-0015: Freezing Contracts for Integrators — Gated Tool Profile, `board.v1` Version Identifier, `NE*` Error Code Catalog
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0015 |
-| **Tiêu đề** | Bốn lược đồ mới vào `schemas/` (`tool-call.v1`, `tool-result.v1`, `error.v1`, `error-codes.v1`) và khoá định danh phiên bản `schema` của `board.v1` — TSK-I6-05 |
-| **Hợp đồng bị ảnh hưởng** | `schemas/` *(thêm bốn tệp; `board.v1.json` thêm đúng một khoá tuỳ chọn `schema`)* · quy tắc nạp bo mạch (`python/neuroedge/hal/board.py`) · nơi duy nhất của danh mục mã lỗi (PRD Phụ lục B ↔ `python/neuroedge/errors.py`; sửa `CONTRIBUTING.md` §8.1) · **không** đụng `gate.v1`, `trace.v1`, ngữ nghĩa phân giải, `NETR`, `digests.lock`, ba vết ghi chuẩn mực |
-| **Yêu cầu PRD liên quan** | FR-MDL-10, FR-GOV-01, FR-GOV-02, FR-HAL-02, FR-DX-04 |
-| **Người đề xuất** | — |
-| **Ngày mở** | 2026-10-03 |
-| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #93; quyết định ở §10 (Q-66); hiện thực trong hai PR (§8) |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (thêm lược đồ vào `schemas/`, chạm `board.v1`, đổi nơi duy nhất của danh mục mã lỗi). **Chủ sản phẩm** cho các câu hỏi mở ở §10 có tính sản phẩm hoặc giấy phép (Q10.4, Q10.5) |
+| **RFC Code** | 0015 |
+| **Title** | Four new schemas in `schemas/` (`tool-call.v1`, `tool-result.v1`, `error.v1`, `error-codes.v1`) and the `schema` version identifier key for `board.v1` — TSK-I6-05 |
+| **Affected contracts** | `schemas/` *(add four files; `board.v1.json` adds exactly one optional `schema` key)* · board loading rules (`python/neuroedge/hal/board.py`) · single source of truth for error code catalog (PRD Appendix B ↔ `python/neuroedge/errors.py`; update `CONTRIBUTING.md` §8.1) · **does not** touch `gate.v1`, `trace.v1`, evaluation semantics, `NETR`, `digests.lock`, three canonical traces |
+| **Related PRD requirements** | FR-MDL-10, FR-GOV-01, FR-GOV-02, FR-HAL-02, FR-DX-04 |
+| **Proposer** | — |
+| **Date opened** | 2026-10-03 |
+| **Status** | ✅ Approved (2026-10-04) — lead engineer signed off on PR #93; decisions in §10 (Q-66); implemented in two PRs (§8) |
+| **Approvers** | **Lead Engineer — mandatory** (adding schemas to `schemas/`, touching `board.v1`, changing the single source of truth for the error code catalog). **Product Owner** for open questions in §10 of a product or licensing nature (Q10.4, Q10.5) |
 
-> **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json` (thêm lược đồ và sửa `board.v1.json`).
-> Task: TSK-I6-05. Quyết định nền: `neuroedge-prd.md` §15 **Q-58** (đóng băng Gated Tool Profile trước lần công khai,
-> thay mốc "có client bên ngoài" của `TODOS.md` #23), **Q-63** (mở phạm vi: thêm khoá định danh phiên bản `board.v1`
-> và danh mục mã lỗi dạng máy đọc được; `agent.toml` vẫn ngoài `schemas/`), Q-45 (lược đồ theo Apache-2.0), Q-64
-> (`docs/spec/python_api.md`: hợp đồng dạng tệp có phiên bản riêng, không thuộc API Python).
-> Đích: tiêu chí ra I6 số 8 — *"Gated Tool Profile, định danh phiên bản `board.v1` và danh mục mã lỗi nằm trong `schemas/`
-> qua RFC được chấp thuận; mọi ca của `fixtures/tool_calls/` thẩm định theo lược đồ đó."*
-> Việc đưa lược đồ lên `https://schema.neuroedge.dev` là TSK-I6-02, **ngoài** RFC này (§3f chỉ ghi `$id` để khớp).
-> Mọi khẳng định về mã dưới đây đã đối chiếu với kho tại `87db7c7`; chỗ lệch giữa đặc tả, corpus và mã ở §9.
+> **When an RFC is required:** `CONTRIBUTING.md` §3 — editing `schemas/*.json` (adding schemas and modifying `board.v1.json`).
+> Task: TSK-I6-05. Foundational decisions: `neuroedge-prd.md` §15 **Q-58** (freezing the Gated Tool Profile before public release,
+> replacing the "when an external client exists" milestone of `TODOS.md` #23), **Q-63** (expanding scope: adding the `board.v1` version identifier key
+> and the machine-readable error code catalog; `agent.toml` remains outside `schemas/`), Q-45 (schemas under Apache-2.0), Q-64
+> (`docs/spec/python_api.md`: file-based contracts have their own versions, outside the Python API).
+> Target: I6 exit criterion 8 — *"Gated Tool Profile, `board.v1` version identifier, and error code catalog live in `schemas/`
+> via an approved RFC; all cases in `fixtures/tool_calls/` validate against that schema."*
+> Publishing schemas to `https://schema.neuroedge.dev` is TSK-I6-02, **outside** this RFC (§3f only notes `$id` for consistency).
+> All assertions about code below were reconciled against the repository at `87db7c7`; discrepancies between spec, corpus, and code are in §9.
 
-## 1. Vấn đề
+## 1. Problem
 
-Q-58 muốn một dự án OSS khác (client MCP của Home Assistant, server thoại, agent framework trên máy khác) gọi được HAL và gate
-qua NeuroEdge mà **không đọc mã Python**. Hôm nay ba thứ họ cần nằm ở chỗ họ không dùng được:
+Q-58 aims to allow another OSS project (Home Assistant MCP client, voice server, agent framework on another machine) to call the HAL and gate
+via NeuroEdge **without reading Python code**. Today, three things they need are located where they cannot use them:
 
-1. **Tool call và kết quả của nó chỉ có đặc tả bằng chữ.** `docs/spec/tool_calling.md` §1 (phong bì), §4 (kết quả), §9 (corpus) mô tả
-   hình dạng; hình dạng *chạy được* nằm trong mã: `ToolCall` (`python/neuroedge/actions/tools.py`, dataclass `name`, `arguments`,
-   `source`, `id`) và `result_schema()` (cùng tệp), hàm dựng một dict JSON Schema từ `Reason` và `ACTIONS` lúc chạy. Một SDK Rust
-   hay Go không thể sinh kiểu từ chữ, cũng không thể chạy `result_schema()`. Corpus `fixtures/tool_calls/` (28 ca: 16 `valid/`, 12
-   `invalid/`) chỉ thẩm định được bằng runtime Python (`neuroedge.testing.tool_corpus`), không bằng một lược đồ.
-2. **Tệp bo mạch không mang phiên bản.** Gate mang `schema: neuroedge.gate/v1` (`schemas/gate.v1.json`, `const`); vết ghi mang `$schema`
-   (`schemas/trace.v1.json`, bắt buộc, `format: uri`); `boards/*.toml` không mang gì. Hệ quả cụ thể, đã chạy thử: `board.v1.json` không
-   đóng (`additionalProperties` không khai), nên `validate_board_document` nhận cả
-   `{"schema": "rác", "nonsense": 1, "board": …, "capabilities": …}`, và `BoardProfile.to_document()` vứt hai khoá đó khi ghi lại. Một
-   runtime cũ đọc bo mạch thuộc phiên bản chính khác sẽ **lặng lẽ bỏ qua mọi khoá nó không biết** — với bo mạch, đó là bỏ qua giới hạn phần
-   cứng (RFC-0007 đặt `envelope` ở đó) chứ không phải chỉ mất tính năng.
-3. **Danh mục mã lỗi nằm ở hai nơi viết tay.** PRD Phụ lục B (bảng markdown, tiếng Việt) và `python/neuroedge/errors.py` (lớp). Không
-   cái nào là máy đọc được; không test nào buộc chúng khớp; `CONTRIBUTING.md` §8.1 chỉ định PRD Phụ lục B là "nơi duy nhất" nhưng lời hứa
-   ở đầu Phụ lục B ("Tên lớp và mã `NE…` khớp `errors.py`") sai ở ba chỗ (§9, F4). Thiết bị cũng nói mã: `targets/esp32s3/components/ne_gate/src/ne_token.c`
-   trả chuỗi `"NE1001"` / `"NE1002"`, và `actuator_command_rejected.code` của vết ghi mang chúng.
+1. **Tool calls and their results are only specified in prose.** `docs/spec/tool_calling.md` §1 (envelope), §4 (result), §9 (corpus) describe
+   the shape; the *executable* shape lives in code: `ToolCall` (`python/neuroedge/actions/tools.py`, dataclass `name`, `arguments`,
+   `source`, `id`) and `result_schema()` (same file), a function constructing a JSON Schema dict from `Reason` and `ACTIONS` at runtime. A Rust
+   or Go SDK cannot generate types from prose, nor run `result_schema()`. The corpus `fixtures/tool_calls/` (28 cases: 16 `valid/`, 12
+   `invalid/`) can only be validated using the Python runtime (`neuroedge.testing.tool_corpus`), not using a schema.
+2. **Board files carry no version.** A gate carries `schema: neuroedge.gate/v1` (`schemas/gate.v1.json`, `const`); a trace carries `$schema`
+   (`schemas/trace.v1.json`, mandatory, `format: uri`); `boards/*.toml` carries nothing. Specific consequence, verified by trial run: `board.v1.json` is not
+   closed (`additionalProperties` is not declared), so `validate_board_document` accepts even
+   `{"schema": "garbage", "nonsense": 1, "board": …, "capabilities": …}`, and `BoardProfile.to_document()` drops those two keys when serializing back. An
+   older runtime reading a board profile from a different major version will **silently ignore all keys it does not recognize** — for a board, that means ignoring hardware limits
+   (RFC-0007 places `envelope` there) rather than merely losing a feature.
+3. **The error code catalog lives in two handwritten places.** PRD Appendix B (markdown table, Vietnamese) and `python/neuroedge/errors.py` (classes). Neither
+   is machine-readable; no test forces them to match; `CONTRIBUTING.md` §8.1 designates PRD Appendix B as the "single source of truth" but the promise
+   at the start of Appendix B ("Class names and `NE…` codes match `errors.py`") is broken in three places (§9, F4). Devices also emit codes: `targets/esp32s3/components/ne_gate/src/ne_token.c`
+   returns strings `"NE1001"` / `"NE1002"`, and `actuator_command_rejected.code` in traces carries them.
 
-## 2. Vì sao lược đồ hiện tại không giải quyết được
+## 2. Why the Current Schema Does Not Solve This
 
-- `schemas/` chỉ có ba tệp, và `python/tests/test_schemas.py::test_schemas_directory_holds_exactly_the_three_frozen_schemas` khoá đúng ba tên —
-  "một lược đồ thứ tư xuất hiện mà không có RFC cũng là một phát hiện". Chưa lược đồ nào cho tool call, kết quả hay lỗi.
-- `board.v1.json`: `required: ["board", "capabilities"]`, không `schema`, không `additionalProperties`. Không có chỗ để một bo mạch nói "tôi là
-  v1" hay "tôi là v2", và không có luật cho bộ đọc từ chối phiên bản lạ. Gate có (`const`), vết ghi có `$schema` nhưng **không ghim**
-  (`format: uri` chấp nhận mọi URI; chỉ `neuroedge.trace.TRACE_SCHEMA_ID` ghi đúng) — nên "gate và vết ghi đã có định danh phiên bản" (roadmap
-  TSK-I6-05) đúng cho gate, chỉ đúng một nửa cho vết ghi (§9, F6).
-- `tool_calling.md` §4 nói rõ lược đồ kết quả sinh từ mã và client MCP kiểm `structuredContent` theo nó, nhưng **đóng**: `additionalProperties:
-  false`, `reason` là `enum` của `Reason` (10 giá trị, đã lớn hai lần trong mười ngày: RFC-0005 thêm `argument_out_of_range`, RFC-0009 thêm `value_out_of_range` — `git log -S` trên `engine/verdict.py`). Đóng băng nguyên dạng nghĩa là mỗi `Reason` mới là `v2` cho mọi client đang kiểm
-  `outputSchema`. Cần quyết định có chủ ý (§3b), không thể "chép từ mã".
-- Corpus không đủ để chứng minh một lược đồ: 28 ca chạm 3 trong 10 `reason` (`condition_not_met` ×8, `argument_out_of_range` ×5, `criterion_unavailable` ×1),
-  4 trong 5 `source` (không ca nào `system_one`), cả 4 `on_block`, cả 3 `status` (§9, F2). Một lược đồ qua corpus mà chưa từng thấy
-  `budget_exceeded` thì chưa được thử.
+- `schemas/` holds only three files, and `python/tests/test_schemas.py::test_schemas_directory_holds_exactly_the_three_frozen_schemas` locks down exactly three names —
+  "a fourth schema appearing without an RFC is also a violation". There is no schema yet for tool calls, results, or errors.
+- `board.v1.json`: `required: ["board", "capabilities"]`, no `schema`, no `additionalProperties`. There is no place for a board to declare "I am
+  v1" or "I am v2", and no rule for a reader to reject unfamiliar versions. Gate has this (`const`), trace has `$schema` but **it is not pinned**
+  (`format: uri` accepts any URI; only `neuroedge.trace.TRACE_SCHEMA_ID` writes correctly) — so "gates and traces already have version identifiers" (roadmap
+  TSK-I6-05) is true for gates, but only half true for traces (§9, F6).
+- `tool_calling.md` §4 explicitly states the result schema is generated from code and MCP clients validate `structuredContent` against it, but it is **closed**: `additionalProperties:
+  false`, `reason` is an `enum` of `Reason` (10 values, expanded twice in ten days: RFC-0005 added `argument_out_of_range`, RFC-0009 added `value_out_of_range` — `git log -S` on `engine/verdict.py`). Freezing as-is means every new `Reason` is a `v2` for every client validating
+  `outputSchema`. A deliberate decision is required (§3b); it cannot simply be "copied from code".
+- The corpus is insufficient to validate a schema: 28 cases touch only 3 of 10 `reason` values (`condition_not_met` ×8, `argument_out_of_range` ×5, `criterion_unavailable` ×1),
+  4 of 5 `source` values (no case for `system_one`), all 4 `on_block` values, all 3 `status` values (§9, F2). A schema passing the corpus without ever seeing
+  `budget_exceeded` has not been tested.
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Changes
 
-Bốn tệp mới và một khoá mới. `$id` theo PRD Phụ lục C (`https://schema.neuroedge.dev/<loại>/v<n>.json`); draft 2020-12 như ba tệp hiện có; mô tả
-tiếng Anh như `gate.v1.json`.
+Four new files and one new key. `$id` follows PRD Appendix C (`https://schema.neuroedge.dev/<type>/v<n>.json`); draft 2020-12 like the three existing files; English
+descriptions like `gate.v1.json`.
 
-### 3a. `schemas/tool-call.v1.json` — phong bì `ToolCall`
+### 3a. `schemas/tool-call.v1.json` — `ToolCall` Envelope
 
-Rút từ `tool_calling.md` §1, `ToolCall` (`tools.py`) và `CASE_KEYS`/`CALL_KEYS` (`testing/tool_corpus.py`). Hai hình dạng, vì spec §1 nói **bên gọi không khai `source`**:
+Extracted from `tool_calling.md` §1, `ToolCall` (`tools.py`), and `CASE_KEYS`/`CALL_KEYS` (`testing/tool_corpus.py`). Two shapes, because spec §1 states **the caller does not declare `source`**:
 
 ```json
 {
@@ -97,52 +97,52 @@ Rút từ `tool_calling.md` §1, `ToolCall` (`tools.py`) và `CASE_KEYS`/`CALL_K
 }
 ```
 
-Đã chạy thử: tài liệu trên là draft 2020-12 hợp lệ, và **cả 28 `call` của `fixtures/tool_calls/` hợp lệ theo `#/$defs/call`**; `{"name": "a", "source": "mcp"}` bị `#/$defs/request` từ chối, `{"name": "a"}` thì không.
+Verified by trial run: the document above is valid draft 2020-12, and **all 28 `call`s in `fixtures/tool_calls/` validate against `#/$defs/call`**; `{"name": "a", "source": "mcp"}` is rejected by `#/$defs/request`, while `{"name": "a"}` is not.
 
-- **`name`** `minLength: 1` và không `pattern`: tool lạ là `REJECTED` ở bước 2 của `dispatch()` (§2), không phải lỗi phong bì (`unknown_tool.yaml`). Một `name` rỗng
-  (`parse_tool_calls` sinh `""` khi payload không có tên) vẫn đi tới `REJECTED` trong runtime; lược đồ từ chối sớm hơn — phong bì không hợp lệ ≠ lời gọi bị từ chối.
-- **`arguments`** là `object` mở: kiểu từng tham số là việc của `inputSchema` **của từng tool** (§3a.2), không của phong bì. Khoá dành riêng `__unparseable__` (do
-  `parse_tool_calls` chèn khi JSON của nhà cung cấp hỏng; `dispatch` ⇒ `REJECTED` "unknown argument") hiện **không có trong đặc tả** (§9, F8); RFC này đưa nó vào
-  `tool_calling.md` §2 chứ không vào lược đồ.
-- **`source`**: đúng năm giá trị của `SOURCES`; test buộc hai bên (§7). Tập đóng. Thêm giá trị là nới lỏng một `enum` (không phá tệp nào đang hợp lệ) nhưng đổi hợp đồng
-  của `call_source` trong gate (§5 của spec; chỉ số `choice` trong `NETR`) nên vẫn cần RFC — đã là luật (`tool_calling.md` §5).
-- **Mạng (§8.1 của spec) không thêm gì vào phong bì.** Một lời gọi qua `mcp serve --http` là `source = "mcp"`, như stdio; gate không phân biệt hai cửa. Từ chối xác thực xảy
-  ra **trước** phong bì: HTTP 401/403, không `ToolResult`, không giá trị `status` mới; dấu vết là sự kiện `mcp_auth_refused` (§7 của spec), không thuộc lược đồ kết quả. Danh tính
-  thiết bị (`sub` của token) không phải trường của phong bì. Nếu một gate muốn cấm riêng cửa mạng hay riêng một thiết bị thì cần thêm giá trị vào `source` — một thay đổi mà
-  RFC này không làm và cố ý không chặn đường (§10, Q10.11). *(Lúc viết, §8.1 và `mcp_http.py` nằm trên nhánh `feat/mcp-network`, commit `baff0ae`; RFC dẫn, không chép.)*
+- **`name`** has `minLength: 1` and no `pattern`: an unknown tool is `REJECTED` in step 2 of `dispatch()` (§2), not an envelope error (`unknown_tool.yaml`). An empty `name`
+  (`parse_tool_calls` produces `""` when payload has no name) still proceeds to `REJECTED` in runtime; the schema rejects earlier — invalid envelope ≠ rejected call.
+- **`arguments`** is an open `object`: types of individual parameters are the responsibility of the `inputSchema` **of each individual tool** (§3a.2), not the envelope. The reserved key `__unparseable__` (inserted by
+  `parse_tool_calls` when provider JSON is malformed; `dispatch` ⇒ `REJECTED` "unknown argument") is currently **not in the spec** (§9, F8); this RFC adds it to
+  `tool_calling.md` §2, not into the schema.
+- **`source`**: exactly five values of `SOURCES`; tests enforce both sides (§7). Closed set. Adding a value is relaxing an `enum` (does not break any valid file) but changes the contract
+  of `call_source` in gates (§5 of spec; `choice` index in `NETR`), so it still requires an RFC — already a rule (`tool_calling.md` §5).
+- **Network (§8.1 of spec) adds nothing to the envelope.** A call over `mcp serve --http` has `source = "mcp"`, just like stdio; gates do not distinguish the two ingress points. Authentication refusal happens
+  **before** the envelope: HTTP 401/403, no `ToolResult`, no new `status` value; the trace event is `mcp_auth_refused` (§7 of spec), outside the result schema. Device identity
+  (token `sub`) is not an envelope field. If a gate wants to specifically restrict network ingress or a specific device, it requires adding values to `source` — a change that
+  this RFC does not make and deliberately leaves unblocked (§10, Q10.11). *(At the time of writing, §8.1 and `mcp_http.py` are on branch `feat/mcp-network`, commit `baff0ae`; the RFC references rather than copies.)*
 
-**3a.2. Mô tả tool (`tools/list`).** `mcp_tool()` (`tools.py`) trả `{name, description, inputSchema, outputSchema}`; `input_schema()` sinh một **tập con** JSON Schema — `type` ∈ {`string`, `integer`, `number`, `boolean`},
-`default`, `required`, `additionalProperties: false`, cộng `minimum`/`maximum`/`enum`/`maxLength` từ gate (RFC-0005, `engine/arguments.py::schema_hint`). `$defs.input_schema` mô tả đúng tập con đó và `$defs.tool` mô tả
-bộ bốn trường, với `outputSchema` là `tool-result.v1` ghim `tool` (§3b). Đây là phần mà người hiện thực Profile cần để biết "lời gọi khớp `inputSchema`" nghĩa là gì — ranh giới `valid/` và `invalid/` của corpus (§9 của spec) đặt ở chính chỗ đó
-(`testing/tool_corpus.py::_conforms`). Việc đưa phần này vào hay để ngoài là Q10.3.
+**3a.2. Tool description (`tools/list`).** `mcp_tool()` (`tools.py`) returns `{name, description, inputSchema, outputSchema}`; `input_schema()` generates a JSON Schema **subset** — `type` ∈ {`string`, `integer`, `number`, `boolean`},
+`default`, `required`, `additionalProperties: false`, plus `minimum`/`maximum`/`enum`/`maxLength` from the gate (RFC-0005, `engine/arguments.py::schema_hint`). `$defs.input_schema` describes precisely that subset and `$defs.tool` describes
+the 4-tuple of fields, with `outputSchema` being `tool-result.v1` pinned to `tool` (§3b). This is the part that Profile implementers need to know what "call conforms to `inputSchema`" means — the boundary between `valid/` and `invalid/` in the corpus (§9 of spec) is placed right there
+(`testing/tool_corpus.py::_conforms`). Whether to include this part or leave it outside is Q10.3.
 
-**Ranh giới của lược đồ — nói rõ để không ai đọc nhầm.** Lược đồ **không** biểu diễn được: ép kiểu chuỗi → số/bool (§2 bước 3 của spec: slot ngữ pháp là chữ), ràng buộc tham số của gate (kiểm **sau** schema, `BLOCK argument_out_of_range` chứ không `REJECTED`, §3 của spec),
-dữ kiện `call_source`, hay việc tool có tồn tại. Một thẩm định lược đồ thành công **không** chứng minh một runtime tuân thủ Profile; bộ kiểm tuân thủ là corpus `fixtures/tool_calls/` chạy qua `dispatch()` — cùng lập luận với bất biến `CHANGELOG.md` §3.3 #1 cho gate.
+**Schema boundaries — stated clearly to avoid misinterpretation.** The schema **cannot** express: string → number/bool type coercion (§2 step 3 of spec: grammar slot is string), gate parameter constraints (checked **after** schema, `BLOCK argument_out_of_range` rather than `REJECTED`, §3 of spec),
+`call_source` facts, or whether a tool exists. A successful schema validation **does not** prove a runtime complies with the Profile; the compliance test suite is the corpus `fixtures/tool_calls/` executed via `dispatch()` — identical reasoning to invariant `CHANGELOG.md` §3.3 #1 for gates.
 
-### 3b. `schemas/tool-result.v1.json` — kết quả
+### 3b. `schemas/tool-result.v1.json` — Results
 
-Cố định thành tệp tĩnh đúng hình dạng mà `result_schema()` sinh hôm nay (đã in và đối chiếu), với **hai nới có chủ ý** để hợp đồng sống được qua các RFC sau mà không phải lên `v2`:
+Fixed into a static file matching the exact shape `result_schema()` generates today (printed and verified), with **two deliberate relaxations** so that the contract survives future RFCs without requiring a `v2` bump:
 
-| | `result_schema()` hôm nay | `tool-result.v1.json` đề xuất | Lý do |
+| | `result_schema()` today | Proposed `tool-result.v1.json` | Rationale |
 |:---|:---|:---|:---|
-| `tool`, `status`, `gate`, `failed_criterion`, `message`, `escalated_to`, `problems`, `fallback`, `confirmation` | như ở `tools.py` | **giữ nguyên** kiểu, bắt buộc có điều kiện (`BLOCK` ⇒ `gate`, `on_block`; `REJECTED` ⇒ `problems`) | đã được corpus và `test_an_mcp_client_gets_the_same_result_and_its_sdk_accepts_it` kiểm |
-| `status` | `enum` ALLOW · BLOCK · REJECTED (ở `fallback`: ALLOW · BLOCK) | **đóng**, như hôm nay | thêm một trạng thái là đổi nghĩa của kết quả cho mọi client ⇒ `v2` |
-| `on_block` | `enum` `ACTIONS` (`deny`, `escalate`, `ask`, `degrade`) | **đóng**, như hôm nay; test buộc trùng `gate.v1.json` | thêm hành vi chặn đã là RFC của `gate.v1` (RFC-0004, RFC-0006) |
-| `reason` | `enum` của `Reason` (10 giá trị) | `type: string`, `pattern: ^[a-z][a-z0-9_]*$`, kèm danh sách giá trị đã biết trong chú thích `x-neuroedge-known`; test buộc danh sách = `Reason` hai chiều | `Reason` đã lớn hai lần trong mười ngày; client gặp `reason` lạ dưới `status: BLOCK` **phải** coi là bị chặn (fail-closed, đã là nghĩa của `BLOCK`) chứ không phải kết quả hỏng. **Đề xuất, chờ quyết định: Q10.1** |
-| Đối tượng (`additionalProperties`) | `false` ở gốc, `fallback`, `confirmation` | `true` | khớp chính sách phiên bản của PRD §10.3 cho vết ghi — "bổ sung trường tùy chọn không tăng". Test (§7) buộc **mã** chỉ phát các khoá đã khai, nên nới ở lược đồ không cho phép mã tự thêm khoá lặng lẽ. **Q10.2** |
+| `tool`, `status`, `gate`, `failed_criterion`, `message`, `escalated_to`, `problems`, `fallback`, `confirmation` | as in `tools.py` | **retain unchanged** types, conditional requirements (`BLOCK` ⇒ `gate`, `on_block`; `REJECTED` ⇒ `problems`) | already verified by corpus and `test_an_mcp_client_gets_the_same_result_and_its_sdk_accepts_it` |
+| `status` | `enum` ALLOW · BLOCK · REJECTED (in `fallback`: ALLOW · BLOCK) | **closed**, as today | adding a status changes the meaning of the result for all clients ⇒ `v2` |
+| `on_block` | `enum` `ACTIONS` (`deny`, `escalate`, `ask`, `degrade`) | **closed**, as today; test enforces match with `gate.v1.json` | adding a blocking action is already an RFC on `gate.v1` (RFC-0004, RFC-0006) |
+| `reason` | `enum` of `Reason` (10 values) | `type: string`, `pattern: ^[a-z][a-z0-9_]*$`, with list of known values in annotation `x-neuroedge-known`; test enforces list = `Reason` bidirectional | `Reason` has expanded twice in ten days; a client encountering an unknown `reason` under `status: BLOCK` **must** treat it as blocked (fail-closed, already the meaning of `BLOCK`), not a malformed result. **Proposed, pending decision: Q10.1** |
+| Objects (`additionalProperties`) | `false` at root, `fallback`, `confirmation` | `true` | matches PRD §10.3 versioning policy for traces — "adding optional fields does not bump version". Tests (§7) enforce that **code** only emits declared keys, so relaxing in schema does not allow code to silently add keys. **Q10.2** |
 
-Chiều của tính đúng đắn: nguyên tắc "chặt với cái ta nhận, rộng với cái client phải nhận". Phong bì ở §3a đóng (`additionalProperties: false` — ta từ chối khoá lạ);
-kết quả mở (client không được gãy vì ta thêm một trường).
+Direction of correctness: "strict in what we accept, tolerant in what clients must accept". Envelope in §3a is closed (`additionalProperties: false` — we reject unknown keys);
+result is open (client must not break because we added a field).
 
-**Một nơi cho một sự thật.** `result_schema(tool)` ngừng dựng dict bằng tay: nó **đọc `schemas/tool-result.v1.json`** (qua `neuroedge.paths.schema_path`) rồi ghim `tool` (và bỏ `$id`/`$schema` khi nhúng vào `outputSchema` của MCP). `Reason` và `ACTIONS` còn là
-nguồn của mã; test (§7) đóng hai chiều giữa chúng và tệp. Nội dung kết quả vẫn do `ToolResult.content()` sinh — RFC không đổi một byte của nó.
+**Single source of truth.** `result_schema(tool)` stops building dicts manually: it **reads `schemas/tool-result.v1.json`** (via `neuroedge.paths.schema_path`), then pins `tool` (and strips `$id`/`$schema` when embedding into MCP `outputSchema`). `Reason` and `ACTIONS` remain the
+source for code; tests (§7) lock bidirectional agreement between them and the file. Result payload content is still generated by `ToolResult.content()` — this RFC does not change a single byte of it.
 
-### 3c. Khoá định danh phiên bản `board.v1`
+### 3c. `board.v1` Version Identifier Key
 
-Mọi tệp `boards/*.toml` hiện có phải hợp lệ nguyên văn, và cơ chế phải độc lập với những khoá RFC-0007, RFC-0010→0013 đang thêm vào `board.v1.json` (chỉ đụng đúng một khoá mới, `schema`, ở tầng gốc).
+All existing `boards/*.toml` files must remain valid verbatim, and the mechanism must be independent of keys RFC-0007 and RFC-0010→0013 are adding to `board.v1.json` (touching only one new key, `schema`, at the root level).
 
 ```toml
-# Tầng gốc của boards/*.toml — dòng đầu tệp
+# Root level of boards/*.toml — first line of file
 schema = "neuroedge.board/v1"
 
 [board]
@@ -151,7 +151,7 @@ id = "esp32s3-box-3"
 ```
 
 ```jsonc
-// board.v1.json — thêm vào "properties" (không thêm vào "required")
+// board.v1.json — add to "properties" (do not add to "required")
 "schema": {
   "description": "Schema version identifier. Absent means neuroedge.board/v1. Frozen at neuroedge.board/v1.",
   "type": "string",
@@ -159,22 +159,22 @@ id = "esp32s3-box-3"
 }
 ```
 
-Luật (đề xuất; hiện trạng làm nền cho chúng — lược đồ mở, `to_document()` vứt khoá lạ — đã chạy thử, §9 F7):
+Rules (proposed; the baseline reality supporting them — open schema, `to_document()` drops unknown keys — verified by trial run, §9 F7):
 
-1. **Tên và dạng giá trị theo gate:** khoá `schema`, giá trị `neuroedge.<loại>/v<chính>` (`neuroedge.gate/v1`). `$schema` kiểu vết ghi không dùng được cho TOML (khoá trần của TOML không bắt đầu bằng `$`).
-2. **Tuỳ chọn trong `v1`:** vắng ⇒ coi là `neuroedge.board/v1`. Ba profile hiện có hợp lệ không đổi; PR hiện thực **thêm** dòng này vào ba tệp để ví dụ dạy đúng, và `BoardProfile.to_document()` phát nó ra.
-   Từ `v2`, lược đồ của `v2` **bắt buộc** khoá này (với `const: neuroedge.board/v2`).
-3. **Bộ đọc từ chối phiên bản lạ, trước khi thẩm định lược đồ.** `load_board_document` kiểm: có `schema` mà không thuộc tập hỗ trợ (`SUPPORTED_BOARD_SCHEMAS = {"neuroedge.board/v1"}`) ⇒ `BoardCapabilityError` (NE3001), ba phần, nêu
-   giá trị đọc được, tập hỗ trợ, và "nâng cấp neuroedge". Kiểm **trước** thẩm định vì `board.v1.json` mở: thẩm định lược đồ v1 không bao giờ bắt được một tệp v2 — nó sẽ nhận tệp và bỏ qua khoá nó không biết. Đây là điều khoá `schema` mua được; nó không thay cho
-   việc đóng lược đồ (Q10.6 nêu phần còn lại).
-4. **Không phải số hiệu bản của một bo mạch.** `board.id` đã mang hậu tố của bo (`villa-panel-v2`, PRD Phụ lục C); `schema` là phiên bản của *định dạng khai báo*, không của phần cứng.
-5. **`board.v1.json` thêm đúng khoá này.** Đã có một worker thêm khoá RFC-0007/0010→0013 vào cùng tệp; hai thay đổi chạm hai khoá khác nhau và hợp nhất được. Thứ tự hiện thực ở §8.
+1. **Name and value format follow gate:** key `schema`, value `neuroedge.<type>/v<major>` (`neuroedge.gate/v1`). Trace-style `$schema` cannot be used in TOML (bare TOML keys cannot begin with `$`).
+2. **Optional in `v1`:** absent ⇒ interpreted as `neuroedge.board/v1`. Three existing profiles remain valid without change; the implementation PR **adds** this line to the three files so examples teach correctly, and `BoardProfile.to_document()` emits it.
+   From `v2`, the `v2` schema **requires** this key (with `const: neuroedge.board/v2`).
+3. **Reader rejects unfamiliar versions before schema validation.** `load_board_document` checks: if `schema` is present and not in supported set (`SUPPORTED_BOARD_SCHEMAS = {"neuroedge.board/v1"}`) ⇒ `BoardCapabilityError` (NE3001), 3-part message stating
+   parsed value, supported set, and "upgrade neuroedge". Checked **before** validation because `board.v1.json` is open: validating against v1 schema will never catch a v2 file — it would accept the file and ignore unrecognized keys. This is what the `schema` key achieves; it does not replace
+   closing the schema (Q10.6 addresses the rest).
+4. **Not the revision/model number of a board.** `board.id` already carries board suffixes (`villa-panel-v2`, PRD Appendix C); `schema` is the version of the *declaration format*, not of hardware.
+5. **`board.v1.json` adds only this key.** Another worker is adding RFC-0007/0010→0013 keys to the same file; the two changes touch disjoint keys and merge cleanly. Implementation order is in §8.
 
-### 3d. Danh mục mã lỗi `NE*` dạng máy đọc được
+### 3d. Machine-Readable `NE*` Error Code Catalog
 
-Hai tệp, một nguồn sự thật.
+Two files, one source of truth.
 
-**`schemas/error.v1.json`** — hình dạng của lỗi đã tuần tự hoá (`NeuroEdgeError.as_dict()`, `errors.py`; Studio và trang `sim` trả nó dưới `"error"`, `studio/server.py`, `sim/ui.py`). Đây là hình dạng **đầy đủ**; dạng lỏng hơn của `docs/spec/studio.md` (mục 8: `{"code"?, "where"?, "why", "how"?}`, và stub 501 chỉ có `why`) là hợp đồng riêng của API Studio, không thuộc lược đồ này (F12):
+**`schemas/error.v1.json`** — shape of serialised error (`NeuroEdgeError.as_dict()`, `errors.py`; Studio and `sim` page return it under `"error"`, `studio/server.py`, `sim/ui.py`). This is the **complete** shape; the looser shape in `docs/spec/studio.md` (item 8: `{"code"?, "where"?, "why", "how"?}`, and 501 stub containing only `why`) is a separate Studio API contract, outside this schema (F12):
 
 ```json
 {
@@ -193,14 +193,14 @@ Hai tệp, một nguồn sự thật.
     { "if": { "properties": { "code": { "const": "NE2003" } }, "required": ["code"] }, "then": { "required": ["principle"] } },
     { "if": { "properties": { "code": { "const": "NE1002" } }, "required": ["code"] }, "then": { "required": ["reason"] } }
   ],
-  "$defs": { "catalog": { "…": "hình dạng của error-codes.v1.json, §bên dưới" } }
+  "$defs": { "catalog": { "…": "shape of error-codes.v1.json, §below" } }
 }
 ```
 
-`code` là `pattern`, **không** `enum`: thêm một mã không đổi lược đồ này. `where`/`why`/`how` không rỗng là FR-DX-04; hôm nay `NeuroEdgeError.__init__` không cưỡng chế — PR hiện thực quét và sửa chỗ nào phát chuỗi rỗng (nếu có) trước khi
-đóng băng. `principle` là **chuỗi** vì `GateInheritanceError.as_dict()` trả `str(self.principle)` dù thuộc tính là `int` (§9, F5): đóng băng cái đang chạy, không đổi.
+`code` uses `pattern`, **not** `enum`: adding an error code does not change this schema. Non-empty `where`/`why`/`how` is FR-DX-04; currently `NeuroEdgeError.__init__` does not enforce this — the implementation PR scans and fixes any place emitting empty strings (if any) before
+freezing. `principle` is a **string** because `GateInheritanceError.as_dict()` returns `str(self.principle)` even though the attribute is `int` (§9, F5): freeze what is currently running, do not alter.
 
-**`schemas/error-codes.v1.json`** — danh mục, một tài liệu dữ liệu tự khai `"schema": "neuroedge.error-codes/v1"` và thẩm định theo `error.v1.json#/$defs/catalog`. Mỗi mục:
+**`schemas/error-codes.v1.json`** — catalog, a data document self-declaring `"schema": "neuroedge.error-codes/v1"` and validating against `error.v1.json#/$defs/catalog`. Each entry:
 
 ```json
 { "code": "NE1002", "name": "TokenReplayError", "parent": "ActionContractViolation", "status": "stable",
@@ -211,168 +211,168 @@ Hai tệp, một nguồn sự thật.
 { "code": "NE0000", "name": "NeuroEdgeError", "parent": null, "status": "stable", "general": true }
 ```
 
-Trường: `code` (duy nhất, **không bao giờ tái dùng**), `name` (lớp công khai trong `errors.py`), `parent`, `status` (`stable` · `reserved` — mã giữ chỗ cho lớp chưa có; NE1003 của RFC-0007 là `reserved` tới khi PR #91 thêm lớp), `fields` (khoá thêm ngoài bốn khoá chung trong `as_dict()`),
-`also_a` (lớp Python khác nó kế thừa — `ToolCallError` cũng là `ValueError`; chỉ SDK Python cần), `aliases` (lớp con dùng chung mã, `NE5001`), `general` (mã "không phân loại" — NE0000, NE2000: người nhận **không được** rẽ nhánh theo nó), `rfc`, `since`.
-Hôm nay: 17 mục `stable` (NE0000, NE1001→NE1004, NE2000→NE2003, NE3001→NE3003, NE4001→NE4004, NE5001), không mục `reserved` nào (§10 câu 13). NE5001 có năm lớp con dùng chung mã (`aliases`): ba lớp của provider và thoại, cùng `CameraUnavailable`, `VisionUnavailable` của RFC-0012.
+Fields: `code` (unique, **never reused**), `name` (public class in `errors.py`), `parent`, `status` (`stable` · `reserved` — placeholder code for not-yet-implemented class; NE1003 of RFC-0007 is `reserved` until PR #91 adds the class), `fields` (extra keys beyond the four standard keys in `as_dict()`),
+`also_a` (other Python class it inherits from — `ToolCallError` is also a `ValueError`; needed only by Python SDK), `aliases` (subclasses sharing the code, `NE5001`), `general` ("unclassified" code — NE0000, NE2000: recipient **must not** branch on it), `rfc`, `since`.
+Today: 17 `stable` entries (NE0000, NE1001→NE1004, NE2000→NE2003, NE3001→NE3003, NE4001→NE4004, NE5001), 0 `reserved` entries (§10 question 13). NE5001 has five subclasses sharing the code (`aliases`): three provider and voice classes, plus `CameraUnavailable`, `VisionUnavailable` from RFC-0012.
 
-**Nguồn sự thật — quyết định đề xuất.** `schemas/error-codes.v1.json` là nơi **duy nhất** nói *mã nào tồn tại, tên lớp, quan hệ cha con, trạng thái*. Hai nơi kia được **kiểm** theo nó, không tự khai lại:
+**Source of truth — proposed decision.** `schemas/error-codes.v1.json` is the **single** source declaring *which codes exist, class names, parent-child relationships, status*. The other two locations are **validated** against it, without re-declaring independently:
 
-| Nơi | Giữ gì | Kiểm bằng |
+| Location | What it holds | Validated by |
 |:---|:---|:---|
-| `schemas/error-codes.v1.json` | định danh và cấu trúc: mã, lớp, cha, trạng thái, khoá thêm | *(là nguồn)* + tự thẩm định theo `error.v1.json#/$defs/catalog` |
-| `python/neuroedge/errors.py` (và lớp con dùng chung mã) | hiện thực Python | test đóng hai chiều: mọi lớp `NeuroEdgeError` của gói ↔ một mục (hoặc `aliases`); `code`, `parent`, `fields` khớp; mục `reserved` không có lớp; mọi tên `name` nằm trong `neuroedge.__all__` (đã có `test_every_error_class_of_the_package_is_public`) |
-| PRD Phụ lục B | **lời** (thời điểm, nguyên nhân, hành vi hệ thống — tiếng Việt, FR-DX-04) | test đóng hai chiều trên cặp (lớp, mã) của bảng ↔ danh mục; lời giữ nguyên ở PRD, không chép sang JSON |
-| `targets/esp32s3/components/ne_gate/` | hai chuỗi `NE1001`, `NE1002` | test: mọi `NE\d{4}` trong `targets/` ⊂ danh mục |
+| `schemas/error-codes.v1.json` | identity and structure: code, class, parent, status, extra keys | *(is source)* + self-validates against `error.v1.json#/$defs/catalog` |
+| `python/neuroedge/errors.py` (and subclasses sharing codes) | Python implementation | bidirectional closed test: every `NeuroEdgeError` class in package ↔ one entry (or `aliases`); `code`, `parent`, `fields` match; `reserved` entries have no class; every `name` is in `neuroedge.__all__` (already covered by `test_every_error_class_of_the_package_is_public`) |
+| PRD Appendix B | **prose** (timing, cause, system behavior — Vietnamese, FR-DX-04) | bidirectional closed test on (class, code) pairs between table ↔ catalog; prose remains in PRD, not copied to JSON |
+| `targets/esp32s3/components/ne_gate/` | two strings `NE1001`, `NE1002` | test: every `NE\d{4}` in `targets/` ⊂ catalog |
 
-Vì sao không để PRD hay `errors.py` làm nguồn: PRD là markdown tiếng Việt cho người đọc — dựng một dữ liệu công khai Apache-2.0 bằng cách phân tích bảng đó là mong manh, và nó không có cột cha/trạng thái; `errors.py` là mã PolyForm NC (`LICENSING.md`) nên một SDK Rust không được/không nên
-sinh mã từ nó. Chi phí: `CONTRIBUTING.md` §8.1 hàng "Mã lỗi `NE…`" đổi nơi duy nhất từ PRD Phụ lục B sang danh mục này (PRD vẫn là nơi duy nhất của *lời*), và quy tắc 4 của mỗi slice ("lớp lỗi mới có mã ở PRD Phụ lục B và `errors.py`") thêm "và ở danh mục".
+Why PRD or `errors.py` is not the source: PRD is human-readable markdown prose in Vietnamese — parsing that table to generate public Apache-2.0 data is fragile, and it lacks parent/status columns; `errors.py` is PolyForm NC licensed (`LICENSING.md`), so a Rust SDK cannot/should not
+generate code from it. Cost: `CONTRIBUTING.md` §8.1 row "Error code `NE…`" changes single source of truth from PRD Appendix B to this catalog (PRD remains the single source of truth for *prose*), and rule 4 of each slice ("new error class has code in PRD Appendix B and `errors.py`") adds "and in catalog".
 
-**Luật phiên bản của danh mục.** Thêm mã, hoặc thêm khoá `fields`/`aliases` ⇒ nới lỏng, cùng `v1`. Đổi nghĩa, đổi tên lớp, bỏ hay tái dùng một mã ⇒ phá vỡ, `v2`. Mã `reserved` chuyển thành `stable` khi lớp có mặt — không phải thay đổi phá vỡ.
+**Versioning rules for catalog.** Adding a code, or adding `fields`/`aliases` keys ⇒ relaxation, same `v1`. Changing meaning, renaming class, removing or reusing a code ⇒ breaking, `v2`. A `reserved` code transitioning to `stable` when the class is introduced — not a breaking change.
 
-### 3e. Thẩm định corpus theo lược đồ mới (tiêu chí ra 8)
+### 3e. Corpus Validation Against New Schemas (Exit Criterion 8)
 
-- Mỗi `call` của 28 ca `fixtures/tool_calls/{valid,invalid}/` (thêm `id` rỗng) hợp lệ theo `tool-call.v1.json#/$defs/call`. Cả ca `invalid/`: *"không hợp lệ"* ở corpus nghĩa là không khớp `inputSchema` **của tool**, không phải hỏng phong bì (§3a) — một ca hỏng phong bì không còn là ca của corpus này mà là ca của `fixtures/contracts/`.
-- `ToolResult.content()` của mỗi ca (kết quả thật, chạy qua `dispatch()` trên một `SimSession` mới, kể cả `fallback` lồng) hợp lệ theo `tool-result.v1.json`.
-- `outputSchema` mà `neuroedge mcp serve` công bố cho mọi tool **bằng** `tool-result.v1.json` ghim `tool` (so từng tool của mọi agent trong `fixtures/agents/`).
-- Bản ghi `tool_call` của vết ghi (`dispatch`) hợp lệ theo `#/$defs/call` — mà **không** sửa `trace.v1.json`.
-- Vì corpus chỉ phủ 3/10 `reason` và 4/5 `source` (§2), phần phủ enum đến từ một corpus mới, **`fixtures/contracts/`** (§7): tài liệu nhỏ hợp lệ và không hợp lệ cho từng lược đồ (`tool-call`, `tool-result`, `error`, `board`), mỗi tệp một mục trong `expected_errors.yaml`, đóng hai chiều như mọi corpus khác
-  (`CONTRIBUTING.md` §3). Test buộc các tệp `valid/` cùng nhau phủ **mọi** giá trị `status`, `on_block`, `source`, `reason` đã biết và mọi mã trong danh mục.
-- PR hiện thực thêm vào `fixtures/tool_calls/` một ca `source: system_one` (PR thường, theo luật khép kín) để corpus phủ đủ năm nguồn.
+- Each `call` across 28 cases in `fixtures/tool_calls/{valid,invalid}/` (plus empty `id`) validates against `tool-call.v1.json#/$defs/call`. Including `invalid/` cases: *"invalid"* in the corpus means not conforming to the **tool's** `inputSchema`, not a broken envelope (§3a) — a broken envelope case belongs in `fixtures/contracts/`, not this corpus.
+- `ToolResult.content()` of each case (real result, executed via `dispatch()` on a fresh `SimSession`, including nested `fallback`) validates against `tool-result.v1.json`.
+- `outputSchema` published by `neuroedge mcp serve` for all tools **equals** `tool-result.v1.json` pinned to `tool` (verified for every tool of every agent in `fixtures/agents/`).
+- The `tool_call` trace record (`dispatch`) validates against `#/$defs/call` — **without** modifying `trace.v1.json`.
+- Because the corpus covers only 3/10 `reason` values and 4/5 `source` values (§2), enum coverage comes from a new corpus, **`fixtures/contracts/`** (§7): valid and invalid minimal documents for each schema (`tool-call`, `tool-result`, `error`, `board`), each file matching one entry in `expected_errors.yaml`, bidirectionally closed like all other corpora
+  (`CONTRIBUTING.md` §3). Tests enforce that `valid/` files collectively cover **all** known `status`, `on_block`, `source`, `reason` values and all codes in the catalog.
+- The implementation PR adds a `source: system_one` case to `fixtures/tool_calls/` (regular PR, per closure rule) so the corpus covers all five sources.
 
-### 3f. Phiên bản, đường dẫn, công bố
+### 3f. Versions, Paths, Publishing
 
-| Tệp | `$id` | Quy tắc |
+| File | `$id` | Rules |
 |:---|:---|:---|
-| `tool-call.v1.json` | `https://schema.neuroedge.dev/tool-call/v1.json` | PRD §10.3 / FR-GOV-02: đường dẫn `/v1`; thêm trường tuỳ chọn hoặc nới `enum` không tăng; đổi tên, bỏ, hoặc siết thì `v2` kèm thời gian chuyển tiếp (`docs/architecture/vi/16-ecosystem-landscape.md` §6 trụ cột 3) |
-| `tool-result.v1.json` | `…/tool-result/v1.json` | như trên |
-| `error.v1.json`, `error-codes.v1.json` | `…/error/v1.json`, `…/error-codes/v1.json` | như trên; luật riêng của danh mục ở §3d |
-| `board.v1.json` | không đổi | khoá `schema` ở §3c |
+| `tool-call.v1.json` | `https://schema.neuroedge.dev/tool-call/v1.json` | PRD §10.3 / FR-GOV-02: path `/v1`; adding optional fields or relaxing `enum` does not bump; renaming, removing, or tightening requires `v2` with transition period (`docs/architecture/vi/16-ecosystem-landscape.md` §6 pillar 3) |
+| `tool-result.v1.json` | `…/tool-result/v1.json` | as above |
+| `error.v1.json`, `error-codes.v1.json` | `…/error/v1.json`, `…/error-codes/v1.json` | as above; catalog-specific rules in §3d |
+| `board.v1.json` | unchanged | `schema` key in §3c |
 
-PR hiện thực thêm bốn dòng vào ma trận PRD §10.3. `$id` khớp để TSK-I6-02 chỉ còn phục vụ tệp; RFC không làm việc đó. Giấy phép: `schemas/` là Apache-2.0 (`LICENSING.md`); bốn tệp mới thuộc về đó. **Corpus** thì chưa (§9, F3, Q10.4).
+The implementation PR adds four rows to PRD §10.3 matrix. `$id` matches so that TSK-I6-02 only serves files; this RFC does not handle hosting. Licensing: `schemas/` is Apache-2.0 (`LICENSING.md`); the four new files belong there. **Corpus** is not yet Apache-2.0 (§9, F3, Q10.4).
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | **Có**, kể cả ba `boards/*.toml` (khoá `schema` tuỳ chọn) và mọi gate, vết ghi. Một tệp bo mạch có khoá `schema` mang giá trị khác `neuroedge.board/v1` — hôm nay hợp lệ vì lược đồ mở — **sẽ không hợp lệ**: đây là siết lỏng về hình thức. Không có trong kho (`grep '^schema' boards/` rỗng) và khoá không được tài liệu hoá ở đâu, nên coi là chấp nhận được; **cần kỹ thuật trưởng ký rõ điều này** (Q10.5) |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Kết quả của tool: `reason` ngoài `Reason` hiện tại và khoá thừa trước đây vi phạm `outputSchema` đóng, nay hợp lệ (§3b) — nới lỏng, chủ ý. Phần còn lại không có |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | **Không.** Bốn lược đồ mới sinh ra ở `v1`; `board.v1` chỉ thêm một khoá tuỳ chọn |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không: `trace.v1.json` và `fixtures/traces/` không đổi |
-| Gate nào trong `digests.lock` đổi digest? | Không |
-| Bố cục `NETR` hoặc walker C phải đổi? | Không |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không đổi đáp án nào; **thêm** một ca `system_one` và một mục (§3e) |
-| `python/tests/test_schemas.py` | Đổi: tập tên đúng ba tệp ⇒ đúng bảy tệp (`SCHEMA_IDS` thêm bốn); mạnh hơn, không yếu hơn — vẫn khoá tập tên, vẫn kiểm `$id` và `$schema` |
-| API Python công khai (`python_api.md`) | `result_schema` không phải tên công khai; `ToolCall`, `ToolResult` không đổi hình dạng. `BoardProfile.to_document()` thêm một khoá; `load_board*` ném `NE3001` thêm cho phiên bản lạ (bổ sung, MINOR theo `python_api.md` §3) |
-| CLI | Không đổi |
+| Do currently valid files remain valid? | **Yes**, including three `boards/*.toml` (optional `schema` key) and all gates and traces. A board file carrying a `schema` key with a value other than `neuroedge.board/v1` — valid today because the schema is open — **will become invalid**: this is formally tightening loose validation. None exists in the repo (`grep '^schema' boards/` is empty) and the key is not documented anywhere, so this is deemed acceptable; **lead engineer explicitly signs off on this** (Q10.5) |
+| Do currently invalid files become valid? | Tool results: `reason` outside current `Reason` enum and extra keys previously violating closed `outputSchema` now become valid (§3b) — intentional relaxation. None otherwise |
+| Does it require bumping schema version (`v1` → `v2`)? | **No.** Four new schemas originate at `v1`; `board.v1` only adds one optional key |
+| Impact on issued gate hashes / signatures? | None |
+| Impact on three canonical trace files? | None: `trace.v1.json` and `fixtures/traces/` unchanged |
+| Does any gate in `digests.lock` change digest? | None |
+| Must `NETR` layout or C walker change? | None |
+| Does any expected answer in tool call corpus (`expected_results.yaml`) change? | No expected answers change; **adds** one `system_one` case and entry (§3e) |
+| `python/tests/test_schemas.py` | Changes: exact 3-file set ⇒ exact 7-file set (`SCHEMA_IDS` adds four); stronger, not weaker — still locks name set, still checks `$id` and `$schema` |
+| Public Python API (`python_api.md`) | `result_schema` is not a public name; `ToolCall`, `ToolResult` do not change shape. `BoardProfile.to_document()` adds one key; `load_board*` raises `NE3001` additionally for unfamiliar versions (additive, MINOR per `python_api.md` §3) |
+| CLI | Unchanged |
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-RFC không đụng `gate.v1`, ngữ nghĩa phân giải hay đường tới HAL; không gate nào trở nên lỏng hơn, không nguyên tắc B.5 hay mặc định fail-closed bị đổi. Bốn điểm cần soi:
+This RFC does not touch `gate.v1`, evaluation semantics, or the path to HAL; no gate becomes looser, no B.5 principle or fail-closed default changes. Four scrutiny points:
 
-1. **Phong bì đóng, nguồn do runtime.** `$defs/request` không có `source` và `additionalProperties: false`, nên một bộ thẩm định đặt ở cửa nhận (`#/$defs/request`) **từ chối** lời gọi tự khai `source` ở mức phong bì, cùng hướng với `REJECTED` hôm nay
-   (`caller_declares_call_source.yaml` là ca tham số, không phải ca phong bì — hai tầng bảo vệ). `source` chỉ có ở `#/$defs/call`, phong bì đã gán.
-2. **Nới kết quả không nới quyền.** `tool-result` mô tả đầu ra; một client coi `reason` lạ dưới `BLOCK` là bị chặn không thể biến `BLOCK` thành `ALLOW`. Luật của client được ghi ở `tool_calling.md` §4 khi hiện thực: *"`status` quyết định; `reason` chỉ là lời giải thích — không bao giờ rẽ nhánh ALLOW theo `reason`"*.
-3. **Bộ đọc bo mạch từ chối phiên bản lạ (fail-closed).** Hôm nay một runtime cũ đọc bo mạch mới bỏ qua mọi khoá nó không biết. Khoá `schema` chỉ cứu được qua ranh giới **phiên bản chính**; khoá thêm *trong* `v1` (như `envelope` của RFC-0007) mà bộ đọc cũ không hiểu vẫn bị bỏ qua. Đó là lỗ hổng có thật nằm ngoài RFC này — Q10.6.
-4. **Danh mục mã lỗi.** Mã `reserved` ngăn một SDK dùng lại một mã đã giữ chỗ (NE1003 trước PR #91). Không đổi hành vi lỗi nào. Thiết bị chỉ phát `NE1001`/`NE1002`; test `targets/` ⊂ danh mục giữ điều đó.
+1. **Closed envelope, runtime-assigned source.** `$defs/request` lacks `source` and has `additionalProperties: false`, so a validator at ingress (`#/$defs/request`) **rejects** calls self-declaring `source` at envelope level, aligned with today's `REJECTED`
+   (`caller_declares_call_source.yaml` is a parameter case, not an envelope case — two layers of defense). `source` exists only in `#/$defs/call`, assigned envelope.
+2. **Relaxing results does not relax permissions.** `tool-result` describes output; a client treating an unknown `reason` under `BLOCK` as blocked cannot turn `BLOCK` into `ALLOW`. Client rule documented in `tool_calling.md` §4 upon implementation: *"`status` governs; `reason` is explanation only — never branch ALLOW based on `reason`"*.
+3. **Board reader rejects unfamiliar versions (fail-closed).** Today an older runtime reading a newer board drops keys it does not recognize. The `schema` key only protects across **major version** boundaries; extra keys added *within* `v1` (such as `envelope` in RFC-0007) that an older reader does not understand are still ignored. That is a real vulnerability outside this RFC — Q10.6.
+4. **Error code catalog.** `reserved` codes prevent an SDK from reusing a reserved code (NE1003 prior to PR #91). No error behavior changes. Devices emit only `NE1001`/`NE1002`; test `targets/` ⊂ catalog preserves that.
 
-Câu trả lời cho "có đường nào làm gate lỏng hơn?": **không**. Phê duyệt kỹ thuật trưởng vì phạm vi `schemas/` và `board.v1`, không vì an toàn gate.
+Answer to "is there any avenue making gates looser?": **No**. Lead engineer approval is required due to `schemas/` and `board.v1` scope, not gate safety.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Rejection rationale |
 |:---|:---|
-| Một tệp `tool-profile.v1.json` chứa cả phong bì lẫn kết quả | Hai bên đọc khác nhau (runtime nhận phong bì, client kiểm kết quả — và SDK MCP đã kiểm `outputSchema` theo từng tool); hai `$id` cho phép `$ref` độc lập và tăng phiên bản độc lập. Không phải ý kiến mạnh: Q10.7 |
-| Chép nguyên `result_schema()` (kết quả đóng, `reason` là `enum`) | Mỗi `Reason` hay trường mới là `v2` cho mọi client; `Reason` đã lớn hai lần trong mười ngày. Bị bác ở §3b, nhưng là quyết định sản phẩm — Q10.1, Q10.2 |
-| Định danh phiên bản bo mạch bắt buộc ngay ở `v1` | Phá ba tệp hiện có và mọi bo mạch người dùng tự viết (số này không biết): vi phạm quy tắc "tệp đang hợp lệ phải còn hợp lệ" của mẫu RFC |
-| Khoá `$schema` (URL) như vết ghi, hoặc `[board] schema`/`version` | `$schema` không là khoá trần của TOML; lồng vào `[board]` khiến bộ đọc phải đọc một bảng trước khi biết phiên bản. Gốc + dạng `neuroedge.<loại>/v<n>` theo gate nhất quán nhất |
-| Đóng `board.v1.json` (`additionalProperties: false`) để bắt khoá lạ | Siết lỏng: tệp có khoá lạ hôm nay hợp lệ sẽ gãy ⇒ `v2`. Ngoài phạm vi "khoá định danh"; Q10.6 |
-| Danh mục mã lỗi sinh **từ `errors.py`** (mã là nguồn) | `errors.py` mang giấy phép PolyForm NC và không có cột trạng thái (`reserved`), cha-con của lớp dùng chung mã, `general`. Mất "nơi duy nhất" khi một SDK Rust muốn đóng góp mã |
-| Danh mục **trích từ bảng PRD Phụ lục B** (PRD là nguồn) | PRD là hợp đồng dạng chữ, không có cấu trúc; phân tích markdown để sinh dữ liệu công khai là mong manh và buộc mọi thay đổi định dạng bảng thành thay đổi hợp đồng. PRD giữ **lời**, danh mục giữ **cấu trúc** |
-| Nhét danh mục vào `error.v1.json` (một tệp, `oneOf` theo mã) | SDK muốn một mảng để lặp; `oneOf` 20 nhánh khó sinh mã và trộn hai mục đích (thẩm định một lỗi ↔ liệt kê mã). Hai tệp, một nguồn |
-| `code` của `error.v1.json` là `enum` các mã | Mỗi mã mới là sửa lược đồ. `pattern` + danh mục tách bạch hai việc |
-| Đưa `agent.toml` và `fixtures/tool_calls/expected_results.yaml` vào `schemas/` | `agent.toml` ngoài `schemas/` đã chốt (`tool_calling.md` §9, Q-63). Định dạng ca và đáp án của corpus: hoãn cùng TSK-I6-02 — Q10.4 |
-| Đóng băng cả schema JSON của cây quyết định | Đã loại ở Q-63: hợp đồng thật là bố cục byte `NETR` (RFC-0003, RFC-0009) |
+| A single `tool-profile.v1.json` file containing both envelope and results | Read by two different parties (runtime receives envelope, client checks result — and MCP SDK already validates `outputSchema` per tool); two `$id`s allow independent `$ref` and independent version bumps. Not a strong opinion: Q10.7 |
+| Copying `result_schema()` verbatim (closed result, `reason` as `enum`) | Every new `Reason` or field becomes `v2` for all clients; `Reason` has expanded twice in ten days. Rejected in §3b, but is a product decision — Q10.1, Q10.2 |
+| Mandatory board version identifier right in `v1` | Breaks three existing files and all user-authored board profiles (count unknown): violates RFC template rule "currently valid files must remain valid" |
+| `$schema` key (URL) like traces, or `[board] schema`/`version` | `$schema` is not a bare TOML key; nesting under `[board]` requires readers to parse a table before knowing version. Root + `neuroedge.<type>/v<n>` matching gate is most consistent |
+| Closing `board.v1.json` (`additionalProperties: false`) to catch unknown keys | Tightening: files with unknown keys valid today would break ⇒ `v2`. Outside "version identifier" scope; Q10.6 |
+| Generating error catalog **from `errors.py`** (code as source) | `errors.py` is licensed under PolyForm NC and lacks status column (`reserved`), shared-code subclass relationships, `general`. Loses "single source of truth" when a Rust SDK wants to contribute codes |
+| Extracting catalog **from PRD Appendix B table** (PRD as source) | PRD is a prose contract, unstructured; parsing markdown to generate public data is fragile and forces every table formatting change to become a contract change. PRD holds **prose**, catalog holds **structure** |
+| Embedding catalog into `error.v1.json` (single file, `oneOf` per code) | SDKs need an array to iterate; 20-branch `oneOf` is hard for code generation and conflates two purposes (validating an error ↔ enumerating codes). Two files, single source |
+| `code` in `error.v1.json` as `enum` of codes | Every new code requires editing schema. `pattern` + catalog cleanly decouples the two concerns |
+| Placing `agent.toml` and `fixtures/tool_calls/expected_results.yaml` into `schemas/` | `agent.toml` remaining outside `schemas/` is decided (`tool_calling.md` §9, Q-63). Corpus case and expectation format: deferred alongside TSK-I6-02 — Q10.4 |
+| Freezing JSON schema of decision tree as well | Already rejected in Q-63: the real contract is `NETR` byte layout (RFC-0003, RFC-0009) |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-Test dưới đây là **tên đề xuất** — chưa tồn tại tới khi RFC được chấp thuận. Cột "có sẵn" là test hiện hành sẽ còn xanh.
+Tests below are **proposed names** — they do not exist until the RFC is approved. The "existing" column indicates current tests that remain passing.
 
-- [x] *(PR A xong phần `tool-call`, `tool-result`, `error`: `test_every_error_code_of_the_catalog_has_a_valid_error_example`, `test_every_known_reason_and_every_source_appears_in_a_valid_contract_example`, `test_the_corpus_of_tool_calls_covers_every_source`; PR B thêm `board/valid/sim-default.json`, `board/valid/without_schema_key.json`)* Ví dụ hợp lệ đã thêm vào `fixtures/`: `fixtures/contracts/<tool-call|tool-result|error|board>/valid/` — phủ mọi `status`, `on_block`, `source`, `reason` đã biết, `fallback` lồng hai tầng, mọi mã trong danh mục; một ca `source: system_one` ở `fixtures/tool_calls/valid/`
-- [x] *(PR A xong mọi ca trừ ca bo mạch; PR B thêm `board/invalid/schema_v2.json`; `test_every_contract_example_has_an_expectation_and_every_expectation_an_example`, `test_an_invalid_contract_example_fails_the_way_its_expectation_says`)* Ví dụ sai kèm đáp án (`fixtures/contracts/expected_errors.yaml`, khép kín hai chiều): phong bì có `source` ở `request`; `name` rỗng; `arguments` là mảng; `source` ngoài năm giá trị; kết quả `BLOCK` thiếu `gate`; `REJECTED` thiếu `problems`; `status` ngoài ba giá trị; lỗi `NE2003` thiếu `principle`; `code` sai dạng; bo mạch có `schema: neuroedge.board/v2`
-- [x] Test tự động *(PR A và PR B)*:
-  - [x] `test_every_tool_call_corpus_case_validates_against_the_tool_call_schema` *(tiêu chí ra 8)*
+- [x] *(PR A completes `tool-call`, `tool-result`, `error` parts: `test_every_error_code_of_the_catalog_has_a_valid_error_example`, `test_every_known_reason_and_every_source_appears_in_a_valid_contract_example`, `test_the_corpus_of_tool_calls_covers_every_source`; PR B adds `board/valid/sim-default.json`, `board/valid/without_schema_key.json`)* Valid examples added to `fixtures/`: `fixtures/contracts/<tool-call|tool-result|error|board>/valid/` — covers all `status`, `on_block`, `source`, known `reason` values, two-level nested `fallback`, all catalog codes; one `source: system_one` case in `fixtures/tool_calls/valid/`
+- [x] *(PR A completes all cases except board cases; PR B adds `board/invalid/schema_v2.json`; `test_every_contract_example_has_an_expectation_and_every_expectation_an_example`, `test_an_invalid_contract_example_fails_the_way_its_expectation_says`)* Invalid examples with expectations (`fixtures/contracts/expected_errors.yaml`, bidirectionally closed): envelope with `source` in `request`; empty `name`; `arguments` as array; `source` outside five values; `BLOCK` result missing `gate`; `REJECTED` missing `problems`; `status` outside three values; `NE2003` error missing `principle`; malformed `code`; board with `schema: neuroedge.board/v2`
+- [x] Automated tests *(PR A and PR B)*:
+  - [x] `test_every_tool_call_corpus_case_validates_against_the_tool_call_schema` *(exit criterion 8)*
   - [x] `test_every_tool_call_corpus_result_validates_against_the_tool_result_schema`
   - [x] `test_the_published_output_schema_of_every_tool_is_the_frozen_result_schema_pinned_to_its_name`
   - [x] `test_a_recorded_tool_call_event_validates_against_the_envelope_schema`
-  - [x] `test_the_tool_call_schema_and_the_dataclass_agree` (`ToolCall` fields, `SOURCES`, `CASE_KEYS`/`CALL_KEYS` của `tool_corpus.py`)
-  - [x] `test_the_known_reasons_of_the_schema_are_exactly_the_Reason_enum` · `test_the_on_block_enum_is_the_gate_schemas` *(làm: `[x]`)*
-  - [x] `test_the_mcp_server_emits_only_documented_result_keys` (khoá chặn lỗi "nới ở lược đồ cho phép mã tự thêm khoá")
-  - [x] `test_the_error_catalog_and_errors_py_agree_both_ways` · `test_every_error_class_of_the_package_has_a_catalog_entry` *(làm: `[x]`)* · `test_the_prd_error_table_and_the_catalog_agree_on_class_and_code` · `test_every_error_code_in_targets_is_in_the_catalog` *(làm: `[x]`)* · `test_a_reserved_code_has_no_class` *(làm: `[x]`; `test_the_prd_error_table_and_the_catalog_agree_on_class_and_code` cũng `[x]`)*
-  - [x] `test_every_serialised_error_validates_against_the_error_schema` (chạy mọi lớp lỗi với dữ liệu mẫu; bắt chuỗi rỗng)
-  - [x] `test_a_board_with_a_schema_key_of_another_version_is_refused_before_validation` · `test_a_board_without_a_schema_key_is_read_as_v1` · `test_every_shipped_board_declares_its_schema` · `test_board_to_document_round_trips_the_schema_key` *(PR B, `tests/test_boards.py`; thêm `test_a_board_document_in_memory_is_refused_for_another_version_too`)*
-  - [x] `test_schemas_directory_holds_exactly_the_seven_frozen_schemas` (đổi từ "ba")
-- [x] *(PR A, PR B: `scripts/wheel_smoke.sh` xanh trên bản cài, đã thêm bốn tệp vào danh sách và một kiểm `result_schema()` từ wheel; ruff, pytest xanh; `gate lint` / `verify` không đổi — vẫn do CI)* `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/wheel_smoke.sh` chạy trên bản cài (`schemas/` đã đi vào wheel nguyên thư mục qua `hatch_build.py`, thêm `schemas/tool-result.v1.json` vào danh sách tệp nó kiểm)
-- Có sẵn, vẫn xanh: `test_tool_corpus.py::test_an_mcp_client_gets_the_same_result_and_its_sdk_accepts_it`, `test_every_case_has_an_expectation_and_every_expectation_a_case`, `test_public_api.py::test_every_error_class_of_the_package_is_public`
+  - [x] `test_the_tool_call_schema_and_the_dataclass_agree` (`ToolCall` fields, `SOURCES`, `CASE_KEYS`/`CALL_KEYS` from `tool_corpus.py`)
+  - [x] `test_the_known_reasons_of_the_schema_are_exactly_the_Reason_enum` · `test_the_on_block_enum_is_the_gate_schemas` *(action: `[x]`)*
+  - [x] `test_the_mcp_server_emits_only_documented_result_keys` (locks against "schema relaxation allowing code to add keys silently")
+  - [x] `test_the_error_catalog_and_errors_py_agree_both_ways` · `test_every_error_class_of_the_package_has_a_catalog_entry` *(action: `[x]`)* · `test_the_prd_error_table_and_the_catalog_agree_on_class_and_code` · `test_every_error_code_in_targets_is_in_the_catalog` *(action: `[x]`)* · `test_a_reserved_code_has_no_class` *(action: `[x]`; `test_the_prd_error_table_and_the_catalog_agree_on_class_and_code` also `[x]`)*
+  - [x] `test_every_serialised_error_validates_against_the_error_schema` (runs all error classes with sample data; catches empty strings)
+  - [x] `test_a_board_with_a_schema_key_of_another_version_is_refused_before_validation` · `test_a_board_without_a_schema_key_is_read_as_v1` · `test_every_shipped_board_declares_its_schema` · `test_board_to_document_round_trips_the_schema_key` *(PR B, `tests/test_boards.py`; added `test_a_board_document_in_memory_is_refused_for_another_version_too`)*
+  - [x] `test_schemas_directory_holds_exactly_the_seven_frozen_schemas` (changed from "three")
+- [x] *(PR A, PR B: `scripts/wheel_smoke.sh` green on installation, added four files to checklist and a check for `result_schema()` from wheel; ruff, pytest green; `gate lint` / `verify` unchanged — still in CI)* `neuroedge gate lint` and `neuroedge verify` remain green; `scripts/wheel_smoke.sh` passes on installed wheel (`schemas/` packages entire directory into wheel via `hatch_build.py`, added `schemas/tool-result.v1.json` to its checked list)
+- Existing, still passing: `test_tool_corpus.py::test_an_mcp_client_gets_the_same_result_and_its_sdk_accepts_it`, `test_every_case_has_an_expectation_and_every_expectation_a_case`, `test_public_api.py::test_every_error_class_of_the_package_is_public`
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Implementation Steps Upon Approval
 
-Thứ tự đề xuất — hai PR hiện thực vì `board.v1.json` đang bị một worker khác sửa và roadmap xếp TSK-I6-05 sau I2a (§0.3 mục 5: "`board.v1` đóng băng khi đủ khoá"):
+Proposed order — two implementation PRs because `board.v1.json` is actively being modified by another worker and roadmap schedules TSK-I6-05 after I2a (§0.3 item 5: "`board.v1` freezes when sufficient keys are present"):
 
-**PR A — phần không đụng `board.v1.json` (làm được ngay sau chấp thuận):**
+**PR A — non-`board.v1.json` scope (actionable immediately upon approval):**
 
-- [x] Thêm `schemas/tool-call.v1.json`, `tool-result.v1.json`, `error.v1.json`, `error-codes.v1.json`; sửa `test_schemas.py` (`test_schemas_directory_holds_exactly_the_seven_frozen_schemas`; `ci-sim-linux.yml` cũng đổi từ ba sang bảy tệp)
-- [x] `actions/tools.py::result_schema` đọc tệp tĩnh (`test_result_schema_is_the_static_file_pinned_and_without_its_identity`); thêm ca `system_one`; `fixtures/contracts/` và `expected_errors.yaml`; các test ở §7
-- [x] Cập nhật `docs/spec/tool_calling.md`: §1 và §4 dẫn lược đồ (không chép lại); §2 thêm khoá `__unparseable__`; §4 luật "không rẽ nhánh theo `reason`"; §9 đoạn cuối ("đóng băng thành `schemas/` bằng một RFC…") thành hiện thực. *Đóng `TODOS.md` #23 là việc của người tích hợp (không sửa `TODOS.md` trong PR này).*
-- [x] Cập nhật `neuroedge-prd.md` *(ma trận §10.3 thêm bốn lược đồ; PR B thêm dòng khoá `schema` của bo)*: ma trận §10.3 (thêm bốn lược đồ và khoá `schema` của bo); đầu Phụ lục B (nêu danh mục là nguồn của cấu trúc; PRD giữ lời; thêm dòng NE0000, NE2000 và ghi chú lớp con của NE5001); quyết định mới nếu có thì cấp `Q-N`
-- [x] Cập nhật `CONTRIBUTING.md` §8.1 hàng "Mã lỗi `NE…`" và §3 (thêm bốn lược đồ vào dòng "Sửa `schemas/*.json`" nếu cần); `docs/spec/python_api.md` §1 (hợp đồng dạng tệp: thêm bốn lược đồ)
-- [x] `docs/architecture/{vi,en}/07-data-contracts.md` *(và `02-container-c4l2.md`: "bảy lược đồ"; cạnh mới `actions` → `paths` đã vào `test_architecture_layers.py` và `03-component-host-c4l3.md` cùng lý do)*: danh mục lược đồ; nếu `error-codes` đọc từ mã Python thì kiểm cạnh phụ thuộc ở `tests/test_architecture_layers.py` và `03-component-host-c4l3.md` (không có cạnh mới nếu chỉ test đọc tệp)
+- [x] Add `schemas/tool-call.v1.json`, `tool-result.v1.json`, `error.v1.json`, `error-codes.v1.json`; update `test_schemas.py` (`test_schemas_directory_holds_exactly_the_seven_frozen_schemas`; `ci-sim-linux.yml` also updated from three to seven files)
+- [x] `actions/tools.py::result_schema` reads static file (`test_result_schema_is_the_static_file_pinned_and_without_its_identity`); add `system_one` case; `fixtures/contracts/` and `expected_errors.yaml`; tests in §7
+- [x] Update `docs/spec/tool_calling.md`: §1 and §4 link to schemas (without duplicating); §2 adds `__unparseable__` key; §4 adds rule "do not branch on `reason`"; §9 final paragraph ("freeze into `schemas/` via an RFC…") marked implemented. *Closing `TODOS.md` #23 is the integrator's responsibility (do not modify `TODOS.md` in this PR).*
+- [x] Update `neuroedge-prd.md` *(§10.3 matrix adds four schemas; PR B adds board `schema` key row)*: §10.3 matrix (add four schemas and board `schema` key); Appendix B preamble (declare catalog as source of structure; PRD retains prose; add NE0000, NE2000 rows and notes on NE5001 subclasses); assign `Q-N` to any new decisions
+- [x] Update `CONTRIBUTING.md` §8.1 row "Error code `NE…`" and §3 (add four schemas to "Modifying `schemas/*.json`" if needed); `docs/spec/python_api.md` §1 (file-based contracts: add four schemas)
+- [x] `docs/architecture/{vi,en}/07-data-contracts.md` *(and `02-container-c4l2.md`: "seven schemas"; new edge `actions` → `paths` already in `test_architecture_layers.py` and `03-component-host-c4l3.md` for same reason)*: schema catalog; if `error-codes` is read from Python code, check dependency edge in `tests/test_architecture_layers.py` and `03-component-host-c4l3.md` (no new edge if only tests read file)
 
-**PR B — `board.v1.json` (sau khi RFC-0007, 0010→0013 hiện thực xong phần khoá của chúng — đã đạt nhờ PR #91, §10 câu 13):**
+**PR B — `board.v1.json` (after RFC-0007, 0010→0013 finish implementing their keys — achieved via PR #91, §10 item 13):**
 
-- [x] Thêm khoá `schema` vào `schemas/board.v1.json`; `SUPPORTED_BOARD_SCHEMAS` và kiểm trước thẩm định ở `hal/board.py`; dòng `schema = "neuroedge.board/v1"` vào bốn `boards/*.toml` (thêm `sim-rpi5` từ RFC-0013); `to_document()`; các test board ở §7
+- [x] Add `schema` key to `schemas/board.v1.json`; `SUPPORTED_BOARD_SCHEMAS` and pre-validation check in `hal/board.py`; line `schema = "neuroedge.board/v1"` in four `boards/*.toml` (adds `sim-rpi5` from RFC-0013); `to_document()`; board tests in §7
 
-**Chung:**
+**General:**
 
-- [x] *(hai PR gộp trong PR #94, giữ commit riêng; một mục CHANGELOG)* Một mục `CHANGELOG.md` `[Chưa phát hành]` cho mỗi PR; tiến độ ở roadmap TSK-I6-05 (một mình PR A không đóng task); tiêu chí ra 8 chỉ tick khi cả hai PR xong
-- [x] Cập nhật dòng RFC-0015 trong `docs/rfc/README.md`
-- [x] Không đụng `digests.lock` (không gate nào đổi) *(phần RFC-0015 không đổi mục nào; PR #94 chỉ thêm mục cho gate của I2b)*
+- [x] *(both PRs squashed into PR #94, preserving separate commits; single CHANGELOG entry)* One `CHANGELOG.md` entry under `[Unreleased]` for each PR; progress in roadmap TSK-I6-05 (PR A alone does not close task); exit criterion 8 ticked only when both PRs are complete
+- [x] Update RFC-0015 row in `docs/rfc/README.md`
+- [x] Do not touch `digests.lock` (no gates change) *(RFC-0015 portion changes no entries; PR #94 adds entries only for I2b gates)*
 
-## 9. Phát hiện khi đối chiếu đặc tả, corpus và mã
+## 9. Findings from Spec, Corpus, and Code Audit
 
-Đã kiểm bằng cách chạy mã hoặc đọc đúng dòng; không phải suy đoán.
+Verified by running code or reading exact lines; not speculative.
 
-| # | Phát hiện | Nơi |
+| # | Finding | Location |
 |:---:|:---|:---|
-| F1 | Lược đồ kết quả hôm nay **đóng** (`additionalProperties: false`, `reason` là `enum`) và SDK MCP phía client kiểm nó; đóng băng nguyên dạng làm mỗi `Reason` mới thành `v2`. `Reason` đã lớn qua RFC-0005 (`argument_out_of_range`, 2026-09-24) và RFC-0009 (`value_out_of_range`, 2026-10-02) | `actions/tools.py::result_schema`, `engine/verdict.py::Reason`; §3b |
-| F2 | Corpus 28 ca chỉ phủ 3/10 `reason` và 4/5 `source` (không `system_one`) — "corpus thẩm định theo lược đồ" chưa chứng minh phần enum | `fixtures/tool_calls/`; §3e |
-| F3 | **Giấy phép:** `fixtures/tool_calls/` (và `fixtures/traces/`) không nằm ở hàng Apache-2.0 của `LICENSING.md` (chỉ `schemas/`, `docs/spec/`, `fixtures/compliance/` — nơi chỉ có `voice/`), trong khi `tool_calling.md` §9 gọi corpus này là chuẩn tuân thủ và Q-58 đòi bề mặt tích hợp "nằm ở phần Apache-2.0 (lược đồ, đặc tả, bộ kiểm tuân thủ)". Hôm nay một OSS khác chạy corpus là dùng mã/tệp PolyForm NC | `LICENSING.md`; Q10.4 |
-| F4 | PRD Phụ lục B nói tên lớp và mã "khớp `errors.py`; mọi lớp kế thừa `NeuroEdgeError`", nhưng `errors.py` có `NE0000` (lớp gốc) và `NE2000` (`GateError`) không có hàng ở PRD; ba lớp con dùng chung `NE5001` (`ProviderUnavailable`, `MalformedResponse`, `SpeechUnavailable`) không có hàng; NE1003 được nhắc nhưng chưa lớp nào (RFC-0007 đã chấp thuận, chưa hiện thực). **36 chỗ** dựng trực tiếp `NeuroEdgeError(...)` và phát `NE0000` (`grep` ngoài `errors.py`, bỏ dòng chú thích: `cli/` 17, `studio/` 9, gốc 4, `engine/` 2, `sim/` 2, `testing/` 2), cộng lớp riêng `engine/firmware.py::_Refused` cũng mang `NE0000` — mã "chung", không rẽ nhánh được | `errors.py`, PRD Phụ lục B; §3d |
-| F5 | `GateInheritanceError.as_dict()["principle"]` là **chuỗi** (`str(self.principle)`) dù thuộc tính là `int` và corpus gate ghi `principle: 2` (số) | `errors.py`; §3d |
-| F6 | `trace.v1.json` có `$schema` bắt buộc nhưng chỉ `format: uri`, **không ghim** — định danh phiên bản của vết ghi do mã ghi, không do lược đồ cưỡng chế (gate thì `const`) | `schemas/trace.v1.json`; Q10.10 |
-| F7 | `board.v1.json` mở ở cả gốc lẫn `board`/`capabilities`; chạy thử: tài liệu có `schema: "rác"` và `nonsense: 1` hợp lệ, và `to_document()` vứt hai khoá đó | `hal/board.py`; §1, §3c |
-| F8 | `parse_tool_calls` chèn khoá `__unparseable__` vào `arguments` khi JSON của nhà cung cấp hỏng; hành vi có test (`test_tools.py`, `test_providers.py`) nhưng **không có trong `tool_calling.md`** | `actions/tools.py`; §3a |
-| F9 | `ToolCall.source` có mặc định `"test"` trong dataclass, trong khi §1 của spec nói `source` "do runtime gán": một người gọi Python quên `source` nhận `test` thay vì lỗi. (Gate nào không liệt kê `test` thì chặn — an toàn, nhưng spec không nói mặc định này) | `actions/tools.py`; §3a |
-| F10 | `tool_calling.md` §8/§8.1 (mạng) chỉ có trên nhánh `feat/mcp-network`; nền của RFC này (`87db7c7`) chưa có | §3a |
-| F11 | `test_schemas_directory_holds_exactly_the_three_frozen_schemas` phải đổi; không ai quên được vì nó đỏ | `tests/test_schemas.py`; §4 |
-| F12 | `docs/spec/studio.md` (mục 8) cho phép lỗi API Studio chỉ có `why` (`code`, `where`, `how` tuỳ chọn) và `studio/server.py` trả `{"why": "not implemented yet"}` cho stub 501 — hai hình dạng "lỗi" cùng gọi là `as_dict()`-shaped; `error.v1` chỉ nhận hình dạng đầy đủ | `docs/spec/studio.md`, `studio/server.py`; §3d |
+| F1 | Today's result schema is **closed** (`additionalProperties: false`, `reason` is an `enum`) and client-side MCP SDK validates against it; freezing as-is makes every new `Reason` a `v2`. `Reason` expanded via RFC-0005 (`argument_out_of_range`, 2026-09-24) and RFC-0009 (`value_out_of_range`, 2026-10-02) | `actions/tools.py::result_schema`, `engine/verdict.py::Reason`; §3b |
+| F2 | The 28-case corpus covers only 3/10 `reason` values and 4/5 `source` values (no `system_one`) — "corpus validates against schema" does not yet prove enum coverage | `fixtures/tool_calls/`; §3e |
+| F3 | **Licensing:** `fixtures/tool_calls/` (and `fixtures/traces/`) do not sit under Apache-2.0 row in `LICENSING.md` (only `schemas/`, `docs/spec/`, `fixtures/compliance/` — which only contains `voice/`), whereas `tool_calling.md` §9 calls this corpus the compliance standard and Q-58 demands the integration surface "sits under Apache-2.0 (schemas, specifications, compliance suites)". Today an external OSS project running the corpus uses PolyForm NC code/files | `LICENSING.md`; Q10.4 |
+| F4 | PRD Appendix B states class names and codes "match `errors.py`; all classes inherit from `NeuroEdgeError`", but `errors.py` has `NE0000` (root class) and `NE2000` (`GateError`) without rows in PRD; three subclasses sharing `NE5001` (`ProviderUnavailable`, `MalformedResponse`, `SpeechUnavailable`) have no rows; NE1003 is referenced but has no class (RFC-0007 approved, not yet implemented). **36 places** instantiate `NeuroEdgeError(...)` directly and emit `NE0000` (`grep` outside `errors.py`, excluding comment lines: `cli/` 17, `studio/` 9, root 4, `engine/` 2, `sim/` 2, `testing/` 2), plus internal class `engine/firmware.py::_Refused` also carries `NE0000` — "generic" code, not branchable | `errors.py`, PRD Appendix B; §3d |
+| F5 | `GateInheritanceError.as_dict()["principle"]` is a **string** (`str(self.principle)`) even though the attribute is `int` and gate corpus records `principle: 2` (integer) | `errors.py`; §3d |
+| F6 | `trace.v1.json` has mandatory `$schema` but only `format: uri`, **not pinned** — trace version identification is written by code, not enforced by schema (whereas gate has `const`) | `schemas/trace.v1.json`; Q10.10 |
+| F7 | `board.v1.json` is open at root and inside `board`/`capabilities`; verified by trial run: a document with `schema: "garbage"` and `nonsense: 1` validates, and `to_document()` drops both keys | `hal/board.py`; §1, §3c |
+| F8 | `parse_tool_calls` inserts key `__unparseable__` into `arguments` when provider JSON is malformed; behavior is tested (`test_tools.py`, `test_providers.py`) but **absent from `tool_calling.md`** | `actions/tools.py`; §3a |
+| F9 | `ToolCall.source` has default `"test"` in dataclass, whereas §1 of spec states `source` is "assigned by runtime": a Python caller omitting `source` gets `"test"` instead of an error. (Any gate not listing `test` blocks — safe, but spec does not mention this default) | `actions/tools.py`; §3a |
+| F10 | `tool_calling.md` §8/§8.1 (network) exists only on branch `feat/mcp-network`; RFC baseline (`87db7c7`) does not yet have it | §3a |
+| F11 | `test_schemas_directory_holds_exactly_the_three_frozen_schemas` must change; cannot be overlooked because it will turn red | `tests/test_schemas.py`; §4 |
+| F12 | `docs/spec/studio.md` (item 8) permits Studio API errors to contain only `why` (`code`, `where`, `how` optional) and `studio/server.py` returns `{"why": "not implemented yet"}` for 501 stubs — two "error" shapes both referred to as `as_dict()`-shaped; `error.v1` accepts only the complete shape | `docs/spec/studio.md`, `studio/server.py`; §3d |
 
-## 10. Quyết định cho các câu hỏi mở (Q-66, 2026-10-04)
+## 10. Decisions for Open Questions (Q-66, 2026-10-04)
 
-Chủ sản phẩm và kỹ thuật trưởng chấp nhận **khuyến nghị** của từng câu, theo nguyên tắc an toàn cao nhất của Q-57. Các khuyến nghị đã nằm sẵn trong §3–§8, nên mục này không đổi thiết kế. Nó chỉ ghi hai điều đã khác từ lúc viết (câu 13) và đưa hai việc hoãn vào `TODOS.md` (câu 4 và 6). Mục này là hồ sơ quyết định: nếu §3–§8 lệch với mục này thì sửa §3–§8. Kỹ thuật trưởng ký trên PR #93.
+Product Owner and Lead Engineer accept the **recommendations** for each question, under the highest-safety principle of Q-57. Because the recommendations are already reflected in §3–§8, this section does not change the design. It merely records two things that changed since writing (question 13) and logs two deferred items into `TODOS.md` (questions 4 and 6). This section is the decision record: if §3–§8 conflict with this section, fix §3–§8. Lead engineer signed off on PR #93.
 
-1. **`reason` là chuỗi mở** (§3b), kèm danh sách giá trị đã biết và luật "`status` quyết định; không rẽ nhánh ALLOW theo `reason`". Thiếu kiểm lỗi gõ ở validator được bù bằng test hai chiều với `Reason`.
-2. **Đối tượng kết quả mở** (`additionalProperties: true` ở gốc, ở `fallback` và ở `confirmation`), kèm test rằng mã chỉ phát các khoá đã khai.
-3. **`tool-call.v1.json` có `inputSchema` và mô tả tool.** Người hiện thực Profile cần chúng để biết ranh giới giữa `valid/` và `invalid/`.
-4. **RFC này không đổi giấy phép.** Đưa corpus tuân thủ (`fixtures/tool_calls/`, `fixtures/agents/` và `fixtures/traces/` mà corpus dùng) vào phần Apache-2.0 là việc của người giữ giấy phép (Q-45, Q-59), không phải việc kỹ thuật. Việc này là `TODOS.md` #57, phải xong trước lần công bố lược đồ (TSK-I6-02). Nếu chưa xong, một OSS khác chạy corpus là đang dùng tệp PolyForm NC.
-5. **Khoá `schema` của bo mạch tuỳ chọn ở `v1`.** Kỹ thuật trưởng chấp nhận điểm siết của §4: một bo mạch mang `schema` khác `neuroedge.board/v1` giờ bị từ chối.
-6. **"Khoá bắt buộc hiểu" và đóng `board.v1.json` cần một RFC riêng, và không chặn RFC này.** Lý do: việc đó chạm an toàn phần cứng và siết lược đồ. Chỗ hở thì có thật: một bộ đọc cũ lặng lẽ bỏ qua `envelope`. Hôm nay nó chưa gây hại, vì chỉ có một bộ đọc là runtime Python của cùng phiên bản với bo mạch. RFC riêng đó là `TODOS.md` #58. Mốc kích hoạt của nó: trước khi xuất hiện một bộ đọc `board.v1` thứ hai (firmware `esp32s3` đọc profile, SDK ngoài, hoặc runtime cũ hơn đọc bo mới), và chậm nhất trước chặng B.
-7. **Hai tệp:** `tool-call.v1.json` và `tool-result.v1.json` (§6). Không có tệp `tool` thứ ba; mô tả tool nằm trong `tool-call.v1.json` (câu 3).
-8. **Đồng ý tách nguồn:** danh mục `schemas/error-codes.v1.json` là nguồn của *cấu trúc*, PRD Phụ lục B giữ *lời*. PR A sửa `CONTRIBUTING.md` §8.1 theo đó.
-9. **`NE0000` và `NE2000` đóng băng với `general: true`.** Người nhận hứa không rẽ nhánh theo hai mã này. Cấp mã riêng cho 36 chỗ đang phát `NE0000` (F4) để sau; đó là thay đổi nới lỏng, cùng `v1`.
-10. **Không ghim `$schema` của `trace.v1.json` lúc này.** Ghim là siết lỏng, nên cần RFC riêng về `trace.v1` khi có nhu cầu.
-11. **Không dự trù giá trị `source` mới** (như `mcp_network`). Mỗi giá trị đi vào `NETR` dưới dạng chỉ số `choice`, nên chỉ thêm khi có nhu cầu.
-12. **Đặt `error.v1` vào `error.data` của JSON-RPC: ngoài phạm vi.** Việc đó cần một RFC về hành vi MCP.
-13. **Chấp thuận ngay và tách hai PR hiện thực (§8).** Hai điều đã khác từ lúc viết RFC (nền `87db7c7`), đều nhờ PR #91 (chặng A):
-    - **Điều kiện của PR B đã đạt.** RFC-0007 và RFC-0010 → RFC-0013 đã hiện thực phần khoá trên `sim` và `linux`, nên PR B làm được ngay sau PR A.
-    - **NE1003 có lớp:** `EnvelopeRefusedError` (RFC-0007). Danh mục hôm nay vì thế có 17 mục `stable` và không mục `reserved` nào (§3d đã sửa; bản ký đầu ghi nhầm 20, sửa khi hiện thực). Trường `status: reserved` vẫn giữ trong lược đồ cho mã giữ chỗ về sau.
+1. **`reason` is an open string** (§3b), with list of known values and rule "`status` governs; never branch ALLOW on `reason`". Lack of typo checking in validator is compensated by bidirectional tests with `Reason`.
+2. **Result object is open** (`additionalProperties: true` at root, in `fallback`, and in `confirmation`), with tests ensuring code emits only declared keys.
+3. **`tool-call.v1.json` includes `inputSchema` and tool description.** Profile implementers need them to determine the boundary between `valid/` and `invalid/`.
+4. **This RFC does not change licensing.** Moving the compliance corpus (`fixtures/tool_calls/`, `fixtures/agents/`, and `fixtures/traces/` used by the corpus) into Apache-2.0 is the responsibility of the license holder (Q-45, Q-59), not a technical task. This task is `TODOS.md` #57, must be completed before schema publishing (TSK-I6-02). Until done, another OSS project running the corpus uses PolyForm NC files.
+5. **Board `schema` key is optional in `v1`.** Lead engineer accepts the tightening point in §4: a board carrying a `schema` other than `neuroedge.board/v1` is now rejected.
+6. **"Must-understand keys" and closing `board.v1.json` require a separate RFC, and do not block this RFC.** Rationale: touches hardware safety and schema tightening. The loophole is real: an older reader silently ignores `envelope`. Today it causes no harm, because only one reader exists (Python runtime of the same version as the board). That separate RFC is `TODOS.md` #58. Trigger milestone: before a second `board.v1` reader appears (`esp32s3` firmware reading profiles, external SDK, or older runtime reading newer board), and at the latest before Milestone B.
+7. **Two files:** `tool-call.v1.json` and `tool-result.v1.json` (§6). No third `tool` file; tool descriptions live inside `tool-call.v1.json` (question 3).
+8. **Agreed on source separation:** catalog `schemas/error-codes.v1.json` is the source of *structure*, PRD Appendix B retains *prose*. PR A updates `CONTRIBUTING.md` §8.1 accordingly.
+9. **`NE0000` and `NE2000` freeze with `general: true`.** Recipients promise not to branch on these two codes. Assigning distinct codes to the 36 places currently emitting `NE0000` (F4) is deferred; that is a relaxing change, within `v1`.
+10. **Do not pin `$schema` of `trace.v1.json` at this time.** Pinning is tightening, requiring a dedicated RFC on `trace.v1` when needed.
+11. **Do not reserve new `source` values** (such as `mcp_network`). Each value enters `NETR` as a `choice` index, so add only when needed.
+12. **Placing `error.v1` into JSON-RPC `error.data`: out of scope.** That requires an RFC on MCP behavior.
+13. **Approve immediately and split into two implementation PRs (§8).** Two things changed since writing the RFC (baseline `87db7c7`), both thanks to PR #91 (Milestone A):
+    - **PR B prerequisites met.** RFC-0007 and RFC-0010 → RFC-0013 implemented their keys on `sim` and `linux`, so PR B can proceed immediately after PR A.
+    - **NE1003 has a class:** `EnvelopeRefusedError` (RFC-0007). The catalog today therefore has 17 `stable` entries and 0 `reserved` entries (§3d updated; initial signed draft mistakenly listed 20, corrected during implementation). Field `status: reserved` is retained in the schema for future placeholders.

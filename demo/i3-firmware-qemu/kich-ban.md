@@ -1,175 +1,175 @@
-Chạy lại lần cuối: 2026-09-29, macOS (Apple Silicon), Docker `espressif/idf:v5.4`, `main` `6a69626` — `ui`, `boot`, `agent`, `ota` đều kết thúc bằng ✓.
+Last re-run: 2026-09-29, macOS (Apple Silicon), Docker `espressif/idf:v5.4`, `main` `6a69626` — `ui`, `boot`, `agent`, `ota` all ended with ✓.
 
-# Kịch bản demo firmware không cần bo mạch (I3 + OTA)
+# Demo script for boardless firmware (I3 + OTA)
 
-> **Mục tiêu:** Giúp người trình bày (presenter) có thể demo đầy đủ phía vi điều khiển ESP32-S3 của NeuroEdge mà không cần cắm bo mạch vật lý: từ giao diện thiết bị (LVGL golden images), firmware boot trên Espressif QEMU và tự kiểm tra gate (gate self-test), thiết bị replay các vết ghi chuẩn mực với cùng phán quyết như trên máy tính (`verify --targets esp32s3`), đóng gói agent của chính người dùng thành firmware, cho đến cập nhật OTA phân vùng A/B có ký số và tự động rollback khi lỗi — toàn bộ diễn ra trong Docker với cùng image và các bước chuẩn tắc như CI.
+> **Goal:** Enables the presenter to fully demo NeuroEdge's ESP32-S3 microcontroller side without plugging in a physical board: from device UI (LVGL golden images), firmware boot on Espressif QEMU and gate self-test, device replay of canonical traces with identical verdicts as on computer (`verify --targets esp32s3`), packaging user's own agent into firmware, to A/B partition OTA updates with digital signatures and automatic rollback on failure — all running in Docker with identical images and canonical steps as CI.
 
 ---
 
-## 0. Chuẩn bị
+## 0. Preparation
 
-Trước buổi demo, người trình bày chuẩn bị máy tính (macOS Apple Silicon hoặc Linux):
+Before the demo session, the presenter prepares the machine (macOS Apple Silicon or Linux):
 
-1. **Docker Desktop đang chạy:** Đảm bảo daemon Docker hoạt động bình thường (`docker info`).
-2. **Kéo sẵn ảnh Docker ESP-IDF:** Chạy lệnh sau một lần duy nhất trước buổi demo:
+1. **Docker Desktop running:** Ensure Docker daemon is running normally (`docker info`).
+2. **Pre-pull ESP-IDF Docker image:** Run the following command once before the demo:
    ```bash
    docker pull espressif/idf:v5.4
    ```
-3. **Thời gian chạy:**
-   - Đo ngày 2026-09-29: lần đầu `ui` + `boot` mất khoảng 3,5 phút (biên dịch ESP-IDF từ đầu). Các lần sau nhanh hơn nhờ volume ccache `neuroedge-ccache` và venv `neuroedge-demo-venv`. `ota` build bốn ảnh firmware nên lâu nhất — **chạy trước buổi demo**, lúc trình bày chỉ mở log.
-   - Dòng `E (…) octal_psram: PSRAM ID read error` trong log là bình thường: QEMU không mô phỏng PSRAM.
-4. **Nguyên tắc môi trường:**
-   - Script chạy từ thư mục gốc của kho: `./demo/i3-firmware-qemu/run.sh <lệnh>`.
-   - Toàn bộ các bước biên dịch, mô phỏng QEMU và kiểm tra chạy trong container `espressif/idf:v5.4` không có quyền `--privileged`.
-   - Không ghi tệp ra ngoài các đường dẫn được `.gitignore` của kho và các Docker volume đã cấu hình.
+3. **Runtime:**
+   - Measured 2026-09-29: first time `ui` + `boot` takes ~3.5 minutes (compiling ESP-IDF from scratch). Subsequent runs are faster thanks to `neuroedge-ccache` ccache volume and `neuroedge-demo-venv` venv. `ota` builds four firmware images, taking the longest — **run before the demo session**, only open logs during presentation.
+   - Log line `E (…) octal_psram: PSRAM ID read error` is normal: QEMU does not emulate PSRAM.
+4. **Environment principles:**
+   - Scripts run from repository root: `./demo/i3-firmware-qemu/run.sh <command>`.
+   - All compilation, QEMU simulation, and test steps run inside container `espressif/idf:v5.4` without `--privileged` permissions.
+   - No files written outside repository `.gitignore` paths and configured Docker volumes.
 
 ---
 
-## 1. Màn 1 — Giao diện trên thiết bị, tiếng Việt
+## 1. Scene 1 — On-device UI, Vietnamese
 
-### Nói
-"NeuroEdge hỗ trợ giao diện đồ họa trực tiếp trên màn hình 320×240 của thiết bị bằng tiếng Việt chuẩn có dấu (phông Be Vietnam Pro) và tiếng Anh tùy theo cấu hình của agent. Toàn bộ mã giao diện được viết bằng C99 thuần túy trên thư viện đồ họa mở LVGL v9.6.0. Cùng một mã nguồn C này vừa được biên dịch vào firmware chạy trên chip thật, vừa được biên dịch trên máy tính để so sánh ảnh golden mỗi lần có Pull Request (job CI `ui-golden`). Nhờ đó, chúng ta kiểm soát từng điểm ảnh (pixel-for-pixel) của 66 trạng thái màn hình, đảm bảo chữ của agent dù dài hay có ký tự đặc biệt cũng không bao giờ làm tràn panel hay vỡ bố cục."
+### Say
+"NeuroEdge supports graphical UI directly on the device's 320×240 screen in standard accented Vietnamese (Be Vietnam Pro font) and English according to agent configuration. All UI code is written in pure C99 on top of LVGL v9.6.0 open-source graphics library. The same C source code is compiled both into firmware running on real chips and on computers to compare golden images on every Pull Request (CI job `ui-golden`). Consequently, we control 66 screen states pixel-for-pixel, ensuring agent text never overflows panels or breaks layouts, regardless of length or special characters."
 
-### Gõ
+### Type
 ```bash
 ./demo/i3-firmware-qemu/run.sh ui
 ```
 
-### Thấy
-- Công cụ so sánh 66 ảnh màn hình (33 ảnh tiếng Việt + 33 ảnh tiếng Anh) qua `scripts/run_ui_golden.sh` trong container `espressif/idf:v5.4`.
-- Thông báo đối chiếu thành công: `ui-golden: 66/66 passed` rồi `ui-golden: every screen matches its golden`.
-- Dòng kết thúc:
+### See
+- Tool compares 66 screen images (33 Vietnamese + 33 English) via `scripts/run_ui_golden.sh` inside `espressif/idf:v5.4` container.
+- Verification success notification: `ui-golden: 66/66 passed` then `ui-golden: every screen matches its golden`.
+- Final line:
   ```text
   ✓ ui: 66 ảnh golden khớp hoàn toàn (vi và en)
   ```
-- Bảng minh họa 8 màn hình tiêu biểu bằng tiếng Việt:
+- Table illustrating 8 representative Vietnamese screens:
 
-| Màn hình | Tên tệp | Ý nghĩa | Ảnh minh họa |
+| Screen | File name | Meaning | Illustration |
 |:---|:---|:---|:---:|
-| Khởi động đạt | `boot_passed.png` | Self-test gate đạt lúc boot | ![`boot_passed`](../../targets/esp32s3/ui/golden/vi/boot_passed.png) |
-| Lắng nghe | `voice_listening.png` | Mức âm thanh đầu vào | ![`voice_listening`](../../targets/esp32s3/ui/golden/vi/voice_listening.png) |
-| Phản hồi giọng nói | `voice_speaking.png` | Bản chép lời và câu trả lời | ![`voice_speaking`](../../targets/esp32s3/ui/golden/vi/voice_speaking.png) |
-| Hỏi xác nhận | `confirm.png` | `on_block: ask` theo RFC-0006 | ![`confirm`](../../targets/esp32s3/ui/golden/vi/confirm.png) |
-| Cho phép (ALLOW) | `verdict_allow.png` | Gate duyệt lệnh thành công | ![`verdict_allow`](../../targets/esp32s3/ui/golden/vi/verdict_allow.png) |
-| Chặn lệnh (BLOCK) | `verdict_block_condition_not_met.png` | Gate chặn kèm mã lý do | ![`verdict_block_condition_not_met`](../../targets/esp32s3/ui/golden/vi/verdict_block_condition_not_met.png) |
-| Cảm biến | `sensor.png` | Đọc nhiệt độ, độ ẩm, tiếp điểm cửa | ![`sensor`](../../targets/esp32s3/ui/golden/vi/sensor.png) |
-| Xác minh OTA | `ota_verifying.png` | Đang kiểm tra chữ ký RSA-3072 | ![`ota_verifying`](../../targets/esp32s3/ui/golden/vi/ota_verifying.png) |
+| Khởi động đạt (Boot passed) | `boot_passed.png` | Gate self-test passed at boot | ![`boot_passed`](../../targets/esp32s3/ui/golden/vi/boot_passed.png) |
+| Lắng nghe (Listening) | `voice_listening.png` | Input audio level | ![`voice_listening`](../../targets/esp32s3/ui/golden/vi/voice_listening.png) |
+| Phản hồi giọng nói (Voice speaking) | `voice_speaking.png` | Transcript and answer | ![`voice_speaking`](../../targets/esp32s3/ui/golden/vi/voice_speaking.png) |
+| Hỏi xác nhận (Ask confirmation) | `confirm.png` | `on_block: ask` under RFC-0006 | ![`confirm`](../../targets/esp32s3/ui/golden/vi/confirm.png) |
+| Cho phép (ALLOW) | `verdict_allow.png` | Gate approved command successfully | ![`verdict_allow`](../../targets/esp32s3/ui/golden/vi/verdict_allow.png) |
+| Chặn lệnh (BLOCK) | `verdict_block_condition_not_met.png` | Gate blocked with reason code | ![`verdict_block_condition_not_met`](../../targets/esp32s3/ui/golden/vi/verdict_block_condition_not_met.png) |
+| Cảm biến (Sensor) | `sensor.png` | Temperature, humidity, door contact readings | ![`sensor`](../../targets/esp32s3/ui/golden/vi/sensor.png) |
+| Xác minh OTA (OTA verifying) | `ota_verifying.png` | Verifying RSA-3072 signature | ![`ota_verifying`](../../targets/esp32s3/ui/golden/vi/ota_verifying.png) |
 
-*(Xem toàn bộ 33 ảnh tiếng Việt tại thư mục [`targets/esp32s3/ui/golden/vi/`](../../targets/esp32s3/ui/golden/vi/) và 33 ảnh tiếng Anh tại [`targets/esp32s3/ui/golden/en/`](../../targets/esp32s3/ui/golden/en/)).*
+*(See all 33 Vietnamese images in directory [`targets/esp32s3/ui/golden/vi/`](../../targets/esp32s3/ui/golden/vi/) and 33 English images in [`targets/esp32s3/ui/golden/en/`](../../targets/esp32s3/ui/golden/en/)).*
 
-### Điểm nhấn
-- **Giao diện nói ngôn ngữ của agent:** Ngôn ngữ được chọn tự động từ `[agent] language` trong `agent.toml` (mặc định `"vi"` nếu không khai báo), chi tiết tại [`docs/spec/ui.md`](../../docs/spec/ui.md) §2.
-- **Tất định tuyệt đối:** Không hiệu ứng ngẫu nhiên, không cuộn tự do khi vẽ ảnh mẫu. Chữ dài luôn được cắt ở ranh giới điểm mã UTF-8 kèm dấu `…`, không bao giờ đè lên nhãn khác.
+### Highlights
+- **UI speaks agent language:** Language is selected automatically from `[agent] language` in `agent.toml` (defaults to `"vi"` if unspecified), details in [`docs/spec/ui.md`](../../docs/spec/ui.md) §2.
+- **Absolute determinism:** No random animations, no unconstrained scrolling when rendering sample images. Long text is always truncated at UTF-8 code point boundaries with an ellipsis `…`, never overlapping other labels.
 
 ---
 
-## 2. Màn 2 — Con chip boot và tự kiểm gate
+## 2. Scene 2 — Chip boot and gate self-test
 
-### Nói
-"Bây giờ chúng ta khởi động firmware cơ sở trên trình giả lập Espressif QEMU. Lúc khởi động, chip chạy một thủ tục self-test gate: walker C và sổ token dùng một lần trên chip sẽ kiểm tra lại toàn bộ cây quyết định NETR lưu trong flash và các phép thử của agent. Nếu phán quyết của chip sai lệch dù chỉ một điều kiện so với engine phía host, firmware sẽ lập tức báo `NE_SELFTEST FAIL` và dừng hoạt động (fail-closed). Sau khi self-test đạt, con chip phát lại (replay) 3 vết ghi chuẩn mực của hệ thống ra UART. Lệnh `neuroedge verify --targets esp32s3` đọc luồng UART này và chứng minh phán quyết của chip trùng khớp 100% với golden reference."
+### Say
+"Now we boot baseline firmware on Espressif QEMU simulator. At boot time, the chip runs a gate self-test procedure: the C walker and on-chip single-use token log verify the entire NETR decision tree stored in flash and agent test cases. If the chip's verdict deviates by even a single condition from the host-side engine, firmware immediately reports `NE_SELFTEST FAIL` and halts (fail-closed). After self-test passes, the chip replays 3 canonical system traces over UART. The `neuroedge verify --targets esp32s3` command reads this UART stream and proves chip verdicts match golden reference 100%."
 
-### Gõ
+### Type
 ```bash
 ./demo/i3-firmware-qemu/run.sh boot
 ```
 
-### Thấy
-Người trình bày chỉ cho người xem các mốc in ra ở cột 0 trên log UART:
-1. Dòng tự kiểm tra gate thành công:
+### See
+Presenter points out milestones printed at column 0 in the UART log:
+1. Gate self-test passed line:
    ```text
    NE_SELFTEST PASS walker=26 token=11
    ```
-2. Các dòng phát lại vết ghi chuẩn mực dưới dạng cấu trúc JSON `NE1 `:
+2. Lines replaying canonical traces formatted as `NE1 ` JSON structures:
    ```text
    NE1 {"offset_ms":0,"type":"device_info","data":{"board_id":"esp32s3-box-3","agent_version":"home-voice@0.1.0","device_id":"qemu",…
    ```
-3. Dòng thông báo hoàn tất các phiên vết ghi:
+3. Line notifying completion of trace sessions:
    ```text
    NE_TRACE DONE sessions=4
    ```
-4. Kết quả xác minh tương đương target của CLI:
+4. CLI target equivalence verification result:
    ```text
    ✓ VALID /tmp/demo-boot-traces/sess_…00.json — 78 event(s), target esp32s3
    │ Passed: all 3 gate(s) resolve, all 3 canonical trace(s) validate, every tool │
    ```
-5. Dòng kết thúc:
+5. Final line:
    ```text
    ✓ boot: firmware boot thành công trên QEMU, self-test đạt và verify khớp 3 vết ghi chuẩn mực
    ```
 
-### Điểm nhấn
-- **Walker C duyệt cây NETR:** Không dùng bộ thông dịch CEL nặng nề trên vi điều khiển; cây quyết định nhị phân được duyệt nhanh gọn bằng C99 thuần (bất biến 5 trong [`CHANGELOG.md`](../../CHANGELOG.md) §3.3).
-- **Target Equivalence:** Phán quyết của chip ảo trên QEMU tương đương hoàn toàn với engine trên máy chủ/máy trạm.
+### Highlights
+- **C walker traverses NETR tree:** No heavyweight CEL interpreter on the microcontroller; binary decision tree is traversed cleanly in pure C99 (invariant 5 in [`CHANGELOG.md`](../../CHANGELOG.md) §3.3).
+- **Target Equivalence:** Virtual chip verdicts on QEMU are completely equivalent to host/workstation engine.
 
 ---
 
-## 3. Màn 3 — Agent của chính bạn thành firmware
+## 3. Scene 3 — Your own agent into firmware
 
-### Nói
-"Một lập trình viên không chuyên về nhúng hoàn toàn có thể đưa agent của mình lên chip ESP32-S3. Chỉ bằng một lệnh `neuroedge build --target esp32s3 --board esp32s3-box-3`, hệ thống sẽ tự động chuyển đổi khai báo agent thành một dự án ESP-IDF tiêu chuẩn: biên dịch các gate thành cây NETR, sinh component `ne_agent.c` chứa các kiểm tra self-test kèm phán quyết đã tính trước, và liên kết mã nguồn firmware. Bây giờ chúng ta sẽ tạo một agent mới từ đầu, sinh firmware, boot trên QEMU và chứng kiến gate của chính agent đó vượt qua self-test trên chip."
+### Say
+"A non-embedded developer can fully deploy their agent onto an ESP32-S3 chip. With just one command `neuroedge build --target esp32s3 --board esp32s3-box-3`, the system automatically transforms agent declarations into a standard ESP-IDF project: compiling gates into NETR trees, generating component `ne_agent.c` containing self-test checks with precomputed verdicts, and linking firmware source code. Now we will create a new agent from scratch, generate firmware, boot on QEMU, and witness that agent's own gate pass self-test on the chip."
 
-### Gõ
+### Type
 ```bash
 ./demo/i3-firmware-qemu/run.sh agent
 ```
 
-### Thấy
-- Các giai đoạn được thực hiện tự động trong scratch directory:
-  1. Tạo agent: `neuroedge new demo-agent`
-  2. Sinh mã firmware: `neuroedge build --target esp32s3 --board esp32s3-box-3`
-  3. Biên dịch dự án ESP-IDF sinh ra với cấu hình `sdkconfig.qemu`
-  4. Boot firmware của agent trên QEMU
-  5. Đọc dòng phán quyết self-test ở cột 0:
+### See
+- Stages executed automatically in scratch directory:
+  1. Create agent: `neuroedge new demo-agent`
+  2. Generate firmware code: `neuroedge build --target esp32s3 --board esp32s3-box-3`
+  3. Compile generated ESP-IDF project with `sdkconfig.qemu` configuration
+  4. Boot agent firmware on QEMU
+  5. Read self-test verdict line at column 0:
      ```text
      NE_SELFTEST PASS walker=8 token=6
      ```
-  6. Ghi vết `neuroedge record` và thẩm định phiên `neuroedge trace validate`
-- Dòng kết thúc:
+  6. Record trace with `neuroedge record` and validate session with `neuroedge trace validate`
+- Final line:
   ```text
   ✓ agent: agent demo-agent được sinh firmware, boot trên QEMU và vượt qua self-test
   ```
 
-### Điểm nhấn
-- **Cùng một agent, đa nền tảng:** Cùng một mã nguồn agent có thể chạy mô phỏng (`sim`), chạy trên Linux (`linux`), hoặc sinh thành firmware C (`esp32s3`).
-- **Từ chối lúc build nếu không tương thích:** Nếu agent đòi hỏi chân GPIO hoặc năng lực mà bo mạch không hỗ trợ (FR-HAL-04), lệnh `build` sẽ từ chối ngay với mã lỗi 1 và không ghi bất kỳ tệp nào ra đĩa ([`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §3).
+### Highlights
+- **Same agent, multiple platforms:** Identical agent source code runs in simulation (`sim`), on Linux (`linux`), or compiles into C firmware (`esp32s3`).
+- **Build-time rejection on incompatibility:** If an agent requires GPIO pins or capabilities unsupported by the board (FR-HAL-04), the `build` command rejects immediately with exit code 1 without writing any files to disk ([`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §3).
 
 ---
 
-## 4. Màn 4 — Cập nhật OTA có ký, tự quay về khi hỏng
+## 4. Scene 4 — Signed OTA updates, automatic rollback on failure
 
-### Nói
-"Cơ chế cập nhật qua mạng (OTA) của NeuroEdge được xây dựng theo tiêu chuẩn an toàn công nghiệp: hai phân vùng A/B, bắt buộc xác minh chữ ký RSA-3072 trước khi cho phép chuyển khe khởi động, và tự động rollback nếu bản cập nhật bị lỗi hoặc trượt self-test gate. Không cần dịch vụ đám mây trung gian: thiết bị kéo bản cập nhật trực tiếp từ một HTTP endpoint. Trình giả lập QEMU sẽ thực thi toàn bộ kịch bản 7 pha (a đến g) để chứng minh mọi tình huống an toàn."
+### Say
+"NeuroEdge's over-the-air (OTA) update mechanism is built to industrial safety standards: dual A/B partitions, mandatory RSA-3072 signature verification before switching boot slots, and automatic rollback if an update is corrupted or fails gate self-test. No intermediate cloud service required: the device pulls updates directly from an HTTP endpoint. QEMU simulator executes the complete 7-phase scenario (a to g) proving all safety scenarios."
 
-### Gõ
+### Type
 ```bash
 ./demo/i3-firmware-qemu/run.sh ota
 ```
 
-### Thấy
-Quá trình chạy kịch bản `scripts/qemu_ota.sh` trải qua đủ 7 pha:
-- **Pha a:** Bản factory 0.1.0 khởi động, self-test đạt, máy chủ đang chạy cùng phiên bản nên bỏ qua (`NE_OTA SKIP reason=same_version version=0.1.0`) — không bao giờ mất khe đang chạy.
-- **Pha b:** Bản 0.2.0 ký đúng khóa được tải về, xác minh chữ ký, chuyển khe khởi động (`SWITCH partition=ota_0`) và được đánh dấu hợp lệ (`NE_OTA VALID`) sau khi vượt qua self-test của chính nó (mốc nước cao NVS nâng lên 0.2.0).
-- **Pha c:** Bản cập nhật ký bằng khóa lạ (khác với khóa của bản đang chạy) bị từ chối trước khi khởi động (`NE_OTA REJECTED reason=signature`): không đổi khe, không reboot, thiết bị ở lại bản 0.2.0 và khe vừa ghi bị xóa sector đầu (`NE_OTA ERASED`).
-- **Pha d:** Bản ký đúng nhưng bị lỗi hỏng (resets/crashes trước khi kịp xác nhận) (`NE_OTA TEST BOOTLOOP`) được bootloader tự động quay về (`NE_OTA ROLLBACK from=ota_1 to=ota_0`); thiết bị khởi động lại vào 0.2.0 và không tải lại bản đã hỏng (`NE_OTA SKIP reason=rolled_back version=0.3.0`).
-- **Pha e:** Bản cập nhật có gate self-test thất bại tự đánh dấu hỏng (`NE_OTA INVALID partition=ota_1`) và reboot; bootloader tự quay về bản trước (`NE_OTA ROLLBACK from=ota_1 to=ota_0`), rồi bỏ qua bản đó (`NE_OTA SKIP reason=rolled_back version=0.3.1`).
-- **Pha f:** Bản cập nhật không có chữ ký (không có signature block) bị từ chối (`NE_OTA REJECTED reason=signature`) và khe vừa ghi bị xóa (`NE_OTA ERASED`).
-- **Pha g:** Bản ký đúng nhưng có số phiên bản thấp hơn (0.1.0 so với mốc 0.2.0) bị từ chối vì hạ cấp (`NE_OTA SKIP reason=downgrade version=0.1.0`) bởi mốc nước cao trong NVS.
-- Tổng kết của script: `OTA on QEMU: all phases passed`.
-- Dòng kết thúc:
+### See
+Execution of script `scripts/qemu_ota.sh` goes through all 7 phases:
+- **Phase a:** Factory 0.1.0 boots, self-test passes, server is running same version so it skips (`NE_OTA SKIP reason=same_version version=0.1.0`) — running slot is never lost.
+- **Phase b:** Build 0.2.0 signed with correct key downloads, verifies signature, switches boot slot (`SWITCH partition=ota_0`) and is marked valid (`NE_OTA VALID`) after passing its own self-test (NVS high-water mark raised to 0.2.0).
+- **Phase c:** Update signed with unknown key (differing from running build's key) is rejected before booting (`NE_OTA REJECTED reason=signature`): no slot change, no reboot, device remains on 0.2.0 and newly written slot has its first sector erased (`NE_OTA ERASED`).
+- **Phase d:** Build signed correctly but corrupted (resets/crashes before confirming) (`NE_OTA TEST BOOTLOOP`) is automatically rolled back by bootloader (`NE_OTA ROLLBACK from=ota_1 to=ota_0`); device reboots into 0.2.0 and does not re-download corrupted build (`NE_OTA SKIP reason=rolled_back version=0.3.0`).
+- **Phase e:** Update with failed gate self-test marks itself invalid (`NE_OTA INVALID partition=ota_1`) and reboots; bootloader rolls back to previous build (`NE_OTA ROLLBACK from=ota_1 to=ota_0`), then skips that build (`NE_OTA SKIP reason=rolled_back version=0.3.1`).
+- **Phase f:** Unsigned update (missing signature block) is rejected (`NE_OTA REJECTED reason=signature`) and newly written slot is erased (`NE_OTA ERASED`).
+- **Phase g:** Build signed correctly but with lower version number (0.1.0 compared to high-water mark 0.2.0) is rejected as a downgrade (`NE_OTA SKIP reason=downgrade version=0.1.0`) by NVS high-water mark.
+- Script summary: `OTA on QEMU: all phases passed`.
+- Final line:
   ```text
   ✓ ota: toàn bộ các pha cập nhật OTA và rollback (a–g) đạt yêu cầu trên QEMU
   ```
 
-### Điểm nhấn
-- **Self-test trước khi Valid:** Bản mới tải về chỉ được coi là hợp lệ sau khi tự kiểm tra gate thành công trên chip.
-- **Không bao giờ bị 'cục gạch' (bricked):** Mọi sự cố từ sai khóa, hỏng mã nguồn cho tới trượt self-test đều được bootloader và chính sách phân vùng tự động khôi phục về khe hoạt động gần nhất.
+### Highlights
+- **Self-test before Valid:** Newly downloaded build is only considered valid after gate self-test succeeds on chip.
+- **Never bricked:** All incidents from wrong keys, corrupted code, to failed self-tests are automatically recovered to the last working slot by bootloader and partition policy.
 
 ---
 
-## 5. Những điều không được nói trong demo
+## 5. What not to say in demo
 
-Khi trình bày với đối tác, khách hàng hoặc trong phỏng vấn nhu cầu, người trình bày cần tuân thủ nghiêm ngặt danh mục "Không được nói" tại [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../../docs/business/cong-nhu-cau-2026-10-25/demo.md) §0.1 và danh mục giới hạn tại [`CHANGELOG.md`](../../CHANGELOG.md) §3.7. Cụ thể, không được nói hoặc khẳng định ba điều sau đây:
+When presenting to partners, customers, or during demand interviews, the presenter must strictly comply with the "What not to say" catalog in [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../../docs/business/cong-nhu-cau-2026-10-25/demo.md) §0.1 and limitation catalog in [`CHANGELOG.md`](../../CHANGELOG.md) §3.7. Specifically, do not state or claim the following three things:
 
-1. **Không nói là chân GPIO đã điều khiển thiết bị thật:** Hiện tại HAL trên vi điều khiển là TSK-S4-01; mô phỏng QEMU chỉ chứng minh logic phân vùng flash, walker C, sổ token và chữ ký (Nguồn: [`docs/spec/simulation_coverage.md`](../../docs/spec/simulation_coverage.md) §4, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §1).
-2. **Không nói là Box-3 đã kết nối Wi-Fi thật ngoài đời:** QEMU kết nối mạng bằng card mạng ảo `open_eth`; trên bo mạch ESP32-S3-BOX-3 thật, Wi-Fi mới dừng ở mức khởi tạo giao diện STA mà chưa gọi kết nối và chưa có provisioning cấu hình mạng (Nguồn: [`docs/spec/simulation_coverage.md`](../../docs/spec/simulation_coverage.md) §4.1, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §6.5, `TODOS.md` #50).
-3. **Không nói là đã có Secure Boot phần cứng hay eFuse anti-rollback:** Khóa công khai xác minh nằm trong ảnh firmware đang chạy (TSK-S6-05); người có cáp nạp trực tiếp vẫn có thể thay firmware hoặc đổi khóa; việc chặn hạ cấp hiện tại là bằng phần mềm dựa vào mốc nước cao trong NVS (Nguồn: TSK-S6-05, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §1, §6).
+1. **Do not say GPIO pins already control real equipment:** Currently the microcontroller HAL is TSK-S4-01; QEMU simulation only proves flash partition logic, C walker, token log, and signatures (Source: [`docs/spec/simulation_coverage.md`](../../docs/spec/simulation_coverage.md) §4, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §1).
+2. **Do not say Box-3 has connected to real Wi-Fi in the wild:** QEMU connects to the network via `open_eth` virtual NIC; on physical ESP32-S3-BOX-3 board, Wi-Fi is only initialized at STA interface level without calling connect or network configuration provisioning (Source: [`docs/spec/simulation_coverage.md`](../../docs/spec/simulation_coverage.md) §4.1, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §6.5, `TODOS.md` #50).
+3. **Do not say hardware Secure Boot or anti-rollback eFuses exist:** The verification public key resides inside the running firmware image (TSK-S6-05); anyone with a direct flash cable can still replace firmware or swap keys; downgrade prevention is currently implemented in software based on the NVS high-water mark (Source: TSK-S6-05, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §1, §6).

@@ -1,29 +1,29 @@
-# RFC-0013: Nguyên thủy mở rộng tuỳ chọn theo bo mạch và nhiều bo mạch tham chiếu mỗi target
+# RFC-0013: Board-Optional Extension Primitives and Multiple Reference Boards per Target
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0013 |
-| **Tiêu đề** | Nguyên thủy mở rộng là tuỳ chọn theo bo mạch; nhiều bo mạch tham chiếu bậc 1 mỗi target; mỗi profile `sim` soi đúng một bo mạch tham chiếu |
-| **Hợp đồng bị ảnh hưởng** | *(không trong `schemas/`)* — tập nguyên thủy, bảng bo tham chiếu và bất biến kiểm thử ở `python/neuroedge/hal/board.py`, `python/tests/test_boards.py`; cách `neuroedge build` và `neuroedge verify` chọn bo (`python/neuroedge/cli/main.py`) |
-| **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-04, FR-HAL-05, FR-HAL-08, FR-TGT-01, FR-TGT-06, FR-TGT-08 |
-| **Người đề xuất** | — |
-| **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #80; sửa theo review 2026-10-01 (§9, Q-62); hiện thực trong PR thứ hai |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (sửa các bất biến kiểm thử bảo vệ tương đương target, RFC-0002 §5) |
+| **RFC ID** | 0013 |
+| **Title** | Extension primitives are optional per board; multiple tier-1 reference boards per target; each `sim` profile mirrors exactly one reference board |
+| **Affected Contract** | *(not in `schemas/`)* — primitive sets, reference board tables, and test invariants in `python/neuroedge/hal/board.py`, `python/tests/test_boards.py`; board selection in `neuroedge build` and `neuroedge verify` (`python/neuroedge/cli/main.py`) |
+| **Related PRD Requirements** | FR-HAL-01, FR-HAL-04, FR-HAL-05, FR-HAL-08, FR-TGT-01, FR-TGT-06, FR-TGT-08 |
+| **Author** | — |
+| **Date Opened** | 2026-09-30 |
+| **Status** | ✅ Approved (2026-10-01) — lead architect signed on PR #80; amended per review 2026-10-01 (§9, Q-62); implemented in second PR |
+| **Approver** | **Lead Architect — mandatory** (modifies test invariants protecting target equivalence, RFC-0002 §5) |
 
-> **Khi nào cần RFC:** RFC này không sửa `schemas/`, nhưng đổi ba bất biến mà RFC-0002 §5a–§5c đề xuất
-> sau review; đổi chúng lặng lẽ là điều RFC-0002 §5 cảnh báo. RFC này chấp thuận **trước** RFC-0002 (§9 mục 6).
-> Task: TSK-I2a-06, TSK-I2a-07, TSK-I3a-01.
-> Quyết định nền: `neuroedge-prd.md` §15 Q-52, **Q-53** (bốn gói nguyên thủy bắt buộc trên cả ba target bậc 1;
-> bo mạch ESP32-S3 có camera; `sim-rpi5`; `analog.in` chuyển sang RFC-0007), Q-54, Q-55, **Q-57** (§9).
-> Phụ thuộc: [RFC-0007](0007-digital-in-i2c-analog-in-phong-bi.md), [RFC-0010](0010-pwm-trong-digital-out.md),
+> **When an RFC is required:** This RFC does not modify `schemas/`, but changes three invariants proposed by RFC-0002 §5a–§5c
+> following review; changing them silently is precisely what RFC-0002 §5 warned against. This RFC is approved **prior to** RFC-0002 (§9 item 6).
+> Tasks: TSK-I2a-06, TSK-I2a-07, TSK-I3a-01.
+> Foundation decisions: `neuroedge-prd.md` §15 Q-52, **Q-53** (four primitive packs mandatory across all three tier-1 targets;
+> ESP32-S3 board with camera; `sim-rpi5`; `analog.in` moved to RFC-0007), Q-54, Q-55, **Q-57** (§9).
+> Dependencies: [RFC-0007](0007-digital-in-i2c-analog-in-phong-bi.md), [RFC-0010](0010-pwm-trong-digital-out.md),
 > [RFC-0011](0011-nguyen-thuy-motion.md), [RFC-0012](0012-nguyen-thuy-vision-in.md).
 
-## 1. Vấn đề
+## 1. Problem
 
-Bốn RFC trước thêm nguyên thủy mới (`digital.in`, I2C, `analog.in`, PWM, `motion.*`, `vision.in`). Ba điều trong mã và test hiện tại chặn việc đó:
+The previous four RFCs add new primitives (`digital.in`, I2C, `analog.in`, PWM, `motion.*`, `vision.in`). Three things in existing code and tests block this:
 
-### 1a. Tập nguyên thủy là năm, bắt buộc với mọi bo mạch
+### 1a. Primitive Set Is Five, Mandatory for All Boards
 
 `python/neuroedge/hal/board.py`:
 
@@ -31,179 +31,179 @@ Bốn RFC trước thêm nguyên thủy mới (`digital.in`, I2C, `analog.in`, P
 PRIMITIVES: tuple[str, ...] = ("audio.in", "audio.out", "digital.out", "sensor.read", "display")
 ```
 
-`python/tests/test_boards.py::test_every_profile_declares_all_five_primitives` bắt mọi profile khai đủ năm. Nếu sáu nguyên thủy mới cũng vào `PRIMITIVES`, mọi bo mạch phải khai cả camera lẫn motor — sai với phần cứng thật.
+`python/tests/test_boards.py::test_every_profile_declares_all_five_primitives` forces all profiles to declare all five. If six new primitives enter `PRIMITIVES`, every board must declare both cameras and motors — untrue to physical hardware.
 
-### 1b. Mỗi target đúng một bo mạch tham chiếu
+### 1b. Exactly One Reference Board per Target
 
-`REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp32s3-box-3"}` (`board.py`), dùng làm mặc định ở `cli/main.py` và `sim/session.py`. `test_reference_board_is_the_box_3_not_a_devkit` ghim `esp32s3` vào Box-3, và RFC-0002 §5c đề xuất "mỗi target bậc 1 có **đúng một** profile". Nhưng **Box-3 không có camera sẵn**, mà Q-53 đòi `vision.in` có mặt trên `esp32s3`. Với đúng một bo mỗi target, `esp32s3` chỉ có camera nếu chính Box-3 mang camera.
+`REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp32s3-box-3"}` (`board.py`), used as default in `cli/main.py` and `sim/session.py`. `test_reference_board_is_the_box_3_not_a_devkit` pins `esp32s3` to Box-3, and RFC-0002 §5c proposes "each tier-1 target has **exactly one** profile". But **Box-3 lacks an onboard camera**, while Q-53 demands `vision.in` present on `esp32s3`. With exactly one board per target, `esp32s3` only gains a camera if Box-3 itself carries one.
 
-### 1c. `sim` phải sao đúng một bo mạch
+### 1c. `sim` Must Mirror Exactly One Board
 
-`sim-default` mirror Box-3 (chú thích trong `boards/sim-default.toml`); `test_sim_offers_no_pin_the_reference_board_lacks` và `…_sensor_…` kiểm quan hệ này. `TODOS.md` #14 đã nêu: `sim-default` không được khai camera vì Box-3 không có, nên agent thị giác không chạy được trên `sim` — Action CI cho khung hình không có đường `sim`.
+`sim-default` mirrors Box-3 (annotated in `boards/sim-default.toml`); `test_sim_offers_no_pin_the_reference_board_lacks` and `…_sensor_…` verify this relation. `TODOS.md` #14 noted: `sim-default` must not declare a camera because Box-3 lacks one, preventing vision agents from running on `sim` — the frame Action CI has no `sim` path.
 
-## 2. Vì sao cấu trúc hiện tại không giải quyết được
+## 2. Why the Current Structure Does Not Solve It
 
-- `board.v1.json` đã coi mọi khoá capability là tuỳ chọn (chỉ `board` và `capabilities` là bắt buộc); nghĩa vụ "đủ năm" nằm **hoàn toàn ở mã và test**, nên sửa được không cần lược đồ.
-- `REFERENCE_BOARD` là ánh xạ 1-1 `target → id`; không diễn đạt được hai bo mạch tham chiếu.
-- Không có bảng nào nói `sim-*` mirror bo mạch nào; quan hệ nằm cứng trong tên test.
-- Quy tắc phủ (mỗi nguyên thủy mở rộng phải có trên cả ba target) chưa có chỗ nào cưỡng chế, nên Q-53 có thể bị vi phạm lặng lẽ.
-- `neuroedge verify` và nightly chỉ biết một bo mỗi target, nên bo tham chiếu thứ hai sẽ không bao giờ được replay.
+- `board.v1.json` already treats all capability keys as optional (only `board` and `capabilities` are required); the "declare all five" requirement lives **entirely in code and tests**, so it can be changed without schema modifications.
+- `REFERENCE_BOARD` is a 1-to-1 mapping `target → id`; cannot express two reference boards.
+- No table specifies which board a `sim-*` mirrors; the relation is hardcoded into test names.
+- The coverage rule (each extension primitive must exist across all three targets) is not enforced anywhere, allowing Q-53 to be silently violated.
+- `neuroedge verify` and nightly only recognize one board per target, so a second reference board would never be replayed.
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
-### 3a. Nguyên thủy lõi và nguyên thủy mở rộng
+### 3a. Core and Extension Primitives
 
 ```python
-PRIMITIVES = ("audio.in", "audio.out", "digital.out", "sensor.read", "display")   # lõi
-EXTENSION_PRIMITIVES = ("digital.in", "i2c", "analog.in", "motion", "vision.in")  # tuỳ chọn (PWM là khối trong digital.out)
+PRIMITIVES = ("audio.in", "audio.out", "digital.out", "sensor.read", "display")   # core
+EXTENSION_PRIMITIVES = ("digital.in", "i2c", "analog.in", "motion", "vision.in")  # optional (PWM is block in digital.out)
 ALL_PRIMITIVES = PRIMITIVES + EXTENSION_PRIMITIVES
 ```
 
-- **Năm nguyên thủy lõi bắt buộc với mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS`** (§3b), và luôn bắt buộc với bo mặc định của mỗi target. Bậc 2/3: có/không, như RFC-0002.
-- Nguyên thủy mở rộng **tuỳ chọn theo bo mạch**; `BoardProfile.supports()` / `missing_primitives()` nhận cả hai tập; thông điệp `_normalise()` sinh từ danh sách, không ghim "năm" (RFC-0002 §3c.1).
-- Khoá mở rộng gõ sai bị từ chối lúc nạp (RFC-0002 §3c.2), giờ dựa trên `ALL_PRIMITIVES`.
-- Bo tham chiếu mang `vision.in` (`linux-rpi5`, `esp32s3-cores3`, `sim-rpi5`) bắt buộc khai trường sai số suy luận `tolerance = { score_abs, box_iou_min }` trong khối `capabilities.vision_in` (RFC-0012).
-- **Không bao giờ khai năng lực phần cứng không có**, lõi lẫn mở rộng: bo thiếu thì vắng khoá, không khai giả để qua test (§9 mục 1).
+- **Five core primitives mandatory for all tier-1 reference boards outside `EXTENSION_REFERENCE_BOARDS`** (§3b), and always mandatory for each target's default board. Tier 2/3: optional, per RFC-0002.
+- Extension primitives are **optional per board**; `BoardProfile.supports()` / `missing_primitives()` accept both sets; `_normalise()` messages generated dynamically from list, not hardcoding "five" (RFC-0002 §3c.1).
+- Mistyped extension keys rejected at load time (RFC-0002 §3c.2), now checked against `ALL_PRIMITIVES`.
+- Reference boards carrying `vision.in` (`linux-rpi5`, `esp32s3-cores3`, `sim-rpi5`) must declare inference tolerance `tolerance = { score_abs, box_iou_min }` in `capabilities.vision_in` (RFC-0012).
+- **Never declare capabilities hardware lacks**, core or extension: boards lacking hardware omit keys, never declaring dummies to pass tests (§9 item 1).
 
-### 3b. Nhiều bo mạch tham chiếu mỗi target
+### 3b. Multiple Reference Boards per Target
 
 ```python
 REFERENCE_BOARDS: dict[str, tuple[str, ...]] = {
     "sim":     ("sim-default", "sim-rpi5"),
     "linux":   ("linux-rpi5",),
-    "esp32s3": ("esp32s3-box-3", "esp32s3-cores3"),  # phương án (a) theo Q-61; dự phòng: (b) hoặc (c)
+    "esp32s3": ("esp32s3-box-3", "esp32s3-cores3"),  # option (a) per Q-61; fallbacks: (b) or (c)
 }
-EXTENSION_REFERENCE_BOARDS: frozenset[str] = frozenset()  # chỉ có phần tử khi bo camera theo phương án (c)
+EXTENSION_REFERENCE_BOARDS: frozenset[str] = frozenset()  # non-empty only if camera board takes option (c)
 ```
 
-Phần tử đầu là **mặc định** khi không có `--board` (giữ hành vi hiện tại của `cli/main.py`, `sim/session.py`); Box-3 vẫn là mặc định của `esp32s3`. `REFERENCE_BOARD` cũ giữ làm bí danh của phần tử đầu để không vỡ mã gọi. `EXTENSION_REFERENCE_BOARDS` là bảng lõi, không tự khai trong `board.toml`, cùng lý do `SIM_MIRRORS` (§3d).
+The first element is the **default** when `--board` is omitted (preserves current behavior of `cli/main.py`, `sim/session.py`); Box-3 remains the default for `esp32s3`. The legacy `REFERENCE_BOARD` is preserved as an alias for the first element to avoid breaking callers. `EXTENSION_REFERENCE_BOARDS` is a core table, not declared in `board.toml`, for the same reason as `SIM_MIRRORS` (§3d).
 
-**Chọn bo camera** (TSK-I3a-01, §9 mục 1): Đã chọn **M5Stack CoreS3** (`esp32s3-cores3`) theo Q-61 (2026-10-01), đạt tiêu chí (a). Các phương án (b) và (c) giữ làm luật dự phòng nếu số đo Q-3 trên CoreS3 không đạt:
+**Camera Board Selection** (TSK-I3a-01, §9 item 1): **M5Stack CoreS3** (`esp32s3-cores3`) selected per Q-61 (2026-10-01), satisfying option (a). Options (b) and (c) retained as fallback rules if Q-3 measurements fail on CoreS3:
 
-| Phương án | Điều kiện | Hệ quả |
+| Option | Condition | Consequence |
 |:---|:---|:---|
-| (a) | Một bo ESP32-S3 có camera khai **đủ năm nguyên thủy lõi** và tập tên chân chung (RFC-0002 §5a); **đã chọn M5Stack CoreS3** (Q-61) | Bo tham chiếu thứ hai đầy đủ của `esp32s3`, đứng sau Box-3 |
-| (b) | Dự phòng: không có (a); gắn module camera vào Box-3 mà ngân sách bộ nhớ Q-3 vẫn đạt | `esp32s3` giữ một bo; Box-3 gắn module khai `vision_in` |
-| (c) | Dự phòng: không có (a) lẫn (b) | **Bo tham chiếu mở rộng**: id vào `EXTENSION_REFERENCE_BOARDS`, chỉ khai đúng những gì phần cứng có, **không bao giờ** là phần tử đầu của target |
+| (a) | An ESP32-S3 camera board declares **all five core primitives** and common pin set (RFC-0002 §5a); **M5Stack CoreS3 selected** (Q-61) | Full second reference board for `esp32s3`, listed after Box-3 |
+| (b) | Fallback: option (a) unavailable; camera module attached to Box-3 while meeting Q-3 memory budget | `esp32s3` retains one board; Box-3 with module declares `vision_in` |
+| (c) | Fallback: neither (a) nor (b) available | **Extension reference board**: id added to `EXTENSION_REFERENCE_BOARDS`, declares only what hardware has, **never** the first element of target |
 
-**Thay RFC-0002 §5c:** "mỗi target bậc 1 có **ít nhất một** profile tham chiếu, và mọi profile có target thuộc `SUPPORTED_TARGETS`". **Thay §5b:** lõi bắt buộc với mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS` và với bo mặc định; nguyên thủy mở rộng chỉ khai khi bo mạch thật có. **§5a** (tập tên chân chung) áp cho cùng tập bo đó. Vì RFC này chấp thuận trước, RFC-0002 §5b/§5c dẫn RFC này thay vì viết lại (§9 mục 6).
+**Replaces RFC-0002 §5c:** "each tier-1 target has **at least one** reference profile, and all profiles have targets in `SUPPORTED_TARGETS`". **Replaces §5b:** core primitives mandatory for all tier-1 reference boards outside `EXTENSION_REFERENCE_BOARDS` and for default boards; extension primitives declared only when physical board has them. **§5a** (common named pin set) applies to that same board set. Since this RFC is approved first, RFC-0002 §5b/§5c links to this RFC rather than restating it (§9 item 6).
 
-### 3c. Quy tắc phủ (Q-53)
+### 3c. Coverage Rule (Q-53)
 
-**Mỗi nguyên thủy mở rộng phải có trên ít nhất một bo mạch tham chiếu bậc 1 của MỖI target bậc 1** (`sim`, `linux`, `esp32s3`). Test `test_every_extension_primitive_on_every_tier1_target` duyệt `REFERENCE_BOARDS` và `available_boards()`; thiếu ở target nào ⇒ đỏ, kèm gợi ý bo mạch cần thêm.
+**Each extension primitive must exist on at least one tier-1 reference board of EACH tier-1 target** (`sim`, `linux`, `esp32s3`). Test `test_every_extension_primitive_on_every_tier1_target` iterates `REFERENCE_BOARDS` and `available_boards()`; missing on any target ⇒ red, suggesting board to add.
 
-Bảng bo mang từng nguyên thủy là §9 mục 5; **mỗi ô là một khẳng định riêng** của test phủ (bo trong ô khai nguyên thủy đó), không chỉ "có ở đâu đó trên target". Phần cứng thật không cho phép một ô ⇒ mở `Q-N` và dời ngày, không bỏ ô (Q-52). Ô `motion.*` × `esp32s3` theo RFC-0011 §9 mục 6, kể cả phương án dự phòng ở đó (bo camera mang nếu dock Box-3 không đủ chân); đổi bo của một ô là sửa §9 mục 5 kèm `Q-N`, không đổi lặng lẽ trong test.
+The table of boards providing each primitive is §9 item 5; **each cell is an individual assertion** in coverage tests (the board in the cell declares that primitive), not merely "exists somewhere on target". If physical hardware prevents a cell ⇒ open `Q-N` and slip schedule, do not drop cell (Q-52). Cell `motion.*` × `esp32s3` follows RFC-0011 §9 item 6, including its fallback (camera board carries it if Box-3 dock lacks pins); changing a cell's board requires amending §9 item 5 via `Q-N`, not silent test edits.
 
-### 3d. Mỗi profile `sim` soi đúng một bo mạch tham chiếu
+### 3d. Each `sim` Profile Mirrors Exactly One Reference Board
 
-Thêm `boards/sim-rpi5.toml` sao `linux-rpi5` (kể cả camera khi `linux-rpi5` có), như `sim-default` sao Box-3. Quan hệ soi là **một bảng trong mã lõi**, không phải trường của `board.toml`: một profile không được tự khai mình soi bo nào (cùng lý do `TARGET_TIERS`, RFC-0002 §3b; §9 mục 4). Bộ nạp từ chối profile khai `mirrors`.
+Add `boards/sim-rpi5.toml` mirroring `linux-rpi5` (including camera when `linux-rpi5` has one), just as `sim-default` mirrors Box-3. The mirroring relation is **a table in core code**, not a field in `board.toml`: a profile cannot self-declare which board it mirrors (same rationale as `TARGET_TIERS`, RFC-0002 §3b; §9 item 4). The loader rejects profiles declaring `mirrors`.
 
 ```python
 SIM_MIRRORS = {"sim-default": "esp32s3-box-3", "sim-rpi5": "linux-rpi5"}
 ```
 
-Bất biến **"`sim` không giàu hơn bo mạch tham chiếu"** (`TODOS.md` #14) phát biểu lại **theo từng cặp**: với mỗi `sim-*`, tập nguyên thủy, chân, cảm biến, chế độ camera ⊆ của bo mạch nó sao. Hai test hiện có (`test_sim_offers_no_pin…`, `…_sensor…`) chuyển thành tham số hoá theo `SIM_MIRRORS`. Không phải bo tham chiếu nào cũng có `sim-*` soi: bo camera `esp32s3` không có; `vision.in` trên `sim` chỉ ở `sim-rpi5` (§9 mục 5). Agent thị giác chạy trên `sim-rpi5`; Action CI khung hình có đường `sim` (TSK-V1b-02). `TODOS.md` #14 đóng khi bo mạch camera tham chiếu và `sim-rpi5` có mặt.
+The invariant **"`sim` is no richer than reference board"** (`TODOS.md` #14) is reformulated **pair-wise**: for each `sim-*`, primitive set, pins, sensors, and camera modes ⊆ those of the board it mirrors. Two existing tests (`test_sim_offers_no_pin…`, `…_sensor…`) become parameterized over `SIM_MIRRORS`. Not all reference boards have a mirroring `sim-*`: the `esp32s3` camera board has none; `vision.in` on `sim` lives only on `sim-rpi5` (§9 item 5). Vision agents run on `sim-rpi5`; frame Action CI gains a `sim` path (TSK-V1b-02). `TODOS.md` #14 closes when the reference camera board and `sim-rpi5` land.
 
-### 3e. Chọn bo mạch khi build
+### 3e. Board Selection at Build Time
 
-`neuroedge build` đối chiếu `[requires]` với bo mạch (FR-HAL-04), quy tắc ở §9 mục 3:
+`neuroedge build` matches `[requires]` against boards (FR-HAL-04), rules in §9 item 3:
 
-- Có `--board`: dùng đúng bo đó.
-- Không có `--board`: dùng bo mặc định nếu nó thoả `[requires]`. Không thoả ⇒ `BoardCapabilityError` (NE3001, gom trong `BuildFailed` NE3003), mã 1, không ghi artifact nào; thông điệp ba phần (FR-HAL-05) nêu năng lực thiếu, bo mặc định cung cấp gì, và **liệt kê các bo tham chiếu của target thoả `[requires]`** (gợi ý `--board <id>`), hoặc nói rõ không bo nào thoả.
-- **Không tự chọn bo khác**: người dùng phải biết chính xác mình nạp lên bo nào.
+- With `--board`: use that exact board.
+- Without `--board`: use default board if it satisfies `[requires]`. If not ⇒ `BoardCapabilityError` (NE3001, wrapped in `BuildFailed` NE3003), exit code 1, no artifact written; three-part message (FR-HAL-05) states missing capability, what default board provides, and **lists target reference boards satisfying `[requires]`** (suggesting `--board <id>`), or clearly states none satisfy.
+- **Never auto-select another board**: users must know exactly which board they are flashing.
 
-### 3f. `verify` và nightly chạy mọi bo tham chiếu
+### 3f. `verify` and Nightly Run All Reference Boards
 
-Quy tắc ở §9 mục 2 và mục 7: tương đương chỉ có nghĩa khi đã chạy trên đúng bo sẽ giao cho người dùng.
+Rules in §9 item 2 and item 7: equivalence only has meaning when run on the exact board delivered to users.
 
-- `neuroedge verify --targets <t,…>` replay vết ghi trên **từng** bo trong `REFERENCE_BOARDS[t]`, không chỉ phần tử đầu, và báo kết quả theo cặp (target, bo).
-- **Tập vết ghi replay theo năng lực bo (§9 mục 7):** Mỗi bo replay đúng các vết ghi chuẩn mực mà nguyên thủy nó khai đủ, cộng corpus riêng của nguyên thủy mở rộng nó mang. Bo mặc định của mỗi target bắt buộc replay cả ba vết ghi chuẩn mực. Một bo không có vết ghi nào áp được ⇒ không đạt, mã 1, `VerificationError` (NE4004) — theo nguyên tắc "quét 0 không bao giờ là đạt". Với lựa chọn hiện tại là M5Stack CoreS3 (đủ năm nguyên thủy lõi theo phương án (a)), `esp32s3-cores3` replay cả ba vết ghi chuẩn mực cộng corpus thị giác riêng.
-- `sim`, `linux`: host lặp qua các bo. `esp32s3`: mỗi bo tham chiếu cần phiên replay của chính nó (`--port` cho từng bo; thiết bị tự khai `board_id`, `testing/uart.py`). Thiếu lượt replay của một bo ⇒ không đạt, mã 1, `VerificationError` (NE4004); không bo nào bị bỏ qua lặng lẽ.
-- Nightly hardware (`.github/workflows/nightly-hardware.yml`) có một job cho mỗi bo tham chiếu phần cứng; test đối chiếu ma trận job với `REFERENCE_BOARDS`.
+- `neuroedge verify --targets <t,…>` replays traces across **every** board in `REFERENCE_BOARDS[t]`, not just the first element, reporting results per (target, board) pair.
+- **Trace replay set per board capability (§9 item 7):** Each board replays only canonical traces whose primitives it fully declares, plus the dedicated corpus for extension primitives it carries. The default board of each target must replay all three canonical traces. A board with zero applicable traces ⇒ failure, exit code 1, `VerificationError` (NE4004) — following the "zero scans is never a pass" principle. With the current selection of M5Stack CoreS3 (all five core primitives per option (a)), `esp32s3-cores3` replays all three canonical traces plus its dedicated vision corpus.
+- `sim`, `linux`: host loops through boards. `esp32s3`: each reference board requires its own replay session (`--port` per board; device declares `board_id`, `testing/uart.py`). Missing replay session for a board ⇒ failure, exit code 1, `VerificationError` (NE4004); no board skipped silently.
+- Nightly hardware (`.github/workflows/nightly-hardware.yml`) includes one job per physical reference board; tests check job matrix against `REFERENCE_BOARDS`.
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — không đổi `schemas/`; ba profile bậc 1 trong `boards/` phải thêm phong bì `[capabilities.digital_out.envelope.<tên>]` trong PR hiện thực, với giá trị đủ rộng để ba vết ghi chuẩn mực vẫn replay y nguyên (chưa có profile bên ngoài). Thêm profile `esp32s3-cores3` và `sim-rpi5`, không bỏ khoá nào |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Có, ở tầng bộ nạp: khoá mở rộng trước đây nhận lặng lẽ nay là khoá hợp lệ; profile thứ hai mỗi target được `test_boards.py` chấp nhận. Ngược lại, profile khai `mirrors` nay bị bộ nạp từ chối (§3d) |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không đổi tệp — cả ba vẫn khai `target: "esp32s3"`, `board_id: "esp32s3-box-3"`. Mỗi bo tham chiếu replay đúng các vết ghi chuẩn mực mà nguyên thủy nó khai đủ (§3f, §9 mục 7); bo mặc định của mỗi target replay cả ba; `esp32s3-cores3` đủ năm nguyên thủy lõi nên replay cả ba vết ghi chuẩn mực. Các profile phải có phong bì đủ rộng để ba vết ghi replay y nguyên |
-| Gate nào trong `digests.lock` đổi digest? | Không gate nào |
-| Bố cục `NETR` hoặc walker C phải đổi? | Không |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không |
-| Mã lỗi (`neuroedge-prd.md` Phụ lục B) | Không thêm lớp hay mã mới: `BoardCapabilityError` (NE3001), `BuildFailed` (NE3003), `VerificationError` (NE4004) đã có. Khi chấp thuận: dòng NE3001 thêm hành vi "không có `--board` mà bo mặc định không thoả ⇒ liệt kê bo tham chiếu thoả" (§3e); dòng NE4004 thêm nguyên nhân "một bo tham chiếu của target được yêu cầu không có lượt replay hoặc không có vết ghi nào áp được" (§3f, §9 mục 7) |
+| Do currently valid files remain valid? | Yes — `schemas/` unchanged; three tier-1 profiles in `boards/` must add `[capabilities.digital_out.envelope.<name>]` envelopes in implementation PR, with values wide enough for canonical traces to replay unchanged (no external profiles yet). Adds `esp32s3-cores3` and `sim-rpi5` profiles, no keys removed |
+| Do currently invalid files become valid? | Yes, at loader level: previously silently tolerated extension keys are now valid keys; second profile per target accepted by `test_boards.py`. Conversely, profiles declaring `mirrors` rejected by loader (§3d) |
+| Does schema version need bumping (`v1` → `v2`)? | No |
+| Impact on published gate hashes / signatures? | None |
+| Impact on three canonical trace files? | Files unchanged — all three still declare `target: "esp32s3"`, `board_id: "esp32s3-box-3"`. Each reference board replays only canonical traces whose primitives it fully declares (§3f, §9 item 7); default board of each target replays all three; `esp32s3-cores3` declares all five core primitives so replays all three canonical traces. Profiles must have envelopes wide enough for all three traces to replay identically |
+| Which gates in `digests.lock` change digest? | None |
+| Must `NETR` layout or C walker change? | No |
+| Do any answers in tool call corpus (`expected_results.yaml`) change? | No |
+| Error codes (`neuroedge-prd.md` Appendix B) | No new classes or codes added: `BoardCapabilityError` (NE3001), `BuildFailed` (NE3003), `VerificationError` (NE4004) already exist. On approval: row NE3001 adds behavior "no `--board` and default board unsatisfied ⇒ list satisfying reference boards" (§3e); row NE4004 adds cause "a reference board of requested target lacks replay session or has no applicable traces" (§3f, §9 item 7) |
 
-Hành vi CLI: `build` không `--board` không đổi khi bo mặc định thoả, và vẫn mã 1 khi không thoả — chỉ thông điệp thêm danh sách bo; `verify` chạy thêm bo nên chậm hơn và có thể đỏ ở bo mới — đó là mục đích.
+CLI behavior: `build` without `--board` unchanged when default board satisfies, still exit 1 when unsatisfied — message adds board list; `verify` runs additional boards so runs slower and may fail on new boards — that is intentional.
 
-Test cần sửa: `test_one_profile_exists_per_supported_target` (→ "ít nhất một mỗi target bậc 1"), `test_all_three_targets_share_the_same_named_pins` và `test_every_profile_declares_all_five_primitives` (→ mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS`, và mọi bo mặc định), `test_reference_board_is_the_box_3_not_a_devkit` (giữ, áp cho phần tử đầu của `esp32s3`). `REFERENCE_BOARD` cũ được giữ nên `cli/main.py` và `sim/session.py` không vỡ.
+Tests needing edits: `test_one_profile_exists_per_supported_target` (→ "at least one per tier-1 target"), `test_all_three_targets_share_the_same_named_pins` and `test_every_profile_declares_all_five_primitives` (→ all tier-1 reference boards outside `EXTENSION_REFERENCE_BOARDS`, and all default boards), `test_reference_board_is_the_box_3_not_a_devkit` (kept, applied to first element of `esp32s3`). Legacy `REFERENCE_BOARD` retained so `cli/main.py` and `sim/session.py` do not break.
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-RFC này không đụng `gate.v1`, phân giải, năm nguyên tắc kế thừa hay fail-closed. Rủi ro nằm ở **bất biến kiểm thử** và ở **việc chọn bo**:
+This RFC does not touch `gate.v1`, resolution, five inheritance principles, or fail-closed semantics. Risks lie in **test invariants** and **board selection**:
 
-- **Không bỏ khẳng định nào, chỉ đổi phạm vi**: lõi và tập tên chân chung vẫn bắt buộc với mọi bo tham chiếu bậc 1 đầy đủ và luôn với bo mặc định; "sim không giàu hơn" **chặt hơn** (theo cặp thay vì một profile). Ngoại lệ duy nhất là bo tham chiếu mở rộng (§3b phương án (c)), không bao giờ là bo mặc định.
-- **Cổng thay thế đã tồn tại:** `neuroedge build` đối chiếu `[requires]` với bo mạch (TSK-S2-02, `engine/compiler.py`), nên một agent cần `vision.in` bị từ chối ở bo mạch thiếu nó — không mở khoảng nào không ai canh.
-- **Ma trận kiểm thử nhân đôi — đã chấp nhận:** `verify` và nightly chạy mọi bo tham chiếu (§3f), vì agent thị giác qua trên `sim-rpi5` chưa chứng minh gì trên bo camera `esp32s3` (`esp32s3-cores3`). Chi phí: thời gian CI và một runner tự quản cho mỗi bo phần cứng.
-- **Replay theo đúng năng lực (§3f, §9 mục 7):** Bo mở rộng chỉ replay vết ghi nó đủ nguyên thủy, không ép chạy vết ghi dùng nguyên thủy thiếu; bo mặc định bắt buộc replay cả ba vết ghi chuẩn mực. Quét 0 vết ghi là vi phạm fail-closed và bị từ chối.
-- **Không chọn bo lặng lẽ:** `build` không bao giờ tự chuyển sang bo khác (§3e).
-- **`sim` giàu hơn bo mạch tham chiếu là lỗi an toàn:** agent qua mô phỏng nhưng không build được trên phần cứng. Test theo cặp là cổng chặn.
-- **Khai năng lực không có là lỗi an toàn:** test phủ đỏ thì mở `Q-N` và dời ngày (§3c), không khai giả.
-- Cần kỹ thuật trưởng duyệt vì RFC-0002 §5 yêu cầu chữ ký khi đổi các bất biến này.
+- **No assertions dropped, only scope updated**: core primitives and common pin sets remain mandatory for all full tier-1 reference boards and always for default boards; "sim no richer than board" is **stricter** (pairwise instead of single profile). The sole exception is extension reference boards (§3b option (c)), which are never default boards.
+- **Replacement gate already exists:** `neuroedge build` matches `[requires]` against boards (TSK-S2-02, `engine/compiler.py`), so agents requiring `vision.in` are rejected on boards lacking it — leaves no unguarded gap.
+- **Doubled test matrix — accepted:** `verify` and nightly run all reference boards (§3f), because vision agents passing on `sim-rpi5` prove nothing on `esp32s3` camera board (`esp32s3-cores3`). Cost: CI time and self-hosted runner per hardware board.
+- **Replay by capability (§3f, §9 item 7):** Extension boards replay only traces whose primitives they support, avoiding forcing runs on boards missing required primitives; default boards must replay all three canonical traces. Zero replayed traces is a fail-closed violation and rejected.
+- **No silent board selection:** `build` never auto-switches boards (§3e).
+- **`sim` richer than reference board is safety fault:** agent passes simulation but cannot build on hardware. Pairwise testing is the enforcement gate.
+- **Declaring absent capabilities is safety fault:** failing coverage tests require opening `Q-N` and slipping dates (§3c), not declaring dummies.
+- Requires lead architect approval because RFC-0002 §5 requires signatures to alter these invariants.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| Đưa mọi nguyên thủy mới vào `PRIMITIVES` bắt buộc | Bắt bo mạch khai gian; RFC-0002 §5b đã chỉ ra điều tương tự cho bậc 2/3 |
-| Gắn camera vào Box-3 làm lựa chọn đầu | Box-3 là bo mạch đã đo ngân sách bộ nhớ (Q-1, Q-2, Q-3); thêm camera có thể vô hiệu số đo spike. Chỉ giữ làm phương án (b) của §3b, khi ngân sách Q-3 vẫn đạt |
-| Bo camera thiếu nguyên thủy lõi làm bo mặc định của `esp32s3` | Agent thoại không `--board` sẽ không build được; luật đủ năm lõi áp cho bo mặc định (§9 mục 1) |
-| Chỉ `linux` có camera | Q-53 đòi mọi nguyên thủy mở rộng trên cả ba target |
-| `sim` khai camera mà không mirror bo mạch nào | Phá bất biến "sim không giàu hơn" — chính `TODOS.md` #14 |
-| Khai `mirrors` trong `board.toml` | Một profile, kể cả bo cộng đồng, tự khai được mình soi bo nào; bảng lõi `SIM_MIRRORS` (§9 mục 4) |
-| `verify` và nightly chỉ chạy bo mặc định | Agent qua trên bo mặc định chưa chứng minh gì trên bo tham chiếu khác của cùng target (§9 mục 2) |
-| `build` không `--board` tự chọn bo tham chiếu thoả `[requires]` | Người dùng không biết mình nạp lên bo nào (§9 mục 3) |
+| Moving all new primitives into mandatory `PRIMITIVES` | Forces boards to fake capabilities; RFC-0002 §5b pointed out same for tier 2/3 |
+| Attaching camera to Box-3 as first choice | Box-3 is the board with measured memory budget (Q-1, Q-2, Q-3); adding camera could invalidate spike measurements. Kept only as fallback option (b) in §3b, if Q-3 budget holds |
+| Camera board lacking core primitives as default `esp32s3` board | Voice agents without `--board` fail to build; five core primitives rule applies to default boards (§9 item 1) |
+| Camera only on `linux` | Q-53 requires all extension primitives across all three targets |
+| `sim` declaring camera without mirroring a board | Violates "sim no richer than board" invariant — exactly `TODOS.md` #14 |
+| Declaring `mirrors` in `board.toml` | Allows any profile, even community boards, to self-declare what it mirrors; core `SIM_MIRRORS` table (§9 item 4) |
+| `verify` and nightly running default board only | Agent passing on default board proves nothing on other reference board of same target (§9 item 2) |
+| `build` without `--board` auto-selecting satisfying reference board | Users do not know which board they are targeting (§9 item 3) |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-- [ ] `boards/sim-rpi5.toml` và `boards/esp32s3-cores3.toml` (TSK-I3a-01, Q-61) hợp lệ theo `board.v1`; khai đúng `tolerance` cho `vision_in` (RFC-0012) và phong bì cho `digital_out`, tham số lấy từ phần cứng thật (`CONTRIBUTING.md` §3); phương án dự phòng (b) kèm báo cáo ngân sách Q-3 trong `docs/reports/`
-- [x] Test bảng bo (§3a, §3b): lõi đủ năm và tập tên chân chung trên mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS`; phần tử đầu của mọi `REFERENCE_BOARDS[t]` khai đủ năm lõi và không thuộc `EXTENSION_REFERENCE_BOARDS`; mọi id trong hai bảng có profile trong `boards/` với target khớp; khoá mở rộng lạ bị từ chối lúc nạp; bo mang `vision.in` thiếu `tolerance` bị từ chối lúc nạp — *đạt: `test_boards.py` (`test_the_reference_tables_name_real_profiles_of_the_right_target`, `test_every_full_reference_board_declares_all_five_core_primitives`, …) và `fixtures/boards/invalid/` (`capability_key_*`, `vision_tolerance_missing`); phần tử đầu và `EXTENSION_REFERENCE_BOARDS` rỗng đã kiểm*
-- [ ] Test phủ (§3c): `test_every_extension_primitive_on_every_tier1_target`, và **từng ô** của §9 mục 5 (bo trong ô khai nguyên thủy đó); phản chứng: bỏ một khoá khỏi bo trong ô ⇒ đỏ kèm gợi ý
-- [x] Test soi (§3d, §9 mục 5): `sim-*` ⊆ bo mạch được soi (tham số hoá theo `SIM_MIRRORS`); mọi `sim-*` trong `boards/` có mục trong `SIM_MIRRORS` và ngược lại; profile khai `mirrors` bị từ chối lúc nạp; `sim-default` không mang `motion.*` nếu `esp32s3-box-3` không mang; phản chứng: profile `sim` khai `vision_in` mà bo được soi thiếu ⇒ đỏ — *đạt: `test_a_sim_profile_is_never_richer_than_the_board_it_mirrors` (tham số hoá theo `SIM_MIRRORS`), `test_every_sim_profile_has_a_mirror_and_back`, `mirrors_*` ở `fixtures/boards/invalid/`, phản chứng `test_the_mirror_invariant_is_red_when_a_sim_profile_is_richer`*
-- [x] Test build (§3e): không `--board`, bo mặc định thoả ⇒ build trên bo mặc định; không thoả ⇒ mã 1, `BoardCapabilityError` liệt kê bo tham chiếu thoả, không ghi artifact, không build trên bo khác; `--board <id>` ⇒ dùng đúng bo đó — *đạt: `tests/test_compiler.py` (`test_without_a_board_the_default_is_checked_and_the_ones_that_fit_are_named`, `test_the_hint_never_builds_on_the_board_it_names`, `test_when_no_reference_board_fits_the_build_says_so`)*
-- [ ] Test verify (§3f, §9 mục 7): `verify` kiểm tra từng bo chỉ replay các vết ghi mà bo khai đủ nguyên thủy; bo mặc định của mỗi target replay đủ ba vết ghi chuẩn mực; `esp32s3-cores3` replay đủ ba vết ghi chuẩn mực cộng corpus thị giác; phản chứng: một bo tham chiếu không có vết ghi nào áp được ⇒ đỏ, mã 1 (`VerificationError`, NE4004); thiếu phiên replay của một bo tham chiếu phần cứng ⇒ mã 1
-- [ ] `cd python && .venv/bin/python -m pytest -q` xanh, 0 skipped; `neuroedge verify --targets sim,linux,esp32s3` xanh trên mọi bo tham chiếu bậc 1, trong CI và nightly (A10)
+- [ ] `boards/sim-rpi5.toml` and `boards/esp32s3-cores3.toml` (TSK-I3a-01, Q-61) valid under `board.v1`; declare valid `tolerance` for `vision_in` (RFC-0012) and envelopes for `digital_out`, parameters sourced from real hardware (`CONTRIBUTING.md` §3); fallback option (b) with Q-3 budget report in `docs/reports/`
+- [x] Board table tests (§3a, §3b): all five core primitives and common pin set on all tier-1 reference boards outside `EXTENSION_REFERENCE_BOARDS`; first element of all `REFERENCE_BOARDS[t]` declares all five core primitives and not in `EXTENSION_REFERENCE_BOARDS`; all IDs in both tables have profiles in `boards/` with matching target; unknown extension keys rejected at load time; boards carrying `vision.in` lacking `tolerance` rejected at load time — *met: `test_boards.py` (`test_the_reference_tables_name_real_profiles_of_the_right_target`, `test_every_full_reference_board_declares_all_five_core_primitives`, …) and `fixtures/boards/invalid/` (`capability_key_*`, `vision_tolerance_missing`); first element and empty `EXTENSION_REFERENCE_BOARDS` verified*
+- [ ] Coverage tests (§3c): `test_every_extension_primitive_on_every_tier1_target`, and **each cell** of §9 item 5 (board in cell declares that primitive); negative test: removing key from cell board ⇒ red with suggestion
+- [x] Mirroring tests (§3d, §9 item 5): `sim-*` ⊆ mirrored board (parameterized over `SIM_MIRRORS`); all `sim-*` in `boards/` have entries in `SIM_MIRRORS` and vice versa; profile declaring `mirrors` rejected at load time; `sim-default` does not carry `motion.*` if `esp32s3-box-3` does not; negative test: `sim` profile declaring `vision_in` when mirrored board lacks it ⇒ red — *met: `test_a_sim_profile_is_never_richer_than_the_board_it_mirrors` (parameterized over `SIM_MIRRORS`), `test_every_sim_profile_has_a_mirror_and_back`, `mirrors_*` in `fixtures/boards/invalid/`, negative test `test_the_mirror_invariant_is_red_when_a_sim_profile_is_richer`*
+- [x] Build tests (§3e): without `--board`, default board satisfies ⇒ build on default board; unsatisfied ⇒ exit 1, `BoardCapabilityError` lists satisfying reference boards, no artifact written, no build on other board; `--board <id>` ⇒ uses that exact board — *met: `tests/test_compiler.py` (`test_without_a_board_the_default_is_checked_and_the_ones_that_fit_are_named`, `test_the_hint_never_builds_on_the_board_it_names`, `test_when_no_reference_board_fits_the_build_says_so`)*
+- [ ] Verify tests (§3f, §9 item 7): `verify` checks each board replays only traces whose primitives the board fully declares; default board of each target replays all three canonical traces; `esp32s3-cores3` replays all three canonical traces plus vision corpus; negative test: a reference board with no applicable traces ⇒ red, exit 1 (`VerificationError`, NE4004); missing replay session for a physical reference board ⇒ exit 1
+- [ ] `cd python && .venv/bin/python -m pytest -q` green, 0 skipped; `neuroedge verify --targets sim,linux,esp32s3` green across all tier-1 reference boards, in CI and nightly (A10)
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Post-Approval Tasks
 
-- [ ] Thứ tự (§9 mục 6): chấp thuận RFC này trước RFC-0002; ghi chú ở RFC-0002 §5b/§5c dẫn RFC này, và khi RFC-0002 được chấp thuận, §5b/§5c của nó dẫn RFC này thay vì viết lại
-- [ ] Sửa bất biến trong `CHANGELOG.md` §3.3: #6 thành "bo tham chiếu mặc định của `esp32s3` là ESP32-S3-BOX-3; bo tham chiếu thứ hai (có camera) là M5Stack CoreS3 (Q-61); không đổi sang DevKitC — số đo spike sẽ vô nghĩa"; #7 thành "mỗi profile `sim` không giàu năng lực hơn bo nó soi (`SIM_MIRRORS`)"
+- [ ] Order (§9 item 6): approve this RFC before RFC-0002; notes in RFC-0002 §5b/§5c reference this RFC, and when RFC-0002 is approved, its §5b/§5c references this RFC instead of restating
+- [ ] Update invariants in `CHANGELOG.md` §3.3: #6 becomes "default reference board of `esp32s3` is ESP32-S3-BOX-3; second reference board (with camera) is M5Stack CoreS3 (Q-61); do not change to DevKitC — spike measurements become meaningless"; #7 becomes "each `sim` profile is no richer in capabilities than board it mirrors (`SIM_MIRRORS`)"
 - [ ] `python/neuroedge/hal/board.py` (`EXTENSION_PRIMITIVES`, `REFERENCE_BOARDS`, `EXTENSION_REFERENCE_BOARDS`, `SIM_MIRRORS`), `python/neuroedge/hal/__init__.py`, `python/neuroedge/cli/main.py` (`build` §3e, `verify` §3f), `python/neuroedge/sim/session.py`
-- [ ] `.github/workflows/nightly-hardware.yml`: một job cho mỗi bo tham chiếu phần cứng
-- [ ] Thêm `boards/sim-rpi5.toml` và `boards/esp32s3-cores3.toml` (TSK-I3a-01, Q-61); cập nhật `python/tests/test_boards.py`; thêm phong bì `envelope` cho chân `digital_out` của ba profile bậc 1
-- [x] `neuroedge-prd.md` FR-HAL-01, FR-TGT-08, Phụ lục B dòng NE3001 và NE4004 (§4); `neuroedge-roadmap.md` (TSK-I2a-06, TSK-I2a-07, TSK-I3a-01); đóng `TODOS.md` #14 *(Đã làm 2026-10-04: PRD ở commit `b2338a6`; roadmap TSK-I2a-06 ✅, TSK-I2a-07 🟡, TSK-I3a-01 🟡; `TODOS.md` #14 đã xoá)*
-- [x] `CONTRIBUTING.md` §3 (dòng profile bo mạch); cập nhật `docs/rfc/README.md` và `CHANGELOG.md` *(Đã làm: `CONTRIBUTING.md` §3 ở `b2338a6`, mục `CHANGELOG.md` `[Chưa phát hành]` 2026-10-04)*
+- [ ] `.github/workflows/nightly-hardware.yml`: one job per physical reference board
+- [ ] Add `boards/sim-rpi5.toml` and `boards/esp32s3-cores3.toml` (TSK-I3a-01, Q-61); update `python/tests/test_boards.py`; add `envelope` blocks for `digital_out` pins of three tier-1 profiles
+- [x] `neuroedge-prd.md` FR-HAL-01, FR-TGT-08, Appendix B rows NE3001 and NE4004 (§4); `neuroedge-roadmap.md` (TSK-I2a-06, TSK-I2a-07, TSK-I3a-01); close `TODOS.md` #14 *(Completed 2026-10-04: PRD at commit `b2338a6`; roadmap TSK-I2a-06 ✅, TSK-I2a-07 🟡, TSK-I3a-01 🟡; `TODOS.md` #14 deleted)*
+- [x] `CONTRIBUTING.md` §3 (board profile row); update `docs/rfc/README.md` and `CHANGELOG.md` *(Completed: `CONTRIBUTING.md` §3 at `b2338a6`, `CHANGELOG.md` `[Unreleased]` section 2026-10-04)*
 
-## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30; Q-62, 2026-10-01)
+## 9. Decisions on Open Questions (Q-57, 2026-09-30; Q-62, 2026-10-01)
 
-Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Các quyết định dưới đây **đã được gộp vào §3–§8**; mục này giữ làm hồ sơ quyết định (Q-57) — §3–§8 lệch với mục này thì sửa §3–§8. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+Product owner delegated decision on open questions under the **maximum safety** principle: between two alternatives, choose the one that is fail-closed and harder to misuse, even if it requires more effort. The decisions below have been **incorporated into §3–§8**; this section is preserved as a decision log (Q-57) — if §3–§8 conflict with this section, fix §3–§8. RFC approval still requires lead architect signature (`CONTRIBUTING.md` §3).
 
-1. **Bo camera.** TSK-I3a-01 chọn **M5Stack CoreS3** (Q-61, 2026-10-01) — đạt (a). Bo gồm ESP32-S3, flash 16 MB, PSRAM 8 MB, camera GC0308 0,3 MP (VGA), 2 mic qua ES7210, loa 1 W qua ampli AW88298, màn 2" 320×240 cảm ứng, IMU BMI270, cảm biến ánh sáng/khoảng cách LTR-553, cổng Grove và M5-Bus. Bo đạt tiêu chí (a), tức khai đủ năm nguyên thủy lõi cộng camera. Tên profile dự kiến: `esp32s3-cores3`. Bo mặc định của `esp32s3` vẫn là `esp32s3-box-3`. Các phương án (b) và (c) được giữ làm luật dự phòng nếu số đo Q-3 trên CoreS3 không đạt: (b) gắn module camera vào Box-3 khi ngân sách bộ nhớ Q-3 vẫn đạt; (c) bo camera là **bo tham chiếu mở rộng** (`EXTENSION_REFERENCE_BOARDS`), chỉ khai đúng những gì phần cứng có, không được làm bo mặc định của target, và luật "đủ năm nguyên thủy lõi" áp cho bo mặc định. Không bao giờ khai năng lực phần cứng không có.
-2. **`verify` và nightly chạy mọi bo tham chiếu** của mọi target bậc 1, không chỉ bo mặc định; tập vết ghi mỗi bo replay theo năng lực bo (mục 7). *Vì sao:* tương đương chỉ có nghĩa khi đã chạy trên đúng bo sẽ giao cho người dùng.
-3. **`build` không `--board`:** dùng bo mặc định nếu nó thoả `[requires]`; không thoả thì báo lỗi ba phần (FR-HAL-05) liệt kê các bo tham chiếu thoả. Không tự chọn bo khác. *Vì sao:* người dùng phải biết chính xác mình nạp lên bo nào.
-4. **`SIM_MIRRORS` là bảng trong mã lõi**, không phải trường của `board.toml`. *Vì sao:* một profile không được tự khai mình soi bo nào (cùng lý do `TARGET_TIERS`).
-5. **Bo mang từng nguyên thủy mở rộng:**
+1. **Camera Board.** TSK-I3a-01 selects **M5Stack CoreS3** (Q-61, 2026-10-01) — satisfying (a). Board includes ESP32-S3, 16 MB flash, 8 MB PSRAM, 0.3 MP GC0308 camera (VGA), 2 mics via ES7210, 1 W speaker via AW88298 amplifier, 2" 320×240 touch screen, BMI270 IMU, LTR-553 light/proximity sensor, Grove and M5-Bus ports. Board satisfies option (a), declaring all five core primitives plus camera. Planned profile name: `esp32s3-cores3`. Default board for `esp32s3` remains `esp32s3-box-3`. Options (b) and (c) retained as fallback rules if Q-3 measurements fail on CoreS3: (b) camera module attached to Box-3 while meeting Q-3 memory budget; (c) camera board is **extension reference board** (`EXTENSION_REFERENCE_BOARDS`), declaring only what hardware has, never default board of target, and "declare all five core primitives" rule applies to default board. Never declare capabilities hardware lacks.
+2. **`verify` and nightly run all reference boards** of all tier-1 targets, not just default boards; trace set replayed per board capability (item 7). *Why:* equivalence only has meaning when run on exact board delivered to users.
+3. **`build` without `--board`:** use default board if it satisfies `[requires]`; if not, report three-part error (FR-HAL-05) listing satisfying reference boards. Never auto-select another board. *Why:* users must know exactly which board they are flashing.
+4. **`SIM_MIRRORS` is a table in core code**, not a field in `board.toml`. *Why:* a profile cannot self-declare what it mirrors (same rationale as `TARGET_TIERS`).
+5. **Boards providing each extension primitive:**
 
-   | Nguyên thủy | `sim` | `linux` | `esp32s3` |
+   | Primitive | `sim` | `linux` | `esp32s3` |
    |:---|:---|:---|:---|
-   | `digital.in`, I2C chỉ đọc, PWM | `sim-default`, `sim-rpi5` | `linux-rpi5` | `esp32s3-box-3` |
-   | `analog.in` | `sim-default`, `sim-rpi5` | `linux-rpi5` + ADC I2C trên mạch | `esp32s3-box-3` (ADC của chip, xác minh ở TSK-I3a-01) |
-   | `motion.*` | `sim-default`, `sim-rpi5` | `linux-rpi5` + driver có `enable_pin` | `esp32s3-box-3` qua chân dock; dock không đủ chân thì `esp32s3-cores3` (mục 1) mang — RFC-0011 §9.6, xác minh ở TSK-I3a-01 |
-   | `vision.in` | `sim-rpi5` | `linux-rpi5` + camera | `esp32s3-cores3` (mục 1) |
+   | `digital.in`, read-only I2C, PWM | `sim-default`, `sim-rpi5` | `linux-rpi5` | `esp32s3-box-3` |
+   | `analog.in` | `sim-default`, `sim-rpi5` | `linux-rpi5` + on-board I2C ADC | `esp32s3-box-3` (on-chip ADC, verified in TSK-I3a-01) |
+   | `motion.*` | `sim-default`, `sim-rpi5` | `linux-rpi5` + driver with `enable_pin` | `esp32s3-box-3` via dock pins; if dock lacks pins, `esp32s3-cores3` (item 1) carries it — RFC-0011 §9.6, verified in TSK-I3a-01 |
+   | `vision.in` | `sim-rpi5` | `linux-rpi5` + camera | `esp32s3-cores3` (item 1) |
 
-   Mỗi ô là một cam kết kiểm được bằng test phủ của §3c; phần cứng thật không cho phép một ô thì mở `Q-N` và dời ngày, không bỏ ô (Q-52).
+   Each cell is a commitment testable by coverage tests in §3c; physical hardware preventing a cell requires opening `Q-N` and slipping dates, not dropping cells (Q-52).
 
-   *Ghi chú về `motion.*` trên `sim`:* `sim-default` chỉ mang `motion.*` khi `esp32s3-box-3` mang; nếu `motion.*` chuyển sang `esp32s3-cores3` thì chỉ `sim-rpi5` (và một profile `sim` soi CoreS3 nếu có) mang; `sim-default` không mang để tránh vi phạm bất biến "sim không giàu hơn bo nó soi".
-6. **Thứ tự chấp thuận:** RFC này chấp thuận **trước** RFC-0002, vì I2a cần nó còn RFC-0002 chỉ cần cho I11; khi RFC-0002 được chấp thuận, §5b và §5c của nó dẫn RFC này thay vì viết lại.
-7. **Tập vết ghi replay theo năng lực bo** (review 2026-10-01, Q-62). Mỗi bo tham chiếu chỉ replay đúng các vết ghi chuẩn mực mà nguyên thủy nó khai đủ, cộng corpus riêng của nguyên thủy mở rộng nó mang; bo mặc định của mỗi target bắt buộc replay cả ba vết ghi chuẩn mực; một bo không có vết ghi nào áp được thì không đạt (quét 0 không bao giờ là đạt). Với lựa chọn hiện tại là M5Stack CoreS3 (đủ năm nguyên thủy lõi theo phương án (a)), CoreS3 replay cả ba vết ghi chuẩn mực cộng corpus thị giác riêng. *Vì sao:* tránh ép bo mở rộng thiếu nguyên thủy lõi phải chạy test chứa nguyên thủy phần cứng không hỗ trợ dẫn đến fail sai, đồng thời không bao giờ cho phép bỏ qua kiểm thử âm thầm.
+   *Note on `motion.*` on `sim`:* `sim-default` carries `motion.*` only when `esp32s3-box-3` carries it; if `motion.*` moves to `esp32s3-cores3`, only `sim-rpi5` (and a `sim` profile mirroring CoreS3 if created) carries it; `sim-default` does not carry it to avoid violating the "sim is no richer than the board it mirrors" invariant.
+6. **Approval Order:** This RFC is approved **prior to** RFC-0002, because I2a needs it while RFC-0002 is only needed for I11; when RFC-0002 is approved, its §5b and §5c reference this RFC rather than restating it.
+7. **Trace replay set per board capability** (review 2026-10-01, Q-62). Each reference board replays only canonical traces whose primitives it fully declares, plus dedicated corpus for extension primitives it carries; default board of each target must replay all three canonical traces; a board with zero applicable traces fails (zero scans is never a pass). With current selection of M5Stack CoreS3 (all five core primitives per option (a)), CoreS3 replays all three canonical traces plus dedicated vision corpus. *Why:* avoids forcing extension boards lacking core primitives to run tests containing unsupported hardware primitives leading to false failures, while never allowing tests to be silently skipped.

@@ -1,51 +1,51 @@
-# Kịch bản demo — nói với agent qua micro laptop (I4, TSK-I4-04)
+# Demo script — speaking to agent via laptop microphone (I4, TSK-I4-04)
 
-> **Chạy lại lần cuối:** 2026-09-29, macOS (Apple Silicon), nhánh `voice/integration`.
-> Đường provider thật (STT, TTS, System 2 qua OpenRouter) đã chạy đầu-cuối bằng `--voice-file` với đúng cấu hình
-> `voice.toml`. Đầu ra ở các màn 1–2 lấy từ lượt chạy đó. **Phiên micro thật chưa được chạy lại trên máy trình
-> bày**: chạy thử theo mục 0 trước buổi demo (macOS cần cấp quyền micro cho terminal).
-> **Thời lượng:** 4–5 phút. Không cần phần cứng ngoài laptop và tai nghe.
+> **Last re-run:** 2026-09-29, macOS (Apple Silicon), branch `voice/integration`.
+> The real provider path (STT, TTS, System 2 via OpenRouter) has run end-to-end using `--voice-file` with exact configuration
+> in `voice.toml`. Outputs in scenes 1–2 are taken from that run. **Live microphone sessions have not yet been re-run on the presenter's machine**:
+> run test per section 0 before demo session (macOS requires microphone permissions for terminal).
+> **Duration:** 4–5 minutes. No hardware needed beyond laptop and headphones.
 
 ---
 
-## 0. Chuẩn bị
+## 0. Preparation
 
 ```bash
-# từ gốc kho
-bash demo/i4-thoai-laptop/chuan-bi.sh          # cài extra cloud + audio, tạo agent 'nha' ở /tmp/neuroedge-demo-voice
-export OPENROUTER_API_KEY=…                    # một key cho STT, TTS, System 2 và Jev
+# from repo root
+bash demo/i4-thoai-laptop/chuan-bi.sh          # install extra cloud + audio, create agent 'nha' at /tmp/neuroedge-demo-voice
+export OPENROUTER_API_KEY=…                    # single key for STT, TTS, System 2, and Jev
 alias ne="$PWD/python/.venv/bin/neuroedge"
 cd /tmp/neuroedge-demo-voice/nha
-ne run --mic                                   # thử 1 câu, rồi Ctrl-C
+ne run --mic                                   # test 1 utterance, then Ctrl-C
 ```
 
-- **Đeo tai nghe.** Laptop không khử vang: qua loa ngoài, agent nghe lại chính nó và tự "cắt lời". Buộc
-  phải dùng loa ngoài thì chạy `--half-duplex` (màn 4) — khi đó không cắt lời được (Q-50).
-- **Quyền micro:** lần đầu macOS hỏi quyền micro cho ứng dụng terminal. Chưa cấp quyền thì `run --mic` đứng
-  ở bước mở micro — cấp quyền trong *System Settings → Privacy & Security → Microphone* rồi chạy lại.
-- Banner in tên micro và loa đang dùng. Chọn thiết bị khác: `NEUROEDGE_AUDIO_IN` / `NEUROEDGE_AUDIO_OUT`.
-- Không được nói: bảng ở [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../../docs/business/cong-nhu-cau-2026-10-25/demo.md) §0.1
-  và [`CHANGELOG.md`](../../CHANGELOG.md) §3.7 — thoại mới có trên laptop, **chưa trên Pi hay chip ESP32-S3** (I5).
+- **Wear headphones.** Laptop lacks echo cancellation: through external speakers, agent hears itself and self-"barges in". If external
+  speakers are mandatory, run `--half-duplex` (scene 4) — in which case barge-in is disabled (Q-50).
+- **Microphone permissions:** first time macOS prompts for microphone access for terminal application. Without permission, `run --mic` hangs
+  at opening microphone — grant permission under *System Settings → Privacy & Security → Microphone* then re-run.
+- Banner prints active microphone and speaker names. Select different devices with `NEUROEDGE_AUDIO_IN` / `NEUROEDGE_AUDIO_OUT`.
+- What not to say: table in [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../../docs/business/cong-nhu-cau-2026-10-25/demo.md) §0.1
+  and [`CHANGELOG.md`](../../CHANGELOG.md) §3.7 — voice is currently available on laptop only, **not yet on Pi or ESP32-S3 chips** (I5).
 
 ---
 
-> **Có giao diện:** chạy `ne studio --mic` (thay cho `ne run --mic`) để cùng phiên hiện trên trang: trạng thái
-> nghe/nghĩ/nói, câu nghe được, phán quyết và độ trễ từng chặng (`demo/i1-studio/`, Q-51). Nút micro trên trang chỉ tắt/mở
-> tiếng micro.
+> **With UI:** run `ne studio --mic` (instead of `ne run --mic`) to display the same session on web: listening/thinking/speaking
+> states, recognized utterances, verdicts, and latency per stage (`demo/i1-studio/`, Q-51). Microphone button on page only mutes/unmutes
+> microphone.
 
-## 1. Màn 1 — "Nói một câu, đèn bật qua gate"
+## 1. Scene 1 — "Speak an utterance, light turns on through gate"
 
-### Nói
-"Tôi nói vào micro laptop. Lời nói thành chữ ở dịch vụ nhận dạng giọng nói, rồi đi đúng con đường của một
-lệnh gõ: ngữ pháp lệnh, rồi gate. Model chỉ nghe — người quyết là gate."
+### Say
+"I speak into the laptop microphone. Speech turns into text at the speech recognition service, then travels the exact path of a
+typed command: command grammar, then gate. The model only hears — the decider is the gate."
 
-### Gõ
+### Type
 ```bash
 ne run --mic
-# nói: "Bật đèn."
+# speak: "Bật đèn."
 ```
 
-### Thấy
+### See
 ```text
 nha@0.1.0 on sim (sim-default) · live audio
   mic (input): MacBook Air Microphone
@@ -57,92 +57,92 @@ intent light_on (0.86)
 ✓ ALLOW light_on@1.0.0 → light_on()
 ```
 
-### Điểm nhấn
-STT nghe sai dấu ("Bật đen.") mà ngữ pháp vẫn khớp `light_on` ở độ tin 0,86. Một câu nghe sai không bao giờ
-tự đi tới chân: nó phải khớp ngữ pháp, rồi qua gate.
+### Highlights
+STT misheard tone mark ("Bật đen.") yet grammar still matched `light_on` with 0.86 confidence. A misheard utterance never
+reaches pins on its own: it must match grammar, then pass the gate.
 
 ---
 
-## 2. Màn 2 — "Hỏi một câu, agent trả lời bằng giọng"
+## 2. Scene 2 — "Ask a question, agent answers with voice"
 
-### Nói
-"Câu hỏi không phải lệnh điều khiển thì System 2 trả lời, dựa trên kho kiến thức của nhà. Câu trả lời được
-đọc qua tai nghe."
+### Say
+"Questions that are not control commands are answered by System 2, based on the home's knowledge base. The answer is
+read through headphones."
 
-### Gõ
+### Type
 ```text
-nói: "Mật khẩu wifi nhà mình là gì?"
+speak: "Mật khẩu wifi nhà mình là gì?"
 ```
 
-### Thấy
+### See
 ```text
 turn 1 · … s · heard: “Mật khẩu wifi nhà mình là gì?”
 intent knowledge (0.81)
   says (knowledge_rag): Mật khẩu wifi được dán ở mặt dưới router.
 ```
 
-### Điểm nhấn
-Đo ngày 2026-09-29: STT khoảng 1,9 s, TTS Gemini khoảng 3,7 s trước khi có tiếng (`ne trace show` in độ trễ
-từng chặng). Đổi `model` trong `[tts]` sang `google/gemini-3.8-flash-tts` rút còn khoảng 2,6 s — một dòng cấu
-hình, không đổi mã.
+### Highlights
+Measured 2026-09-29: STT ~1.9 s, Gemini TTS ~3.7 s before audio starts (`ne trace show` prints latency
+per stage). Changing `model` in `[tts]` to `google/gemini-3.8-flash-tts` reduces to ~2.6 s — a single configuration line,
+no code changes.
 
 ---
 
-## 3. Màn 3 — "Cắt lời" (chỉ với tai nghe)
+## 3. Scene 3 — "Barge-in" (headphones only)
 
-### Nói
-"Khi agent đang nói mà tôi nói chen, loa dừng ngay, và mọi lệnh chưa kịp giao tới thiết bị bị huỷ."
+### Say
+"When the agent is speaking and I interrupt, the speaker stops immediately, and any command not yet dispatched to devices is cancelled."
 
-### Gõ
+### Type
 ```text
-nói: "Mật khẩu wifi nhà mình là gì?"  →  khi agent bắt đầu đọc, nói chen: "Thôi."
+speak: "Mật khẩu wifi nhà mình là gì?"  →  when agent begins reading, barge in: "Thôi."
 ```
 
-### Thấy
-Giọng agent tắt giữa câu. Cuối phiên, dòng tổng in số lần cắt lời: `voice: … · 1 barge-in · …`
-*(kiểm lại khi chạy — chưa chạy bằng micro thật)*.
+### See
+Agent voice cuts off mid-sentence. At session end, summary line prints barge-in count: `voice: … · 1 barge-in · …`
+*(verify when running — not yet tested with live microphone)*.
 
-### Điểm nhấn
-Luật thu hồi lệnh là cùng một đặc tả với chip (`docs/spec/voice_fsm.md` §5.2): loa im dưới 300 ms sau khi người
-nói, lệnh chưa giao bị huỷ, lệnh đã giao (xung chốt cửa đang chạy) chạy hết.
+### Highlights
+Command revocation rule follows the identical chip specification (`docs/spec/voice_fsm.md` §5.2): speaker silences under 300 ms after human
+speaks, undispatched commands are cancelled, already-dispatched commands (active door pulse) run to completion.
 
 ---
 
-## 4. Màn 4 — "Loa ngoài: `--half-duplex`"
+## 4. Scene 4 — "External speakers: `--half-duplex`"
 
-### Nói
-"Không có tai nghe thì micro tắt trong lúc agent nói, để agent không tự nghe chính mình. Đổi lại: không cắt lời được."
+### Say
+"Without headphones, microphone mutes while agent speaks, preventing agent from hearing itself. Tradeoff: barge-in is disabled."
 
-### Gõ
+### Type
 ```bash
 ne run --mic --half-duplex
 ```
 
-### Thấy
+### See
 ```text
   half-duplex: bật (tắt micro khi agent đang nói, không cắt lời được)
 ```
 
-### Điểm nhấn
-Đây là giới hạn của laptop, không phải của sản phẩm: thiết bị thật khử vang bằng phần cứng (Box-3) hoặc
+### Highlights
+This is a laptop limitation, not a product limitation: real devices cancel echo via hardware (Box-3) or
 PipeWire (Pi) — `TODOS.md` #45, Q-22.
 
 ---
 
-## 5. Màn 5 (tuỳ chọn) — "Xem lại phiên"
+## 5. Scene 5 (optional) — "Review session"
 
 ```bash
-ne run --mic --trace-out ../phien.json     # nói vài câu, Ctrl-C
-ne trace show ../phien.json                # stt_result, gate, tts_stream_end, turn_latency từng chặng
+ne run --mic --trace-out ../phien.json     # speak a few utterances, Ctrl-C
+ne trace show ../phien.json                # stt_result, gate, tts_stream_end, turn_latency per stage
 ```
 
-Chữ người nói được băm trong vết ghi (`"text": "sha256:…"`, TSK-I1-01); `--raw` giữ nguyên văn.
+Spoken user text is hashed in the trace (`"text": "sha256:…"`, TSK-I1-01); `--raw` preserves verbatim text.
 
 ---
 
-## 6. Từ đánh thức (thử nội bộ, không đưa vào video công khai)
+## 6. Wake word (internal testing, not for public videos)
 
-`voice.toml` có sẵn một khối `[wake_word]` đã comment. Mô hình dựng sẵn của openWakeWord (ví dụ `hey_jarvis`)
-theo CC BY-NC-SA 4.0: chỉ dùng thử nội bộ, không commit, không quay video công khai (Q-50). Cần
-`pip install 'neuroedge[wake]'` và ba tệp bạn tự tải (mô hình từ, `melspectrogram.onnx`, `embedding_model.onnx`).
-Có `[wake_word]` thì một lượt chỉ mở khi nghe đúng từ khoá. Mô hình dùng được cho sản phẩm: `TODOS.md` #49.
+`voice.toml` includes a commented-out `[wake_word]` block. Pretrained openWakeWord models (e.g. `hey_jarvis`)
+are licensed under CC BY-NC-SA 4.0: internal testing only, do not commit, do not record in public videos (Q-50). Requires
+`pip install 'neuroedge[wake]'` and three self-downloaded files (word model, `melspectrogram.onnx`, `embedding_model.onnx`).
+With `[wake_word]`, a turn only opens upon hearing the exact keyword. Production-ready models: `TODOS.md` #49.

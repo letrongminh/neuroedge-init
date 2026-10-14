@@ -1,136 +1,136 @@
-# Năm kit phần cứng: từ hộp tới chạy thật
+# Five hardware kits: from box to real run
 
-> **Mã task:** TSK-I2b-01 (ba kit đầu), TSK-I2b-02 (camera cổng, rèm cửa) · **Yêu cầu:** FR-DX-05, FR-DX-09 · **Quyết định:** Q-52.
-> Trang này là **nơi duy nhất** của quy trình chung "từ hộp tới chạy thật" và của danh sách việc
-> **chưa kiểm trên phần cứng thật**. Mỗi kit có trang riêng cho BOM và sơ đồ đấu dây.
+> **Task ID:** TSK-I2b-01 (first three kits), TSK-I2b-02 (gate camera, blinds) · **Requirements:** FR-DX-05, FR-DX-09 · **Decision:** Q-52.
+> This page is the **single source of truth** for the general "from box to real run" workflow and for the list of items
+> **chưa kiểm trên phần cứng thật** (not verified on real hardware). Each kit has its own dedicated page for BOM and wiring diagrams.
 
-> **Đọc trước.** Mọi BOM, sơ đồ và bước ở đây **chưa được kiểm trên phần cứng thật**. Kho chỉ chứng
-> minh được phần mềm: `sim` (mọi test), `linux` trên chân GPIO ảo của kernel (`gpio-sim`, job `linux-hal`
-> của CI) và firmware dựng được từ agent. Việc dựng thiết bị thật từ BOM và sơ đồ rồi đo là một bước
-> **của người** (`docs/reports/uoc-luong-mvp-2026-09-30.md`, dòng I2b: kiểm BOM và sơ đồ đấu dây trên Pi). Mạch điện sai có thể làm
-> hỏng linh kiện hoặc gây nguy hiểm: kiểm bằng đồng hồ vạn năng trước khi cấp nguồn cho tải.
+> **Read first.** All BOMs, diagrams, and steps here **have not been verified on real hardware** ("chưa kiểm trên phần cứng thật"). The repository only
+> verifies software: `sim` (all tests), `linux` on kernel simulated GPIO pins (`gpio-sim`, CI job `linux-hal`),
+> and firmware built from the agent. Building the actual physical device from the BOM and wiring diagram and taking measurements is a
+> **manual human step** (`docs/reports/uoc-luong-mvp-2026-09-30.md`, row I2b: verify BOM and wiring diagrams on Pi). An incorrect circuit can
+> damage components or cause hazards: verify with a multimeter before powering any load.
 
-## 1. Năm kit
+## 1. Five kits
 
-| Kit | Mẫu (`--template`) | Thiết bị | Gate | `sim` | `linux` (Pi 5) | `esp32s3` (Box-3) |
+| Kit | Template (`--template`) | Device | Gate | `sim` | `linux` (Pi 5) | `esp32s3` (Box-3) |
 |:---|:---|:---|:---|:---|:---|:---|
-| [Khoá cửa villa](kit-khoa-cua-villa.md) | `villa-concierge` | Khoá điện của một cửa | `unlock_door@1.2.0` (`gates/`, đã khoá) | chạy | khoá + gate chạy trên `linux`, nhưng agent **không build** trên `linux-rpi5` (cần AEC, bo khai `aec = false`: `NE3003`) | build ra firmware |
-| [Trợ lý giọng nói trong nhà](kit-tro-ly-giong-noi.md) | `home-voice` | Đèn + cảm biến chuyển động + loa | `light_on`, `light_off` (`fixtures/agents/home-voice/gates/`, đã khoá) | chạy | phiên chỉ chạy khi khai nguồn `motion`, và `light_off` luôn chặn (xem trang kit) | build ra firmware |
-| [Giám sát phòng máy](kit-giam-sat-nha-may.md) | `factory-monitor` | Quạt xả (hoặc van xả) + còi báo động theo nhiệt độ | `vent_on`, `vent_off`, `alarm_on`, `alarm_off` (`fixtures/agents/factory-monitor/gates/`, đã khoá) | chạy | chạy với LM75 qua hwmon | **không build**: agent khai `supported = ["sim", "linux"]` |
-| [Camera cổng](kit-camera-cong.md) | `gate-camera` | Camera + đèn hiên + khoá cổng: người lạ ở cổng ⇒ bật đèn, khoá | `stranger_light`, `stranger_lock` (`fixtures/agents/gate-camera/gates/`, đã khoá; kế thừa `gates/home/camera`) | chạy trên `sim-rpi5` (camera ảo) | cần camera V4L2 (`NEUROEDGE_LINUX_CAMERA`) | **không build**: bo không có `vision.in` |
-| [Rèm cửa](kit-rem-cua.md) | `blinds` | Servo nghiêng rèm lá, có lease, `safe_state` và phong bì | `blinds_open`, `blinds_close` (`fixtures/agents/blinds/gates/`, đã khoá; kế thừa `gates/home/motor`) | chạy trên `sim-rpi5` | cần nguồn PWM (`NEUROEDGE_LINUX_MOTION`) và servo | **không build**: bo không có `motion` |
+| [Villa door lock](kit-khoa-cua-villa.md) | `villa-concierge` | Electric lock for one door | `unlock_door@1.2.0` (`gates/`, locked) | runs | lock + gate run on `linux`, but agent **does not build** on `linux-rpi5` (requires AEC, board declares `aec = false`: `NE3003`) | builds firmware |
+| [Home voice assistant](kit-tro-ly-giong-noi.md) | `home-voice` | Light + motion sensor + speaker | `light_on`, `light_off` (`fixtures/agents/home-voice/gates/`, locked) | runs | session runs only when `motion` source is declared, and `light_off` always blocks (see kit page) | builds firmware |
+| [Factory monitor](kit-giam-sat-nha-may.md) | `factory-monitor` | Exhaust fan (or exhaust valve) + temperature alarm siren | `vent_on`, `vent_off`, `alarm_on`, `alarm_off` (`fixtures/agents/factory-monitor/gates/`, locked) | runs | runs with LM75 via hwmon | **does not build**: agent declares `supported = ["sim", "linux"]` |
+| [Gate camera](kit-camera-cong.md) | `gate-camera` | Camera + porch light + gate lock: stranger at gate ⇒ turn on light, lock | `stranger_light`, `stranger_lock` (`fixtures/agents/gate-camera/gates/`, locked; inherits `gates/home/camera`) | runs on `sim-rpi5` (virtual camera) | requires V4L2 camera (`NEUROEDGE_LINUX_CAMERA`) | **does not build**: board lacks `vision.in` |
+| [Blinds](kit-rem-cua.md) | `blinds` | Slat-tilting servo with lease, `safe_state`, and envelope | `blinds_open`, `blinds_close` (`fixtures/agents/blinds/gates/`, locked; inherits `gates/home/motor`) | runs on `sim-rpi5` | requires PWM source (`NEUROEDGE_LINUX_MOTION`) and servo | **does not build**: board lacks `motion` |
 
-Tên và cơ cấu của kit thứ ba theo PRD Q-72 mục 3 ("kích hoạt van xả an toàn
-hoặc còi báo động"). Kho giữ tên mẫu `factory-monitor` (đổi tên một mẫu công khai là thay đổi vỡ của CLI,
-`docs/spec/python_api.md` §6) và chỉnh cơ cấu: chân `gate_relay` là **một rơ-le tải xả** — quạt xả hoặc
-cuộn van xả điện từ, cùng một chân, cùng bốn gate — và chân `porch_light` là **còi báo động** (trước kia
-tài liệu gọi nhầm là đèn). Phần "cảm biến khí ga" của proposal **chưa có**: gate so dải nhiệt, không so
-nồng độ khí (kênh `analog.in` có từ I2a nhưng kit này chưa dùng).
+The name and actuator setup of the third kit follow PRD Q-72 item 3 ("kích hoạt van xả an toàn
+hoặc còi báo động" / "activate safety exhaust valve or alarm siren"). The repository keeps the template name `factory-monitor` (renaming a public template is a breaking CLI change,
+`docs/spec/python_api.md` §6) and adjusts the actuator setup: the `gate_relay` pin is **an exhaust load relay** — exhaust fan or
+solenoid exhaust valve coil, same pin, same four gates — and the `porch_light` pin is an **alarm siren** (previously
+mistakenly called a light in docs). The "gas sensor" part of the proposal is **not yet implemented**: the gate compares temperature bands, not
+gas concentrations (the `analog.in` channel is available since I2a but not yet used by this kit).
 
-## 2. Quy trình chung
+## 2. General workflow
 
-Mỗi bước dùng được ngay cả khi bạn chưa có phần cứng: dừng ở bước nào cũng có kết quả kiểm chứng được.
+Every step can be used even if you do not have hardware yet: stopping at any step yields a verifiable result.
 
-### Bước 0. Cài
+### Step 0. Install
 
 ```bash
-pip install neuroedge            # hoặc: cd python && pip install -e '.[dev]'
-neuroedge board list             # thấy sim-default, sim-rpi5, linux-rpi5, esp32s3-box-3
+pip install neuroedge            # or: cd python && pip install -e '.[dev]'
+neuroedge board list             # shows sim-default, sim-rpi5, linux-rpi5, esp32s3-box-3
 ```
 
-### Bước 1. `sim` — không cần phần cứng, không cần mạng, không cần khoá
+### Step 1. `sim` — no hardware, no network, no keys needed
 
 ```bash
-neuroedge new villa --template villa-concierge      # hoặc home-voice, factory-monitor (gate-camera, blinds: thêm --board sim-rpi5)
+neuroedge new villa --template villa-concierge      # or home-voice, factory-monitor (gate-camera, blinds: add --board sim-rpi5)
 cd villa
 neuroedge build --target sim --board sim-default
-neuroedge run -c "mở cửa phòng 101"                 # lệnh mẫu của từng kit: xem trang kit
-neuroedge test                                      # test an toàn của dự án: 0 = đạt
+neuroedge run -c "mở cửa phòng 101"                 # sample command for each kit: see kit page
+neuroedge test                                      # project safety tests: 0 = pass
 ```
 
-Dự án sinh ra có sẵn gate, action, ngữ pháp lệnh, test và thư mục `traces/`. `neuroedge test` khẳng
-định điều chân **thật sự làm** (lệnh của chân ảo), không chỉ phán quyết.
+The generated project comes with gates, actions, command grammar, tests, and a `traces/` directory. `neuroedge test` validates what the pin
+**actually does** (virtual pin commands), not just verdicts.
 
-### Bước 2. Vết golden — chứng cứ rằng quyết định không đổi
+### Step 2. Golden traces — proof that decisions do not drift
 
-Mỗi kit có một bộ vết ghi chuẩn trong `fixtures/traces/kits/`, **sinh bằng
-`scripts/gen_kit_traces.py`, không sửa tay**, và `neuroedge verify` phát lại chúng trên mọi bo tham
-chiếu khai đủ năng lực:
+Each kit has a set of standard golden traces in `fixtures/traces/kits/`, **generated by
+`scripts/gen_kit_traces.py`, never edited by hand**, and `neuroedge verify` replays them on every reference board
+declaring sufficient capabilities:
 
 ```bash
-neuroedge verify --targets sim            # phát lại trên sim-default và sim-rpi5 (bo nào khai đủ năng lực)
-neuroedge verify --targets sim,linux      # thêm linux-rpi5, trên chân của kernel (job linux-hal)
-python scripts/gen_kit_traces.py --check  # vết trong kho có đúng là thứ agent mẫu ghi ra không
+neuroedge verify --targets sim            # replays on sim-default and sim-rpi5 (boards declaring sufficient capabilities)
+neuroedge verify --targets sim,linux      # adds linux-rpi5, on kernel pins (linux-hal job)
+python scripts/gen_kit_traces.py --check  # verifies repository traces match what the sample agent records
 ```
 
-`neuroedge new --template <kit>` chép hai vết của kit vào `traces/golden/` của dự án; kiểm bằng
-`neuroedge replay traces/golden/<tệp>.json --agent agent.toml --golden traces/golden/<tệp>.json`.
+`neuroedge new --template <kit>` copies the kit's two traces into `traces/golden/` of the project; verify with
+`neuroedge replay traces/golden/<file>.json --agent agent.toml --golden traces/golden/<file>.json`.
 
-Chỉ chạy lại `python scripts/gen_kit_traces.py` (không `--check`) khi agent mẫu, gate hay hợp đồng cảm
-biến đổi **có chủ đích**; diff của các tệp JSON là nội dung cần review.
+Only re-run `python scripts/gen_kit_traces.py` (without `--check`) when the sample agent, gate, or sensor contracts change
+**intentionally**; diffs in the JSON files are the content to review.
 
-### Bước 3. `linux` — Raspberry Pi 5
+### Step 3. `linux` — Raspberry Pi 5
 
-1. Dựng mạch theo sơ đồ ở trang kit, **không cắm tải thật** lúc đầu: chỉ gắn LED và điện trở lên chân
-   rơ-le để thấy chân đổi mức.
-2. Mỗi chân số của agent là một **line GPIO tìm theo tên**: line phải mang đúng tên chân của bo
-   (`door_lock`, `porch_light`, `gate_relay`; `boards/linux-rpi5.toml`). Trên Pi, đặt tên bằng
-   device-tree overlay (thuộc tính `gpio-line-names`) hoặc truyền `line_names={...}` khi dựng `LinuxHAL`
-   từ mã Python; CLI không có cờ ánh xạ tên. *Chưa kiểm trên Pi thật.*
-3. Cài phần mở rộng và chạy:
+1. Assemble the circuit following the diagram on the kit page, **do not connect real loads** at first: only attach LEDs and resistors to relay pins
+   to observe pin level changes.
+2. Each digital pin of the agent is a **GPIO line found by name**: the line must carry the exact pin name defined in the board profile
+   (`door_lock`, `porch_light`, `gate_relay`; `boards/linux-rpi5.toml`). On Pi, name lines using a
+   device-tree overlay (`gpio-line-names` property) or pass `line_names={...}` when instantiating `LinuxHAL`
+   from Python code; the CLI has no name-mapping flag. *Not verified on real Pi.*
+3. Install the extension and run:
 
    ```bash
    pip install 'neuroedge[linux]'
    neuroedge run --target linux --agent agent.toml -c "bật đèn"
    ```
 
-   Không có `/dev/gpiochip*` thì HAL **dừng với lỗi** chứ không im lặng (Q-16): runner hay máy cấu hình
-   sai không bao giờ "xanh giả".
-4. Cảm biến đọc qua sysfs (hwmon/IIO), tìm theo tên, khai bằng biến môi trường — ví dụ
-   `NEUROEDGE_LINUX_SENSORS="temperature=hwmon:lm75/temp1"`. Cảm biến không đọc được ⇒ gate **chặn**
-   (`criterion_unavailable`), không bao giờ đọc ra một giá trị mặc định.
-5. Mọi test của kit trên kernel thật nằm ở `python/tests_linux/test_kit_*.py`; CI chạy chúng bằng
-   `scripts/setup_gpio_sim.sh` + `scripts/setup_i2c_stub.sh` (job `linux-hal`). Trên Pi thật, các test
-   này **chưa chạy**.
+   If `/dev/gpiochip*` is missing, the HAL **aborts with an error** rather than failing silently (Q-16): misconfigured runners or machines
+   never produce a false green.
+4. Sensors are read via sysfs (hwmon/IIO), looked up by name, declared with environment variables — for example
+   `NEUROEDGE_LINUX_SENSORS="temperature=hwmon:lm75/temp1"`. If a sensor cannot be read ⇒ the gate **blocks**
+   (`criterion_unavailable`), never reading a default fallback value.
+5. All kit tests on a real kernel are in `python/tests_linux/test_kit_*.py`; CI runs them using
+   `scripts/setup_gpio_sim.sh` + `scripts/setup_i2c_stub.sh` (the `linux-hal` job). On a real Pi, these tests
+   **have not been run yet**.
 
-### Bước 4. `esp32s3` — ESP32-S3-BOX-3
+### Step 4. `esp32s3` — ESP32-S3-BOX-3
 
 ```bash
 neuroedge build --target esp32s3 --board esp32s3-box-3
-# rồi idf.py build / flash theo docs/user/nap-firmware.md
+# then idf.py build / flash per docs/user/nap-firmware.md
 ```
 
-Thủ tục build, nạp và OTA ở [`nap-firmware.md`](nap-firmware.md) — nơi duy nhất. Giới hạn hiện nay,
-nói thẳng: firmware **chưa điều khiển chân GPIO nào** (HAL trên chip là TSK-S4-01) và bảng chân của bo
-mang tên chân, **chưa có số GPIO**; vì vậy sơ đồ phần ESP32-S3 dùng tên chân, và bạn không thể nối rơ-le
-vào firmware này để thấy nó đóng. Bo Box-3 là loại duy nhất được hỗ trợ (bất biến 6, `CHANGELOG.md`
-§3.3); nó không có sẵn rơ-le, cổng I2C ra ngoài hay đầu vào PIR nào được kho kiểm.
+Build, flash, and OTA procedures are documented in [`nap-firmware.md`](nap-firmware.md) — the single source of truth. Current limitations,
+stated plainly: the firmware **does not control any GPIO pins yet** (on-chip HAL is TSK-S4-01) and the board pin table
+carries pin names, **not GPIO numbers yet**; therefore, the ESP32-S3 section diagram uses pin names, and you cannot wire a relay
+to this firmware to observe switching. The Box-3 board is the only supported hardware (Invariant 6, `CHANGELOG.md`
+§3.3); it does not include onboard relays, external I2C ports, or PIR inputs tested by the repository.
 
-## 3. Quy tắc an toàn của mọi kit
+## 3. Safety rules for all kits
 
-- **Tải mạnh qua rơ-le.** Chân của bo không bao giờ nối thẳng vào khoá, quạt, van hay còi: luôn qua mạch
-  rơ-le (hoặc MOSFET) có cách ly. Nguồn của tải tách khỏi nguồn của bo.
-- **Mặc định tắt.** Chân thả nổi (reset, runtime chết) phải ra trạng thái an toàn: kéo xuống bằng điện
-  trở, hoặc dùng mạch rơ-le mà đầu vào hở là tắt. Kho không kiểm được điều này; mạch của bạn phải bảo
-  đảm (RFC-0010 §9.2 mô tả cùng nguyên tắc cho các chân enable).
-- **Phong bì an toàn.** Mỗi chân `digital.out` có phong bì thời gian trong profile bo mạch
-  (`[capabilities.digital_out.envelope.*]`): `door_lock` xung tối đa 60 s liên tục; `gate_relay` tối đa
-  60 s liên tục và 10 phút bật mỗi giờ; `porch_light` tối đa 10 phút liên tục. Phong bì cắt lệnh vượt mức
-  dù gate đã cho phép. Lệnh **tắt** (`off`) không bao giờ bị chặn (RFC-0007, Q-62).
-- **Không có số liệu thì chặn.** Mọi cảm biến mất, hỏng hay ngoài dải ⇒ gate chặn lệnh nguy hiểm, không
-  hỏi; lệnh theo hướng an toàn (bật quạt, bật còi) vẫn chạy.
+- **Heavy loads via relays.** Board pins never connect directly to locks, fans, valves, or sirens: always through an optically isolated
+  relay (or MOSFET) circuit. Load power supplies must be isolated from the board power supply.
+- **Default off.** Floating pins (reset, runtime crash) must settle into a safe state: pull down with a resistor,
+  or use a relay circuit whose open input defaults to off. The repository cannot verify this; your circuit must
+  guarantee it (RFC-0010 §9.2 describes the same principle for enable pins).
+- **Safety envelopes.** Each `digital.out` pin has a time envelope in the board profile
+  (`[capabilities.digital_out.envelope.*]`): `door_lock` pulses at most 60 s continuously; `gate_relay` at most
+  60 s continuously and 10 minutes on per hour; `porch_light` at most 10 minutes continuously. The envelope cuts commands exceeding limits
+  even if the gate allowed them. A **turn off** command (`off`) is never blocked (RFC-0007, Q-62).
+- **Block when data is missing.** If any sensor is missing, malfunctioning, or out of range ⇒ the gate blocks hazardous commands without
+  asking; safe-direction commands (turn on fan, turn on siren) continue to run.
 
 ## 4. Chưa kiểm trên phần cứng thật
 
-| Hạng mục | Tình trạng |
+| Item | Status |
 |:---|:---|
-| Mọi BOM (linh kiện mô tả theo chức năng và thông số, không có mã hàng, giá hay nhà bán) | chưa kiểm; cần người dựng thử |
-| Mọi sơ đồ đấu dây | chưa kiểm; tên chân đúng với `boards/*.toml` (test `test_kits.py`), phần còn lại của mạch chưa |
-| `linux` trên Pi 5 thật | chỉ kiểm trên `gpio-sim` + `i2c-stub` + `lm75` (CI); job nightly trên Pi chưa có kit |
-| Mức kích của rơ-le (active-high hay active-low) | chưa kiểm; chọn mạch kích mức cao hoặc khai active-low ở device-tree |
-| Đặt tên line GPIO bằng device-tree overlay trên Pi 5 | chưa kiểm |
-| `esp32s3`: điều khiển chân, đọc cảm biến, âm thanh | chưa có (TSK-S4-01, I5); firmware dựng được và tự kiểm gate lúc khởi động |
-| Nguồn `motion` (PIR) trên `linux` | chưa có: kernel không có driver hwmon/IIO cho PIR nối GPIO, và số đọc sysfs không phải đúng/sai nên `room_empty` chưa xác định |
-| Âm thanh trên Pi 5 (AEC, I2S HAT) | profile khai `aec = false`; kit khoá cửa không build trên `linux-rpi5` vì thế |
+| All BOMs (components described by function and specifications, no part numbers, prices, or vendors) | unverified; requires human assembly |
+| All wiring diagrams | unverified; pin names match `boards/*.toml` (`test_kits.py`), rest of circuit unverified |
+| `linux` on real Pi 5 | verified only on `gpio-sim` + `i2c-stub` + `lm75` (CI); nightly job on Pi does not yet include kits |
+| Relay trigger level (active-high or active-low) | unverified; choose active-high trigger circuit or declare active-low in device-tree |
+| Naming GPIO lines using device-tree overlay on Pi 5 | unverified |
+| `esp32s3`: pin control, sensor reading, audio | not implemented yet (TSK-S4-01, I5); firmware builds and self-checks gates at boot |
+| `motion` source (PIR) on `linux` | not implemented yet: kernel lacks hwmon/IIO driver for GPIO-connected PIR, and sysfs readings are not boolean so `room_empty` remains undetermined |
+| Audio on Pi 5 (AEC, I2S HAT) | profile declares `aec = false`; door lock kit does not build on `linux-rpi5` because of this |
 
-Phát hiện khi dựng thật ⇒ ghi vào `TODOS.md`, không sửa trang này cho khớp với điều chưa đo.
+Findings during real assembly ⇒ record in `TODOS.md`, do not edit this page to match unmeasured conditions.

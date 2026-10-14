@@ -1,84 +1,83 @@
-# Nạp firmware cho agent của bạn lên `esp32s3`
+# Flash firmware for your agent onto `esp32s3`
 
-> **Mã task:** TSK-I3-01 · TSK-S6-01…04 · **Yêu cầu:** FR-CLI-02, FR-TGT-03, FR-OTA-01…04.
-> Đây là **nơi duy nhất** mô tả thủ tục nạp và thủ tục OTA; cú pháp lệnh `build` ở
+> **Task codes:** TSK-I3-01 · TSK-S6-01…04 · **Requirements:** FR-CLI-02, FR-TGT-03, FR-OTA-01…04.
+> This is the **sole source** describing the flashing and OTA procedures; `build` command syntax is in
 > [`CHANGELOG.md`](../../CHANGELOG.md) §2.3.
 
-## 1. Firmware này làm gì, và chưa làm gì
+## 1. What this firmware does, and what it does not yet do
 
-`neuroedge build --target esp32s3` sinh từ agent của bạn một project ESP-IDF đầy đủ. Gate của
-agent chạy trên chip: cây `NETR` trong flash (RFC-0003), walker C, sổ token dùng một lần. Lúc khởi
-động, firmware tự kiểm trước khi bật runtime gate:
+`neuroedge build --target esp32s3` generates a complete ESP-IDF project from your agent. The agent's gate
+runs on chip: `NETR` tree in flash (RFC-0003), C walker, single-use token ledger. At boot,
+the firmware self-checks before activating the runtime gate:
 
-- mọi cây trong flash nạp được và đúng là cây máy tính đã biên dịch cho gate đó (digest);
-- walker C quyết từng phép kiểm của agent — dữ kiện đổi từng tiêu chí một, nguồn dữ kiện mất
-  mạng, người xác nhận (RFC-0006) — **đúng như engine trên máy tính** đã quyết lúc build;
-- token của mỗi action chỉ cho đúng các chân của action đó, mỗi chân một lần.
+- every tree in flash loads properly and matches the tree compiled by the host for that gate (digest);
+- C walker evaluates each check for the agent — facts varying one criterion at a time, fact source network
+  loss, confirming person (RFC-0006) — **exactly as the host engine** decided at build time;
+- the token for each action grants only the exact pins for that action, each pin once.
 
-Lệch một chỗ ⇒ `NE_SELFTEST FAIL …` và firmware dừng: không runtime gate, không action.
+Any mismatch ⇒ `NE_SELFTEST FAIL …` and firmware halts: no runtime gate, no actions.
 
-**Chưa có**, nói thẳng để bạn không mất thời gian:
+**Not yet available**, stated plainly so you do not waste time:
 
-- Chưa chân GPIO nào động: HAL trên chip là TSK-S4-01. Bảng chân mang tên chân, chưa có số GPIO.
-- Chưa âm thanh (I5). ESP-SR chưa được link: giấy phép của nó chưa được xác minh (`TODOS.md` #17).
-- Firmware còn replay ba vết ghi chuẩn mực lúc khởi động (TSK-S4-09) — không liên quan tới agent
-  của bạn, nhưng cho `neuroedge verify --targets esp32s3 --port …` kiểm walker trên chính chip đó.
-- **Chưa Secure Boot, chưa mã hóa flash, chưa nút ngắt micro** (TSK-S6-05). OTA xác minh chữ ký
-  bằng khóa nằm trong ảnh đang chạy, nên người có cáp vẫn thay được cả khóa lẫn firmware. Hạ cấp bị
-  chặn bằng mốc nước cao phiên bản trong NVS (eFuse anti-rollback chỉ có khi bật Secure Boot —
-  TSK-S6-05). Xem §6.
+- No GPIO pin moves yet: on-chip HAL is TSK-S4-01. Pin table carries pin names, not GPIO numbers.
+- No audio yet (I5). ESP-SR is not yet linked: its license is not verified (`TODOS.md` #17).
+- Firmware also replays three canonical traces at boot (TSK-S4-09) — unrelated to your agent,
+  but enables `neuroedge verify --targets esp32s3 --port …` to verify the walker on the chip itself.
+- **No Secure Boot, no flash encryption, no mic mute switch** (TSK-S6-05). OTA verifies signatures
+  using a key inside the running image, so anyone with a cable can replace both key and firmware. Downgrades
+  are blocked by version high-water mark in NVS (eFuse anti-rollback is available only when Secure Boot is enabled —
+  TSK-S6-05). See §6.
 
-## 2. Cần gì
+## 2. Prerequisites
 
-| Thứ | Ghi chú |
+| Item | Notes |
 |:---|:---|
-| `neuroedge` | Cài theo [`huong-dan.md`](huong-dan.md) §3. Wheel mang sẵn mã nguồn firmware |
-| ESP-IDF **v5.4** | [Hướng dẫn cài của Espressif](https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32s3/get-started/), hoặc Docker `espressif/idf:v5.4` |
-| ESP32-S3-BOX-3 + cáp USB-C | Bo mạch tham chiếu duy nhất (bất biến 6, `CHANGELOG.md` §3.3). Chưa có: §5 |
+| `neuroedge` | Install following [`huong-dan.md`](huong-dan.md) §3. Wheel includes firmware source code |
+| ESP-IDF **v5.4** | [Espressif installation guide](https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32s3/get-started/), or Docker `espressif/idf:v5.4` |
+| ESP32-S3-BOX-3 + USB-C cable | Sole reference board (invariant 6, `CHANGELOG.md` §3.3). If you don't have one: §5 |
 
-## 3. Sinh project từ agent
+## 3. Generate project from agent
 
 ```bash
-cd my-agent                                     # thư mục có agent.toml
+cd my-agent                                     # directory containing agent.toml
 neuroedge build --target esp32s3 --board esp32s3-box-3
 ```
 
-Thành công ⇒ dòng `firmware: build/esp32s3 — ESP-IDF project, …`. Trong `build/esp32s3/`:
+Success ⇒ line `firmware: build/esp32s3 — ESP-IDF project, …`. Inside `build/esp32s3/`:
 
-| Đường dẫn | Nội dung |
+| Path | Contents |
 |:---|:---|
-| `main/`, `components/ne_gate/`, `components/ne_trace/`, `CMakeLists.txt`, `sdkconfig.*`, `partitions.csv` | Mã nguồn firmware, chép nguyên văn — giống nhau cho mọi agent |
-| `components/ne_agent/` | Phần của agent: cây `NETR` mỗi gate (`gates/`), bảng gate, chân, action, phép kiểm self-test kèm phán quyết của engine (`ne_agent.c`) |
-| `version.txt` | Phiên bản app của agent này — ESP-IDF đọc thành `PROJECT_VER`; cách đặt và tăng: §6.6 |
-| `.neuroedge-build` | Danh sách tệp lần build này đã ghi |
+| `main/`, `components/ne_gate/`, `components/ne_trace/`, `CMakeLists.txt`, `sdkconfig.*`, `partitions.csv` | Firmware source code, copied verbatim — identical for all agents |
+| `components/ne_agent/` | Agent-specific part: `NETR` tree for each gate (`gates/`), gate table, pins, actions, self-test checks with engine verdicts (`ne_agent.c`) |
+| `version.txt` | App version of this agent — ESP-IDF reads this as `PROJECT_VER`; setting and incrementing: §6.6 |
+| `.neuroedge-build` | Manifest of files written by this build |
 
-**Đừng sửa tay `components/ne_agent/`.** Đổi gate hay action thì chạy lại `build`: cùng agent cho
-cùng từng byte; tệp lần trước ghi mà lần này không còn thì bị xoá; `build/`, `sdkconfig` của
-`idf.py` giữ nguyên. Thư mục `build/esp32s3/` có sẵn mà không do `neuroedge build` ghi, hay có liên
-kết tượng trưng (symlink) ở một đường dẫn build ghi vào ⇒ từ chối: build không bao giờ ghi xuyên qua
-liên kết ra ngoài project.
+**Do not edit `components/ne_agent/` manually.** To change gates or actions, rerun `build`: same agent yields
+byte-identical output; files written in the previous build that no longer exist are deleted; `build/` and `sdkconfig` from
+`idf.py` are preserved. If `build/esp32s3/` exists without being generated by `neuroedge build`, or contains a symbolic
+link at a target build path ⇒ rejected: build never writes through symlinks outside the project.
 
-**Ngôn ngữ giao diện.** Firmware mang ngôn ngữ của agent trong `NE_AGENT_LANGUAGE`
-(`components/ne_agent/include/ne_agent.h`); quy tắc chọn và các lỗi build ở
-[`docs/spec/ui.md`](../spec/ui.md) §2 — một nơi duy nhất. Màn hình LVGL đã có mã
-(`targets/esp32s3/ui/`) nhưng **chưa nối vào firmware đang chạy**: driver màn hình là TSK-S4-01.
+**UI language.** Firmware inherits the agent's language in `NE_AGENT_LANGUAGE`
+(`components/ne_agent/include/ne_agent.h`); selection rules and build errors are in
+[`docs/spec/ui.md`](../spec/ui.md) §2 — the sole source. LVGL screen code exists
+(`targets/esp32s3/ui/`) but is **not yet wired into running firmware**: screen driver is TSK-S4-01.
 
-Agent không hợp bo mạch (thiếu chân, thiếu năng lực — FR-HAL-04), key gate không phải định danh C
-(`unlock-door`), `[agent] name`/`version` có ký tự điều khiển hay xuống dòng, ngôn ngữ giao diện
-không hợp lệ (trên), hay quá 32 chân ⇒ in mọi vấn đề (cách đọc: `CHANGELOG.md` §2.4), **mã 1,
-không ghi gì**.
+If the agent is incompatible with the board (missing pins, missing capabilities — FR-HAL-04), gate key is not a C identifier
+(`unlock-door`), `[agent] name`/`version` contains control characters or newlines, UI language is invalid
+(above), or exceeds 32 pins ⇒ prints all issues (how to read: `CHANGELOG.md` §2.4), **exit code 1,
+writes nothing**.
 
-## 4. Build và nạp lên Box-3
+## 4. Build and flash onto Box-3
 
 ```bash
 cd build/esp32s3
-idf.py set-target esp32s3                       # một lần; xoá cấu hình cũ
+idf.py set-target esp32s3                       # once; clears old configuration
 idf.py build
-idf.py -p <cổng> flash monitor                  # Linux /dev/ttyACM0 · macOS /dev/cu.usbmodem… · Windows COMn
+idf.py -p <port> flash monitor                  # Linux /dev/ttyACM0 · macOS /dev/cu.usbmodem… · Windows COMn
 ```
 
-Box-3 đưa console qua USB-Serial-JTAG hay UART chưa chốt được khi chưa có bo mạch (`TODOS.md` #35);
-`idf.py` tự dò cổng nếu bỏ `-p`. Trong monitor, tìm theo đúng thứ tự:
+Whether Box-3 routes console over USB-Serial-JTAG or UART is not finalized without hardware in hand (`TODOS.md` #35);
+`idf.py` auto-detects the port if `-p` is omitted. In monitor, look in this exact order:
 
 ```text
 I (…) neuroedge_core: Agent: my-agent@0.1.0 · 1 gate(s), 1 action(s), 1 pin(s)
@@ -87,85 +86,85 @@ NEUROEDGE_HEAP_JSON {"schema":"neuroedge.heap/v1",…}
 NE_TRACE DONE sessions=4
 ```
 
-`NE_SELFTEST PASS` là bằng chứng gate của agent chạy trên chip. Ghi các phiên của thiết bị thành vết
-ghi trên máy tính: `neuroedge record --target esp32s3 --port <cổng>` (cần `neuroedge[serial]`).
+`NE_SELFTEST PASS` proves the agent's gate runs on chip. Record device sessions as traces on host:
+`neuroedge record --target esp32s3 --port <port>` (requires `neuroedge[serial]`).
 
-## 5. Chưa có bo mạch: Espressif QEMU
+## 5. No board yet: Espressif QEMU
 
-Cùng project, thêm lớp cấu hình `sdkconfig.qemu` (bỏ Wi-Fi, `device_id = "qemu"`):
+Same project, add configuration overlay `sdkconfig.qemu` (disables Wi-Fi, `device_id = "qemu"`):
 
 ```bash
 cd build/esp32s3
 idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu" set-target esp32s3
 idf.py build
-python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa    # một lần
+python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa    # once
 idf.py qemu monitor
 ```
 
-QEMU không có GPIO, I2S, Wi-Fi hay PSRAM của Box-3 (Q-21): nó chứng minh gate và self-test, không
-chứng minh phần cứng. Quay lại bo mạch thì chạy lại `idf.py set-target esp32s3` (không có `-D`).
+QEMU lacks GPIO, I2S, Wi-Fi, and PSRAM of Box-3 (Q-21): it proves gates and self-tests, not
+hardware. Returning to real board: rerun `idf.py set-target esp32s3` (without `-D`).
 
-## 6. Cập nhật OTA (FR-OTA-01…04)
+## 6. OTA update (FR-OTA-01…04)
 
-Hai khe A/B. Bản mới chỉ được coi là đáng tin **sau khi vượt self-test gate**; nếu không nó bị
-đánh dấu hỏng và thiết bị tự quay về bản trước, không cần can thiệp (kể cả khi ảnh mới panic
-trước khi kịp tự kiểm). Không cần dịch vụ hay tài khoản NeuroEdge: chỉ một HTTP(S) endpoint mở.
-Đây là cấu hình **tùy chọn**; bản build mặc định không có đường OTA (§6.5).
+Two A/B slots. A new image is deemed trustworthy **only after passing gate self-test**; otherwise it is
+marked corrupt and the device automatically rolls back to the previous image without intervention (even if the new image panics
+before it can run self-checks). No NeuroEdge service or account required: just an open HTTP(S) endpoint.
+This is an **optional** configuration; default builds contain no OTA path (§6.5).
 
-Hai ràng buộc cứng của đường OTA:
+Two hard constraints for the OTA path:
 
-- **Chữ ký + rollback là bắt buộc.** OTA chỉ được biên dịch khi bật đủ xác minh chữ ký trên bản
-  cập nhật **và** rollback. Lớp `sdkconfig.ota` bật
-  `CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT` (không Secure Boot), và nó kéo theo
-  `CONFIG_SECURE_SIGNED_ON_UPDATE` — cổng kiểm trong Kconfig và `#error` trong mã dùng dạng tổng
-  quát đó, nên Secure Boot (TSK-S6-05) sau này cũng thoả; cùng với
-  `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`. Thiếu một trong hai thì Kconfig từ chối bật
+- **Signature + rollback are mandatory.** OTA compiles only when signature verification on updates
+  **and** rollback are enabled. Overlay `sdkconfig.ota` enables
+  `CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT` (without Secure Boot), which implies
+  `CONFIG_SECURE_SIGNED_ON_UPDATE` — the Kconfig check gate and `#error` in code use that general form,
+  so future Secure Boot (TSK-S6-05) will satisfy it; together with
+  `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`. If either is missing, Kconfig refuses to enable
   `CONFIG_NEUROEDGE_OTA`.
-- **OTA không bao giờ ghi bootloader.** Nó chỉ ghi khe app (`esp_https_ota` →
-  `esp_ota_set_boot_partition`). Bootloader biết rollback phải nạp **một lần bằng cáp** từ project
-  build với lớp OTA (§6.2); các bản OTA về sau không đụng tới nó.
+- **OTA never writes the bootloader.** It only writes the app slot (`esp_https_ota` →
+  `esp_ota_set_boot_partition`). A rollback-capable bootloader must be flashed **once via cable** from a project
+  built with the OTA overlay (§6.2); subsequent OTA updates never touch it.
 
-### 6.1 Máy chủ cập nhật
+### 6.1 Update server
 
-Máy chủ chỉ cần trả về **một tệp**: ảnh `app` đã ký — trong `build/esp32s3/build/`, tên theo
-project (mặc định `neuroedge-esp32s3-box3.bin`). Bất kỳ máy chủ tĩnh nào cũng được:
+The server only needs to serve **one file**: the signed `app` image — inside `build/esp32s3/build/`, named by
+project (default `neuroedge-esp32s3-box3.bin`). Any static server works:
 
 ```bash
-python3 -m http.server 8070        # ví dụ, chạy từ thư mục chứa ảnh
+python3 -m http.server 8070        # example, run from directory containing the image
 ```
 
-URL cấu hình trên thiết bị bằng một trong hai cách:
+Configure URL on device via one of two methods:
 
-| Cách | Ở đâu | Đổi khi nào |
+| Method | Location | When to change |
 |:---|:---|:---|
-| Kconfig | `idf.py menuconfig` → **NeuroEdge OTA** → *Update URL* | Lúc build |
-| NVS | namespace `ne_ota`, khóa `url` | Lúc chạy, không cần build lại |
+| Kconfig | `idf.py menuconfig` → **NeuroEdge OTA** → *Update URL* | At build time |
+| NVS | namespace `ne_ota`, key `url` | At runtime, no rebuild needed |
 
-Khóa NVS `url` có mặt thì thắng Kconfig. Không có URL nào ⇒ không kiểm tra cập nhật; khóa NVS `url`
-**rỗng nghĩa là tắt hẳn**, không quay về giá trị Kconfig. Khóa NVS không dùng được (sai kiểu, quá
-dài) ⇒ không kiểm tra và in `NE_OTA REJECTED reason=nvs`, không đoán. HTTP trần được phép vì **chữ ký mới là phần toàn vẹn**, không
-phải TLS; HTTP không mã hóa nên đừng đặt bí mật trong URL. HTTPS cũng chạy: client gắn CA bundle
-(`CONFIG_MBEDTLS_CERTIFICATE_BUNDLE`) để xác thực máy chủ.
+Present NVS key `url` overrides Kconfig. No URL configured ⇒ update check skipped; an **empty** NVS key `url`
+**means permanently disabled**, does not fall back to Kconfig value. Unusable NVS key (wrong type, too
+long) ⇒ skip check and print `NE_OTA REJECTED reason=nvs`, no guessing. Plain HTTP is permitted because **the signature provides integrity**,
+not TLS; HTTP is unencrypted so do not place secrets in the URL. HTTPS also works: client attaches CA bundle
+(`CONFIG_MBEDTLS_CERTIFICATE_BUNDLE`) to authenticate the server.
 
-### 6.2 Khóa ký — của bạn, không bao giờ trong kho mã
+### 6.2 Signing key — yours, never in the repository
 
-Ảnh nạp phải được ký bằng **đúng khóa đã ký ảnh đang chạy** (RSA-3072, định dạng Secure Boot v2).
-Tạo khóa một lần và cất nó ngoài kho mã (sao lưu hai chỗ; mất khóa = hết đường OTA):
+Flashed images must be signed with the **exact key that signed the currently running image** (RSA-3072, Secure Boot v2 format).
+Generate key once and store it outside the repository (backup in two places; losing key = loss of OTA path):
 
 ```bash
 cd build/esp32s3
 idf.py secure-generate-signing-key secure_boot_signing_key.pem
 ```
 
-Build với lớp OTA sẽ tự ký app bằng khóa đó (`CONFIG_SECURE_BOOT_SIGNING_KEY`, mặc định tên tệp
-trên, tính từ thư mục project):
+Building with the OTA overlay automatically signs the app with that key (`CONFIG_SECURE_BOOT_SIGNING_KEY`, default file name
+above, relative to project directory):
 
 ```bash
 idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.ota" set-target esp32s3
 idf.py build
 ```
 
-Muốn ký một ảnh đã build sẵn thay vì ký lúc build
+To sign a pre-built image instead of signing at build time
 (`CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=n`):
 
 ```bash
@@ -173,95 +172,94 @@ espsecure.py sign_data --version 2 --keyfile secure_boot_signing_key.pem \
     -o app-signed.bin app.bin
 ```
 
-Đổi khóa thì thiết bị đang chạy **không nhận** ảnh mới (khóa trong ảnh đang chạy không khớp); khi
-đó phải nạp lại qua cáp. Tệp khóa bị `.gitignore` chặn (`secure_boot_signing_key.pem`, `*.pem`);
-đừng gỡ.
+Changing the key causes running devices to **reject** new images (key in running image does not match); at that
+point you must reflash via cable. Key file is ignored by `.gitignore` (`secure_boot_signing_key.pem`, `*.pem`);
+do not unignore.
 
-OTA chỉ đổi khe app; bootloader (kèm `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`) không bao giờ được
-cập nhật qua mạng. Lần nạp **đầu tiên** bằng cáp phải là bản build có lớp `sdkconfig.ota`
-(`idf.py -p <cổng> flash`), nếu không bootloader không có logic rollback và ảnh OTA hỏng sẽ không
-tự quay về. Các lần OTA sau không đụng tới bootloader.
+OTA only touches app slots; the bootloader (along with `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`) is never
+updated over the network. The **first** flash via cable must be built with `sdkconfig.ota` overlay
+(`idf.py -p <port> flash`), otherwise the bootloader lacks rollback logic and corrupted OTA images cannot
+automatically roll back. Subsequent OTA runs do not touch the bootloader.
 
-### 6.3 Một lần cập nhật diễn ra thế nào
+### 6.3 How an update proceeds
 
-1. Thiết bị tải ảnh, đọc app descriptor, rồi so phiên bản với **mốc nước cao** lưu trong NVS:
-   phiên bản bằng hoặc **thấp hơn mốc bị bỏ qua** (`SKIP reason=downgrade`; không đọc được thành ba
-   số ⇒ `SKIP reason=bad_version`) — hạ cấp không bao giờ được ghi vào khe nào.
-   Mốc đơn điệu (chỉ tăng) và so theo số; eFuse anti-rollback chỉ có khi bật Secure Boot
+1. Device downloads image, reads app descriptor, and compares version against **high-water mark** stored in NVS:
+   versions equal to or **lower than the mark are skipped** (`SKIP reason=downgrade`; unparseable version string
+   ⇒ `SKIP reason=bad_version`) — downgrades are never written to any slot.
+   The mark is monotonic (increase only) and compared numerically; eFuse anti-rollback is available only when Secure Boot is enabled
    (TSK-S6-05).
-2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký, lỗi tải, tải dở hay
-   quá hạn chót ⇒ từ chối, **không đổi khe**, và sector đầu của khe vừa ghi bị xoá (`NE_OTA ERASED`)
-   để không lần khởi động nào rơi vào ảnh đã bị từ chối.
-3. Đặt khe mới làm khe khởi động rồi reset. Ảnh mới khởi động ở trạng thái *chờ xác nhận*.
-4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận (mốc nước cao được cập nhật; nếu
-   lần ghi đó mất, mỗi lần khởi động sau ảnh đã xác nhận tự nâng lại mốc lên phiên bản của nó).
-   Không đạt ⇒ `NE_OTA INVALID`, đánh dấu hỏng và reset; bootloader quay về ảnh trước.
-5. Ảnh mới reset/panic trước bước 4 ⇒ bootloader tự quay về ảnh trước ở lần khởi động kế tiếp.
-   Nếu ảnh **treo** mà không reset: task watchdog không được cấu hình panic (`CONFIG_ESP_TASK_WDT_PANIC`
-   mặc định `n`), nên máy không tự khởi động lại — rollback chỉ xảy ra ở lần **mất điện rồi bật lại**
-   kế tiếp.
-6. Phiên bản vừa bị quay về **bị chặn**: mốc nước cao không hạ; muốn sửa thì phát hành phiên bản
-   cao hơn (§6.6).
+2. `esp_https_ota` writes to the inactive slot and validates (structure + signature). Signature failure, download error, truncated download,
+   or deadline exceeded ⇒ reject, **slot not switched**, and first sector of the written slot is erased (`NE_OTA ERASED`)
+   so that no reboot can enter a rejected image.
+3. Sets new slot as boot slot and resets. The new image boots in *pending confirmation* state.
+4. Gate self-test runs. Pass ⇒ `NE_OTA VALID` and image is confirmed (high-water mark is updated; if
+   that write is lost, subsequent boots of the confirmed image re-raise mark to its version).
+   Fail ⇒ `NE_OTA INVALID`, marked corrupt and reset; bootloader rolls back to previous image.
+5. New image resets/panics before step 4 ⇒ bootloader automatically rolls back to previous image on next boot.
+   If image **hangs** without resetting: task watchdog is not configured to panic (`CONFIG_ESP_TASK_WDT_PANIC`
+   defaults to `n`), so machine does not reboot automatically — rollback occurs only on the next **power cycle**.
+6. Rolled-back version is **blocked**: high-water mark does not decrease; to fix, release a
+   higher version (§6.6).
 
-### 6.4 Đọc dấu vết trên UART
+### 6.4 Reading traces on UART
 
-Mỗi sự kiện in đúng một dòng ở cột 0, bắt đầu bằng `NE_OTA`. **Định dạng từng dòng do
-[`ne_ota_policy.c`](../../targets/esp32s3/components/ne_ota/src/ne_ota_policy.c) định nghĩa** — nguồn
-duy nhất, gồm tên đầy đủ của mọi trường. Bảng dưới chỉ nói mỗi loại dòng có nghĩa gì:
+Each event prints exactly one line at column 0, starting with `NE_OTA`. **Format of each line is defined by
+[`ne_ota_policy.c`](../../targets/esp32s3/components/ne_ota/src/ne_ota_policy.c)** — sole
+source, including full names of all fields. The table below explains what each line type means:
 
-| Dòng | Nghĩa |
+| Line | Meaning |
 |:---|:---|
-| `NE_OTA CHECK` | Bắt đầu kiểm tra cập nhật (URL in ra đã bỏ `user:password@`) |
-| `NE_OTA DOWNLOADED` | Ảnh đã tải và xác minh chữ ký xong |
-| `NE_OTA SWITCH` | Khe mới thành khe khởi động; thiết bị reset |
-| `NE_OTA VALID` | Self-test đạt; ảnh được xác nhận |
-| `NE_OTA INVALID` | Self-test hỏng; ảnh bị đánh dấu và reset |
-| `NE_OTA ROLLBACK` | Có một khe đã bị huỷ (lần cập nhật trước bị quay về); thiết bị đang chạy bản ghi ở trường `to`. In **mỗi lần khởi động** cho tới khi khe đó được ghi lại, không chỉ lúc quay về |
-| `NE_OTA REJECTED` | Từ chối trước khi đổi khe (chữ ký, HTTP, chuyển hướng, quá hạn chót, NVS, descriptor, …) |
-| `NE_OTA ERASED` | Khe vừa ghi một ảnh bị từ chối đã bị xoá sector đầu |
-| `NE_OTA SKIP` | Không nạp (trùng phiên bản, hạ cấp, bản vừa bị quay về, không đọc được phiên bản) |
+| `NE_OTA CHECK` | Begins checking for updates (printed URL omits `user:password@`) |
+| `NE_OTA DOWNLOADED` | Image downloaded and signature verified |
+| `NE_OTA SWITCH` | New slot becomes boot slot; device resets |
+| `NE_OTA VALID` | Self-test passed; image confirmed |
+| `NE_OTA INVALID` | Self-test failed; image marked invalid and reset |
+| `NE_OTA ROLLBACK` | A slot was invalidated (previous update rolled back); device is running the revision recorded in `to` field. Printed **on every boot** until that slot is rewritten, not only upon rollback |
+| `NE_OTA REJECTED` | Rejected before switching slots (signature, HTTP, redirect, deadline exceeded, NVS, descriptor, …) |
+| `NE_OTA ERASED` | First sector erased on slot that just wrote a rejected image |
+| `NE_OTA SKIP` | Not flashed (duplicate version, downgrade, recently rolled-back version, unparseable version) |
 
-### 6.5 Build không OTA (mặc định) và thử trên QEMU
+### 6.5 Building without OTA (default) and testing on QEMU
 
-Không thêm `sdkconfig.ota` thì `CONFIG_NEUROEDGE_OTA=n`: ảnh **không có đường tải**, không thể
-nhận OTA — đúng cho phát triển cục bộ. Không có lớp `sdkconfig.ota`, cũng không có yêu cầu khóa.
+Without `sdkconfig.ota`, `CONFIG_NEUROEDGE_OTA=n`: image **has no download path**, cannot
+receive OTA — intended for local development. Without `sdkconfig.ota` overlay, there is no key requirement.
 
-Kịch bản đầy đủ trên QEMU (`scripts/qemu_ota.sh`) dựng máy chủ HTTP, ký bằng khóa dùng-một-lần
-dưới `targets/esp32s3/build/` (bị git bỏ qua), rồi kiểm: bản factory vẫn chạy; bản mới hợp lệ
-được nạp, khởi động và xác nhận; ảnh sai khóa bị từ chối; ảnh hỏng bị quay về; ảnh không ký bị từ
-chối; ảnh ký đúng nhưng hạ cấp bị bỏ qua. Mốc nước cao chỉ là bảo vệ bằng phần mềm (NVS) — ai nạp
-được bằng cáp vẫn nạp được mọi ảnh đã ký, cho tới eFuse anti-rollback (TSK-S6-05). Số đo kích thước
-của bản OTA ở [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) §4.1.
-QEMU chỉ chứng minh logic phân vùng và chữ ký — danh sách đầy đủ ở
+The full QEMU test script (`scripts/qemu_ota.sh`) spins up an HTTP server, signs with a single-use key
+under `targets/esp32s3/build/` (git-ignored), then checks: factory image still runs; valid new image
+is fetched, boots, and is confirmed; wrong-key image is rejected; corrupt image rolls back; unsigned image is
+rejected; properly signed downgrade image is skipped. High-water mark is software-only protection (NVS) — anyone
+with cable access can flash any signed image until eFuse anti-rollback is implemented (TSK-S6-05). Size measurements
+for OTA builds are in [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) §4.1.
+QEMU verifies partition and signature logic — complete list in
 [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) §4.
 
-QEMU chạy đường mạng bằng NIC `open_eth` (`CONFIG_NEUROEDGE_OTA_ETH`, chỉ có trong lớp QEMU).
-Trên **Box-3 thật**, đường Wi-Fi của `main.c` mới chỉ dựng STA (`esp_wifi_set_mode(WIFI_MODE_STA)`
-rồi `esp_wifi_start()`) mà **chưa** gọi `esp_wifi_connect()` và chưa có provisioning (SSID, mật
-khẩu, CA): hôm nay chưa có đường OTA nào chạy trên bo mạch — chỉ đường `open_eth` của QEMU.
+QEMU runs networking via `open_eth` NIC (`CONFIG_NEUROEDGE_OTA_ETH`, present only in QEMU overlay).
+On **real Box-3**, Wi-Fi path in `main.c` currently only sets up STA mode (`esp_wifi_set_mode(WIFI_MODE_STA)`
+then `esp_wifi_start()`) but does **not** call `esp_wifi_connect()` and has no provisioning (SSID,
+password, CA): currently no OTA path runs on real boards — only QEMU `open_eth`.
 
-### 6.6 Phiên bản app — đặt và tăng
+### 6.6 App version — setting and incrementing
 
-Phiên bản app là `[agent] version` trong `agent.toml`, phải là **MAJOR.MINOR.PATCH**: ba số thập
-phân, không số 0 đứng đầu. Build `--target esp32s3` từ chối mọi thứ khác **trước khi ghi gì**, vì
-thiết bị đọc nó để chặn hạ cấp. `neuroedge build --target esp32s3` ghi nó vào `version.txt` của
-project; ESP-IDF đọc tệp đó thành `PROJECT_VER` — không có nó, project ngoài git báo phiên bản
-`1`. Firmware tham chiếu trong kho: `targets/esp32s3/version.txt` = `0.1.0`.
+App version is `[agent] version` in `agent.toml`, which must follow **MAJOR.MINOR.PATCH**: three decimal
+numbers, no leading zeroes. Build `--target esp32s3` rejects anything else **before writing anything**, because
+the device checks it to block downgrades. `neuroedge build --target esp32s3` writes it to `version.txt` in the
+project; ESP-IDF reads that file as `PROJECT_VER` — without it, projects outside git report version
+`1`. Reference firmware in repo: `targets/esp32s3/version.txt` = `0.1.0`.
 
-Mỗi lần phát hành: sửa `[agent] version` trong `agent.toml`, build lại, và tăng ít nhất số cuối —
-`0.1.0` → `0.1.1` (sửa lỗi), `0.1.0` → `0.2.0` (tính năng). Thiết bị chỉ nhận phiên bản **cao
-hơn mốc nước cao** (§6.3 bước 1); phát lại phiên bản cũ không có tác dụng.
+For each release: update `[agent] version` in `agent.toml`, rebuild, and increment at least the patch number —
+`0.1.0` → `0.1.1` (bug fix), `0.1.0` → `0.2.0` (feature). The device only accepts versions **higher
+than the high-water mark** (§6.3 step 1); reflashing an old version has no effect.
 
-## 7. Khi lỗi
+## 7. Troubleshooting
 
-| Thấy | Nghĩa | Làm gì |
+| Observed | Meaning | Action |
 |:---|:---|:---|
-| `neuroedge build` mã 1 | Agent không build được cho `esp32s3`; không có gì được ghi | Sửa từng vấn đề đã in (ở đâu · vì sao · cách xử lý) |
-| `NE_SELFTEST FAIL load <gate>` | Cây trong flash hỏng, hoặc không phải cây của gate đó | Build lại từ `neuroedge build`; không sửa tay `components/ne_agent/` |
-| `NE_SELFTEST FAIL check <i> <gate>` | Walker trên chip không quyết như engine trên máy tính | Build lại từ đầu; còn lỗi là lỗi firmware — mở issue kèm log monitor |
-| Không có dòng `NE_SELFTEST` | Firmware không tới được self-test | Xem log boot phía trên trong monitor |
-| `NE_OTA REJECTED reason=signature` | Ảnh không ký bằng khóa của ảnh đang chạy (hoặc thiếu chữ ký) | Ký lại bằng đúng khóa (§6.2), rồi thử lại |
-| `NE_OTA REJECTED reason=http` | Không mở được URL, hoặc máy chủ trả 404/403 | Kiểm URL và máy chủ từ một máy khác; nhớ HTTP trần chỉ in trong `NE_OTA CHECK` |
-| `NE_OTA REJECTED reason=descriptor` | URL trả về tệp không phải ảnh app | Trỏ URL đúng tệp `.bin` đã ký |
-| `NE_OTA SKIP` | Không nạp: phiên bản trùng hay **thấp hơn mốc nước cao**, hoặc là bản vừa bị quay về | Phát hành phiên bản **cao hơn** (§6.6), không phát lại bản cũ |
-| `NE_OTA INVALID` rồi `NE_OTA ROLLBACK` | Ảnh mới hỏng self-test (hoặc reset trước khi xác nhận) và đã bị quay về | Sửa firmware, tăng phiên bản, phát hành lại |
+| `neuroedge build` exit code 1 | Agent cannot build for `esp32s3`; nothing was written | Fix each reported issue (location · cause · remediation) |
+| `NE_SELFTEST FAIL load <gate>` | Flash tree corrupted or not the tree for that gate | Rebuild with `neuroedge build`; do not manually edit `components/ne_agent/` |
+| `NE_SELFTEST FAIL check <i> <gate>` | On-chip walker did not decide as the host engine did | Rebuild from scratch; if error persists, it is a firmware bug — open issue with monitor log |
+| No `NE_SELFTEST` line | Firmware did not reach self-test | Examine preceding boot log in monitor |
+| `NE_OTA REJECTED reason=signature` | Image not signed with running image's key (or missing signature) | Resign with correct key (§6.2), then retry |
+| `NE_OTA REJECTED reason=http` | Cannot open URL, or server returned 404/403 | Verify URL and server from another machine; remember plain HTTP is only printed in `NE_OTA CHECK` |
+| `NE_OTA REJECTED reason=descriptor` | URL returned a file that is not an app image | Point URL to valid signed `.bin` file |
+| `NE_OTA SKIP` | Not flashed: version identical or **lower than high-water mark**, or recently rolled-back image | Release a **higher** version (§6.6), do not re-release old version |
+| `NE_OTA INVALID` then `NE_OTA ROLLBACK` | New image failed self-test (or reset before confirmation) and was rolled back | Fix firmware, increment version, release again |

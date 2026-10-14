@@ -1,47 +1,47 @@
-# RFC — Đề xuất thay đổi hợp đồng đã đóng băng
+# RFC — Proposals to Change Frozen Contracts
 
-Lược đồ trong `schemas/`, ngữ nghĩa phân giải gate, ba vết ghi chuẩn mực, gate đã khoá
-trong `digests.lock` và bố cục nhị phân `NETR` là thước đo tuân thủ và đối tượng của chữ
-ký số gate, nên chúng không thay đổi bằng một pull request thông thường. Danh sách chính
-xác những gì cần RFC: [`CONTRIBUTING.md` §3](../../CONTRIBUTING.md#3-thay-đổi-cần-rfc).
+Schemas in `schemas/`, gate resolution semantics, the three canonical traces, gates locked
+in `digests.lock`, and the `NETR` binary layout are conformance measures and subjects of
+gate digital signatures, so they are not changed via a regular pull request. The exact list
+of what requires an RFC: [`CONTRIBUTING.md` §3](../../CONTRIBUTING.md#3-thay-đổi-cần-rfc).
 
-## Quy trình
+## Process
 
-1. Sao `0000-template.md` thành `NNNN-<tên-ngắn>.md` với số kế tiếp.
-2. Mở pull request **chỉ chứa tệp RFC**, chưa sửa hợp đồng.
-3. Thảo luận trên pull request đó. Mục 4 (tương thích) và mục 5 (an toàn) là hai
-   mục không được để trống.
-4. Khi được chấp thuận, sửa trong một pull request thứ hai, dẫn chiếu số RFC trong
-   thông điệp commit, và cập nhật dòng của RFC trong danh mục dưới đây.
+1. Copy `0000-template.md` to `NNNN-<short-name>.md` with the next number.
+2. Open a pull request **containing only the RFC file**, without modifying contracts yet.
+3. Discuss on that pull request. Section 4 (compatibility) and section 5 (safety) are two
+   sections that must not be left empty.
+4. When approved, make changes in a second pull request, referencing the RFC number in
+   the commit message, and update the RFC's row in the catalog below.
 
-Người phê duyệt: `CONTRIBUTING.md` §3.
+Approvers: `CONTRIBUTING.md` §3.
 
-**⏳ Nháp** = tệp RFC đã có trong kho (qua một PR tài liệu) nhưng chưa mở PR RFC ở bước 2; trạng thái chỉ chuyển sang thảo luận khi PR riêng của RFC đó được mở.
+**⏳ Draft** = RFC file already in the repository (via a documentation PR) but step 2's RFC PR has not been opened yet; status only moves to discussion when the dedicated PR for that RFC is opened.
 
-## Danh mục
+## Catalog
 
-| RFC | Tiêu đề | Lược đồ | Trạng thái |
+| RFC | Title | Schema | Status |
 |:---|:---|:---|:---:|
-| [0001](0001-gate-schema-conditional-requirements.md) | Yêu cầu trường có điều kiện cho gate kế thừa | `gate.v1` | ✅ Đã chấp thuận |
-| [0002](0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) | Mở rộng danh sách target — hiện thực ở I2c (Q-67) | `board.v1` · `trace.v1` (chỉ enum `target`) | ✅ Đã chấp thuận |
-| [0003](0003-bo-cuc-nhi-phan-cay.md) | Bố cục nhị phân `NETR` v1 của cây trên thiết bị (Q-23) — thu hẹp; ghim `extends` vẫn hoãn (`TODOS.md` #15) | *(định dạng mới, ngoài `schemas/`)* | ✅ Đã chấp thuận |
-| [0004](0004-ke-thua-budget-on-block.md) | Gate con không được nới `budget` và `on_block` | *(không — ngữ nghĩa phân giải)* | ✅ Đã chấp thuận |
-| [0005](0005-rang-buoc-tham-so-trong-gate.md) | Gate tự khai ràng buộc tham số của hành động (Q-25) | `gate.v1` · ngữ nghĩa phân giải · bố cục Q-23 | ✅ Đã chấp thuận |
-| [0006](0006-xac-nhan-ask-confirms.md) | `on_block.confirms` — tiêu chí người trên thiết bị được xác nhận thay (Q-26) | `gate.v1` · ngữ nghĩa phân giải · lượng giá | ✅ Đã chấp thuận |
-| [0007](0007-digital-in-i2c-analog-in-phong-bi.md) | `digital.in`, bus I2C chỉ đọc, `analog.in` và phong bì an toàn trong `board.v1` — TSK-N0-03 (Q-53) | `board.v1` (`gate.v1` không đổi) | ✅ Đã chấp thuận |
-| [0008](0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Ba vết ghi chuẩn mực mang `gate_digest` — phát lại kiểm nó | `trace.v1` *(chỉ `data` của ba vết ghi; tệp lược đồ không đổi)* | ✅ Đã chấp thuận |
-| [0009](0009-tieu-chi-so-numeric.md) | Tiêu chí số `evaluate.type: numeric` — TSK-W1-02 (Q-53, Q-54) | `gate.v1` · ngữ nghĩa phân giải · `NETR` | ✅ Đã chấp thuận · ✅ Đã hiện thực |
-| [0010](0010-pwm-trong-digital-out.md) | PWM trong `digital.out` — TSK-W1-01 (Q-53) | `board.v1` | ✅ Đã chấp thuận |
-| [0011](0011-nguyen-thuy-motion.md) | Nguyên thủy `motion.*`, token thuê có hạn, trạng thái an toàn theo cơ cấu — TSK-W1-03 (Q-53) | `board.v1` · sổ token · `NETR` | ✅ Đã chấp thuận |
-| [0012](0012-nguyen-thuy-vision-in.md) | Nguyên thủy `vision.in`; kết quả thị giác vào gate dưới dạng dữ kiện — TSK-V1b-07 (Q-53, Q-54) | `board.v1` *(`trace.v1` không đổi)* | ✅ Đã chấp thuận |
-| [0013](0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu mỗi target; `sim-rpi5` — TSK-I2a-07 (Q-53) | *(không — bất biến kiểm thử, sửa RFC-0002 §5b, §5c)* | ✅ Đã chấp thuận |
-| [0014](0014-du-kien-tu-tien-trinh-ngoai.md) | Dữ kiện số từ tiến trình ngoài (Frigate, OpenCV, hộp cảm biến, Home Assistant): nguồn khai trong gate, danh tính nguồn ghi vào vết ghi, `age_ms` theo Q-62, nguồn rớt ⇒ BLOCK — TSK-I6-07 (Q-63; mã sau v1.0, `TODOS.md` #56) | `gate.v1` *(một khoá tuỳ chọn)* · ngữ nghĩa phân giải · `agent.toml` (`trace.v1`, `board.v1` không đổi) | ✅ Đã chấp thuận |
-| [0015](0015-hop-dong-cho-nguoi-tich-hop.md) | Đóng băng hợp đồng cho người tích hợp: Gated Tool Profile (`tool-call.v1`, `tool-result.v1`), định danh phiên bản `board.v1`, danh mục mã lỗi `NE*` (`error.v1`, `error-codes.v1`) — TSK-I6-05 (Q-58, Q-63) | `schemas/` (bốn lược đồ mới) · `board.v1` (khoá `schema`) | ✅ Đã chấp thuận · ✅ Đã hiện thực |
-| [0016](0016-loi-tach-duoc-va-extension-sdk.md) | Lõi an toàn dùng độc lập và Extension SDK: điểm cắm, mô hình tin cậy, bộ test tuân thủ — TSK-I2c-02 (Q-67) | *(không trong `schemas/`)* — API mới, `agent.toml` `[plugins]`, CLI | ✅ Đã chấp thuận |
-| [0017](0017-nguon-goi-theo-khong-gian-ten.md) | Nguồn gọi theo không gian tên (`bridge:<id>`) và danh tính client — TSK-I2c-03 (Q-67) | `tool-call.v1` (`source`) · `docs/spec/tool_calling.md` | ✅ Đã chấp thuận |
-| [0018](0018-co-cau-chap-hanh-tu-xa.md) | Cơ cấu chấp hành từ xa và mức tự tắt — TSK-I2c-04 (Q-67) | *(không trong `schemas/`)* — khối `[actuators]` của `agent.toml`, đường `_admit` của HAL, phong bì, sự kiện vết ghi (`trace.v1` không đổi) | ✅ Đã chấp thuận |
+| [0001](0001-gate-schema-conditional-requirements.md) | Conditional field requirements for inherited gates | `gate.v1` | ✅ Approved |
+| [0002](0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) | Expand target list — implemented in I2c (Q-67) | `board.v1` · `trace.v1` (`target` enum only) | ✅ Approved |
+| [0003](0003-bo-cuc-nhi-phan-cay.md) | On-device tree `NETR` v1 binary layout (Q-23) — narrowed; pinning `extends` still deferred (`TODOS.md` #15) | *(new format, outside `schemas/`)* | ✅ Approved |
+| [0004](0004-ke-thua-budget-on-block.md) | Child gates cannot relax `budget` and `on_block` | *(none — resolution semantics)* | ✅ Approved |
+| [0005](0005-rang-buoc-tham-so-trong-gate.md) | Gates declare action argument constraints (Q-25) | `gate.v1` · resolution semantics · Q-23 layout | ✅ Approved |
+| [0006](0006-xac-nhan-ask-confirms.md) | `on_block.confirms` — criterion of person on device confirmed instead (Q-26) | `gate.v1` · resolution semantics · evaluation | ✅ Approved |
+| [0007](0007-digital-in-i2c-analog-in-phong-bi.md) | `digital.in`, read-only I2C bus, `analog.in`, and safety envelope in `board.v1` — TSK-N0-03 (Q-53) | `board.v1` (`gate.v1` unchanged) | ✅ Approved |
+| [0008](0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Three canonical traces carry `gate_digest` — replay checks it | `trace.v1` *(only `data` of three traces; schema file unchanged)* | ✅ Approved |
+| [0009](0009-tieu-chi-so-numeric.md) | Numeric criterion `evaluate.type: numeric` — TSK-W1-02 (Q-53, Q-54) | `gate.v1` · resolution semantics · `NETR` | ✅ Approved · ✅ Implemented |
+| [0010](0010-pwm-trong-digital-out.md) | PWM in `digital.out` — TSK-W1-01 (Q-53) | `board.v1` | ✅ Approved |
+| [0011](0011-nguyen-thuy-motion.md) | `motion.*` primitives, time-limited leased tokens, safe state per mechanism — TSK-W1-03 (Q-53) | `board.v1` · token log · `NETR` | ✅ Approved |
+| [0012](0012-nguyen-thuy-vision-in.md) | `vision.in` primitive; vision results enter gate as facts — TSK-V1b-07 (Q-53, Q-54) | `board.v1` *(`trace.v1` unchanged)* | ✅ Approved |
+| [0013](0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Optional extended primitives per board; multiple reference boards per target; `sim-rpi5` — TSK-I2a-07 (Q-53) | *(none — test invariants, amends RFC-0002 §5b, §5c)* | ✅ Approved |
+| [0014](0014-du-kien-tu-tien-trinh-ngoai.md) | Numeric facts from external processes (Frigate, OpenCV, sensor box, Home Assistant): source declared in gate, source identity recorded in trace, `age_ms` per Q-62, source down ⇒ BLOCK — TSK-I6-07 (Q-63; post-v1.0 code, `TODOS.md` #56) | `gate.v1` *(one optional key)* · resolution semantics · `agent.toml` (`trace.v1`, `board.v1` unchanged) | ✅ Approved |
+| [0015](0015-hop-dong-cho-nguoi-tich-hop.md) | Freeze contracts for integrators: Gated Tool Profile (`tool-call.v1`, `tool-result.v1`), `board.v1` version identifier, `NE*` error code catalog (`error.v1`, `error-codes.v1`) — TSK-I6-05 (Q-58, Q-63) | `schemas/` (four new schemas) · `board.v1` (`schema` key) | ✅ Approved · ✅ Implemented |
+| [0016](0016-loi-tach-duoc-va-extension-sdk.md) | Standalone safety core and Extension SDK: extension points, trust model, compliance test suite — TSK-I2c-02 (Q-67) | *(not in `schemas/`)* — new APIs, `agent.toml` `[plugins]`, CLI | ✅ Approved |
+| [0017](0017-nguon-goi-theo-khong-gian-ten.md) | Namespaced call sources (`bridge:<id>`) and client identity — TSK-I2c-03 (Q-67) | `tool-call.v1` (`source`) · `docs/spec/tool_calling.md` | ✅ Approved |
+| [0018](0018-co-cau-chap-hanh-tu-xa.md) | Remote actuators and auto-kill levels — TSK-I2c-04 (Q-67) | *(not in `schemas/`)* — `agent.toml` `[actuators]` block, HAL `_admit` channel, envelope, trace events (`trace.v1` unchanged) | ✅ Approved |
 
-**Bản nháp chưa cấp số** (nhận số kế tiếp khi mở PR RFC):
-[`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) — giao thức điều phối
-node cho robot phân tầng; các RFC tạm tên còn lại ở §2.2 của
-`docs/architecture/vi/15-target-architecture.md` §4.3 (RFC-numeric và RFC-motion đã thành RFC-0009 và RFC-0011).
+**Unnumbered drafts** (receive the next number when an RFC PR is opened):
+[`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) — node coordination protocol
+for tiered robots; remaining provisionally named RFCs are in §2.2 of
+`docs/architecture/vi/15-target-architecture.md` §4.3 (RFC-numeric and RFC-motion became RFC-0009 and RFC-0011).

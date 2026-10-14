@@ -1,22 +1,22 @@
-# Hướng dẫn 1 — Home Assistant qua `neuroedge proxy mcp`
+# Guide 1 — Home Assistant via `neuroedge proxy mcp`
 
-> **Mục tiêu:** đặt một gate trước *mọi lệnh AI gửi tới Home Assistant* (HA) qua tích hợp **MCP Server** của HA — Claude Desktop hay bất
-> kỳ MCP client nào nói chuyện với proxy, không với HA. **Thời gian:** ≤ 15 phút từ lúc đã cài wheel.
+> **Goal:** place a gate before *every AI command sent to Home Assistant* (HA) via HA's **MCP Server** integration — Claude Desktop or any
+> other MCP client talks to the proxy, not directly to HA. **Duration:** ≤ 15 minutes from wheel installation.
 >
-> **Trạng thái kiểm — đọc trước:** hướng dẫn này **chưa kiểm trên Home Assistant thật**. Mọi lệnh bên dưới được script
-> [`scripts/partner_guides_check.sh`](../../../scripts/partner_guides_check.sh) chạy từ wheel trên một **bản giả**
-> ([`fixtures/ha_mcp_double/`](../../../fixtures/ha_mcp_double/server.py)) dựng theo tài liệu công khai của tích hợp MCP Server (địa chỉ, token
-> `Bearer`, tên tool kiểu `HassTurnOn`). Tên tool, tham số và địa chỉ `/api/mcp` của HA thật có thể khác; chỗ nào khác, đó là phản hồi quý giá —
-> gửi theo [mẫu phản hồi](phan-hoi.md). Giới hạn khác: [`gioi-han.md`](gioi-han.md).
+> **Verification status — read first:** this guide is **chưa kiểm trên Home Assistant thật** (not verified on real Home Assistant). All commands below are executed
+> from the wheel by [`scripts/partner_guides_check.sh`](../../../scripts/partner_guides_check.sh) against a **test double**
+> ([`fixtures/ha_mcp_double/`](../../../fixtures/ha_mcp_double/server.py)) modeled after public documentation of the MCP Server integration (endpoints,
+> `Bearer` tokens, `HassTurnOn`-style tool names). Real HA tool names, parameters, and `/api/mcp` endpoints may differ; any discrepancy is valuable feedback —
+> submit it using the [feedback form](phan-hoi.md). Additional limitations: [`gioi-han.md`](gioi-han.md).
 
-## 0. Bạn cần
+## 0. Prerequisites
 
-- Đã cài wheel theo [README](README.md) (`neuroedge --help` chạy được).
-- Trong HA: tích hợp **Model Context Protocol Server** đã bật, và nên tạo **một người dùng HA riêng cho proxy** với một *long-lived access token*
-  (Hồ sơ → Bảo mật). Token chỉ để trong biến môi trường, **không bao giờ** trong tệp.
-- Địa chỉ MCP của HA, ví dụ `http://192.168.1.10:8123/api/mcp` (mạng nhà, http thuần) hay `https://…` nếu bạn có.
+- Installed the wheel per [README](README.md) (`neuroedge --help` runs).
+- Inside HA: **Model Context Protocol Server** integration is enabled; we recommend creating **a dedicated HA user for the proxy** with a *long-lived access token*
+  (Profile → Security). Keep tokens strictly in environment variables, **never** in committed files.
+- HA MCP URL, e.g. `http://192.168.1.10:8123/api/mcp` (home LAN, plain http) or `https://…` if configured.
 
-Đặt hai biến (`read -s` không in và không lưu token vào lịch sử shell):
+Set the two variables (`read -s` prevents printing and history logging):
 
 <!-- guide: skip reason="đặt biến môi trường: script đã đặt sẵn HA_MCP_URL và HA_AUTH trỏ vào bản giả" -->
 ```bash
@@ -24,47 +24,47 @@ export HA_MCP_URL="http://192.168.1.10:8123/api/mcp"
 read -rs HA_TOKEN && export HA_AUTH="Bearer $HA_TOKEN" && unset HA_TOKEN
 ```
 
-## 1. Ba lệnh tới giá trị đầu
+## 1. Three commands to initial value
 
-**Lệnh 1 — nối vào HA, liệt kê tool, viết cấu hình và gate.** `--allow-lan-http` chỉ cần khi HA nói http thuần trên mạng nhà; dùng `https://` thì bỏ
-nó (lý do và rủi ro: [`gioi-han.md`](gioi-han.md)).
+**Command 1 — connect to HA, list tools, generate configuration and gates.** `--allow-lan-http` is only required when HA uses plain http on the local network; omit it
+when using `https://` (rationale and security risks: [`gioi-han.md`](gioi-han.md)).
 
 <!-- guide: run expect="tool(s) behind the Guard, all BLOCKED until you open their gate" expect="wrote" -->
 ```bash
 neuroedge guard init --mcp "$HA_MCP_URL" --header-env Authorization=HA_AUTH --allow-lan-http --name homeassistant --dir ha
 ```
 
-Nó viết `ha/guard.toml` và một gate cho **mỗi** tool của HA trong `ha/gates/`. Mỗi gate **chặn mặc định**: nó đòi một dữ kiện (`operator_approved`) mà không ai đặt.
-Tool có tham số bắt buộc không phải kiểu đơn giản (chuỗi, số, đúng/sai) không được phơi ra, và lệnh in lý do; tham số tuỳ chọn kiểu danh sách (như `domain` của HA)
-bị bỏ, kèm ghi chú. Tên tool trong `guard.toml` là chữ thường (`hassturnon`); tên thật của HA nằm ở `[proxy.mcp.names]`.
+This writes `ha/guard.toml` and a gate for **each** HA tool in `ha/gates/`. Each gate **blocks by default**: it demands a fact (`operator_approved`) that nobody has set.
+Tools with required non-scalar parameters (arrays, objects) are not exposed, with reasons printed; optional array parameters (such as HA's `domain`)
+are omitted, with an explanatory note. Tool names in `guard.toml` are lowercased (`hassturnon`); original HA names reside under `[proxy.mcp.names]`.
 
-**Lệnh 2 — đăng ký proxy vào Claude Desktop** (thay cho `HA` trong cấu hình Claude). Thử ra một tệp tạm trước — lệnh không đụng cấu hình thật:
+**Command 2 — register the proxy into Claude Desktop** (replacing direct `HA` in Claude configuration). Test against a temporary file first — leaving real configuration untouched:
 
 <!-- guide: run expect="Wrote mcpServers['homeassistant']" expect="Quit Claude Desktop completely" -->
 ```bash
 neuroedge proxy mcp --config ha/guard.toml --desktop-config --write --config-path ./claude_desktop_thu.json
 ```
 
-Hài lòng thì ghi vào cấu hình thật (lệnh giữ mọi mục khác, và sao lưu tệp cũ thành `.bak-<giờ>`):
+Once verified, apply to your actual configuration (retaining existing entries and creating a `.bak-<timestamp>` backup):
 
 <!-- guide: skip reason="ghi vào cấu hình Claude Desktop thật của máy; bước trên đã thử cùng lệnh ra tệp tạm" -->
 ```bash
 neuroedge proxy mcp --config ha/guard.toml --desktop-config --write
 ```
 
-Claude Desktop chạy proxy với môi trường **tối thiểu**: nó không thấy `HA_AUTH` của shell bạn. Mở tệp cấu hình và thêm khối `env` cho đúng mục `homeassistant`
-(lệnh in nhắc điều này và **không** ghi token vào tệp thay bạn):
+Claude Desktop launches the proxy with a **minimal** environment: it will not see your shell's `HA_AUTH`. Open the configuration file and add an `env` block specifically for `homeassistant`
+(the command prints a reminder and **never** writes secrets into configuration files for you):
 
 <!-- guide: skip reason="chỉnh tay cấu hình Claude Desktop" -->
 ```json
-"homeassistant": { "command": "…", "args": ["…"], "env": { "HA_AUTH": "Bearer <token của người dùng HA riêng>" } }
+"homeassistant": { "command": "…", "args": ["…"], "env": { "HA_AUTH": "Bearer <dedicated HA user token>" } }
 ```
 
-Đây là điểm yếu bạn phải biết: token nằm **dạng chữ rõ** trong tệp cấu hình của Claude Desktop trên máy này. Đó là lý do nên dùng người dùng HA riêng với quyền hẹp cho proxy.
+Be aware of this security consideration: the token resides in **plain text** within Claude Desktop's local configuration file on this host. This is why you should use a dedicated HA account with scoped permissions for the proxy.
 
-**Lệnh 3 — thoát hẳn rồi mở lại Claude Desktop** (không chỉ đóng cửa sổ), rồi hỏi: *"bật đèn phòng khách"*. Claude gọi tool qua proxy và nhận **BLOCK**.
+**Command 3 — quit completely and reopen Claude Desktop** (do not merely close its window), then ask: *"bật đèn phòng khách"* (turn on the living room light). Claude invokes the tool through the proxy and receives **BLOCK**.
 
-Không có Claude Desktop, hoặc muốn tự chạy thử: lưu máy khách nhỏ này thành `thu.py`. Nó khởi chạy proxy y như Claude Desktop, gọi một tool và in kết quả; tham số đầu là tệp vết ghi.
+If you do not have Claude Desktop or prefer running headless tests: save this minimal client as `thu.py`. It spawns the proxy exactly like Claude Desktop, invokes a tool, and prints results; the first argument specifies the trace output path.
 
 <!-- guide: run -->
 ```bash
@@ -86,20 +86,20 @@ asyncio.run(main(sys.argv[1], sys.argv[2], json.loads(sys.argv[3])))
 PY
 ```
 
-## 2. Thấy BLOCK
+## 2. Observing BLOCK
 
 <!-- guide: run expect='"status": "BLOCK"' expect='"reason": "criterion_unavailable"' expect='"failed_criterion": "operator_approved"' log_lacks="HA_LOG|HassTurnOn" -->
 ```bash
 python thu.py ha/trace-block.json hassturnon '{"name": "Living room lamp"}'
 ```
 
-`BLOCK` + `criterion_unavailable` nghĩa là gate chạy đúng: nó đòi `operator_approved` mà không ai đặt, nên **không có gì tới HA** (script kiểm cả điều này: HA giả không nhận lời gọi nào).
-Đây là kết quả bình thường, không phải lỗi — và là điều bạn muốn khi một AI bị lừa gọi một tool.
+`BLOCK` + `criterion_unavailable` confirms the gate operates correctly: it required `operator_approved` which was never set, so **nothing reached HA** (the test verifies the double received no calls).
+This is standard expected behavior, not an error — exactly what you want when an AI is manipulated into calling a physical tool.
 
-## 3. Mở gate có chủ ý rồi thấy ALLOW
+## 3. Intentionally opening a gate and observing ALLOW
 
-Mở gate là việc **bạn làm bằng tay**, từng tool một. Gate của tool `hassturnon` nằm ở `ha/gates/hassturnon@1.0.0.yaml`; đầu tệp có hướng dẫn.
-Cách nhanh nhất là xoá tiêu chí `operator_approved` ở hai chỗ (`evaluate:` và `allow_when:`) bằng một lệnh — hoặc sửa bằng trình soạn thảo:
+Opening a gate is a **manual human action**, performed one tool at a time. The gate for tool `hassturnon` is located at `ha/gates/hassturnon@1.0.0.yaml`; instructions are at the top of the file.
+The quickest way is removing `operator_approved` from both locations (`evaluate:` and `allow_when:`) using a single command — or editing it in a text editor:
 
 <!-- guide: run -->
 ```bash
@@ -107,7 +107,7 @@ f="ha/gates/hassturnon@1.0.0.yaml"
 awk '/^  operator_approved:/ {skip=1; next} skip && /^    / {next} {skip=0; print}' "$f" > "$f.new" && mv "$f.new" "$f"
 ```
 
-Sau đó gate chỉ còn điều kiện nguồn: `call_source: { in: [mcp] }` — client MCP phía trước proxy được gọi tool này. Kiểm gate vẫn hợp lệ:
+Afterwards, only the source constraint remains: `call_source: { in: [mcp] }` — allowing MCP clients upstream of the proxy to invoke this tool. Verify the gate remains valid:
 
 <!-- guide: run expect="gate(s) resolved" -->
 ```bash
@@ -119,18 +119,18 @@ neuroedge gate lint ha/gates
 python thu.py ha/trace-allow.json hassturnon '{"name": "Living room lamp"}'
 ```
 
-Lần này lời gọi qua gate và **mới** tới HA (script kiểm HA giả nhận đúng một lệnh `HassTurnOn`). Các tool khác vẫn bị chặn — thử `hassturnoff`:
+This time the call clears the gate and **proceeds** to HA (the test verifies the double receives exactly one `HassTurnOn` command). Other tools remain blocked — try `hassturnoff`:
 
 <!-- guide: run expect='"status": "BLOCK"' log_lacks="HA_LOG|HassTurnOff" -->
 ```bash
 python thu.py ha/trace-other.json hassturnoff '{"name": "Living room lamp"}'
 ```
 
-Mở bao nhiêu tuỳ bạn, nhưng đừng mở theo kiểu "cho mọi MCP client": thêm điều kiện thật vào gate (`neuroedge gate explain`, các gate mẫu ở `gates/`) cho thứ khó hoàn tác như khoá cửa.
+Open whatever tools you need, but avoid opening them blanket "for all MCP clients": write concrete conditions into gates (`neuroedge gate explain`, example gates under `gates/`) for hard-to-reverse actions like door locks.
 
-## 4. Đọc vết ghi
+## 4. Inspecting traces
 
-Mỗi phiên của proxy ghi một vết ghi (`--trace-out`). Thẩm định rồi đọc:
+Each proxy session writes a trace (`--trace-out`). Validate then view:
 
 <!-- guide: run expect="VALID" -->
 ```bash
@@ -142,71 +142,71 @@ neuroedge trace validate ha/trace-allow.json
 neuroedge trace show ha/trace-allow.json
 ```
 
-Bạn sẽ thấy `tool_call` (nguồn `mcp`, tên tool, **tham số**), `gate_evaluation_result` (`ALLOW` hay `BLOCK`, và vì sao). Vết ghi **chứa tham số của lời gọi** như client gửi
-(ví dụ tên thiết bị), không băm — coi nó là dữ liệu nhà bạn khi gửi cho chúng tôi (xem [`phan-hoi.md`](phan-hoi.md)).
+You will see `tool_call` (source `mcp`, tool name, **parameters**), and `gate_evaluation_result` (`ALLOW` or `BLOCK`, and rationale). The trace **contains call parameters** exactly as sent by the client
+(such as device entity names) unhashed — treat it as private household data when sharing with us (see [`phan-hoi.md`](phan-hoi.md)).
 
-## 5. Làm proxy thành đường duy nhất
+## 5. Making the proxy the sole path
 
-Proxy chỉ canh con đường đi **qua nó**. Ai gọi thẳng HA vẫn không qua gate. `plugin doctor` báo những lối vòng nó thấy và nói rõ điều nó **không** kiểm được:
+The proxy guards only the traffic passing **through it**. Any client calling HA directly bypasses the gate. `plugin doctor` reports detected bypasses and explicitly notes what it **cannot** check:
 
 <!-- guide: run exit=1 expect="allow_lan_http đang bật" expect="đích còn tới được mà không qua proxy" expect="không kiểm được: plugin (TSK-I2c-11)" -->
 ```bash
 neuroedge plugin doctor --config ha/guard.toml
 ```
 
-Mã thoát `1` = có cảnh báo (ở đây luôn có: HA luôn tới được từ máy bạn). Việc cần làm thật, doctor không làm thay:
+Exit code `1` = warnings detected (here always expected: HA is reachable directly from your host). Practical hardening steps that doctor cannot automate:
 
-- **Token là chìa khoá.** Chỉ proxy được cầm token HA (của người dùng HA riêng). Claude Desktop, agent, script khác **không** cầm token đó — chúng chỉ nói chuyện với proxy. Máy khách nào có token HA là một lối vòng.
-- **Mạng.** Nếu bạn kiểm soát được, chỉ cho máy chạy proxy (và thiết bị thật sự cần, như app điện thoại của HA) tới cổng HA; doctor không đọc tường lửa và không quét mạng.
-- **Các ứng dụng khác trên máy** (Cursor, VS Code, script) có thể có mục MCP trỏ thẳng HA: tự rà.
+- **Tokens are keys.** Only the proxy should hold the HA access token (from the dedicated HA user). Claude Desktop, agents, and custom scripts must **not** possess that token — they communicate solely with the proxy. Any client possessing the HA token constitutes a bypass.
+- **Networking.** If possible, restrict network access to HA ports so only the proxy host (and necessary devices like the HA mobile app) can connect; doctor does not inspect firewalls or scan network topologies.
+- **Other local applications** (Cursor, VS Code, developer scripts) might have MCP entries pointing directly to HA: audit them manually.
 
-## 6. Lỗi thường gặp (thông báo thật)
+## 6. Lỗi thường gặp (real messages)
 
-**Thiếu biến môi trường** — quên `export HA_AUTH`:
+**Missing environment variable** — forgot `export HA_AUTH`:
 
 <!-- guide: run exit=1 expect="environment variable(s) ['HA_AUTH'] named in guard.toml are not set" expect="export HA_AUTH=" -->
 ```bash
 env -u HA_AUTH neuroedge guard init --mcp "$HA_MCP_URL" --header-env Authorization=HA_AUTH --allow-lan-http --dir ha-loi
 ```
 
-(Thông báo nói "named in guard.toml" dù lúc `init` chưa có tệp — nghĩa là biến bạn vừa nêu bằng `--header-env`.)
+(The message mentions "named in guard.toml" even though `guard.toml` does not exist prior to `init` — referring to the variable passed via `--header-env`.)
 
-**Token sai hoặc hết hạn** — HA trả 401; proxy không cho biết mã, chỉ nói chung:
+**Invalid or expired token** — HA responds 401; proxy does not expose HTTP status codes, reporting generically:
 
 <!-- guide: run exit=1 expect="cannot connect to the real MCP server" expect="Server returned an error response" -->
 ```bash
 HA_AUTH="Bearer sai-token" neuroedge guard init --mcp "$HA_MCP_URL" --header-env Authorization=HA_AUTH --allow-lan-http --dir ha-loi
 ```
 
-Cách tự kiểm: thử cùng token bằng `curl -i -H "Authorization: $HA_AUTH" "$HA_MCP_URL"` — `401` là token.
+How to verify manually: test the token directly with `curl -i -H "Authorization: $HA_AUTH" "$HA_MCP_URL"` — `401` confirms token invalidity.
 
-**http thuần tới máy trong nhà mà chưa bật cờ**:
+**Plain http to LAN host without enabling flag**:
 
 <!-- guide: run exit=1 expect="plain http to another machine on the LAN sends the calls and the token in clear" expect="allow_lan_http = true" -->
 ```bash
 neuroedge guard init --mcp "http://192.168.1.10:8123/api/mcp" --header-env Authorization=HA_AUTH --dir ha-loi
 ```
 
-**http thuần tới máy ngoài mạng nhà** — cờ không cứu được, dùng https:
+**Plain http to non-LAN host** — the flag cannot bypass this constraint, use https:
 
 <!-- guide: run exit=1 expect="plain http to a host outside loopback and the home LAN would send the token in clear over the internet" -->
 ```bash
 neuroedge guard init --mcp "http://ha.example.com/api/mcp" --header-env Authorization=HA_AUTH --allow-lan-http --dir ha-loi
 ```
 
-**Proxy không khởi động khi HA tắt, sai địa chỉ hay thiếu biến** — nó không bao giờ "phục vụ phần còn lại":
+**Proxy fails to start when HA is unreachable, address is wrong, or variables are missing** — it never starts up in a "partially degraded" state:
 
 <!-- guide: run exit=1 expect="environment variable(s) ['HA_AUTH'] named in guard.toml are not set" -->
 ```bash
 env -u HA_AUTH neuroedge proxy mcp --config ha/guard.toml
 ```
 
-**Mọi tool đều BLOCK sau khi bạn đã sửa gate** — gate chỉ nạp lúc proxy khởi động: thoát hẳn Claude Desktop (nó giữ tiến trình proxy cũ) rồi mở lại.
+**All tools evaluate to BLOCK after editing gates** — gates are loaded only during proxy initialization: quit Claude Desktop completely (it holds the previous proxy process) and reopen it.
 
-**Tên tool trong HA khác** — nếu `guard init` in "NOT exposed" cho tool bạn cần, tool đó có tham số bắt buộc không phải kiểu đơn giản; chưa phơi được ở bản này
-(ghi vào phản hồi: tool nào, tham số nào).
+**Tool names differ in HA** — if `guard init` prints "NOT exposed" for a desired tool, that tool has required non-scalar parameters; unsupported in this release
+(note in feedback: which tool, which parameters).
 
-## 7. Tiếp theo
+## 7. Next steps
 
-Gửi phản hồi theo [`phan-hoi.md`](phan-hoi.md) (thời gian tới BLOCK đầu, tới ALLOW đầu có chủ ý, lỗi nguyên văn). Đã xong với HA? Hai hướng dẫn còn lại:
-[`guard-python.md`](guard-python.md) (agent Python của bạn), [`proxy-http.md`](proxy-http.md) (API thiết bị cục bộ kiểu Tasmota).
+Submit feedback via [`phan-hoi.md`](phan-hoi.md) (time to first BLOCK, time to first intentional ALLOW, verbatim errors). Finished with HA? The other two guides:
+[`guard-python.md`](guard-python.md) (custom Python agents), [`proxy-http.md`](proxy-http.md) (local device APIs like Tasmota).

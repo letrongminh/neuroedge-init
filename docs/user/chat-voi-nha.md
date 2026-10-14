@@ -1,59 +1,59 @@
-# Chat với nhà bằng NeuroClaw
+# Chat with home using NeuroClaw
 
-Bạn nhắn Telegram (hay kênh chat khác) cho **bộ não**, và bộ não điều khiển thiết bị trong nhà
-qua **hộp tại nhà**. Bộ não là [NeuroClaw](https://github.com/letrongminh/neuroclaw), repo riêng,
-MIT. Hộp là `neuroedge mcp serve --http` của kho này. Hộp giữ gate: lệnh nào cũng là *yêu cầu*,
-gate quyết định, việc cần hỏi chủ nhà thì hỏi trên trang tại nhà.
+You message the **brain** via Telegram (or other chat channels), and the brain controls home devices
+through the **home box**. The brain is [NeuroClaw](https://github.com/letrongminh/neuroclaw), a separate repo,
+MIT. The box is `neuroedge mcp serve --http` from this repo. The box holds the gate: every command is a *request*,
+the gate decides, and actions requiring owner confirmation are asked on the home page.
 
-> Trạng thái: chạy được với `sim` (thiết bị ảo), đã thử trên laptop và trên một máy ảo đóng vai
-> cloud. Khoá, token và cấp quyền hôm nay là của bộ script demo, hạn 30 ngày, chưa phải bản cho
-> người dùng. NeuroEdge Cloud chưa mở (Q-74). Kiến trúc: [`15-target-architecture.md`](../architecture/vi/15-target-architecture.md) §6.10.
+> Status: runs with `sim` (virtual devices), tested on laptop and on a virtual machine acting as
+> cloud. Keys, tokens, and authorization today come from the demo script suite, valid for 30 days, not yet user-ready.
+> NeuroEdge Cloud is not yet open (Q-74). Architecture: [`15-target-architecture.md`](../architecture/vi/15-target-architecture.md) §6.10.
 
-## Chọn cách chạy bộ não
+## Choose how to run the brain
 
-| Cách chạy | Bộ não ở đâu | Đọc |
+| Run mode | Brain location | Read |
 |:---|:---|:---|
-| Tự host | NeuroClaw (Go) trên VPS, board Linux, Pi, máy Mac hay Windows | Mục 1 → 3 dưới đây |
-| Một chip | NeuroClaw-ESP chung một ESP32-S3 với gate | [`esp32-mot-chip.md`](esp32-mot-chip.md) (chờ bo) |
-| NeuroEdge Cloud | Instance do NeuroEdge vận hành | Chưa có — có điều kiện sau cổng nhu cầu (Q-74) |
+| Self-hosted | NeuroClaw (Go) on VPS, Linux board, Pi, Mac or Windows | Sections 1 → 3 below |
+| Single chip | NeuroClaw-ESP on the same ESP32-S3 as the gate | [`esp32-mot-chip.md`](esp32-mot-chip.md) (awaiting board) |
+| NeuroEdge Cloud | Instance operated by NeuroEdge | Not yet available — conditional after demand gate (Q-74) |
 
-## 1. Dựng hộp
+## 1. Set up the box
 
-Hộp đòi đủ chứng chỉ máy chủ, CA của thiết bị, issuer và khoá ký token; thiếu một thứ là không
-mở cổng ([`tool_calling.md`](../spec/tool_calling.md) §8.1). Cách nhanh nhất hôm nay là script
-của demo: [`demo/i2f-chat-den-cua/kich-ban.md`](../../demo/i2f-chat-den-cua/kich-ban.md) §0.1.
-Nó tạo khoá một lần (`tao-khoa.py`), rồi chạy `neuroedge mcp serve --http --ui --target sim`.
-Trang `127.0.0.1:8765` là màn hình tại nhà, nơi bạn duyệt việc cần hỏi chủ nhà.
+The box requires complete server certificates, device CA, issuer, and token signing keys; missing any one prevents
+opening the port ([`tool_calling.md`](../spec/tool_calling.md) §8.1). The fastest path today is the demo
+script: [`demo/i2f-chat-den-cua/kich-ban.md`](../../demo/i2f-chat-den-cua/kich-ban.md) §0.1.
+It creates keys once (`tao-khoa.py`), then runs `neuroedge mcp serve --http --ui --target sim`.
+The page `127.0.0.1:8765` is the home screen, where you approve actions requiring owner confirmation.
 
-## 2. Cài NeuroClaw và nối với hộp
+## 2. Install NeuroClaw and connect to the box
 
-- **Cài** theo môi trường: [hướng dẫn cài của NeuroClaw](https://github.com/letrongminh/neuroclaw/blob/main/docs/guides/install.md).
-- **Nối với hộp** bằng một máy chủ MCP kiểu `http` có khối `tls` (CA, chứng chỉ và khoá của bộ
-  não, token): [NeuroClaw làm bộ não NeuroEdge](https://github.com/letrongminh/neuroclaw/blob/main/docs/guides/neuroedge.md).
-- **Hoặc dùng script demo:** `chay-nao.sh` tải bản phát hành NeuroClaw (kiểm checksum), dựng
-  `config.json` từ [`demo/i2f-chat-den-cua/neuroclaw/config.json`](../../demo/i2f-chat-den-cua/neuroclaw/config.json)
-  và chạy `neuroclaw gateway`; `dung-vps.sh` làm việc đó trên VPS
+- **Install** per your environment: [NeuroClaw installation guide](https://github.com/letrongminh/neuroclaw/blob/main/docs/guides/install.md).
+- **Connect to the box** using an MCP server of type `http` with a `tls` block (CA, brain certificate
+  and key, token): [NeuroClaw as NeuroEdge brain](https://github.com/letrongminh/neuroclaw/blob/main/docs/guides/neuroedge.md).
+- **Or use the demo script:** `chay-nao.sh` downloads the NeuroClaw release (verifying checksums), sets up
+  `config.json` from [`demo/i2f-chat-den-cua/neuroclaw/config.json`](../../demo/i2f-chat-den-cua/neuroclaw/config.json)
+  and runs `neuroclaw gateway`; `dung-vps.sh` performs this on a VPS
   ([`kich-ban.md`](../../demo/i2f-chat-den-cua/kich-ban.md) §0.2).
 
-Chỉ chép sang máy bộ não những gì nó cần: CA, chứng chỉ và khoá của bộ não, token. **Không bao giờ**
-chép khoá của issuer hay của hộp.
+Copy to the brain machine only what it needs: CA, brain certificate and key, token. **Never**
+copy the issuer key or the box key.
 
-## 3. Chọn bộ não mở hay khoanh vùng
+## 3. Choose open or bounded brain
 
-NeuroClaw có đủ năng lực PicoClaw: shell, bus phần cứng, cài skill, lệnh trong cron. Mỗi thứ đang
-bật ghi một dòng `NeuroClaw risk=<tên>` lúc khởi động (Q-80).
+NeuroClaw has full PicoClaw capabilities: shell, hardware bus, skill installation, commands in cron. Each active
+capability logs a line `NeuroClaw risk=<name>` at startup (Q-80).
 
-- **Bộ não chung máy với hộp** mà còn `risk=shell` hay `risk=hardware_bus` thì đi vòng được gate.
-  Hãy tắt chúng trong `config.json` (bản của demo đã tắt) hoặc chạy bộ não dưới user riêng không có
-  quyền phần cứng (TSK-I2d-24).
-- **Bộ não ở máy khác** (VPS, cloud): gate vẫn quyết mọi việc với thiết bị trong nhà; shell chỉ tới
-  được chính máy đó.
+- **Brain co-located on the same machine as the box** with `risk=shell` or `risk=hardware_bus` active can bypass the gate.
+  Disable them in `config.json` (the demo version has them disabled) or run the brain under a dedicated user without
+  hardware permissions (TSK-I2d-24).
+- **Brain on a different machine** (VPS, cloud): the gate still decides every action for home devices; the shell only reaches
+  that machine itself.
 
-Vì sao: [`threat_model.md`](../spec/threat_model.md) §2k. Danh sách nhãn: `docs/reference/capabilities.md`
-§2 của repo `neuroclaw`.
+Rationale: [`threat_model.md`](../spec/threat_model.md) §2k. Label list: `docs/reference/capabilities.md`
+§2 of the `neuroclaw` repo.
 
 ## 4. Chat
 
-Nhắn bot: "bật đèn phòng khách" chạy ngay; "mở cửa" làm hộp hỏi bạn trên trang tại nhà, và bộ não
-báo đang chờ bạn duyệt. Kịch bản đủ sáu màn và kết quả đã chạy:
+Message the bot: "bật đèn phòng khách" (turn on living room light) executes immediately; "mở cửa" (open the door) makes the box ask you on the home page, and the brain
+reports waiting for your approval. Full six-scene scenario and execution results:
 [`kich-ban.md`](../../demo/i2f-chat-den-cua/kich-ban.md).

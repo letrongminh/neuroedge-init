@@ -1,101 +1,93 @@
-# RFC-0014: Dữ kiện từ tiến trình ngoài
+# RFC-0014: Facts from External Processes
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0014 |
-| **Tiêu đề** | Dữ kiện số từ tiến trình ngoài (Frigate, OpenCV, hộp cảm biến, tích hợp Home Assistant): nguồn khai trong gate, danh tính nguồn ghi vào vết ghi, `age_ms` theo định nghĩa chung, nguồn rớt ⇒ không có dữ kiện ⇒ BLOCK |
-| **Hợp đồng bị ảnh hưởng** | `gate.v1` *(một khoá tuỳ chọn mới `evaluate.<tên>.external_source`, §3c)* · ngữ nghĩa phân giải *(luật của khoá đó ở `engine/gate_resolver.py`, §3c)* · lượng giá của engine *(`_gather` trong `engine/gate.py`, §3g)* · khối `[external]` của `agent.toml` *(không có lược đồ trong `schemas/`; kiểm ở `neuroedge build` và lúc nạp agent, như `[vision]` của RFC-0012)* · giao thức dây giữa nguồn và bộ nhận *(đặc tả mới `docs/spec/external_facts.md`; có đưa vào `schemas/` hay không: §9 câu 5)* · quy ước sự kiện vết ghi *(không đổi `trace.v1`: `type` là chuỗi mở, `events[].data` là `object` tự do — §4)* · **không** đụng `board.v1`, **không** đụng bố cục `NETR`, **không** mã lỗi mới (§4) |
-| **Yêu cầu PRD liên quan** | FR-MDL-04, FR-MDL-10, FR-GATE-03, FR-GATE-06, FR-CI-02, NFR-SEC-04, NFR-SEC-09 |
-| **Người đề xuất** | — |
-| **Ngày mở** | 2026-10-03 |
-| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #92; quyết định ở §9 (Q-65). Mã hiện thực sau v1.0 (`TODOS.md` #56) |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `gate.v1`, ngữ nghĩa phân giải, mở một đường dữ kiện vào cổng an toàn từ ngoài tiến trình) |
+| **RFC ID** | 0014 |
+| **Title** | Numeric facts from external processes (Frigate, OpenCV, sensor boxes, Home Assistant integrations): sources declared in gates, source identity recorded in traces, `age_ms` per shared definition, lost source ⇒ missing fact ⇒ BLOCK |
+| **Affected Contract** | `gate.v1` *(a new optional key `evaluate.<name>.external_source`, §3c)* · resolution semantics *(rules for that key in `engine/gate_resolver.py`, §3c)* · engine evaluation *(`_gather` in `engine/gate.py`, §3g)* · `agent.toml` `[external]` block *(no schema in `schemas/`; checked in `neuroedge build` and agent loading, like `[vision]` in RFC-0012)* · wire protocol between source and receiver *(new specification `docs/spec/external_facts.md`; whether to promote to `schemas/`: §9 question 5)* · trace event conventions *(does not alter `trace.v1`: `type` is open string, `events[].data` is free `object` — §4)* · does **not** touch `board.v1`, does **not** touch `NETR` layout, **no** new error codes (§4) |
+| **Related PRD Requirements** | FR-MDL-04, FR-MDL-10, FR-GATE-03, FR-GATE-06, FR-CI-02, NFR-SEC-04, NFR-SEC-09 |
+| **Author** | — |
+| **Date Opened** | 2026-10-03 |
+| **Status** | ✅ Approved (2026-10-04) — lead architect signed on PR #92; decisions in §9 (Q-65). Code implemented after v1.0 (`TODOS.md` #56) |
+| **Approver** | **Lead Architect — mandatory** (touches `gate.v1`, resolution semantics, opens a fact path into safety gates from outside the process) |
 
-> **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/gate.v1.json` và ngữ nghĩa phân giải gate
-> (`engine/gate_resolver.py`, `engine/constraints.py`). Task: **TSK-I6-07** (RFC này; tiêu chí ra 10 của I6 là RFC được
-> chấp thuận). Mã hiện thực **không** thuộc I6: `TODOS.md` #56, làm sau v1.0 cùng phản hồi của Beta. Quyết định nền:
-> `neuroedge-prd.md` §15 **Q-63** (khoảng hở thứ 3), **Q-54** (kết quả nhận thức vào gate dưới dạng dữ kiện, ngưỡng khoá bằng tiêu chí
-> `numeric`, không có ngữ nghĩa gate riêng), **Q-58** (MCP qua mạng có xác thực — TSK-P2-04), **Q-62** (một định nghĩa tuổi dữ kiện;
-> `age_ms < 0` ⇒ BLOCK). Khớp với [RFC-0012](0012-nguyen-thuy-vision-in.md) §9.2 (nhãn mô hình → dữ kiện gõ kiểu),
-> [RFC-0009](0009-tieu-chi-so-numeric.md) (tiêu chí số, `max_age_ms`), [RFC-0007](0007-digital-in-i2c-analog-in-phong-bi.md)
-> (đọc hỏng ⇒ chưa quyết ⇒ BLOCK).
+> **When an RFC is required:** `CONTRIBUTING.md` §3 — modifying `schemas/gate.v1.json` and gate resolution semantics
+> (`engine/gate_resolver.py`, `engine/constraints.py`). Task: **TSK-I6-07** (this RFC; exit criterion 10 of I6 is approved RFC).
+> Implementation code is **not** part of I6: `TODOS.md` #56, scheduled post-v1.0 alongside Beta feedback. Foundation decisions:
+> `neuroedge-prd.md` §15 **Q-63** (gap #3), **Q-54** (perception results enter gates as facts, thresholds locked by
+> `numeric` criteria, no dedicated gate semantics), **Q-58** (network MCP requires authentication — TSK-P2-04), **Q-62** (single fact age definition;
+> `age_ms < 0` ⇒ BLOCK). Aligns with [RFC-0012](0012-nguyen-thuy-vision-in.md) §9.2 (model labels → typed facts),
+> [RFC-0009](0009-tieu-chi-so-numeric.md) (numeric criteria, `max_age_ms`), [RFC-0007](0007-digital-in-i2c-analog-in-phong-bi.md)
+> (failed read ⇒ undecided ⇒ BLOCK).
 
-## 1. Vấn đề
+## 1. Problem
 
-Một dự án khác — Frigate nhận diện người ở cổng, một tiến trình OpenCV đếm xe, một hộp cảm biến chạy firmware riêng, một tích hợp Home Assistant
-đọc cảm biến cửa — có **quan sát** mà gate cần, nhưng NeuroEdge không muốn (và, theo Q-52/Q-54, không phải) nhúng mô hình hay thư viện thị giác
-vào lõi. Hôm nay không có đường chính thức nào đưa quan sát đó vào một phán quyết:
+Another project — Frigate recognizing people at the gate, an OpenCV process counting vehicles, a sensor box running custom firmware, a Home Assistant integration reading door sensors — possesses **observations** that gates require, but NeuroEdge does not want to (and, per Q-52/Q-54, must not) embed models or vision libraries into core. Today there is no formal mechanism to feed those observations into a verdict:
 
-1. **`c.facts`** (`python/neuroedge/actions/conversation.py`, `Conversation.facts`): ngữ cảnh gate do **mã agent** đặt. `ActionContractEngine._gather` (`engine/gate.py`) nhận giá trị trong đó
-   cho mọi tiêu chí, không biết nó từ đâu tới, không ghi nguồn nào ngoài chuỗi `source="context"` mặc định (`Fact` ở `engine/verdict.py`). Gate không thể đòi "tiêu chí này phải đến từ Frigate".
-2. **`[sim.sensor_facts]`** (`sim/session.py`, `SensorFact`): chỉ trong `sim`, đọc từ cảm biến mô phỏng, và đặt ngưỡng (`bands`, `gte`, `lte`) ở agent — đúng thứ Q-54 và RFC-0009 §1 bác.
-3. **HAL** (`sensor.read`, `digital.in`, `analog.in`): đọc phần cứng của bo mạch; không phải một tiến trình khác. `sensor.read` còn không nối được với tiêu chí `numeric` (RFC-0009 §3f).
-4. **`vision.in`** (RFC-0012): mô hình chạy **trong lõi**, camera là năng lực của bo mạch, vết ghi mang `vision_ref` của khung. Đó chính là thứ Q-63 nói không cần có khi nguồn quan sát nằm ở tiến trình khác.
-5. **`SystemOne`** (`models/system.py`): chỉ trả lời `bool`, `level`, `choice` (hằng `TYPES`) cho một câu nói, không phải số đo, và là cuộc gọi tới mô hình do NeuroEdge khởi tạo.
-6. **Lời gọi tool** (`ToolCall`, `docs/spec/tool_calling.md`): mô hình và client MCP là bên gọi **không tin cậy** (`threat_model.md` §2b); tham số lạ bị `REJECTED`. Một dữ kiện không thể đi bằng đường này, và không nên.
+1. **`c.facts`** (`python/neuroedge/actions/conversation.py`, `Conversation.facts`): gate context set by **agent code**. `ActionContractEngine._gather` (`engine/gate.py`) accepts values in it for any criterion, unaware of where they came from, recording no source other than the default string `source="context"` (`Fact` in `engine/verdict.py`). Gates cannot demand "this criterion must come from Frigate".
+2. **`[sim.sensor_facts]`** (`sim/session.py`, `SensorFact`): `sim`-only, read from simulated sensors, placing thresholds (`bands`, `gte`, `lte`) in the agent — exactly what Q-54 and RFC-0009 §1 rejected.
+3. **HAL** (`sensor.read`, `digital.in`, `analog.in`): reads board hardware; not another process. `sensor.read` cannot even connect to `numeric` criteria (RFC-0009 §3f).
+4. **`vision.in`** (RFC-0012): models run **in-core**, cameras are board capabilities, traces carry frame `vision_ref`. That is precisely what Q-63 states should not be required when observations originate in another process.
+5. **`SystemOne`** (`models/system.py`): answers only `bool`, `level`, `choice` (constant `TYPES`) for an utterance, not measurements, and is an outbound call to a model initiated by NeuroEdge.
+6. **Tool calls** (`ToolCall`, `docs/spec/tool_calling.md`): models and MCP clients are **untrusted** callers (`threat_model.md` §2b); unknown arguments are `REJECTED`. A fact cannot travel this road, and should not.
 
-Hệ quả: người tích hợp phải viết mã agent nhét giá trị vào `c.facts` — mất danh tính nguồn, mất tuổi, mất ranh giới tin cậy — hoặc cầm ngưỡng ở agent. Cả hai đều là lỗ mà
-gate (thuần, bất biến số 4) không thấy được.
+Consequence: integrators must write agent code stuffing values into `c.facts` — losing source identity, age tracking, and trust boundaries — or keep thresholds in the agent. Both are loopholes invisible to pure gates (invariant #4).
 
-## 2. Vì sao lược đồ hiện tại không giải quyết được
+## 2. Why the Current Schema Does Not Solve It
 
-- `schemas/gate.v1.json`: `evaluate.<tên>` có `additionalProperties: false` và chỉ biết `type`, `instructions`, `levels`, `options`, `unit`, `range`, `max_age_ms`. Không có chỗ nào để gate nói
-  "dữ kiện này phải đến từ nguồn ngoài tên X". Vì gate là tệp ký số (`gate_digest` = băm của `ResolvedGate.to_artifact()`, đã gồm `evaluate`), nếu nguồn chỉ khai ở agent thì thẩm quyền
-  khoá nguồn nằm ngoài chữ ký — cùng lỗi mà RFC-0012 §3c thấy ở `confidence_gte` ("gate không biết tiêu chí nào đến từ thị giác, `gate lint` không chặn được").
-- `agent.toml` không có chỗ khai nguồn ngoài. `[vision]` (RFC-0012) khai nhãn mô hình → dữ kiện nhưng dựa vào `vision.in` và mô hình trong lõi.
-- `board.v1` khai **phần cứng**. Nguồn ngoài là một đồng cấp phần mềm, không phải chân hay bus (§6: vì sao không làm nguyên thủy).
-- Không có đặc tả giao thức nào cho một tiến trình ngoài nói chuyện với runtime: truyền tải, xác thực, đồng hồ, hình thức thông điệp, hành vi khi rớt.
-- Định nghĩa tuổi của Q-62 (RFC-0009 §3c: `age_ms` = thời điểm lượng giá − mốc HAL đọc, cùng một trục đơn điệu của phiên) đã có cho số đọc do **HAL trong tiến trình** gắn mốc
-  (`Fact.read_ms`, `engine/gate.py::_numeric_marks`: "a source cannot state its own age"). Một tiến trình ngoài có đồng hồ riêng; chưa có luật nói mốc của nó trên trục của phiên là gì.
+- `schemas/gate.v1.json`: `evaluate.<name>` has `additionalProperties: false` and only knows `type`, `instructions`, `levels`, `options`, `unit`, `range`, `max_age_ms`. Nowhere can a gate state "this fact must come from external source named X". Because gates are cryptographically signed files (`gate_digest` = hash of `ResolvedGate.to_artifact()`, including `evaluate`), declaring sources only in the agent leaves source authority outside the signature — the same flaw identified in RFC-0012 §3c regarding `confidence_gte` ("gates do not know which criteria come from vision; `gate lint` cannot block it").
+- `agent.toml` provides no place to declare external sources. `[vision]` (RFC-0012) declares model labels → facts but relies on `vision.in` and in-core models.
+- `board.v1` declares **hardware**. External sources are software peers, not pins or buses (§6: why this is not a primitive).
+- No wire protocol specification exists for external processes communicating with runtime: transport, authentication, clocks, message formats, disconnect behavior.
+- The Q-62 age definition (RFC-0009 §3c: `age_ms` = evaluation timestamp − HAL read timestamp, on the same monotonic session timeline) was designed for readings stamped by **in-process HAL** (`Fact.read_ms`, `engine/gate.py::_numeric_marks`: "a source cannot state its own age"). An external process runs an independent clock; no rule currently establishes its timestamp on the session timeline.
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
-### 3a. Phạm vi và ranh giới
+### 3a. Scope and Boundaries
 
-Một **nguồn ngoài** là tiến trình ngoài NeuroEdge, cùng máy với runtime, chủ động **đẩy** trạng thái quan sát hiện tại (các số) tới một ổ cắm cục bộ do runtime lắng nghe. Lõi:
+An **external source** is a process external to NeuroEdge, co-located on the same machine as runtime, actively **pushing** current observed state (numbers) to a local socket listened to by runtime. The core:
 
-- chỉ nhận **dữ kiện số đã gõ kiểu** (`numeric`): không khung hình, không nhãn, không chuỗi tự do, không mô hình, không thư viện thị giác;
-- không bao giờ **liên lạc ngược** với nguồn khi lượng giá gate hay khi replay (§3g, §3h);
-- coi mọi thông điệp là **không tin cậy cho tới khi** qua xác thực (§3d) và kiểm hình thức (§3e); mọi nghi ngờ ⇒ **không có dữ kiện** ⇒ `criterion_unavailable` ⇒ BLOCK (§3i);
-- không đổi một chữ nào của luật gate: ngưỡng, thang, tuổi tối đa vẫn là tiêu chí `numeric` của gate (RFC-0009), chỉ thêm **ràng buộc nguồn** (§3c).
+- accepts only **typed numeric facts** (`numeric`): no frames, no labels, no free strings, no models, no vision libraries;
+- never **initiates outbound calls** back to sources during gate evaluation or replay (§3g, §3h);
+- treats all messages as **untrusted until** passing authentication (§3d) and schema validation (§3e); any suspicion ⇒ **missing fact** ⇒ `criterion_unavailable` ⇒ BLOCK (§3i);
+- alters zero words of gate rules: thresholds, scales, maximum age remain gate `numeric` criteria (RFC-0009), adding only **source constraints** (§3c).
 
-Phạm vi bản này (các giới hạn là chủ ý, mỗi giới hạn có lý do và có câu hỏi ở §9 nếu cần chủ sản phẩm quyết):
+Scope in this version (limits are intentional, each with rationale and open question in §9 if product owner decision is required):
 
-| Giới hạn | Lý do |
+| Limit | Rationale |
 |:---|:---|
-| Chỉ `numeric` (số đếm, độ tin cậy, đo lường; trạng thái hai giá trị là số 0/1 với `range: { min: 0, max: 1 }`) | Mọi bảo đảm cần thiết đã có sẵn cho `numeric` (RFC-0009): `max_age_ms` bắt buộc do gate khoá, `range` bắt buộc, không `confidence_gte`, không `on_block.confirms`, và **`fail: open` không tha** dữ kiện số bị mất (`known_failure` ở `engine/decision_tree.py`). `bool` không có tuổi, và `known_failure` bỏ qua dữ kiện `bool` thiếu — đúng ba lỗ mà RFC-0012 §3c phải vá bằng tiêu chí đi kèm. Thêm `bool` là RFC sau, khi chủ sản phẩm quyết (§9 câu 4) |
-| Chỉ cùng máy với runtime (ổ cắm Unix) | Xác thực mạng là việc của TSK-P2-04 (§3d); không dựng cơ chế xác thực thứ hai |
-| Chỉ target `sim` và `linux` | `esp32s3` không có ổ cắm cục bộ; gate khai `external_source` mà build cho `esp32s3` ⇒ từ chối (§3i). Gateway cho MCU là TSK-P2-05 (I14) |
-| Không có dữ kiện `level`/`choice`/chuỗi | Cùng lập luận RFC-0012 §3c (không `level`/`choice`); chuỗi từ tiến trình ngoài là bề mặt tiêm lệnh không có lợi ích |
+| `numeric` only (counts, confidence scores, measurements; two-state flags sent as 0/1 with `range: { min: 0, max: 1 }`) | All required guarantees already exist for `numeric` (RFC-0009): mandatory `max_age_ms` locked by gate, mandatory `range`, no `confidence_gte`, no `on_block.confirms`, and **`fail: open` does not forgive** missing numeric facts (`known_failure` in `engine/decision_tree.py`). `bool` has no age, and `known_failure` ignores missing `bool` facts — the exact three loopholes RFC-0012 §3c had to patch with companion criteria. Adding `bool` is a future RFC if product owner decides (§9 question 4) |
+| Same machine as runtime only (Unix domain sockets) | Network authentication is the responsibility of TSK-P2-04 (§3d); avoid building a second authentication mechanism |
+| Targets `sim` and `linux` only | `esp32s3` lacks local sockets; gates declaring `external_source` building for `esp32s3` are rejected (§3i). MCU gateways belong to TSK-P2-05 (I14) |
+| No `level`/`choice`/string facts | Same rationale as RFC-0012 §3c (no `level`/`choice`); strings from external processes present command injection surface without benefit |
 
-### 3b. Truyền tải — các phương án đã cân và phương án chọn
+### 3b. Transport — Alternatives Evaluated and Selected Option
 
-| Phương án | Kết luận |
+| Alternative | Conclusion |
 |:---|:---|
-| **Đẩy, ổ cắm Unix (`AF_UNIX`, stream), runtime lắng nghe** | **Chọn.** Hạt nhân cho biết uid của đầu bên kia (`SO_PEERCRED` trên Linux, `LOCAL_PEERCRED` trên macOS) nên xác thực có chỗ dựa không phải do ta tự dựng; không mở cổng mạng, không cần TLS, không phụ thuộc mới (Q-11); độ trễ vài chục micro-giây; nguồn chết thì đầu ổ cắm đóng ngay, runtime biết tức thì (§3i) |
-| Đẩy, HTTP/WebSocket qua `127.0.0.1` | Bác: kéo theo cả ngăn xếp web và xác thực HTTP; tiền lệ `mcp serve --ui` phải chặn DNS rebinding và `Origin` (`threat_model.md` §2b) cho đúng bề mặt này; không có uid của đầu bên kia |
-| MQTT (runtime đăng ký topic) | Bác cho bản này: cần broker, mà broker thuộc Fleet (Q-11, I9; `TODOS.md` #52); ACL do broker, không do ta kiểm; EMQX là giấy phép BSL (Q-11). Một adapter MQTT → ổ cắm Unix là việc **ngoài lõi** (§3j) |
-| Kéo (runtime hỏi Frigate/HA bằng HTTP khi cần) | Bác: hoặc phải gọi mạng **ngay trong đường lượng giá** (độ trễ nằm trong ngân sách `p95_latency_ms` của gate; replay không có gì để hỏi), hoặc lõi phải biết API của từng sản phẩm — trái FR-MDL-04 (đổi nhà cung cấp không sửa gate) và trái Q-63 ("không có thư viện thị giác trong lõi") |
-| Tiến trình con qua stdio (runtime sinh adapter, như MCP stdio) | Không bác: tin cậy do cấu trúc (người vận hành chạy nó), nhưng vòng đời adapter thành việc của runtime và không hợp với Frigate là dịch vụ độc lập. Lớp thông điệp §3e dùng lại nguyên được trên đường ống; thêm sau không cần RFC mới nếu không đổi §3e |
-| Ổ cắm mạng có mTLS | Hoãn: cần danh tính thiết bị của TSK-P2-04. Câu hỏi §9 câu 1 |
+| **Push, Unix socket (`AF_UNIX`, stream), runtime listens** | **Selected.** Kernel provides peer uid (`SO_PEERCRED` on Linux, `LOCAL_PEERCRED` on macOS), grounding authentication without bespoke mechanisms; exposes no network ports, needs no TLS, adds no new dependencies (Q-11); latency tens of microseconds; source death immediately closes socket endpoint, alerting runtime instantly (§3i) |
+| Push, HTTP/WebSocket over `127.0.0.1` | Rejected: pulls in entire web stack and HTTP auth; `mcp serve --ui` precedent had to block DNS rebinding and `Origin` (`threat_model.md` §2b) for this exact surface; lacks peer uid |
+| MQTT (runtime subscribes to topics) | Rejected for this version: requires broker, which belongs to Fleet (Q-11, I9; `TODOS.md` #52); ACL managed by broker, not verified by us; EMQX is BSL license (Q-11). An MQTT → Unix socket adapter belongs **outside core** (§3j) |
+| Pull (runtime polls Frigate/HA via HTTP on demand) | Rejected: either requires network calls **in the evaluation path** (latency consumes gate `p95_latency_ms` budget; replay has nothing to poll), or core must know vendor-specific APIs — violates FR-MDL-04 (vendor changes without modifying gates) and Q-63 ("no vision libraries in core") |
+| Child processes via stdio (runtime spawns adapter, like MCP stdio) | Not rejected: structural trust (operator runs it), but adapter lifecycle becomes runtime's responsibility and ill-fits Frigate as a standalone service. Message framing in §3e can be reused verbatim over pipes; adding later requires no new RFC if §3e remains unchanged |
+| Network sockets with mTLS | Deferred: requires device identity from TSK-P2-04. Question §9 question 1 |
 
-**Đẩy trạng thái hiện tại, không đẩy sự kiện.** Nguồn gửi lại *toàn bộ giá trị hiện tại* của các dữ kiện nó chịu trách nhiệm theo nhịp đều (khuyến nghị ≤ `max_age_ms` / 2 của tiêu chí chặt nhất dùng nó).
-Một nguồn chỉ gửi "có người xuất hiện" rồi im lặng sẽ bị coi là cũ — đúng ý đồ: lặng thinh không phải là "không có gì thay đổi" (cùng tinh thần RFC-0009 §5). Gộp sự kiện thành trạng thái là việc của adapter.
+**Push current state, not events.** Sources resend the *entire current value* of facts they manage at regular intervals (recommended ≤ `max_age_ms` / 2 of the tightest criterion using it). A source sending "person appeared" and falling silent will be treated as stale — by design: silence is not "nothing changed" (aligning with RFC-0009 §5). Aggregating events into state is the adapter's responsibility.
 
-### 3c. Khai nguồn: gate nắm thẩm quyền, `agent.toml` nắm ràng buộc triển khai
+### 3c. Declaring Sources: Gates Hold Authority, `agent.toml` Holds Deployment Bindings
 
-**Gate** (`gate.v1`) khai *rằng* một tiêu chí số phải đến từ một nguồn ngoài, và *tên logic* của nguồn đó — không khai địa chỉ, ổ cắm hay khoá:
+**Gate** (`gate.v1`) declares *that* a numeric criterion must come from an external source, and the *logical name* of that source — declaring no addresses, sockets, or tokens:
 
 ```yaml
-# gates/close_gate — thẩm quyền (ví dụ nối RFC-0012 §3c bằng nguồn ngoài thay cho mô hình trong lõi)
+# gates/close_gate — authority (example connecting RFC-0012 §3c via external source instead of in-core model)
 evaluate:
   people_at_gate:
     type: numeric
     unit: count
     range: { min: 0, max: 50 }
     max_age_ms: 500
-    external_source: frigate_front        # mới
-    instructions: "Số người trong vùng cổng, do nguồn frigate_front báo"
+    external_source: frigate_front        # new
+    instructions: "Number of people in gate area, reported by frigate_front"
 allow_when:
   people_at_gate: { lte: 0 }
 ```
@@ -106,72 +98,71 @@ allow_when:
   "type": "string",
   "pattern": "^[a-z][a-z0-9_]{0,31}$"
 }
-// trong allOf: nếu type khác "numeric" thì không được có external_source (cùng khuôn với unit / range / max_age_ms của bool, level, choice)
+// inside allOf: if type is not "numeric", external_source must not be present (same pattern as unit / range / max_age_ms for bool, level, choice)
 ```
 
-Luật (resolver và engine; vi phạm ⇒ `GateSchemaError`, `NE2002`, lỗi ba phần):
+Rules (resolver and engine; violations ⇒ `GateSchemaError`, `NE2002`, three-part error):
 
-| Luật | Lý do |
+| Rule | Rationale |
 |:---|:---|
-| `external_source` chỉ trên `type: numeric` | §3a |
-| Kế thừa: tiêu chí đã có `external_source` ở gate cha, gate con khai lại khác hoặc bỏ ⇒ `GateInheritanceError` (`NE2003`, nguyên tắc 1) — **không cần mã mới**: `_merge_evaluate` (`engine/gate_resolver.py`) đã từ chối "định nghĩa lại tiêu chí kế thừa" | Gate con không gỡ được ràng buộc nguồn của cha, không đổi sang nguồn dễ hơn |
-| Tiêu chí có `external_source` không được nằm trong `on_block.confirms` | Đã đúng cho mọi `numeric` (RFC-0009 §3a); người trên thiết bị không xác nhận thay một quan sát, càng không thay một nguồn đã rớt |
-| `confidence_gte` trên tiêu chí này bị từ chối | Đã đúng cho mọi `numeric` (RFC-0009 §3a). Khác RFC-0012 §3c: **ở đây gate lint làm được**, vì gate tự khai nguồn |
+| `external_source` only on `type: numeric` | §3a |
+| Inheritance: criterion declaring `external_source` in parent gate cannot be altered or dropped in child gate ⇒ `GateInheritanceError` (`NE2003`, principle 1) — **no new code needed**: `_merge_evaluate` (`engine/gate_resolver.py`) already rejects redefining inherited criteria | Child gates cannot strip parent source constraints or switch to more permissive sources |
+| Criteria with `external_source` forbidden in `on_block.confirms` | Already true for all `numeric` criteria (RFC-0009 §3a); humans on device cannot confirm in place of observations, especially from dead sources |
+| `confidence_gte` on this criterion rejected | Already true for all `numeric` criteria (RFC-0009 §3a). Unlike RFC-0012 §3c: **gate lint can check this**, because gates declare the source explicitly |
 
-**`agent.toml`** (maker/triển khai; không có lược đồ trong `schemas/`, kiểm ở `neuroedge build` và lúc nạp agent) khai *cách* nối nguồn logic vào runtime:
+**`agent.toml`** (maker/deployment; unversioned in `schemas/`, checked in `neuroedge build` and agent loading) declares *how* logical sources bind to runtime:
 
 ```toml
 [external]
-socket = "run/neuroedge-external.sock"      # đường dẫn tương đối so với thư mục chạy của agent; tối đa 100 byte sau khi mở rộng
+socket = "run/neuroedge-external.sock"      # relative to agent working directory; max 100 bytes after expansion
 
 [external.sources.frigate_front]
-token_env = "NE_EXT_FRIGATE_FRONT_TOKEN"    # tên biến môi trường, như api_key_env của [system_one]; không bao giờ là giá trị
+token_env = "NE_EXT_FRIGATE_FRONT_TOKEN"    # environment variable name, like api_key_env in [system_one]; never raw value
 [external.sources.frigate_front.facts.people_at_gate]
 unit = "count"
 ```
 
-| Luật (`AgentManifestError`, `NE3002`, gom vào `BuildFailed`, `NE3003`) | Lý do |
+| Rule (`AgentManifestError`, `NE3002`, wrapped in `BuildFailed`, `NE3003`) | Rationale |
 |:---|:---|
-| Tên dữ kiện trùng tên tiêu chí của gate, và `unit` bằng `unit` của tiêu chí (cùng luật nối kênh của RFC-0009 §3f) | Lệch đơn vị là lệch nghĩa ngưỡng |
-| **Hai chiều:** mọi tiêu chí có `external_source: X` phải có `[external.sources.X.facts.<tiêu chí>]`, và mọi dữ kiện khai ở `[external.sources.X.facts.*]` phải ứng với một tiêu chí có `external_source: X` | Không có tiêu chí nào của gate bị bỏ trống nguồn; maker không nối một tiêu chí gate khoá cho nguồn khác, hay đẩy dữ kiện vào tiêu chí gate không đòi nguồn ngoài |
-| Khoá lạ trong `[external.*]` (kể cả `range`, `bands`, `threshold`, `min`, `max`) | Không có ngưỡng nào ở agent (Q-54, RFC-0012 §3c "không có ngưỡng nào trong `agent.toml`") |
-| Trường mang tên bí mật (`token`, `key`, `secret`, `password`) hoặc `token_env` không phải tên biến môi trường hợp lệ | Dùng lại `secret_fields`, `refuse_unknown` và kiểm tên biến (`ENV_NAME`) của `models/providers/common.py`, như `api_key_env`; tệp `agent.toml` được commit |
-| `source_id` ngoài `^[a-z][a-z0-9_]{0,31}$`; `socket` quá dài cho `sun_path`; hai nguồn cùng `token_env` | Rõ ràng; hai nguồn một khoá là hai nguồn không phân biệt được |
-| Gate có `external_source` mà agent không có khối `[external]` | Build từ chối, không để tiêu chí treo |
+| Fact name matches gate criterion name, and `unit` matches criterion `unit` (same channel-binding rule as RFC-0009 §3f) | Unit mismatch distorts threshold semantics |
+| **Bidirectional:** all criteria with `external_source: X` must have `[external.sources.X.facts.<criterion>]`, and all facts in `[external.sources.X.facts.*]` must correspond to a criterion with `external_source: X` | No gate criterion left unmapped; makers cannot wire a criterion locked by gates to another source, or push facts into criteria not requesting external sources |
+| Unknown keys in `[external.*]` (including `range`, `bands`, `threshold`, `min`, `max`) | No thresholds exist in agents (Q-54, RFC-0012 §3c "no thresholds in `agent.toml`") |
+| Secret field names (`token`, `key`, `secret`, `password`) or invalid env variable name in `token_env` | Reuses `secret_fields`, `refuse_unknown`, and env name checks (`ENV_NAME`) from `models/providers/common.py`, like `api_key_env`; `agent.toml` is committed |
+| `source_id` outside `^[a-z][a-z0-9_]{0,31}$`; `socket` too long for `sun_path`; two sources sharing `token_env` | Clarity; two sources sharing a token cannot be distinguished |
+| Gate has `external_source` but agent lacks `[external]` block | Build rejects, preventing dangling criteria |
 
-Tiêu chí có `external_source` không bao giờ nhận giá trị từ nơi khác. `ActionContractEngine._gather` coi nguồn của nó là bộ nhận §3g **duy nhất**: giá trị trong `c.facts` cho tiêu chí đó bị bỏ qua
-(không phải bị ghi đè — bỏ qua, để lỗi nhầm không đổi phán quyết), `facts_source` không được hỏi. Thiếu ⇒ `criterion_unavailable`.
+Criteria with `external_source` never accept values from elsewhere. `ActionContractEngine._gather` treats the §3g receiver as the **sole** source: values in `c.facts` for that criterion are ignored (ignored rather than overwritten, preventing accidental overrides from changing verdicts), and `facts_source` is not consulted. Missing ⇒ `criterion_unavailable`.
 
-### 3d. Xác thực nguồn
+### 3d. Source Authentication
 
-Mối đe doạ trong phạm vi (`threat_model.md` §2 "bỏ qua gate do nhầm lẫn" mở rộng sang một đường dữ kiện mới; §3 loại trừ kẻ cùng quyền với runtime): **một tiến trình cục bộ không phải nguồn thật** đưa số vào gate, hoặc **một nguồn thật giả danh nguồn khác**.
-Bốn lớp, mọi lớp đều phải qua:
+In-scope threats (`threat_model.md` §2 "gate bypass through error" extended to a new fact path; §3 excludes co-equal uid attackers): **a local process masquerading as a legitimate source** feeding numbers into gates, or **a legitimate source spoofing another source**.
+Four defense layers, all must pass:
 
-1. **Ổ cắm là của người vận hành.** Runtime tạo thư mục cha (nếu thiếu) với quyền `0700` và ổ cắm `0600`, thuộc uid của runtime; ổ cắm đã tồn tại thì chỉ xoá khi nó **đúng là ổ cắm thuộc uid này**, nếu không ⇒ từ chối nạp (`PerceptionUnavailableError`, `NE5001` — "thành phần nhận thức không dựng được", đúng nghĩa dòng Phụ lục B). Không có ổ cắm chạy được mà không có quyền.
-2. **uid của đầu bên kia** đọc từ hạt nhân; phải bằng uid của runtime (hoặc một uid khai tường minh `peer_uid = <số>` cho từng nguồn). Hệ điều hành không đọc được uid ⇒ không dựng bộ nhận (không "bỏ qua kiểm tra" trên nền tảng đó).
-3. **Khoá riêng cho từng nguồn.** `hello` mang `source_id` và `token`; so sánh bằng so sánh thời gian hằng (`hmac.compare_digest`) với giá trị trong biến môi trường `token_env` của nguồn đó. Khoá tối thiểu 32 ký tự, ngắn hơn ⇒ từ chối nạp. Mỗi nguồn một khoá để khoá của nguồn A không đưa được dữ kiện của nguồn B.
-4. **Kết nối gắn với một `source_id` sau handshake.** Mọi dữ kiện trong kết nối đó chỉ nhận cho các tên khai ở `[external.sources.<source_id>.facts.*]`; tên khác (kể cả tên của nguồn khác) ⇒ vi phạm giao thức, đóng kết nối, bỏ mọi dữ kiện của nguồn (§3i).
+1. **Socket owned by operator.** Runtime creates parent directory (if missing) with `0700` permissions and socket with `0600`, owned by runtime uid; if socket already exists, it is unlinked only if it **belongs to this exact uid**, otherwise ⇒ reject loading (`PerceptionUnavailableError`, `NE5001` — "perception component failed to initialize", matching Appendix B). Sockets cannot run without proper permissions.
+2. **Peer uid** read from kernel; must equal runtime uid (or an explicit `peer_uid = <int>` declared per source). Operating systems unable to read peer uid ⇒ receiver refuses to initialize (no "skip check" fallback on that platform).
+3. **Dedicated token per source.** `hello` carries `source_id` and `token`; compared using constant-time comparison (`hmac.compare_digest`) against value in environment variable `token_env` for that source. Tokens must be at least 32 characters; shorter ⇒ reject loading. Dedicated tokens prevent source A's compromised token from injecting source B's facts.
+4. **Connection bound to single `source_id` after handshake.** All facts over that connection accepted only for names declared under `[external.sources.<source_id>.facts.*]`; any other name (including names belonging to other sources) ⇒ protocol violation, close connection, discard all facts for that source (§3i).
 
-Chống vét khoá và chiếm chỗ: tối đa 8 kết nối chưa xác thực, hạn handshake 2 s; 5 lần xác thực hỏng liên tiếp cho một `source_id` ⇒ khoá nguồn đó 60 s; giữa hai handshake của một nguồn tối thiểu 1 s. Hai kết nối đã xác thực cho cùng một `source_id`: **kết nối mới thay kết nối cũ** (cũ bị đóng, dữ kiện của cũ bị bỏ, sự kiện `external_source_lost` lý do `replaced`) — thà mất dữ kiện một nhịp còn hơn giữ một kết nối nửa chết. Các hằng này là đề xuất; kỹ thuật trưởng chốt khi duyệt (§9 câu 10). Runtime không ghi khoá ở bất kỳ đâu, kể cả vết ghi và thông báo lỗi.
+Brute-force and socket exhaustion defense: max 8 unauthenticated connections, 2 s handshake timeout; 5 consecutive authentication failures for a `source_id` ⇒ lock out source for 60 s; min 1 s between handshakes for a single source. Two authenticated connections for the same `source_id`: **new connection replaces old** (old closed, its facts discarded, `external_source_lost` event with reason `replaced`) — better to drop a fact for one tick than retain a half-dead connection. These constants are proposed; lead architect approves (§9 question 10). Runtime never writes tokens anywhere, including traces and error messages.
 
-**Nguồn qua mạng (không thuộc RFC này).** Khi cần một nguồn ở máy khác (Frigate trên NAS), danh tính phải là **danh tính thiết bị của TSK-P2-04** — mTLS theo thiết bị (NFR-SEC-04) và quyền theo thiết bị (Q-58, Q-32) — cùng một cơ chế cấp và thu hồi, không phải "khoá chia sẻ qua mạng" thứ hai. Lớp thông điệp §3e không đổi; chỉ phần handshake §3d đổi. Câu hỏi §9 câu 1.
+**Network sources (outside this RFC).** Connecting sources on other machines (Frigate on NAS) requires **device identity from TSK-P2-04** — per-device mTLS (NFR-SEC-04) and per-device authorization (Q-58, Q-32) — using unified provisioning and revocation, not a second "shared network secret" mechanism. Message layer §3e remains identical; only handshake §3d changes. See §9 question 1.
 
-**Mục mới cho `docs/spec/threat_model.md`** (viết khi hiện thực, §8) — "§2c. Trong phạm vi: nguồn dữ kiện ngoài":
+**New section for `docs/spec/threat_model.md`** (written on implementation, §8) — "§2c. In-scope: External fact sources":
 
-| Đường tắt | Chặn bởi | Kết quả |
+| Attack Vector | Mitigated By | Result |
 |:---|:---|:---|
-| Tiến trình của người dùng khác nối vào ổ cắm | Quyền `0700`/`0600` + uid của đầu bên kia | Từ chối, `external_source_refused` |
-| Tiến trình cùng uid không có khoá | `hello` thiếu/sai `token` | Từ chối; khoá nguồn sau 5 lần hỏng |
-| Nguồn A khai dữ kiện của nguồn B | Kết nối gắn `source_id` (lớp 4) | Đóng kết nối, bỏ dữ kiện của A |
-| LLM hoặc client MCP "đưa dữ kiện" qua tool | Dữ kiện không là tham số của tool nào; ổ cắm không phải đường MCP | `REJECTED` như tham số lạ (`tool_calling.md` §5) |
-| Mã agent đặt `c.facts["people_at_gate"] = 0` để lách | `_gather` bỏ qua `c.facts` cho tiêu chí có `external_source` (§3c) | `criterion_unavailable`. *Chỉ chặn nhầm lẫn; mã cùng tiến trình vẫn ngoài phạm vi (§3 của threat model)* |
-| Phát lại thông điệp cũ trong cùng kết nối | `seq` phải tăng ngặt (§3e) | Đóng kết nối, bỏ dữ kiện |
-| Gửi dồn để chiếm CPU hoặc phình vết ghi | Giới hạn kích thước dòng, tốc độ, tổng hợp từ chối theo giây (§3e, §3h) | Đóng kết nối |
-| Nguồn thật nhưng treo, vẫn gửi đi gửi lại giá trị cũ kèm `observed_age_ms` nhỏ | **Không chặn được ở lõi** — nguồn nói dối về độ mới | Rủi ro còn lại, §5 |
+| Different user process connects to socket | `0700`/`0600` permissions + peer uid check | Rejected, `external_source_refused` |
+| Co-equal uid process lacking token | `hello` missing/invalid `token` | Rejected; source locked out after 5 failures |
+| Source A declares facts of source B | Connection bound to `source_id` (layer 4) | Closes connection, discards facts of A |
+| LLM or MCP client "injects facts" via tools | Facts are not arguments to any tool; socket is not an MCP path | `REJECTED` as unexpected parameter (`tool_calling.md` §5) |
+| Agent code sets `c.facts["people_at_gate"] = 0` to bypass | `_gather` ignores `c.facts` for criteria with `external_source` (§3c) | `criterion_unavailable`. *Prevents accidental errors; in-process code remains outside scope (§3 of threat model)* |
+| Replaying old messages on same connection | `seq` must strictly increase (§3e) | Closes connection, discards facts |
+| Message flooding to consume CPU or bloat traces | Line size limits, rate limiting, aggregated per-second rejections (§3e, §3h) | Closes connection |
+| Legitimate but hung source repeatedly sending old values with small `observed_age_ms` | **Cannot be stopped in core** — source misrepresents freshness | Residual risk, §5 |
 
-### 3e. Giao thức dây
+### 3e. Wire Protocol
 
-Một dòng = một đối tượng JSON UTF-8 kết thúc bằng `\n`, tối đa 4096 byte; khoá trùng lặp trong một đối tượng bị từ chối. Mọi thông điệp có `"v": 1`.
+One line = one UTF-8 JSON object terminated by `\n`, max 4096 bytes; duplicate keys rejected. All messages contain `"v": 1`.
 
 ```json
 { "v": 1, "type": "hello",   "source_id": "frigate_front", "token": "…", "adapter": { "name": "ne-frigate-adapter", "version": "0.3.1" } }
@@ -179,44 +170,41 @@ Một dòng = một đối tượng JSON UTF-8 kết thúc bằng `\n`, tối đ
 { "v": 1, "type": "facts",   "seq": 812, "observed_age_ms": 40, "facts": { "people_at_gate": 0 } }
 ```
 
-- `hello` đầu tiên và duy nhất trên kết nối; `adapter` chỉ để người đọc vết ghi (không tin, không dùng để quyết). `welcome` là câu trả lời duy nhất; hỏng xác thực ⇒ đóng kết nối **không lời** (không phát ra bất kỳ lý do nào ra dây).
-- `facts.<tên>` là **số JSON** (không phải `true`/`false`, không chuỗi). Số hữu hạn nhưng ngoài `range` của tiêu chí, hoặc tràn thành vô cực (`1e999`), **không** phải vi phạm giao thức: nó đến engine như đã đến, và engine phán `value_out_of_range` (RFC-0009 §3c) — hậu kiểm phân biệt được "cảm biến trả rác" với "mất nguồn".
-- `seq`: số nguyên, tăng ngặt trong một kết nối. `observed_age_ms`: số nguyên `0 … 4294967295` — tuổi của quan sát **tại lúc nguồn gửi**, một **khoảng thời gian** đo bằng đồng hồ của nguồn (không phải mốc), áp cho mọi dữ kiện trong thông điệp. Mỗi thông điệp áp **cả cụm** hoặc không gì cả.
-- **Vi phạm giao thức** — JSON hỏng, dòng quá dài, `type` lạ, `v` ≠ 1, thiếu/sai kiểu trường, tên dữ kiện không khai cho nguồn này, `seq` không tăng, `observed_age_ms` âm/không nguyên/vượt trần, thông điệp trước `hello`, quá 100 thông điệp/giây — ⇒ **đóng kết nối và bỏ mọi dữ kiện của nguồn** (§3i). Không có chế độ "bỏ qua dòng hỏng rồi đi tiếp": một nguồn gửi rác không được coi là nguồn đáng tin cho dòng kế tiếp.
-- Một thông điệp cho nhiều dữ kiện là cách duy nhất để bảo đảm chúng cùng một quan sát (ví dụ `people_at_gate` và `person_confidence` cùng khung). Lõi không ép gate đòi cùng `seq`; vết ghi mang `seq` từng dữ kiện để hậu kiểm thấy lệch (§3h).
+- `hello` is first and only message on connection; `adapter` is informative for trace readers (untrusted, unused in verdicts). `welcome` is the sole response; authentication failure ⇒ silently closes connection (emits no failure reasons over wire).
+- `facts.<name>` is a **JSON number** (not `true`/`false`, no strings). Finite numbers outside criterion `range`, or overflowing to infinity (`1e999`), are **not** protocol violations: they reach the engine as-is, and the engine evaluates `value_out_of_range` (RFC-0009 §3c) — post-hoc audit distinguishes "sensor returned garbage" from "source lost".
+- `seq`: integer, strictly increasing per connection. `observed_age_ms`: integer `0 … 4294967295` — age of observation **at moment source transmitted**, a **duration** measured by source clock (not an epoch timestamp), applied to all facts in message. Each message applies **atomically** or not at all.
+- **Protocol violations** — corrupted JSON, line too long, unknown `type`, `v` ≠ 1, missing/mistyped fields, fact name undeclared for source, non-increasing `seq`, invalid `observed_age_ms` (negative/non-integer/exceeding ceiling), message before `hello`, exceeding 100 msgs/s — ⇒ **closes connection and discards all facts for that source** (§3i). No "skip malformed line and proceed" mode: a source sending garbage cannot be trusted for subsequent lines.
+- One message for multiple facts is the sole mechanism ensuring atomic observations (e.g. `people_at_gate` and `person_confidence` from same frame). Core does not force gates to demand matching `seq`; traces record per-fact `seq` allowing audits to detect skew (§3h).
 
-Đặc tả đầy đủ và bộ vector tuân thủ (§7) ở `docs/spec/external_facts.md` — thuộc phần Apache-2.0 như các đặc tả khác, để adapter của OSS khác dựa vào (Q-58, Q-59).
+Complete specification and compliance vectors (§7) in `docs/spec/external_facts.md` — licensed under Apache-2.0 like other specs, enabling third-party OSS adapters (Q-58, Q-59).
 
-### 3f. Tuổi dữ kiện và miền đồng hồ (Q-62)
+### 3f. Fact Age and Clock Domains (Q-62)
 
-Chỉ có **một** trục thời gian: trục đơn điệu của phiên mà `EventLog` chạy (`monotonic_ms` ở `engine/trace_sink.py`, hoặc đồng hồ giả tiêm vào ở test). Đồng hồ của nguồn **không** vào tính toán.
-Lý do: gốc đồng hồ đơn điệu của một tiến trình Go, Node hay JVM là của riêng nó; trùng với `CLOCK_MONOTONIC` của hệ điều hành chỉ là ngẫu nhiên của nền tảng; còn đồng hồ treo tường thì NTP nhảy bậc được.
+Only **one** timeline exists: monotonic session timeline used by `EventLog` (`monotonic_ms` in `engine/trace_sink.py`, or simulated mock clocks in tests). Source clocks **never** enter calculations.
+Rationale: monotonic clock origins across Go, Node, or JVM processes are independent; matching OS `CLOCK_MONOTONIC` is platform coincidence; wall clocks can jump due to NTP step adjustments.
 
 ```
-read_ms   = recv_ms − observed_age_ms        # trên trục của phiên; recv_ms do BỘ NHẬN đo
-age_ms    = eval_offset_ms − offset_of(read_ms)      # đúng công thức của RFC-0009 §3c
+read_ms   = recv_ms − observed_age_ms        # on session timeline; recv_ms measured by RECEIVER
+age_ms    = eval_offset_ms − offset_of(read_ms)      # matches RFC-0009 §3c formula exactly
 ```
 
-- `recv_ms` là `clock()` (đồng hồ của `EventLog`) **ngay sau khi đọc xong dòng**, trong một tác vụ đọc riêng không làm việc nặng giữa lúc đọc và lúc đo.
-  Độ trễ nằm trong bộ đệm hạt nhân trước lúc đọc không được tính: là sai số dưới (tuổi thật ≥ tuổi tính được), bị chặn bởi độ trễ vòng sự kiện, ghi ở §5.
-- `observed_age_ms` do nguồn khai, **chỉ cộng thêm**. Vì tuổi tính được = (tuổi từ lúc nhận, do ta đo) + (khoản nguồn khai ≥ 0), nguồn nói dối chỉ làm được tuổi **bằng** tuổi-từ-lúc-nhận, không bao giờ nhỏ hơn.
-  Nguyên tắc "một nguồn không thể tự khai tuổi của mình" (`_numeric_marks` ở `engine/gate.py`) giữ nguyên theo nghĩa đó: nguồn không làm mình trẻ hơn lúc nó tới.
-- `offset_of` đã làm đúng việc cho mốc trước lúc log bắt đầu (offset âm, tuổi tăng — không bao giờ "trẻ như lúc bắt đầu").
-- Engine tính `age_ms`, so với `max_age_ms` của tiêu chí; `age_ms < 0` hay `> max_age_ms` ⇒ `criterion_unavailable` (RFC-0009 §3c, `engine/decision_tree.py::_classify`). Không có đường nào riêng cho nguồn ngoài.
-- Dữ kiện mới tới thay dữ kiện cũ **cùng tên** trong bộ nhận (`seq` đã tăng ngặt); dữ kiện cũ hơn không bao giờ đè dữ kiện mới.
-- Đồng hồ treo tường của nguồn (ví dụ `start_time` của Frigate) là việc của adapter: đổi thành `observed_age_ms` bằng đồng hồ của chính nguồn. Lõi không nhận mốc tuyệt đối.
+- `recv_ms` is `clock()` (`EventLog` clock) **immediately after line read completes**, in a dedicated reader task doing no heavy compute between reading and timestamping. Kernel socket buffer transit latency is unmeasured: represents negative error (actual age ≥ calculated age), bounded by event loop latency, documented in §5.
+- `observed_age_ms` declared by source is **strictly additive**. Because calculated age = (age since receipt, measured by us) + (source-declared duration ≥ 0), a lying source can only make age **equal** to age-since-receipt, never younger. The principle "a source cannot state its own age" (`_numeric_marks` in `engine/gate.py`) holds: sources cannot appear fresher than their arrival time.
+- `offset_of` correctly handles timestamps prior to log start (negative offset, increasing age — never "fresh as start").
+- Engine calculates `age_ms`, comparing against criterion `max_age_ms`; `age_ms < 0` or `> max_age_ms` ⇒ `criterion_unavailable` (RFC-0009 §3c, `engine/decision_tree.py::_classify`). No special-case bypass for external sources.
+- Newly arrived facts replace older facts of the **same name** in receiver (`seq` strictly increases); older facts never overwrite newer ones.
+- Source wall clocks (e.g. Frigate `start_time`) are the adapter's responsibility: convert to `observed_age_ms` using source's own clock. Core rejects absolute timestamps.
 
-### 3g. Bộ nhận → engine: không liên lạc ngược
+### 3g. Receiver → Engine: No Outbound Calls
 
-Bộ nhận (lớp mới thuộc runtime, tên công khai do task hiện thực quyết và ghim ở `docs/spec/python_api.md` §2 cùng `tests/test_public_api.py`) giữ **một giá trị mới nhất cho mỗi (nguồn, dữ kiện)**:
-`(value, read_ms, seq, connection, observed_age_ms)`. Khi gate lượng giá, `_gather` gọi một hàm **đồng bộ, không I/O** trả `Fact(value, source="external:<id>", read_ms=…)` hoặc `None`.
-Engine sau đó tính mốc như mọi số đọc số (`gate.py`, `_numeric_marks`). Nguồn rớt, kết nối đóng, vi phạm giao thức ⇒ bộ nhận **xoá** các giá trị của nguồn đó ngay (không để hết hạn tự nhiên): không còn gì trả về ⇒ `None` ⇒ `walk()` báo `criterion_unavailable`.
+Receiver (new runtime class, public name determined by task implementation and pinned in `docs/spec/python_api.md` §2 alongside `tests/test_public_api.py`) maintains **latest value per (source, fact)**: `(value, read_ms, seq, connection, observed_age_ms)`. When gates evaluate, `_gather` calls a **synchronous, zero-I/O** function returning `Fact(value, source="external:<id>", read_ms=…)` or `None`.
+Engine calculates timestamps like any numeric reading (`gate.py`, `_numeric_marks`). Source disconnect, connection drop, or protocol violation ⇒ receiver **immediately clears** facts for that source (does not allow natural expiration): returning nothing ⇒ `None` ⇒ `walk()` evaluates `criterion_unavailable`.
 
-Hai điều không bao giờ xảy ra: bộ nhận **không** trả `Unavailable("offline")` (sẽ thành `gate_unreachable`, một lý do *suy giảm* của gate mà `budget.fail: open` có thể biến thành ALLOW — `DEGRADED_REASONS` ở `engine/verdict.py`); và nó **không** dùng lại giá trị của kết nối trước sau khi nguồn nối lại. Dữ kiện số thiếu bị `known_failure` chặn cả dưới `fail: open` (§3a), nên đường này vẫn kín khi một nguồn khác (ví dụ SystemOne) suy giảm cùng lúc.
+Two guarantees: receiver **never** returns `Unavailable("offline")` (which becomes `gate_unreachable`, a *degraded* reason that `budget.fail: open` can convert to ALLOW — `DEGRADED_REASONS` in `engine/verdict.py`); and it **never** reuses previous connection values after source reconnects. Missing numeric facts are blocked by `known_failure` even under `fail: open` (§3a), ensuring safety remains intact even if another source (e.g. SystemOne) simultaneously degrades.
 
-### 3h. Vết ghi và replay
+### 3h. Traces and Replay
 
-`trace.v1` **không đổi**. Dữ kiện đi vào `gate_facts` đã có (`engine/gate.py`), thêm khoá cho dữ kiện có nguồn ngoài; mọi khoá chưa biết người phát lại bỏ qua (`recorded_steps` ở `testing/player.py` chỉ đọc `value`, `confidence`, `source` và ba mốc):
+`trace.v1` is **unchanged**. Facts enter existing `gate_facts` (`engine/gate.py`), adding keys for external sources; replayers ignore unknown keys (`recorded_steps` in `testing/player.py` reads only `value`, `confidence`, `source`, and three timestamps):
 
 ```json
 { "offset_ms": 5210, "type": "gate_facts", "data": {
@@ -225,179 +213,173 @@ Hai điều không bao giờ xảy ra: bộ nhận **không** trả `Unavailable
                         "connection": 3, "seq": 812, "observed_age_ms": 40 } } }
 ```
 
-- **Danh tính nguồn** ở mỗi dữ kiện: `source = "external:<source_id>"` (cùng khuôn `"<tên>:<model>"` của `SystemOneApi.source` ở `models/providers/systemone_api.py`), kèm `connection` (số thứ tự kết nối trong phiên) và `seq` để thấy hai dữ kiện cùng quan sát hay không.
-  Khoá và `adapter` không vào vết ghi; `adapter` chỉ ở `external_source_connected`.
-- Sự kiện vòng đời (tên và trường vào danh mục duy nhất `docs/spec/tool_calling.md` §7 khi hiện thực; thêm sự kiện không cần RFC):
-  `external_source_connected` `{source_id, connection, adapter?, peer_uid}` · `external_source_lost` `{source_id, connection, reason}` với `reason` ∈ `closed` · `protocol_violation` · `replaced` · `shutdown` ·
-  `external_source_refused` `{claimed_id, reason, count}` với `reason` ∈ `unknown_source` · `bad_token` · `bad_peer` · `locked_out` — **gộp theo giây** (không để kẻ gửi dồn làm phình vết ghi); `claimed_id` bị chuẩn hoá về `"?"` nếu không khớp mẫu `source_id` (không chép chuỗi lạ vào vết ghi) ·
-  `external_fact_unavailable` `{criterion, source_id, why}` với `why` ∈ `not_connected` · `no_reading_yet` — phát khi tiêu chí có `external_source` không có dữ kiện lúc lượng giá, để hậu kiểm phân biệt "nguồn rớt" với "quá cũ" (cái sau do `age_ms` trong `gate_facts` và `evaluations`).
-- Lint ngữ nghĩa vết ghi ở `python/neuroedge/trace.py` (vi phạm ⇒ `TraceValidationError`, `NE4001`): mục `gate_facts` có `source` bắt đầu bằng `external:` mà thiếu `connection`/`seq`/`observed_age_ms` hay ba mốc; `age_ms` không khớp `eval_offset_ms − read_offset_ms` (người phát lại đã kiểm — `_numeric_entry`); `source_id` sai mẫu.
-- **Replay chỉ dùng dữ kiện đã ghi.** `ReplaySession` cấp lại đúng `gate_facts` (giá trị và ba mốc); nó **không** mở ổ cắm, không dựng bộ nhận, không đọc biến môi trường chứa khoá (có test chặn cả ba: §7). Sự kiện vòng đời là thông tin, không vào so khớp quyết định.
-  Một nguồn rớt giữa phiên replay y như lúc chạy: dữ kiện vắng ở `gate_facts` ⇒ `criterion_unavailable`.
-- **`sim`**: nguồn ảo trong `neuroedge.testing` đi qua **cùng bộ nhận** (cùng kiểm hình thức, cùng `seq`, cùng tính `read_ms`) bằng hàng đợi trong tiến trình, không qua ổ cắm; ổ cắm thật được kiểm riêng trong test chạy trên máy chủ. Hai đường dùng một hàm kiểm thông điệp, để vector tuân thủ §7 phủ cả hai.
-- Riêng tư: vết ghi mang **số** (số người, điểm tin cậy), không khung hình, không nhãn. Việc không để lộ ảnh là của adapter; lõi không nhận gì ngoài số. Quy tắc ẩn danh (FR-TRC-07) không đổi vì không có `text`.
-- Ba vết ghi chuẩn mực `fixtures/traces/*.json` không có dữ kiện ngoài nên không đổi (RFC-0008).
+- **Source identity** on every fact: `source = "external:<source_id>"` (matching `"<name>:<model>"` pattern in `SystemOneApi.source` in `models/providers/systemone_api.py`), including `connection` (connection sequence number in session) and `seq` to verify whether two facts share an observation. Tokens and `adapter` omitted from traces; `adapter` recorded only in `external_source_connected`.
+- Lifecycle events (names and fields added to unified catalog `docs/spec/tool_calling.md` §7 upon implementation; adding events needs no RFC):
+  `external_source_connected` `{source_id, connection, adapter?, peer_uid}` · `external_source_lost` `{source_id, connection, reason}` where `reason` ∈ `closed` · `protocol_violation` · `replaced` · `shutdown` ·
+  `external_source_refused` `{claimed_id, reason, count}` where `reason` ∈ `unknown_source` · `bad_token` · `bad_peer` · `locked_out` — **aggregated per second** (preventing flood-induced trace bloat); `claimed_id` normalized to `"?"` if not matching `source_id` regex (avoids copying arbitrary strings into traces) ·
+  `external_fact_unavailable` `{criterion, source_id, why}` where `why` ∈ `not_connected` · `no_reading_yet` — emitted when criteria with `external_source` lack facts at evaluation time, allowing audits to distinguish "source down" from "stale fact" (the latter indicated by `age_ms` in `gate_facts` and `evaluations`).
+- Semantic trace linting in `python/neuroedge/trace.py` (violations ⇒ `TraceValidationError`, `NE4001`): `gate_facts` entry with `source` starting with `external:` missing `connection`/`seq`/`observed_age_ms` or three timestamps; `age_ms` inconsistent with `eval_offset_ms − read_offset_ms` (verified by replayer — `_numeric_entry`); invalid `source_id` pattern.
+- **Replay uses recorded facts only.** `ReplaySession` feeds exact recorded `gate_facts` (values and three timestamps); it **never** opens sockets, creates receivers, or reads token environment variables (guaranteed by tests: §7). Lifecycle events are informational, unverified in verdict comparison. A source dropping mid-session replays identically to runtime: missing fact in `gate_facts` ⇒ `criterion_unavailable`.
+- **`sim`**: virtual sources in `neuroedge.testing` use **identical receiver logic** (identical schema validation, `seq` tracking, `read_ms` calculations) via in-process queues without sockets; real sockets tested separately on host. Both paths share validation functions, covered by §7 compliance vectors.
+- Privacy: traces record **numbers** (person counts, confidence scores), no frames, no labels. Preventing image leakage is the adapter's responsibility; core accepts only numbers. Anonymization rules (FR-TRC-07) unchanged as no `text` is stored.
+- Three canonical traces `fixtures/traces/*.json` carry no external facts, remaining unchanged (RFC-0008).
 
-### 3i. Fail-closed
+### 3i. Fail-Closed
 
-Kiểm theo thứ tự; mọi nhánh BLOCK, **không nội suy, không mặc định, không dùng dữ kiện của kết nối trước**:
+Checked in order; all branches BLOCK, **no interpolation, no defaults, no reuse of prior connection values**:
 
-| Tình huống | Kết quả |
+| Scenario | Result |
 |:---|:---|
-| Tiêu chí có `external_source` nhưng chưa có kết nối đã xác thực của nguồn đó; hoặc kết nối có nhưng dữ kiện này chưa tới (`not_connected` / `no_reading_yet`) | Không có dữ kiện ⇒ `criterion_unavailable` |
-| Kết nối đóng, lỗi đọc, hết hạn handshake, bị thay thế | Bỏ **mọi** dữ kiện của nguồn ngay ⇒ `criterion_unavailable` tới khi nối lại và có dữ kiện mới |
-| Xác thực hỏng (sai khoá, sai uid, nguồn không khai) | Đóng không lời; không dữ kiện nào được nhận |
-| Vi phạm giao thức §3e (gồm tên dữ kiện của nguồn khác, `seq` lùi, `observed_age_ms` sai) | Đóng kết nối, bỏ mọi dữ kiện của nguồn ⇒ `criterion_unavailable` |
-| `age_ms < 0`, hoặc `age_ms > max_age_ms` của tiêu chí | `criterion_unavailable` (engine, RFC-0009 §3c) |
-| Số không hữu hạn, hoặc ngoài `range` | `value_out_of_range` (RFC-0009 §9.1) |
-| Hữu hạn, trong thang, không thoả khoảng của `allow_when` | `condition_not_met` |
-| `c.facts` hoặc `SystemOne` cũng cấp giá trị cho tiêu chí | Bỏ qua; chỉ bộ nhận (§3c) |
-| Nạp agent: có `[external]` nhưng ổ cắm không dựng được (quyền, uid, đường dẫn quá dài, ổ cắm của người khác), hoặc khoá thiếu/ngắn | Từ chối nạp, `PerceptionUnavailableError` (`NE5001`); **không** chạy tiếp "tạm không có nguồn ngoài" |
-| `neuroedge build --target esp32s3` cho gate có `external_source` | Từ chối, `BoardCapabilityError` (`NE3001`): target không cung cấp năng lực này. Không gửi cây tới thiết bị để dữ kiện đến từ nơi khác |
-| Gate đang chờ nguồn mà phía người gọi chỉ muốn đưa cơ cấu **về trạng thái an toàn** (`off`, `duty = 0`, `safe_state`) | Không đi qua gate (RFC-0007 §9.7, Q-62): nguồn rớt không bao giờ chặn lệnh về phía an toàn |
+| Criterion declares `external_source` but authenticated connection absent; or connection active but fact not yet received (`not_connected` / `no_reading_yet`) | Missing fact ⇒ `criterion_unavailable` |
+| Connection closes, read error, handshake timeout, connection replaced | Immediately drops **all** facts for source ⇒ `criterion_unavailable` until reconnected and fresh facts arrive |
+| Authentication failure (wrong token, wrong uid, undeclared source) | Silent disconnect; no facts accepted |
+| Protocol violation §3e (including facts belonging to another source, decreasing `seq`, malformed `observed_age_ms`) | Closes connection, drops all facts for source ⇒ `criterion_unavailable` |
+| `age_ms < 0`, or `age_ms > max_age_ms` of criterion | `criterion_unavailable` (engine, RFC-0009 §3c) |
+| Non-finite number, or outside `range` | `value_out_of_range` (RFC-0009 §9.1) |
+| Finite, in range, fails `allow_when` interval | `condition_not_met` |
+| `c.facts` or `SystemOne` also supplies value for criterion | Ignored; receiver only (§3c) |
+| Agent loading: `[external]` declared but socket cannot be created (permissions, uid, path too long, foreign-owned socket), or token missing/short | Rejects loading, `PerceptionUnavailableError` (`NE5001`); **never** continues in "temporarily without external sources" mode |
+| `neuroedge build --target esp32s3` for gate with `external_source` | Rejects, `BoardCapabilityError` (`NE3001`): target does not provide capability. Decision tree not sent to device expecting external facts |
+| Gate awaiting source while caller requests returning actuator **to safe state** (`off`, `duty = 0`, `safe_state`) | Bypasses gate (RFC-0007 §9.7, Q-62): dead source never blocks safe-direction commands |
 
-### 3j. Ngoài lõi (cố ý)
+### 3j. Outside Core (Intentional)
 
-Không nằm trong `neuroedge` core và không vào Apache-2.0/PolyForm của lõi (Q-45, Q-59): adapter cho Frigate, OpenCV, Home Assistant, MQTT, Zigbee; mọi thư viện thị giác; mô hình; bất kỳ biến đổi nhãn → số
-(`person` trong vùng `gate_area` → số đếm); đổi mốc treo tường thành `observed_age_ms`; gộp sự kiện thành trạng thái; cầu MQTT (`TODOS.md` #52). Lõi chỉ có bộ nhận, giao thức, ràng buộc gate và bộ vector tuân thủ.
-Adapter mẫu có đặt trong kho hay không: §9 câu 7.
+Excluded from `neuroedge` core and outside core Apache-2.0/PolyForm licenses (Q-45, Q-59): adapters for Frigate, OpenCV, Home Assistant, MQTT, Zigbee; all vision libraries; models; any label → number transforms (`person` in `gate_area` → count); converting wall clocks to `observed_age_ms`; event-to-state aggregation; MQTT bridges (`TODOS.md` #52). Core contains only the receiver, protocol, gate constraints, and compliance vectors. Location of sample adapters: §9 question 7.
 
-**Quan hệ với RFC-0012.** RFC-0012 §9.2 nói "maker khai nhãn nào thành dữ kiện nào; gate khoá ngưỡng". Với nguồn ngoài, **nhãn → dữ kiện xảy ra trong adapter**, không trong `agent.toml`: lõi không thấy nhãn nào, không thấy khung nào, nên các khái niệm `zone`, `min_frames`, `vision_ref`, danh tính mô hình **không tồn tại** ở đây.
-Cái còn lại giống nhau: dữ kiện đã gõ kiểu (ở đây chỉ `numeric`), tên trùng tên tiêu chí của gate, ngưỡng và `max_age_ms` ở gate, không có ngưỡng ở agent, `confidence_gte` bị từ chối.
-Một agent có thể dùng cả hai (RFC-0012 cho camera cắm vào bo mạch; RFC-0014 cho Frigate) cho **các tiêu chí khác nhau**; một tiêu chí chỉ có một nguồn.
+**Relation to RFC-0012.** RFC-0012 §9.2 states "maker declares model labels to facts; gate locks thresholds". With external sources, **label → fact transforms occur inside the adapter**, not in `agent.toml`: core sees no labels and no frames, so concepts like `zone`, `min_frames`, `vision_ref`, and model identity **do not exist** here.
+Shared aspects: typed facts (`numeric` only here), fact names matching gate criteria names, thresholds and `max_age_ms` in gates, no thresholds in agents, `confidence_gte` rejected. An agent may use both (RFC-0012 for on-board camera; RFC-0014 for Frigate) for **different criteria**; a single criterion has exactly one source.
 
-### 3k. Mã lỗi
+### 3k. Error Codes
 
-Không thêm mã. Lớp dùng đều đã có trong `python/neuroedge/errors.py`: `GateSchemaError` (`NE2002`), `GateInheritanceError` (`NE2003`), `BoardCapabilityError` (`NE3001`), `AgentManifestError` (`NE3002`), `BuildFailed` (`NE3003`),
-`TraceValidationError` (`NE4001`), `PerceptionUnavailableError` (`NE5001`). Cột *Nguyên nhân* trong Phụ lục B của `neuroedge-prd.md` nới như §4. Lúc chạy, bộ nhận **không ném** lỗi tới gate: mọi thất bại là *thiếu dữ kiện* ⇒ phán quyết `criterion_unavailable` (không phụ thuộc việc RFC-0007 §3e mở phạm vi NE5001 sang lúc chạy).
+No new codes added. Classes used already exist in `python/neuroedge/errors.py`: `GateSchemaError` (`NE2002`), `GateInheritanceError` (`NE2003`), `BoardCapabilityError` (`NE3001`), `AgentManifestError` (`NE3002`), `BuildFailed` (`NE3003`), `TraceValidationError` (`NE4001`), `PerceptionUnavailableError` (`NE5001`). The *Cause* column in Appendix B of `neuroedge-prd.md` is widened per §4. At runtime, the receiver **never throws** exceptions to gates: all failures represent *missing facts* ⇒ verdict `criterion_unavailable` (independent of RFC-0007 §3e runtime NE5001 scope changes).
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — `external_source` là khoá tuỳ chọn; không gate nào trong `gates/`, `fixtures/gates/`, `fixtures/agents/` có nó; không agent nào có `[external]` |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Có, đúng một loại: tiêu chí `numeric` có `external_source` đúng mẫu. Nới lược đồ, làm được trong `v1`. *Bản `neuroedge` cũ hơn sẽ từ chối gate dùng khoá này (`additionalProperties: false`)* — fail-closed, không phải vỡ tương thích |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không. `trace.v1` không đổi (`type` mở, `data` là `object`); `board.v1` không đổi |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không — gate không có khoá mới băm như cũ. Gate **dùng** khoá mới có digest khác gate cùng nội dung không có nó (`evaluate` nằm trong `to_artifact()`): đúng ý, nguồn nằm dưới chữ ký |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không |
-| Gate nào trong `digests.lock` đổi digest? | Không gate nào; gate mẫu dùng nguồn ngoài vào `digests.lock` bằng PR thường (`scripts/check_digests.py --update`) |
-| Bố cục `NETR` hoặc walker C phải đổi? | Không. `compile_tree` (`engine/decision_tree.py`) dựng nút số từ các trường đã biết, `external_source` không vào cây thiết bị; thiết bị không nhận dữ kiện ngoài (§3a, §3i) |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không |
-| Ngữ nghĩa phân giải? | Có, hẹp: resolver nhận, kiểm và giữ nguyên `external_source` qua kế thừa; engine `_gather` bỏ qua `c.facts` cho tiêu chí có khoá |
+| Do currently valid files remain valid? | Yes — `external_source` is optional key; no gate in `gates/`, `fixtures/gates/`, `fixtures/agents/` has it; no agent has `[external]` |
+| Do currently invalid files become valid? | Yes, exactly one category: `numeric` criteria with valid `external_source`. Schema relaxation, feasible in `v1`. *Older `neuroedge` versions will reject gates using this key (`additionalProperties: false`)* — fail-closed, not a breaking change |
+| Does schema version need bumping (`v1` → `v2`)? | No. `trace.v1` unchanged (open `type`, `data` is `object`); `board.v1` unchanged |
+| Impact on published gate hashes / signatures? | None — gates without new key hash identically. Gates **using** new key produce different digest than identical gates without it (`evaluate` included in `to_artifact()`): intentional, sources covered by signature |
+| Impact on three canonical trace files? | None |
+| Which gates in `digests.lock` change digest? | None; sample gates using external sources enter `digests.lock` via normal PR (`scripts/check_digests.py --update`) |
+| Must `NETR` layout or C walker change? | No. `compile_tree` (`engine/decision_tree.py`) builds numeric nodes from existing fields, `external_source` does not enter device tree; devices do not accept external facts (§3a, §3i) |
+| Do any answers in tool call corpus (`expected_results.yaml`) change? | No |
+| Resolution semantics? | Yes, narrowly: resolver recognizes, checks, and retains `external_source` across inheritance; engine `_gather` ignores `c.facts` for criteria declaring key |
 
-**Hợp đồng chạm đến, nói rõ:** `gate.v1` **có đổi** (một khoá tuỳ chọn). `trace.v1` **không** đổi. `board.v1` **không** đổi. `agent.toml` **có đổi** (khối `[external]` mới; ngoài `schemas/`). Đặc tả giao thức mới ngoài `schemas/` (§9 câu 5).
+**Touched Contracts Explicitly Stated:** `gate.v1` **modified** (one optional key). `trace.v1` **unmodified**. `board.v1` **unmodified**. `agent.toml` **modified** (new `[external]` block; outside `schemas/`). New wire protocol spec outside `schemas/` (§9 question 5).
 
-**Mã lỗi** (`neuroedge-prd.md` Phụ lục B): không mã mới; nới *Nguyên nhân* của năm dòng:
+**Error Codes** (`neuroedge-prd.md` Appendix B): no new codes; widen *Cause* for five rows:
 
-| Lớp | Nguyên nhân thêm |
+| Class | Added Cause |
 |:---|:---|
-| `GateSchemaError` (`NE2002`) | `external_source` sai mẫu, hoặc trên tiêu chí không phải `numeric` |
-| `AgentManifestError` (`NE3002`) | Khối `[external]` sai (§3c): thiếu một chiều của tương ứng gate ↔ agent, `unit` lệch, khoá lạ, khoá viết thẳng, `source_id` sai mẫu |
-| `BoardCapabilityError` (`NE3001`) | Gate có `external_source` build cho target không nhận nguồn ngoài (`esp32s3`) |
-| `TraceValidationError` (`NE4001`) | Lint ngữ nghĩa dữ kiện có nguồn ngoài (§3h) |
-| `PerceptionUnavailableError` (`NE5001`) | Bộ nhận không dựng được lúc nạp (§3i) |
+| `GateSchemaError` (`NE2002`) | Malformed `external_source`, or present on non-`numeric` criteria |
+| `AgentManifestError` (`NE3002`) | Invalid `[external]` block (§3c): missing bidirectional mapping gate ↔ agent, mismatched `unit`, unknown keys, raw secrets, invalid `source_id` regex |
+| `BoardCapabilityError` (`NE3001`) | Gate with `external_source` built for target that rejects external sources (`esp32s3`) |
+| `TraceValidationError` (`NE4001`) | Semantic lint on facts originating from external sources (§3h) |
+| `PerceptionUnavailableError` (`NE5001`) | Receiver fails to initialize at load time (§3i) |
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-- **Gate không lỏng hơn và không có ngữ nghĩa mới cho phán quyết** (Q-54): ngưỡng, `range`, `max_age_ms`, kế thừa chỉ thu hẹp, cấm xác nhận thay, cấm `confidence_gte`, `fail: open` không tha dữ kiện số mất — tất cả là RFC-0009 nguyên vẹn. `external_source` chỉ **thêm** một ràng buộc (nguồn), và kế thừa không gỡ được nó (§3c).
-- **Thẩm quyền ở gate, triển khai ở agent:** maker không đổi được *ai* được cấp dữ kiện cho một tiêu chí, không đặt được ngưỡng; chỉ nối nguồn logic vào ổ cắm của mình, và mọi nối thiếu hoặc thừa bị build chặn (§3c, hai chiều).
-- **Bên gọi không tin cậy vẫn không tin cậy:** mô hình và client MCP không có đường nào đưa dữ kiện (không có tham số, không đi qua ổ cắm), và `call_source` không đổi (`tool_calling.md` §5).
-- **Một định nghĩa tuổi (Q-62):** mốc đọc là mốc *bộ nhận* đo, trên trục của phiên; phần nguồn khai chỉ cộng thêm nên không thể làm dữ kiện trẻ hơn lúc nó tới (§3f). `age_ms < 0` ⇒ BLOCK. Vết ghi mang cả ba mốc, `replay` tính lại.
-- **Nguồn rớt ⇒ BLOCK, không bao giờ ALLOW** (§3i): thiếu dữ kiện là `criterion_unavailable` thường (không phải một lý do suy giảm), nên không ai biến nó thành ALLOW bằng `budget.fail: open`. Lệnh về phía an toàn vẫn không đi qua gate (§3i), nên một nguồn rớt không khoá cơ cấu ở trạng thái nguy hiểm.
-- **Không có ngưỡng ở agent, không có nhãn, không có khung hình trong lõi:** bề mặt tiêm lệnh qua nội dung (nhãn lạ, chuỗi tự do) không tồn tại; chỉ số đi qua.
-- **Rủi ro còn lại — nói thẳng, không loại được ở lõi:**
-  1. **Nguồn nói dối về độ mới.** Một adapter treo mà vẫn gửi lại giá trị cũ kèm `observed_age_ms` nhỏ trông như dữ kiện tươi. RFC-0012 bắt được camera đứng hình ở lõi nhờ băm khung; ở đây lõi không có khung. Giảm bằng (a) adapter phải tính `observed_age_ms` từ **thời điểm chụp của chính quan sát** chứ không từ lúc poll (bắt buộc trong `docs/spec/external_facts.md`, có vector tuân thủ cho adapter mẫu nếu có); (b) `max_age_ms` ngắn ở gate buộc nguồn gửi đều; (c) gate cho hành động nguy hiểm **ghép** một tiêu chí số do lõi tin cậy (`analog.in`, `digital.in`) với tiêu chí ngoài — gate tự quyết; `neuroedge build` cảnh báo khi một hành động điều khiển cơ cấu chỉ dựa vào nguồn ngoài, và gate mẫu luôn ghép (§9 câu 8).
-  2. **Nguồn sai với độ tin cậy cao** (Frigate báo "không có ai" khi có người). Giống RFC-0012 §5: giảm bằng ngưỡng ở gate và ghép tiêu chí; không xác nhận thay được (cấm `confirms`), nên hành động không hoàn tác cần tiêu chí lõi đi kèm.
-  3. **Kẻ cùng uid với runtime và có khoá** đứng ngoài phạm vi (`threat_model.md` §3: quyền ngang runtime). Khoá riêng từng nguồn chỉ giới hạn *thiệt hại* của một nguồn bị xâm phạm vào các tiêu chí của nó.
-  4. **Sai số dưới của `recv_ms`:** độ trễ giữa lúc dữ liệu tới hạt nhân và lúc tác vụ đọc đo `recv_ms` không được tính. Bị chặn bởi độ trễ vòng sự kiện (mili-giây); `max_age_ms` của gate cần lớn hơn đáng kể mức đó (khuyến nghị trong đặc tả).
-  5. **Dữ kiện cùng quan sát nhưng khác `seq`:** hai thông điệp liền nhau có thể chứa hai nửa của một quan sát. Giảm bằng quy ước một thông điệp một quan sát (§3e); vết ghi mang `seq` để thấy.
-- Cần kỹ thuật trưởng duyệt vì chạm `gate.v1`, ngữ nghĩa phân giải và mở một đường dữ kiện từ ngoài tiến trình vào cổng an toàn.
+- **Gate no looser and no new verdict semantics** (Q-54): thresholds, `range`, `max_age_ms`, narrowing-only inheritance, confirmation forbidden, `confidence_gte` forbidden, `fail: open` does not forgive missing numeric facts — all RFC-0009 rules preserved intact. `external_source` only **adds** a constraint (source binding), and inheritance cannot remove it (§3c).
+- **Authority in gates, deployment in agents:** makers cannot alter *who* supplies facts for a criterion, cannot inject thresholds; only wire logical sources to local sockets, where missing or excess mappings are blocked at build time (§3c, bidirectional).
+- **Untrusted callers remain untrusted:** models and MCP clients cannot inject facts (no tool parameters, no socket access), and `call_source` remains unchanged (`tool_calling.md` §5).
+- **Single age definition (Q-62):** read timestamp is measured by *receiver* on session timeline; source-declared duration is additive only, preventing facts from appearing younger than arrival time (§3f). `age_ms < 0` ⇒ BLOCK. Traces record all three timestamps, recomputed by `replay`.
+- **Source failure ⇒ BLOCK, never ALLOW** (§3i): missing facts evaluate to standard `criterion_unavailable` (not degraded reasons), preventing `budget.fail: open` from granting ALLOW. Safe-direction commands bypass gates (§3i), ensuring dead sources never trap actuators in hazardous states.
+- **No thresholds in agents, no labels or frames in core:** injection surfaces via content (unexpected labels, arbitrary strings) do not exist; only numbers pass through.
+- **Residual Risks — Stated Directly, Unmitigated in Core:**
+  1. **Sources lying about freshness.** A hung adapter repeatedly sending old values with small `observed_age_ms` appears fresh. RFC-0012 caught camera freezes in core via frame hashes; here core lacks frames. Mitigations: (a) adapters must compute `observed_age_ms` from **capture time of observation itself**, not poll time (mandatory in `docs/spec/external_facts.md`, with compliance vectors for sample adapters if present); (b) short gate `max_age_ms` forces regular updates; (c) gates for hazardous actions **pair** trusted core criteria (`analog.in`, `digital.in`) with external criteria — gate's choice; `neuroedge build` warns when an actuator-controlling action relies solely on external sources, and sample gates always pair (§9 question 8).
+  2. **High-confidence source errors** (Frigate reporting "nobody there" when someone is present). Similar to RFC-0012 §5: mitigated by gate thresholds and pairing criteria; cannot be confirmed away (confirms forbidden), requiring physical core criteria alongside irreversible actions.
+  3. **Attacker with identical runtime uid possessing token** lies outside threat model (`threat_model.md` §3: equal privileges with runtime). Dedicated per-source tokens limit blast radius of a compromised source to its own criteria.
+  4. **Negative error in `recv_ms`:** delay between kernel socket receipt and reader task timestamping is unmeasured. Bounded by event loop latency (milliseconds); gate `max_age_ms` should comfortably exceed this margin (recommended in spec).
+  5. **Observations split across `seq` boundaries:** two consecutive messages could contain halves of one observation. Mitigated by one-observation-per-message convention (§3e); traces record `seq` for auditability.
+- Requires lead architect approval because it touches `gate.v1`, resolution semantics, and opens an out-of-process fact path into safety gates.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| Chỉ khai nguồn ở `agent.toml`, không đổi `gate.v1` | Gate không khoá được nguồn, `gate lint` mù (cùng lỗi RFC-0012 §3c với `confidence_gte`); maker nối một tiêu chí gate coi là nhạy cảm sang nguồn dễ hơn mà không ai thấy. Dòng TSK-I6-07 ở roadmap cũng nói "nguồn khai trong gate" |
-| Khai địa chỉ ổ cắm hoặc khoá trong gate | Gate là tệp ký số, phân phối qua registry và dùng trên nhiều triển khai; địa chỉ và bí mật là của triển khai. Gate chỉ mang tên logic, như FR-HAL-06 với tên chân |
-| Nguồn ngoài là một **nguyên thủy** `external.in` ở `board.v1` | RFC-0013 §2 và Q-53 đòi mọi nguyên thủy mở rộng có mặt trên **cả ba** target; `esp32s3` không có ổ cắm cục bộ. FR-HAL-01 đóng tập nguyên thủy vì bảng năng lực firmware là mảng tĩnh; `board.v1` khai phần cứng, không khai đồng cấp phần mềm |
-| Nguồn gửi giá trị đã **quyết** (`person_detected: true`, ngưỡng của Frigate) | Ngưỡng nằm ngoài gate (Q-54, RFC-0009 §1); `bool` không có tuổi và `known_failure` bỏ qua `bool` thiếu (§3a) |
-| Cho `bool`, `level`, `choice` ở bản đầu | Ba lỗ của §3a; thêm sau bằng RFC riêng nếu chủ sản phẩm cần (§9 câu 4) |
-| Tin mốc tuyệt đối của nguồn (epoch, `start_time` của Frigate) | Đồng hồ treo tường nhảy bậc khi NTP đồng bộ; gốc đơn điệu khác nhau theo ngôn ngữ; vi phạm Q-62 (một định nghĩa tuổi, trên trục đơn điệu của phiên) |
-| Chỉ tính tuổi từ lúc nhận, bỏ `observed_age_ms` | Một quan sát chụp 3 s trước nằm trong đường ống của nguồn trông tươi lúc tới. Cộng `observed_age_ms` luôn bằng hoặc già hơn, không bao giờ trẻ hơn — không có lý do an toàn để bỏ |
-| Nguồn tự khai tuổi đầy đủ (`age_ms` thay vì `observed_age_ms`) | Nguồn làm mình trẻ hơn được; vi phạm "a source cannot state its own age" của engine |
-| Kéo (HTTP tới nguồn) trong đường lượng giá | §3b: độ trễ trong `p95_latency_ms`, replay không có gì để hỏi, lõi biết API từng sản phẩm |
-| HTTP/WebSocket cục bộ thay ổ cắm Unix | §3b: kéo theo ngăn xếp web, DNS rebinding, `Origin`, không có uid của đầu bên kia |
-| MQTT trực tiếp trong lõi | §3b: broker thuộc Fleet, ACL ngoài tầm kiểm, EMQX BSL (Q-11); `TODOS.md` #52 |
-| "Bỏ qua dòng hỏng rồi đi tiếp" | Một nguồn gửi rác không đáng tin cho dòng kế tiếp; đóng kết nối và bỏ dữ kiện (§3e) |
-| Giữ dữ kiện cũ khi nguồn rớt, chờ hết `max_age_ms` | Cửa sổ vài trăm mili-giây mà nguồn đã chết vẫn tiếp tục "tươi"; bỏ ngay (§3g) |
-| Bộ nhận trả `Unavailable("offline")` khi nguồn rớt | Thành `gate_unreachable`, lý do suy giảm mà `fail: open` có thể biến thành ALLOW (`engine/verdict.py`, `engine/gate.py::_degraded`) |
-| Cho `c.facts` ghi đè tiêu chí có `external_source` | Mã agent lách được ràng buộc nguồn do nhầm; bỏ qua (§3c) |
-| Một khoá chung cho mọi nguồn | Nguồn bị xâm phạm đưa dữ kiện của nguồn khác (§3d lớp 3–4) |
-| Dựng xác thực mạng riêng cho nguồn ở máy khác | Hai cơ chế cấp/thu hồi danh tính; dùng TSK-P2-04 (§3d) |
-| `gate.v2` | Không tệp hợp lệ nào vỡ; `v2` vô ích (cùng lập luận RFC-0002 §4, RFC-0009 §6) |
+| Declaring sources only in `agent.toml`, leaving `gate.v1` unchanged | Gates cannot lock sources, leaving `gate lint` blind (same flaw as RFC-0012 §3c with `confidence_gte`); makers could remap sensitive criteria to easier sources unnoticed. TSK-I6-07 roadmap row specifies "sources declared in gates" |
+| Declaring socket addresses or tokens in gates | Gates are signed files distributed via registry across deployments; addresses and secrets belong to deployment. Gates carry logical names only, like FR-HAL-06 for pin names |
+| External sources as `external.in` **primitive** in `board.v1` | RFC-0013 §2 and Q-53 demand all extension primitives across **all three** targets; `esp32s3` lacks local sockets. FR-HAL-01 closes primitive set as static firmware arrays; `board.v1` declares hardware, not software peers |
+| Sources sending pre-evaluated **decisions** (`person_detected: true`, Frigate threshold) | Thresholds reside outside gates (Q-54, RFC-0009 §1); `bool` lacks age tracking and `known_failure` ignores missing `bool` (§3a) |
+| Permitting `bool`, `level`, `choice` in initial version | Three loopholes in §3a; add later via dedicated RFC if product owner requires (§9 question 4) |
+| Trusting source absolute timestamps (epochs, Frigate `start_time`) | Wall clocks jump during NTP steps; monotonic origins vary across runtimes; violates Q-62 (single age definition on session timeline) |
+| Calculating age strictly from receipt, ignoring `observed_age_ms` | Observations captured 3 s earlier sitting in source pipelines appear fresh on arrival. Adding `observed_age_ms` makes age equal or older, never younger — no safety justification to omit |
+| Sources declaring complete age (`age_ms` instead of `observed_age_ms`) | Sources could claim to be younger than arrival; violates engine principle "a source cannot state its own age" |
+| Pulling (HTTP to source) in evaluation path | §3b: latency inside `p95_latency_ms`, replay lacks endpoints, core requires vendor API knowledge |
+| Local HTTP/WebSocket instead of Unix sockets | §3b: introduces web stack, DNS rebinding, `Origin`, lacks peer uid |
+| Native MQTT inside core | §3b: broker belongs to Fleet, ACL unverified, EMQX BSL license (Q-11); `TODOS.md` #52 |
+| "Skip malformed lines and proceed" | Sources sending garbage cannot be trusted for subsequent lines; closes connection and drops facts (§3e) |
+| Retaining stale facts on source disconnect until `max_age_ms` expires | Window of hundreds of milliseconds where dead source appears "fresh"; drop immediately (§3g) |
+| Receiver returning `Unavailable("offline")` on disconnect | Becomes `gate_unreachable`, a degraded reason that `fail: open` can convert to ALLOW (`engine/verdict.py`, `engine/gate.py::_degraded`) |
+| Allowing `c.facts` to overwrite criteria with `external_source` | Agent code could bypass source constraints by error; ignored (§3c) |
+| Single shared token across all sources | Compromised source can inject facts for other sources (§3d layers 3–4) |
+| Bespoke network authentication for remote sources | Two identity provisioning/revocation mechanisms; use TSK-P2-04 (§3d) |
+| `gate.v2` | No currently valid files break; `v2` bump is unnecessary (same rationale as RFC-0002 §4, RFC-0009 §6) |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-Mọi dòng dưới đây là **việc phải có khi hiện thực** (`TODOS.md` #56); chưa tick vì RFC này chưa có mã. Corpus theo luật khép kín hai chiều (`CONTRIBUTING.md` §3): thêm dòng cho corpus mới vào bảng ở đó (§8).
+All items below are **mandatory implementation requirements** (`TODOS.md` #56); unchecked as this RFC contains no code yet. Corpus follows bidirectional closure rules (`CONTRIBUTING.md` §3): add row for new corpus to table there (§8).
 
-- [ ] **Gate hợp lệ và phản chứng** (`fixtures/gates/valid/`, `fixtures/gates/invalid/` + `expected_errors.yaml`): gate dùng `external_source` đúng ⇒ lint xanh; `external_source` trên `bool`/`level`/`choice`, sai mẫu tên, tiêu chí có nó trong `on_block.confirms`, kèm `confidence_gte` ⇒ `GateSchemaError` (`NE2002`); gate con bỏ hoặc đổi `external_source` của cha ⇒ `GateInheritanceError` (`NE2003`, nguyên tắc 1)
-- [ ] **Hai chiều gate ↔ agent** (`python/tests/test_compiler.py`): agent thiếu `[external.sources.X.facts.<tiêu chí>]`; dữ kiện khai mà gate không đòi; `unit` lệch; khoá lạ (`range`, `bands`, `threshold`); khoá viết thẳng; `source_id` sai mẫu; hai nguồn cùng `token_env`; gate có nguồn mà không có `[external]` ⇒ `AgentManifestError` (`NE3002`); build `--target esp32s3` ⇒ `BoardCapabilityError` (`NE3001`)
-- [ ] **Vector tuân thủ giao thức** (`fixtures/external_facts/{valid,invalid}/` + `expected_results.yaml`, khép kín hai chiều; luật ở `docs/spec/external_facts.md`): chuỗi thông điệp → dữ kiện bộ nhận phải giữ hoặc kết quả đóng kết nối + bỏ. Phản chứng: JSON hỏng, dòng > 4096 byte, khoá trùng, `v` lạ, `type` lạ, thiếu trường, `true` thay cho số, chuỗi thay cho số, tên dữ kiện của nguồn khác, `seq` bằng/lùi, `observed_age_ms` âm/không nguyên/> 4294967295, thông điệp trước `hello`, quá 100 thông điệp/giây
-- [ ] **Xác thực trên ổ cắm thật** (host): uid khác ⇒ từ chối; thiếu/sai khoá ⇒ từ chối không lời; 5 lần hỏng ⇒ khoá 60 s; nguồn A khai dữ kiện của B ⇒ đóng + bỏ; kết nối thứ hai thay kết nối đầu; ổ cắm của người khác đã có ⇒ `NE5001`; `sun_path` quá dài ⇒ từ chối nạp; khoá ngắn hơn 32 ký tự ⇒ từ chối nạp. Khoá không xuất hiện trong vết ghi hay thông báo lỗi
-- [ ] **Tuổi và đồng hồ** (đồng hồ giả, như `tests/test_numeric_tree.py`): `observed_age_ms` cộng vào tuổi; nguồn không làm tuổi nhỏ hơn tuổi-từ-lúc-nhận; `age_ms > max_age_ms` ⇒ `criterion_unavailable`; đúng bằng `max_age_ms` ⇒ qua; `read_ms` trước lúc log bắt đầu ⇒ offset âm, không "trẻ"; dữ kiện cũ không đè dữ kiện mới; đồng hồ treo tường nhảy bậc **không** đổi phán quyết (không có đường nào dùng nó)
-- [ ] **Fail-closed theo bảng §3i**, mỗi dòng một ca: chưa kết nối; kết nối đóng giữa phiên ⇒ dữ kiện bị bỏ ngay và **không** hồi sinh sau khi nối lại tới khi có dữ kiện mới; vi phạm giao thức; số ngoài thang ⇒ `value_out_of_range`; `±inf` từ `1e999` ⇒ `value_out_of_range`; `c.facts` cấp giá trị cho tiêu chí có nguồn ⇒ bị bỏ qua, `criterion_unavailable`; **gate `fail: open`, SystemOne suy giảm, nguồn ngoài rớt ⇒ vẫn BLOCK** (ghim ranh giới `known_failure`/`DEGRADED_REASONS`)
-- [ ] **Vết ghi** (`fixtures/traces/invalid/` + `expected_errors.yaml`): `gate_facts` có `source: external:…` thiếu `connection`/`seq`/`observed_age_ms` hay mốc; `age_ms` lệch; `source_id` sai mẫu ⇒ `TraceValidationError` (`NE4001`). `external_source_refused` gộp theo giây (gửi dồn không phình vết ghi); `claimed_id` lạ ⇒ `"?"`
-- [ ] **Cảnh báo nguồn ngoài đơn độc** (`python/tests/test_compiler.py`, §9 câu 8): hành động điều khiển cơ cấu mà mọi tiêu chí trong `allow_when` của gate đều có `external_source` ⇒ `build` in cảnh báo, build vẫn thành công; ghép thêm một tiêu chí không có nguồn ⇒ không cảnh báo; hành động không điều khiển cơ cấu (chân `signal_pins`, chỉ đọc) ⇒ không cảnh báo
-- [ ] **Replay không chạm nguồn:** `ReplaySession` trên vết ghi có dữ kiện ngoài cho cùng phán quyết với không có ổ cắm, không có biến môi trường khoá, và với ổ cắm bị chặn mọi lời gọi `socket`/`bind`/`connect` (test dùng chốt chặn)
-- [ ] **Tương đương target:** `verify` cho cùng phán quyết trên `sim` và `linux` từ cùng `gate_facts`; nguồn ảo của `sim` đi qua cùng bộ nhận và cùng hàm kiểm thông điệp với ổ cắm thật
-- [ ] **Hợp đồng công khai:** `tests/test_public_api.py` và `docs/spec/python_api.md` §2 ghim tên bộ nhận; không thêm lệnh CLI nào ngoài khai báo (nếu có thì `tests/test_cli_contract.py` và spec §6 cùng đổi)
-- [ ] `neuroedge gate lint` và `neuroedge verify` xanh; `pytest -q` 0 failed, 0 skipped
+- [ ] **Valid gates and negative tests** (`fixtures/gates/valid/`, `fixtures/gates/invalid/` + `expected_errors.yaml`): valid `external_source` usage ⇒ lint passes; `external_source` on `bool`/`level`/`choice`, malformed names, criteria present in `on_block.confirms`, paired with `confidence_gte` ⇒ `GateSchemaError` (`NE2002`); child gates dropping or altering parent `external_source` ⇒ `GateInheritanceError` (`NE2003`, principle 1)
+- [ ] **Bidirectional gate ↔ agent verification** (`python/tests/test_compiler.py`): agent missing `[external.sources.X.facts.<criterion>]`; fact declared without gate requirement; mismatched `unit`; unknown keys (`range`, `bands`, `threshold`); raw secrets; malformed `source_id`; two sources sharing `token_env`; gate declaring source but agent lacking `[external]` ⇒ `AgentManifestError` (`NE3002`); building `--target esp32s3` ⇒ `BoardCapabilityError` (`NE3001`)
+- [ ] **Protocol compliance vectors** (`fixtures/external_facts/{valid,invalid}/` + `expected_results.yaml`, bidirectional closure; spec in `docs/spec/external_facts.md`): message streams → retained receiver facts or connection close + drop. Negative tests: malformed JSON, line > 4096 bytes, duplicate keys, unexpected `v`, unexpected `type`, missing fields, `true` for numbers, strings for numbers, fact names of another source, equal/decreasing `seq`, negative/non-integer/> 4294967295 `observed_age_ms`, message before `hello`, exceeding 100 msgs/s
+- [ ] **Authentication on live sockets** (host): foreign uid ⇒ reject; missing/wrong token ⇒ silent rejection; 5 failures ⇒ lock out for 60 s; source A declaring B's facts ⇒ close + drop; second connection replaces first; foreign pre-existing socket ⇒ `NE5001`; `sun_path` too long ⇒ reject loading; token shorter than 32 chars ⇒ reject loading. Tokens never appear in traces or error logs
+- [ ] **Age and clock calculations** (mock clocks, like `tests/test_numeric_tree.py`): `observed_age_ms` added to age; sources cannot make age younger than age-since-receipt; `age_ms > max_age_ms` ⇒ `criterion_unavailable`; exact `max_age_ms` match ⇒ pass; `read_ms` before log start ⇒ negative offset, not "fresh"; newer facts overwrite older ones; wall clock step adjustments **never** alter verdicts (no path consumes them)
+- [ ] **Fail-closed per table §3i**, one test per row: disconnected; disconnect mid-session ⇒ facts dropped immediately and **do not** resurrect on reconnect without new facts; protocol violations; out-of-range numbers ⇒ `value_out_of_range`; `±inf` from `1e999` ⇒ `value_out_of_range`; `c.facts` providing value for sourced criterion ⇒ ignored, `criterion_unavailable`; **gate `fail: open`, degraded SystemOne, disconnected external source ⇒ still BLOCK** (pins `known_failure`/`DEGRADED_REASONS` boundary)
+- [ ] **Traces** (`fixtures/traces/invalid/` + `expected_errors.yaml`): `gate_facts` with `source: external:…` missing `connection`/`seq`/`observed_age_ms` or timestamps; mismatched `age_ms`; malformed `source_id` ⇒ `TraceValidationError` (`NE4001`). `external_source_refused` aggregated per second (floods do not bloat traces); malformed `claimed_id` ⇒ `"?"`
+- [ ] **Standalone external source warning** (`python/tests/test_compiler.py`, §9 question 8): actuator-controlling action where all `allow_when` criteria declare `external_source` ⇒ `build` warns, build succeeds; paired with non-external criterion ⇒ no warning; non-actuator action (`signal_pins`, read-only) ⇒ no warning
+- [ ] **Replay never touches sources:** `ReplaySession` on traces containing external facts produces identical verdicts without sockets, without token environment variables, and with all `socket`/`bind`/`connect` calls blocked (tested using mock interceptor)
+- [ ] **Target equivalence:** `verify` produces identical verdicts on `sim` and `linux` from identical `gate_facts`; virtual `sim` sources use identical receiver and message validation functions as physical sockets
+- [ ] **Public contract:** `tests/test_public_api.py` and `docs/spec/python_api.md` §2 pin public receiver name; no new CLI commands beyond declarations (if added, `tests/test_cli_contract.py` and spec §6 update together)
+- [ ] `neuroedge gate lint` and `neuroedge verify` green; `pytest -q` 0 failed, 0 skipped
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Post-Approval Tasks
 
-- [ ] Cập nhật `schemas/gate.v1.json` (`external_source`, `allOf` chỉ cho `type: numeric`) và `docs/user/thuat-ngu.md` (nguồn ngoài, `external_source`)
-- [ ] `engine/gate_resolver.py` (kiểm mẫu, giữ qua kế thừa), `engine/constraints.py` nếu cần, `engine/gate.py::_gather` (chỉ bộ nhận cấp dữ kiện cho tiêu chí có nguồn), `engine/compiler.py` và nạp agent (khối `[external]`, hai chiều §3c, từ chối `esp32s3`)
-- [ ] Bộ nhận ổ cắm Unix, lớp thông điệp §3e, nguồn ảo trong `neuroedge.testing`; `python/neuroedge/trace.py` (lint §3h); `testing/player.py` (bảo đảm replay không chạm nguồn)
-- [ ] `docs/spec/external_facts.md` (đặc tả giao thức, quy ước adapter: tính `observed_age_ms` từ thời điểm chụp, nhịp gửi, thông điệp một quan sát) và bộ vector tuân thủ §7; chưa có `schemas/external_fact.v1.json` (§9 câu 5)
-- [ ] `docs/spec/threat_model.md`: mục "§2c. Trong phạm vi: nguồn dữ kiện ngoài" (bảng §3d); ghi rằng dữ kiện ngoài không bao giờ vào qua `ToolCall`
-- [ ] `docs/spec/tool_calling.md` §7: bốn sự kiện vòng đời §3h; `docs/spec/simulation_coverage.md`: ghi nguồn ngoài **không phải nguyên thủy HAL** nên không vào ma trận §2
-- [ ] `docs/spec/python_api.md` §2 và `tests/test_public_api.py`: tên công khai của bộ nhận; `CONTRIBUTING.md` §3: thêm corpus `fixtures/external_facts/` vào bảng "Thêm một fixture phản chứng"
-- [ ] `neuroedge-prd.md`: Phụ lục B (nới nguyên nhân năm dòng ở §4); FR-MDL-04/FR-MDL-10 nếu đổi lời; quyết định của chủ sản phẩm ở §9 cấp `Q-N` ở §15
-- [ ] `neuroedge-roadmap.md`: TSK-I6-07 xong, tiêu chí ra 10 của I6; `TODOS.md` #56 mở khoá (mốc kích hoạt "RFC được chấp thuận" đạt)
-- [ ] Gate mẫu `fixtures/gates/valid/` dùng nguồn ngoài: PR thường, `scripts/check_digests.py --update`; gate mẫu của hành động điều khiển cơ cấu luôn ghép một tiêu chí do lõi tin cậy (§9 câu 8)
-- [ ] Cảnh báo của `neuroedge build` (`engine/compiler.py`) cho hành động điều khiển cơ cấu chỉ dựa vào nguồn ngoài (§9 câu 8)
-- [ ] `docs/rfc/README.md` (dòng RFC-0014) và `CHANGELOG.md` `[Chưa phát hành]`
+- [ ] Update `schemas/gate.v1.json` (`external_source`, `allOf` for `type: numeric` only) and `docs/user/thuat-ngu.md` (external sources, `external_source`)
+- [ ] `engine/gate_resolver.py` (pattern check, preserve across inheritance), `engine/constraints.py` if needed, `engine/gate.py::_gather` (receiver is sole provider for sourced criteria), `engine/compiler.py` and agent loader (`[external]` block, bidirectional §3c, reject `esp32s3`)
+- [ ] Unix socket receiver, message layer §3e, virtual sources in `neuroedge.testing`; `python/neuroedge/trace.py` (lint §3h); `testing/player.py` (ensure replay does not touch sources)
+- [ ] `docs/spec/external_facts.md` (protocol specification, adapter conventions: capture-time `observed_age_ms`, transmission rates, atomic messages) and compliance vectors §7; no `schemas/external_fact.v1.json` yet (§9 question 5)
+- [ ] `docs/spec/threat_model.md`: section "§2c. In-scope: External fact sources" (table §3d); state that external facts never enter through `ToolCall`
+- [ ] `docs/spec/tool_calling.md` §7: four lifecycle events §3h; `docs/spec/simulation_coverage.md`: note external sources are **not HAL primitives** so do not enter matrix §2
+- [ ] `docs/spec/python_api.md` §2 and `tests/test_public_api.py`: public receiver name; `CONTRIBUTING.md` §3: add `fixtures/external_facts/` corpus to "Adding a negative fixture" table
+- [ ] `neuroedge-prd.md`: Appendix B (widen causes for five rows in §4); FR-MDL-04/FR-MDL-10 if wording changes; product owner decisions in §9 assigned `Q-N` in §15
+- [ ] `neuroedge-roadmap.md`: TSK-I6-07 complete, exit criterion 10 of I6; `TODOS.md` #56 unblocked ("RFC approved" trigger achieved)
+- [ ] Sample gates in `fixtures/gates/valid/` using external sources: standard PR, `scripts/check_digests.py --update`; sample gates for actuator actions always pair with in-core trusted criteria (§9 question 8)
+- [ ] `neuroedge build` warning (`engine/compiler.py`) for actuator actions relying solely on external sources (§9 question 8)
+- [ ] `docs/rfc/README.md` (RFC-0014 row) and `CHANGELOG.md` `[Unreleased]`
 
-## 9. Quyết định cho các câu hỏi mở (Q-65, 2026-10-04)
+## 9. Decisions on Open Questions (Q-65, 2026-10-04)
 
-Chủ sản phẩm quyết theo nguyên tắc **an toàn cao nhất** của Q-57: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn. Câu 1–7 và 9–10 giữ mặc định của bản nháp, đã viết ở §3. Câu 8 thêm một cảnh báo và đã gộp vào §5, §7 và §8. Mục này là hồ sơ quyết định: nếu §3–§8 lệch với mục này thì sửa §3–§8. Kỹ thuật trưởng ký trên PR #92.
+Product owner decided under the **maximum safety** principle of Q-57: between two alternatives, choose the fail-closed option that is harder to misuse. Questions 1–7 and 9–10 retain draft defaults, written in §3. Question 8 adds a build warning and has been incorporated into §5, §7, and §8. This section is the decision record: if §3–§8 conflict with this section, fix §3–§8. Signed by lead architect on PR #92.
 
-1. **Nguồn ở máy khác: không có ở bản đầu.** Chỉ nguồn cùng máy, qua ổ cắm Unix (§3a, §3d). Khi cần nguồn ở máy khác (Frigate trên NAS), một RFC bổ sung dùng danh tính thiết bị của TSK-P2-04 (mTLS) làm lớp handshake, không dựng cơ chế xác thực thứ hai. *Vì sao:* mỗi cơ chế cấp và thu hồi danh tính là một chỗ có thể sai.
-2. **`esp32s3` không nhận dữ kiện ngoài.** `neuroedge build --target esp32s3` từ chối agent có `[external]` (`NE3001`, §3i). Đường qua gateway (TSK-P2-05) cần một RFC riêng.
-3. **Người không được xác nhận thay một nguồn đã rớt.** Cấm `on_block.confirms` trên tiêu chí có nguồn, như với mọi `numeric` (RFC-0009 §3a). Muốn khác thì phải có RFC sửa RFC-0009.
-4. **Chỉ `numeric`.** Trạng thái hai giá trị gửi dưới dạng số 0/1 với `range: { min: 0, max: 1 }`. Nhờ vậy dữ kiện luôn có tuổi và không lọt qua lỗ `known_failure` của `bool` thiếu (§3a).
-5. **Giao thức dây ở `docs/spec/external_facts.md`, chưa vào `schemas/`.** Đặc tả này là bản thử qua Beta. Muốn đóng băng thành `schemas/external_fact.v1.json` thì cần một RFC, viết khi đã có phản hồi của Beta. *Vì sao:* đóng băng trước khi có người dùng thì về sau mỗi thay đổi đều là `v2` (hệ quả của Q-58).
-6. **Không có kiểu dữ kiện nào ngoài `numeric`.** Mỗi kiểu mới (`level`, `choice`, chuỗi) cần một RFC riêng; chuỗi mở ra bề mặt tiêm lệnh.
-7. **Lõi chỉ chứa bộ nhận, giao thức và vector tuân thủ** (§3j). Kho này không có adapter mẫu (Frigate, Home Assistant, MQTT). Đặt adapter ở đâu, dưới giấy phép nào và ai bảo trì sẽ quyết khi hiện thực `TODOS.md` #56.
-8. **Nguồn ngoài được phép là cơ sở duy nhất của một ALLOW, nhưng không lặng lẽ.**
-   - Gate vẫn tự quyết; RFC này không đổi ngữ nghĩa phân giải.
-   - `neuroedge build` **cảnh báo** (không chặn) khi một hành động điều khiển cơ cấu có gate mà mọi tiêu chí trong `allow_when` đều có `external_source`. Hành động điều khiển cơ cấu là hành động lái chân `digital_out` không thuộc `signal_pins`, kênh PWM hoặc `motion.*`. Lời cảnh báo nêu rủi ro còn lại 1–2 ở §5 và cách sửa: ghép một tiêu chí do lõi tin cậy (`analog.in`, `digital.in`).
-   - Gate mẫu của kho cho hành động điều khiển cơ cấu luôn ghép tiêu chí như vậy.
-   - *Vì sao chỉ cảnh báo, không chặn:* gate không biết nó gắn vào hành động nào (sự gắn kết nằm ở agent), nên `gate lint` không làm được việc này. Chặn ở `build` thì loại bỏ những tích hợp hợp lệ chỉ có camera. Cảnh báo cho người làm thấy rủi ro mà không đổi phán quyết.
-9. **Mặc định đóng: đã xác nhận.** Bộ nhận chỉ chạy khi `agent.toml` có `[external]`. Không có cờ dòng lệnh nào bật được nó (giống MCP qua mạng của Q-58).
-10. **(Kỹ thuật trưởng) Chốt các hằng của §3d–§3e như đề xuất:**
+1. **Remote sources: omitted in initial version.** Local co-located sources only, over Unix sockets (§3a, §3d). Remote sources (Frigate on NAS) require a supplemental RFC using TSK-P2-04 device identities (mTLS) for handshakes, avoiding a second authentication mechanism. *Why:* multiple identity provisioning/revocation mechanisms multiply points of failure.
+2. **`esp32s3` does not accept external facts.** `neuroedge build --target esp32s3` rejects agents declaring `[external]` (`NE3001`, §3i). Gateway routing (TSK-P2-05) requires a separate RFC.
+3. **Humans cannot confirm in place of dead sources.** `on_block.confirms` forbidden on sourced criteria, as with all `numeric` criteria (RFC-0009 §3a). Modifying this requires an RFC amending RFC-0009.
+4. **`numeric` only.** Two-state flags transmitted as numbers 0/1 with `range: { min: 0, max: 1 }`. Guarantees facts carry age tracking and do not slip through the `known_failure` loophole of missing `bool` criteria (§3a).
+5. **Wire protocol in `docs/spec/external_facts.md`, not yet in `schemas/`.** This specification serves as a Beta trial. Freezing as `schemas/external_fact.v1.json` requires an RFC following Beta feedback. *Why:* freezing before user validation forces all future revisions into `v2` (consequence of Q-58).
+6. **No fact types beyond `numeric`.** New types (`level`, `choice`, string) require dedicated RFCs; strings introduce command injection surfaces.
+7. **Core contains only receiver, protocol, and compliance vectors** (§3j). The repository contains no sample adapters (Frigate, Home Assistant, MQTT). Adapter hosting, licensing, and maintenance will be decided upon implementing `TODOS.md` #56.
+8. **External sources permitted as sole basis for ALLOW, but not silently.**
+   - Gates retain full authority; this RFC does not alter resolution semantics.
+   - `neuroedge build` **warns** (does not block) when an actuator-controlling action has a gate where all `allow_when` criteria declare `external_source`. Actuator-controlling actions drive non-`signal_pins` `digital_out` pins, PWM channels, or `motion.*`. The warning highlights residual risks 1–2 in §5 and the recommended fix: pairing with an in-core trusted criterion (`analog.in`, `digital.in`).
+   - Repository sample gates for actuator actions always pair criteria accordingly.
+   - *Why warn rather than block:* gates do not know which action they attach to (binding lives in the agent), so `gate lint` cannot enforce this. Blocking at `build` eliminates legitimate camera-only integrations. Warning surfaces the risk without altering verdicts.
+9. **Default closed: confirmed.** Receiver runs only when `agent.toml` declares `[external]`. No CLI flag can force-enable it (similar to network MCP in Q-58).
+10. **(Lead Architect) Approved constants in §3d–§3e as proposed:**
 
-    | Hằng | Giá trị |
+    | Constant | Value |
     |:---|:---|
-    | Độ dài khoá tối thiểu | 32 ký tự |
-    | Số kết nối chưa xác thực tối đa | 8 |
-    | Hạn handshake | 2 s |
-    | Khoá nguồn sau 5 lần xác thực hỏng liên tiếp | 60 s |
-    | Thời gian tối thiểu giữa hai handshake của một nguồn | 1 s |
-    | Thông điệp mỗi giây tối đa | 100 |
-    | Độ dài dòng tối đa | 4096 byte |
-    | `observed_age_ms` tối đa | 4294967295 (bằng độ rộng trường `max_age_ms` của `NETR`) |
+    | Minimum token length | 32 characters |
+    | Maximum unauthenticated connections | 8 |
+    | Handshake timeout | 2 s |
+    | Lock out source after 5 consecutive failures | 60 s |
+    | Minimum interval between handshakes per source | 1 s |
+    | Maximum messages per second | 100 |
+    | Maximum line length | 4096 bytes |
+    | Maximum `observed_age_ms` | 4294967295 (matches `NETR` `max_age_ms` field width) |
 
-    Đổi một hằng về sau là thay đổi của đặc tả `docs/spec/external_facts.md`; nới một giới hạn an toàn thì cần RFC.
+    Future modifications to constants are changes to `docs/spec/external_facts.md`; relaxing safety limits requires an RFC.
 
-**Sửa nhẹ (2026-10-04, Q-68):** [RFC-0016](0016-loi-tach-duoc-va-extension-sdk.md) §9 câu 6 thêm khoá `plugin` dưới `[external.sources.<id>]` cho fact source chạy trong tiến trình (plugin nhóm `neuroedge.fact_sources`), và cho `socket` là tuỳ chọn khi không nguồn nào dùng ổ cắm. Luật hai chiều gate ↔ agent, tuổi dữ kiện và fail-closed của RFC này giữ nguyên.
+**Minor amendment (2026-10-04, Q-68):** [RFC-0016](0016-loi-tach-duoc-va-extension-sdk.md) §9 question 6 adds `plugin` key under `[external.sources.<id>]` for in-process fact sources (plugin group `neuroedge.fact_sources`), and makes `socket` optional when no source uses sockets. Bidirectional gate ↔ agent rules, fact age tracking, and fail-closed semantics of this RFC remain unchanged.

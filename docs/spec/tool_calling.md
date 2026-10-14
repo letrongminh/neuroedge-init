@@ -1,552 +1,537 @@
-# Gated Tool Profile v0 — đường từ ngôn ngữ tới hành động thực
+# Gated Tool Profile v0 — The Path from Language to Physical Action
 
-**Trạng thái:** chuẩn tắc cho `sim` và `linux` từ v0; `esp32s3` theo §8. Hình dạng của phong bì và kết quả
-đóng băng ở `schemas/tool-call.v1.json` và `schemas/tool-result.v1.json` (RFC-0015, §1, §4, §9). Quyết định:
+**Status:** normative for `sim` and `linux` since v0; `esp32s3` per §8. Shapes of envelope and result
+frozen in `schemas/tool-call.v1.json` and `schemas/tool-result.v1.json` (RFC-0015, §1, §4, §9). Decisions:
 Q-24, Q-25, Q-26, Q-27, Q-58, Q-66 (`neuroedge-prd.md` §15).
-**Mã nguồn:** `python/neuroedge/actions/tools.py` (dispatch), `python/neuroedge/mcp_server.py`
-(MCP server), `python/neuroedge/mcp_http.py` (cửa mạng của MCP server, §8.1), `python/neuroedge/mcp_host.py` (System 2 làm MCP client),
-`python/neuroedge/sim/session.py` (ngữ pháp, vòng System 2).
+**Source code:** `python/neuroedge/actions/tools.py` (dispatch), `python/neuroedge/mcp_server.py`
+(MCP server), `python/neuroedge/mcp_http.py` (MCP server network port, §8.1), `python/neuroedge/mcp_host.py` (System 2 as MCP client),
+`python/neuroedge/sim/session.py` (grammar, System 2 loop).
 
-Tài liệu này là nơi **duy nhất** định nghĩa tool call trong NeuroEdge. Tài liệu khác dẫn
-tới đây, không chép lại (CONTRIBUTING §8.1). Từ khoá **PHẢI**, **KHÔNG ĐƯỢC**, **NÊN**
-mang nghĩa như RFC 2119.
+This document is the **sole** definition of tool calling in NeuroEdge. Other documents link
+here without repeating content (CONTRIBUTING §8.1). The keywords **MUST**, **MUST NOT**, **SHOULD**
+carry the meanings defined in RFC 2119.
 
-## 0. Vì sao là một *profile*, không phải một giao thức
+## 0. Why a *Profile*, Not a Protocol
 
-Hệ sinh thái AI agent đã hội tụ vào một đường truyền: MCP (`tools/list`, `tools/call`),
-function calling kiểu OpenAI, JSON Schema cho tham số. NeuroEdge **không** phát minh
-đường truyền mới — một agent Claude Desktop, Cursor hay LangChain gọi được thiết bị
-NeuroEdge mà không cần gì riêng.
+The AI agent ecosystem has converged on a common transport: MCP (`tools/list`, `tools/call`),
+OpenAI-style function calling, and JSON Schema for parameters. NeuroEdge **does not** invent
+a new transport — an agent from Claude Desktop, Cursor, or LangChain can call a NeuroEdge device
+without proprietary adapters.
 
-Điều hệ sinh thái để trống là **chuyện gì xảy ra giữa tool call và hiệu ứng vật lý**.
-Ở MCP và function calling, gọi tool nghĩa là *thực thi*; lỗi là chuỗi tự do; không ai
-biết lời gọi từ đâu tới; mất mạng thì không có tool call. Profile này quy định phần đó:
+What the ecosystem leaves unspecified is **what happens between the tool call and the physical effect**.
+In MCP and function calling, calling a tool means *execution*; errors are arbitrary strings; no one
+knows where a call originated; network loss means no tool calls. This profile governs that gap:
 
-| | Tool call thông thường | Gated Tool Profile |
+| | Regular Tool Calls | Gated Tool Profile |
 |:---|:---|:---|
-| Ngữ nghĩa | Thực thi | **Yêu cầu** — gate quyết định (§2) |
-| Kết quả bị từ chối | Chuỗi lỗi | Ba trạng thái có cấu trúc (§4) |
-| Ai gọi | Không ghi | `call_source` — dữ kiện tin cậy gate đọc được (§5) |
-| Xác nhận của người | Client tự hỏi, bỏ qua được | Thiết bị cưỡng chế; mô hình không tự xác nhận (§6) |
-| Mất mạng | Không có | Ngữ pháp cục bộ sinh tool call tổng hợp, cùng đường (§1) |
-| Bằng chứng | Log văn bản | Vết ghi: tool call → phán quyết → lệnh chân, replay được (§7) |
+| Semantics | Execution | **Request** — gate decides (§2) |
+| Denied results | Error string | Three structured states (§4) |
+| Call provenance | Unrecorded | `call_source` — trusted fact readable by gates (§5) |
+| Human confirmation | Client asks optionally, bypassable | Enforced by device; model cannot confirm itself (§6) |
+| Network loss | Unavailable | Local grammar synthesises tool calls on same pipeline (§1) |
+| Evidence | Text logs | Trace: tool call → verdict → pin commands, replayable (§7) |
 
-MCP có **hai chiều**, và profile phủ cả hai:
+MCP has **two directions**, and the profile covers both:
 
-| Chiều | Ai là client | Ai là server | Mục |
+| Direction | Who is Client | Who is Server | Section |
 |:---|:---|:---|:---|
-| **B — gọi vào thiết bị** | Agent bên ngoài (Claude Desktop, IDE, agent khác) | `neuroedge mcp serve` | §1–§9 |
-| **A — thiết bị gọi ra** | System 2 của agent (MCP host) | Chính MCP server của agent **và** MCP server bên ngoài | §10 |
+| **B — calling into device** | External agent (Claude Desktop, IDE, peer agent) | `neuroedge mcp serve` | §1–§9 |
+| **A — device calling out** | Agent's System 2 (MCP host) | Agent's own MCP server **and** external MCP servers | §10 |
 
-Profile là tài sản chuẩn thứ ba của NeuroEdge, cạnh lược đồ gate và lược đồ vết ghi
+The profile is the third standard asset of NeuroEdge, alongside gate schemas and trace schemas
 (`docs/architecture/vi/16-ecosystem-landscape.md` §6).
 
-## 1. Phong bì `ToolCall`
+## 1. `ToolCall` Envelope
 
-Hình dạng nằm ở [`schemas/tool-call.v1.json`](../../schemas/tool-call.v1.json), không chép lại ở đây:
-`#/$defs/request` là cái bên gọi gửi (`id`, `name`, `arguments`; **không** có `source`, và một lời gọi tự khai
-`source` bị phong bì từ chối), `#/$defs/call` là phong bì dispatcher giữ — thêm `source` đã gán — và
-cũng là `data` của sự kiện `tool_call` (§7). Phong bì **đóng** (khoá lạ bị từ chối). Phần dưới là
-**nghĩa** mà lược đồ không nói được:
+Shape lives in [`schemas/tool-call.v1.json`](../../schemas/tool-call.v1.json), not duplicated here:
+`#/$defs/request` is what the caller sends (`id`, `name`, `arguments`; **no** `source`, and any self-declared
+`source` is rejected by the envelope), `#/$defs/call` is the envelope held by the dispatcher — adding the assigned `source` — and
+also serves as `data` for the `tool_call` event (§7). The envelope is **closed** (unexpected keys rejected). Below is the
+**semantics** that schemas cannot express:
 
-| Trường | Quy định |
+| Field | Specification |
 |:---|:---|
-| `name` | Tên một `@action` của agent. Mỗi `@action` là đúng một tool |
-| `arguments` | Đối tượng JSON; khoá là tên tham số của `@action` |
-| `source` | Một nguồn dựng sẵn hoặc `bridge:<id>` / `mcp:<client>` (bảng dưới). **Do runtime gán**, không do bên gọi khai |
-| `id` | `call_1`, `call_2`… theo thứ tự trong phiên, do dispatcher gán khi rỗng. **KHÔNG ĐƯỢC** là giá trị ngẫu nhiên: vết ghi phải tất định để golden và `--anonymize` ổn định. Id do nhà cung cấp mô hình trả về được giữ nguyên |
+| `name` | Name of an agent `@action`. Each `@action` corresponds to exactly one tool |
+| `arguments` | JSON object; keys are parameter names of `@action` |
+| `source` | A built-in source or `bridge:<id>` / `mcp:<client>` (table below). **Assigned by runtime**, never declared by caller |
+| `id` | `call_1`, `call_2`… sequential within session, assigned by dispatcher when empty. **MUST NOT** be random: traces must be deterministic for stable goldens and `--anonymize`. Model provider IDs are preserved |
 
-| `source` | Nơi phát |
+| `source` | Origin |
 |:---|:---|
-| `local_grammar` | Câu khớp `commands.toml` → tool call **tổng hợp** (Q-14). Chạy không mạng |
-| `system_one` | Mô hình có cấu trúc (PRD §4.3, FR-MDL) |
-| `system_two` | LLM với câu tự do; gọi tool của thiết bị qua kết nối MCP in-process tới chính agent (§10) |
-| `mcp` | Client MCP qua `neuroedge mcp serve`, qua stdio hay qua mạng (§8.1) |
+| `local_grammar` | Sentence matching `commands.toml` → **synthetic** tool call (Q-14). Runs offline |
+| `system_one` | Structured model (PRD §4.3, FR-MDL) |
+| `system_two` | LLM with free-form utterance; calls device tools via in-process MCP connection to the agent itself (§10) |
+| `mcp` | MCP client via `neuroedge mcp serve`, over stdio or network (§8.1) |
 | `test` | Action CI |
-| `bridge:<id>` | Một bridge đã nạp (Muse, Home Assistant…): lõi gán từ id đã đăng ký của bridge, bên trong `Dispatcher`; bridge không có chỗ nào để nói nguồn (RFC-0017 §3b) |
-| `mcp:<client>` | Client MCP qua mạng đã được người vận hành đặt nhãn, từ `sub` của token đã xác thực (RFC-0017 §3c) — văn phạm đã nhận; nhãn client **chưa** được gán (TSK-I2c-10 nửa (b)), nên mọi client mạng hôm nay vẫn là `mcp` |
-| `chat:<id>` | *planned · Q-72 (I2d), chờ RFC nguồn `chat:<id>`.* Một tài khoản chat đã ghép đôi tại chỗ. **Chỉ** có nguồn này khi runtime đã kiểm một bản ghi duyệt hợp lệ (§6); **không bao giờ** gán chỉ vì có kết nối từ nền tảng chat — tin chat thường là dữ liệu cho LLM worker, không phải lời gọi của người |
-| *(nguồn của LLM worker)* | *planned · Q-72 (I2d), tên chốt ở RFC.* Kết nối MCP cục bộ của LLM worker — tiến trình không tin cậy giữ key BYOK của agent vận hành. Runtime gán theo kết nối, như `mcp`; không thuộc `HUMAN_SOURCES` |
+| `bridge:<id>` | A loaded bridge (Muse, Home Assistant…): core assigns from registered bridge id inside `Dispatcher`; bridge has no mechanism to declare source (RFC-0017 §3b) |
+| `mcp:<client>` | Network MCP client labeled by operator, from authenticated token `sub` (RFC-0017 §3c) — grammar accepted; client labeling **not yet** implemented (TSK-I2c-10 half (b)), so all network clients today remain `mcp` |
+| `chat:<id>` | *planned · Q-72 (I2d), awaiting RFC for source `chat:<id>`.* A locally paired chat account. **Only** carries this source when runtime has verified a valid approval record (§6); **never** assigned merely because a connection exists from a chat platform — chat messages are normally worker LLM data, not human calls |
+| *(worker LLM source)* | *planned · Q-72 (I2d), name finalized in RFC.* Local MCP connection of worker LLM — untrusted process holding operator agent's BYOK key. Assigned by runtime per connection, like `mcp`; not in `HUMAN_SOURCES` |
 
-**Văn phạm của `source`** (RFC-0017 §3a): một trong năm tên dựng sẵn ở trên, hoặc `bridge:<id>` / `mcp:<client>` với
-`<id>` khớp `[a-z][a-z0-9_]{0,31}` (mẫu `SOURCE_ID` ở `actions/tools.py`; `source` dài tối đa 39 ký tự). Họ khác ⇒
-`ToolCallError` NE1004 lúc dựng; **tập dựng sẵn vẫn đóng**, thêm một họ hay một tên dựng sẵn là RFC. Mã kiểm bằng
-`re.fullmatch` (`valid_source`), không bằng `$`: `$` của Python khớp trước một `\n` cuối, ECMA 262 thì không
-(`test_a_source_with_a_trailing_newline_is_refused`). Hình dạng trong lược đồ nằm ở
+**Grammar of `source`** (RFC-0017 §3a): one of the five built-in names above, or `bridge:<id>` / `mcp:<client>` with
+`<id>` matching `[a-z][a-z0-9_]{0,31}` (`SOURCE_ID` pattern in `actions/tools.py`; `source` maximum length 39 characters). Other families ⇒
+`ToolCallError` NE1004 during instantiation; **built-in set remains closed**, adding a family or built-in name requires an RFC. Code validates with
+`re.fullmatch` (`valid_source`), not `$`: Python's `$` matches before a trailing `\n`, whereas ECMA 262 does not
+(`test_a_source_with_a_trailing_newline_is_refused`). Schema shape lives in
 [`schemas/tool-call.v1.json`](../../schemas/tool-call.v1.json) `$defs/source`.
 
-Câu khớp ngữ pháp **PHẢI** trở thành tool call rồi đi qua cùng đường với mọi nguồn khác —
-không có nhánh "offline" riêng tới chân.
+Sentences matching grammar **MUST** become tool calls and flow through the exact same path as all other sources —
+there is no separate "offline" path to pins.
 
-Một thẩm định lược đồ thành công **không** chứng minh một runtime tuân thủ: lược đồ không biểu diễn được
-việc tool có tồn tại, phép ép chuỗi của §2, ràng buộc tham số của gate (§3, kiểm **sau** schema) hay
-`call_source`. Bộ kiểm tuân thủ là corpus của §9 chạy qua `dispatch()` — cùng lập luận với gate:
-cổng là `neuroedge gate lint`, không phải thẩm định lược đồ (`CHANGELOG.md` §3.3 #1).
+Successful schema validation **does not** prove runtime compliance: schemas cannot represent tool existence, string
+coercion (§2), gate parameter constraints (§3, checked **after** schema), or `call_source`. The compliance test suite
+is the corpus in §9 executed through `dispatch()` — same rationale as gates: the gatekeeper is `neuroedge gate lint`,
+not schema validation (`CHANGELOG.md` §3.3 #1).
 
-## 2. Thứ tự dispatch
+## 2. Dispatch Order
 
-Mọi tool call, từ mọi nguồn, đi qua `dispatch()` theo đúng thứ tự:
+Every tool call, from any source, traverses `dispatch()` in strict order:
 
-1. Ghi sự kiện `tool_call`.
-2. Tool có tồn tại — không ⇒ `REJECTED`.
-3. Tham số khớp schema (§3): không có tham số lạ, đủ tham số bắt buộc, đúng kiểu. Chuỗi
-   được ép sang số hoặc bool khi schema nói vậy (slot ngữ pháp là chữ); ngoài ra không
-   đoán gì. Sai ⇒ `REJECTED`, ghi `tool_call_rejected`.
-4. Chèn dữ kiện `call_source` và `call_channel` (§5). Một nguồn `bridge:<id>` / `mcp:<client>` mà id chưa được đăng ký
-   trong phiên ⇒ lỗi lập trình NE1004, ném **trước** bước 1: không có lời gọi, không có sự kiện.
-5. `c.do(action, **arguments)` → gate → token dùng một lần → thân `@action` → HAL.
+1. Log `tool_call` event.
+2. Tool exists — if no ⇒ `REJECTED`.
+3. Arguments match schema (§3): no unexpected arguments, all required arguments present, correct types. Strings
+   coerced to numbers or bools when schema requires it (grammar slots are text); no other guessing.
+   Invalid ⇒ `REJECTED`, log `tool_call_rejected`.
+4. Insert facts `call_source` and `call_channel` (§5). A source `bridge:<id>` / `mcp:<client>` whose id is unregistered
+   in the session ⇒ programming error NE1004, raised **before** step 1: no call, no event.
+5. `c.do(action, **arguments)` → gate → single-use token → `@action` body → HAL.
 
-Khoá `arguments` **dành riêng** `__unparseable__`: `parse_tool_calls` chèn nó khi `arguments` của nhà
-cung cấp mô hình không phải JSON hợp lệ (hoặc không phải đối tượng), với giá trị là nguyên văn
-phần hỏng. Không `@action` nào có tham số tên đó, nên bước 3 từ chối ("unknown argument") và lời gọi là
-`REJECTED`; không gate nào nhìn thấy nó. Bên gọi **KHÔNG NÊN** tự gửi khoá này.
+**Reserved** `arguments` key `__unparseable__`: `parse_tool_calls` inserts it when model provider
+`arguments` is not valid JSON (or not an object), with value set to raw corrupted fragment. No `@action`
+has a parameter by that name, so step 3 rejects it ("unknown argument") and the call is `REJECTED`;
+no gate sees it. Callers **SHOULD NOT** send this key directly.
 
-Bước 2–3 xảy ra **trước** gate: một lời gọi sai hình dạng không phải câu hỏi an toàn,
-nên nó không tốn ngân sách gate và không có phán quyết.
+Steps 2–3 occur **before** the gate: a malformed call is not a safety question, so it incurs no
+gate budget and produces no verdict.
 
-Lỗi hợp đồng (`ActionContractViolation` NE1001, `TokenReplayError` NE1002) **PHẢI** được
-ném ra. Dispatcher **KHÔNG ĐƯỢC** bắt chúng rồi trả `BLOCK`: đó là lỗi lập trình, không
-phải phán quyết, và che nó đi là che một đường tắt qua gate.
+Contract violations (`ActionContractViolation` NE1001, `TokenReplayError` NE1002) **MUST** be
+raised. The dispatcher **MUST NOT** catch them and return `BLOCK`: that is a programming bug, not
+a verdict, and suppressing it masks a bypass around gates.
 
-## 3. Schema tool
+## 3. Tool Schema
 
-Schema sinh từ chữ ký `@action` (`input_schema()`): `str` → `string`, `int` → `integer`,
-`float` → `number`, `bool` → `boolean`; tham số không có mặc định là `required`;
-`additionalProperties: false`. Mô tả là đoạn đầu docstring kèm câu *"Guarded by gate
+Schemas are generated from `@action` signatures (`input_schema()`): `str` → `string`, `int` → `integer`,
+`float` → `number`, `bool` → `boolean`; parameters without defaults are `required`;
+`additionalProperties: false`. Description is the opening docstring paragraph appended with *"Guarded by gate
 `X`: the call may be blocked."*
 
-Tập con JSON Schema mà `inputSchema` dùng, và bộ bốn trường của một tool (`name`, `description`,
-`inputSchema`, `outputSchema`) mô tả ở `schemas/tool-call.v1.json` (`#/$defs/input_schema`, `#/$defs/tool`).
+The JSON Schema subset used by `inputSchema`, and the four fields of a tool (`name`, `description`,
+`inputSchema`, `outputSchema`), are described in `schemas/tool-call.v1.json` (`#/$defs/input_schema`, `#/$defs/tool`).
 
-Cùng một schema xuất ra hai dạng: MCP `inputSchema` (`neuroedge mcp tools --json`) và
-`parameters` của function calling OpenAI (`--openai`, Q-12).
+The identical schema is emitted in two forms: MCP `inputSchema` (`neuroedge mcp tools --json`) and
+OpenAI function calling `parameters` (`--openai`, Q-12).
 
-Từ RFC-0005 (Q-25, TSK-S3-25), schema là **giao** của chữ ký và ràng buộc tham số
-của gate: `minimum`, `maximum`, `enum`, `maxLength` từ gate đi vào `inputSchema`, để mô
-hình thấy giới hạn trước khi gọi. Gate vẫn kiểm lại — schema là gợi ý cho mô hình, gate
-là cưỡng chế.
+Starting with RFC-0005 (Q-25, TSK-S3-25), schema represents the **intersection** of signature and gate parameter
+constraints: `minimum`, `maximum`, `enum`, `maxLength` from gates enter `inputSchema` so models see boundaries
+before calling. Gates re-validate — schemas guide models, gates enforce.
 
-## 4. Kết quả
+## 4. Results
 
-| `status` | Nghĩa | Chân | MCP `isError` |
+| `status` | Meaning | Pins | MCP `isError` |
 |:---|:---|:---|:---:|
-| `ALLOW` | Gate cho qua, thân `@action` đã chạy | Có thể đổi | `false` |
-| `BLOCK` | Gate chặn (mọi `on_block`, Q-17) | Không đổi — trừ chân của `fallback_action` khi `degrade` và fallback được gate của nó cho qua | `false` |
-| `REJECTED` | Tool lạ hoặc tham số sai; không có phán quyết | Không đổi | `true` |
+| `ALLOW` | Gate permitted, `@action` body executed | May change | `false` |
+| `BLOCK` | Gate blocked (all `on_block`, Q-17) | Unchanged — except pins of `fallback_action` when `degrade` and fallback permitted by its gate | `false` |
+| `REJECTED` | Unknown tool or malformed arguments; no verdict | Unchanged | `true` |
 
-`BLOCK` **không** là lỗi giao thức: gate làm đúng việc của nó, và bên gọi cần đọc lý do
-để trả lời người dùng. Chỉ `REJECTED` là lỗi — bên gọi đã gửi một lời gọi không hợp lệ.
+`BLOCK` is **not** a protocol error: the gate performed its duty, and the caller needs to read the reason
+to respond to the user. Only `REJECTED` is an error — the caller submitted an invalid request.
 
-Hình dạng của nội dung trả về (`ToolResult.content()`; MCP gửi ở cả `structuredContent` và một khối
-`text` chứa cùng JSON) là [`schemas/tool-result.v1.json`](../../schemas/tool-result.v1.json), không chép
-lại ở đây. Lược đồ nói trường nào bắt buộc khi nào: `tool` và `status` luôn có; `BLOCK` có `gate` và
-`on_block`; `REJECTED` có `problems` (không rỗng); `fallback` (đệ quy, kết quả của `fallback_action` đã chạy qua
-gate riêng của nó) và `confirmation` (§6) là của `on_block: degrade` và `ask`.
+The shape of return content (`ToolResult.content()`; MCP sends both in `structuredContent` and a `text` block
+containing identical JSON) is [`schemas/tool-result.v1.json`](../../schemas/tool-result.v1.json), not duplicated
+here. The schema dictates field conditions: `tool` and `status` are always present; `BLOCK` carries `gate` and
+`on_block`; `REJECTED` carries `problems` (non-empty); `fallback` (recursive, result of `fallback_action` evaluated through
+its own gate) and `confirmation` (§6) belong to `on_block: degrade` and `ask`.
 
-Máy chủ MCP khai chính lược đồ này ở `outputSchema` của mỗi tool, đã ghim `tool` vào tên tool và bỏ
-`$id`/`$schema` (`result_schema()` trong `actions/tools.py` **đọc** tệp; nó không dựng lược đồ). Client MCP kiểm
-`structuredContent` của mọi kết quả **không** lỗi theo lược đồ đó; kết quả `REJECTED`
-(`isError: true`) không được SDK kiểm, nhưng vẫn khớp lược đồ (tool lạ thì khớp lược đồ không
-ghim tên `tool`).
+The MCP server declares this exact schema under `outputSchema` of each tool, pinning `tool` to tool name and removing
+`$id`/`$schema` (`result_schema()` in `actions/tools.py` **reads** the file; it does not build the schema). MCP clients validate
+`structuredContent` of every non-error result against that schema; `REJECTED` results
+(`isError: true`) are unvalidated by the SDK, yet still match schema (unknown tools match schema without
+pinned `tool` name).
 
-**Luật cho bên đọc kết quả (RFC-0015 §3b, Q-66):**
+**Rules for result consumers (RFC-0015 §3b, Q-66):**
 
-- **`status` quyết định. `reason` chỉ là lời giải thích — KHÔNG ĐƯỢC rẽ nhánh theo nó, và tuyệt đối không
-  rẽ nhánh tới ALLOW.** `reason` là chuỗi mở: danh sách giá trị đã biết nằm ở `x-neuroedge-known` của
-  lược đồ (test buộc nó bằng đúng `Reason`), và sẽ dài thêm qua các RFC. Một `reason` lạ dưới `status: BLOCK` vẫn là bị chặn
-  (fail-closed), không phải kết quả hỏng.
-- **Đối tượng kết quả mở:** bên đọc **PHẢI** bỏ qua khoá nó không biết. Runtime chỉ phát các khoá lược đồ đã
-  khai (test `test_the_mcp_server_emits_only_documented_result_keys`); thêm một khoá tuỳ chọn không tăng `v1`.
-- **`status` và `on_block` là tập đóng:** thêm giá trị là `v2`.
+- **`status` decides. `reason` is an explanation only — MUST NOT branch on it, and absolutely never branch
+  to ALLOW.** `reason` is an open string: known values listed in `x-neuroedge-known` in schema (tests enforce exact match
+  with `Reason`), expanding across RFCs. An unknown `reason` under `status: BLOCK` remains blocked (fail-closed), not a corrupted result.
+- **Open result object:** consumers **MUST** ignore unknown keys. Runtime emits only declared schema keys
+  (test `test_the_mcp_server_emits_only_documented_result_keys`); adding an optional key does not bump `v1`.
+- **`status` and `on_block` are closed sets:** adding values requires `v2`.
 
 ## 5. `call_source`
 
-Dispatcher chèn dữ kiện `call_source = <source>` vào ngữ cảnh gate của **chính lời gọi đó**
-(`Conversation.do_with`): một bản chụp `c.facts` lấy lúc lời gọi bắt đầu, `call_source` đè lên. `c.facts`
-không bị ghi, cũng không phải khôi phục. Hai lời gọi chồng nhau trên một `Conversation` (một `mcp`,
-một `system_two`) vì vậy không thấy nguồn của nhau; fallback `degrade` và câu hỏi `ask` của một lời
-gọi mang nguồn của lời gọi đó, kể cả khi lời gọi khác đang chạy
-(`tests/test_call_source_isolation.py`). Gate đọc nó như mọi tiêu chí `choice`:
+The dispatcher injects fact `call_source = <source>` into the gate context of **that specific call**
+(`Conversation.do_with`): a snapshot of `c.facts` taken at call inception, overridden by `call_source`. `c.facts`
+is neither mutated nor restored. Concurrent calls on a single `Conversation` (one `mcp`, one `system_two`)
+cannot observe each other's sources; `degrade` fallback and `ask` prompts inherit the source of their parent call,
+even during interleaved executions (`tests/test_call_source_isolation.py`). Gates evaluate it like any `choice` criterion:
 
 ```yaml
 evaluate:
   call_source:
     type: choice
     options: [local_grammar, system_one, system_two, mcp, test]
-    instructions: Nơi phát lời gọi — do runtime chèn, không suy từ lời nói
-allow_when: call_source in ["local_grammar", "system_one"]   # MCP không mở được cửa
+    instructions: Where call originated — inserted by runtime, not inferred from speech
+allow_when: call_source in ["local_grammar", "system_one"]   # MCP cannot open door
 ```
 
-Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedge mcp serve` là `mcp`, kể cả qua mạng (`--http`, §8.1); kết nối in-process của System 2 là `system_two` (`build_server(session, source=...)`). Một bridge nhận nguồn `bridge:<id>` từ id nó được đăng ký lúc nạp.
+Sources are **connection-bound**, assigned when runtime establishes the connection: `neuroedge mcp serve` is `mcp`, including over network (`--http`, §8.1); System 2 in-process connection is `system_two` (`build_server(session, source=...)`). A bridge receives source `bridge:<id>` from its registered id at load time.
 
-*Planned · Q-72 (I2d), chờ RFC.* Agent vận hành thêm hai kết nối, cùng luật "gắn theo kết nối": LLM worker gọi
-runtime qua MCP cục bộ và nhận nguồn của worker do runtime gán; adapter kênh chat nằm trong runtime, và nguồn
-`chat:<id>` chỉ xuất hiện ở đường bản ghi duyệt (§6), không bao giờ gắn cho cả kết nối tới nền tảng chat. Tên dựng
-sẵn mới hay họ mới vẫn cần RFC như mọi nguồn khác.
+*Planned · Q-72 (I2d), awaiting RFC.* Operator agents introduce two additional connections under the same "connection-bound" rule: worker LLMs call runtime over local MCP and receive the runtime-assigned worker source; chat channel adapters reside in runtime, with source `chat:<id>` appearing solely on approval record paths (§6), never assigned across the entire chat platform connection. New built-in names or families require an RFC like any other source.
 
-Một lời gọi qua mạng hôm nay là `mcp`: stdio và mạng cùng một máy chủ, cùng một đường tới gate, nên gate chưa phân biệt được hai cửa. Phân biệt theo thiết bị là nhãn `mcp:<client>` do người vận hành đặt có chủ ý (RFC-0017 §3c, nửa (b), chưa làm); thiết bị chưa đặt nhãn vẫn là `mcp`. Thêm một họ hay tên dựng sẵn cho `call_source` vẫn cần RFC (`CONTRIBUTING.md` §3).
+Network calls today are `mcp`: stdio and network share one server and one gate pipeline, so gates do not yet distinguish ports. Per-device differentiation uses operator-assigned `mcp:<client>` labels (RFC-0017 §3c, half (b), unbuilt); unlabelled devices remain `mcp`. Adding families or built-in names for `call_source` requires an RFC (`CONTRIBUTING.md` §3).
 
-**Đăng ký id.** `dispatch()` chỉ nhận `bridge:<id>` / `mcp:<client>` đã đăng ký trên `Conversation` của phiên
-(`register_source`; nội bộ, không thuộc `neuroedge.__all__`): bộ nạp bridge và bảng `[mcp.clients]` đăng ký, runner của corpus
-(§9) đóng vai bộ nạp. Id ngoài văn phạm, tên dựng sẵn hay id trùng ⇒ NE1004; id chưa đăng ký ⇒ NE1004 ở `dispatch()`. Đây là chốt chặn
-gõ nhầm và mã ngoài `Dispatcher`, không phải hộp cát chống mã thù địch cùng tiến trình (`threat_model.md` §2b, §3).
+**ID registration.** `dispatch()` accepts only `bridge:<id>` / `mcp:<client>` registered on session `Conversation`
+(`register_source`; internal, outside `neuroedge.__all__`): bridge loader and `[mcp.clients]` table register, corpus runner
+(§9) acts as loader. IDs outside grammar, built-in collisions, or duplicate IDs ⇒ NE1004; unregistered IDs ⇒ NE1004 in `dispatch()`. This is a guard against
+typos and external code outside `Dispatcher`, not a sandbox against in-process adversarial code (`threat_model.md` §2b, §3).
 
-**`call_channel` — họ của nguồn.** Dispatcher chèn thêm dữ kiện dẫn xuất `call_channel`: phần trước dấu `:` đầu của
-`call_source` (hoặc cả tên, với năm nguồn dựng sẵn) — `bridge` cho `bridge:muse`, `mcp` cho `mcp:hub`. Chèn ở **đúng điểm** theo
-từng lời gọi nơi `call_source` vào ngữ cảnh gate (`Conversation._context`), *sau* khi gộp nguồn dữ kiện, nên `c.facts`,
-`[sim.facts]`, nguồn dữ kiện và mô hình không đè được; nó sống qua câu hỏi `ask` (§6), `c.do()` lồng và fallback `degrade`.
-Không có `call_source` hợp lệ ⇒ không có `call_channel` ⇒ `criterion_unavailable`. Nó nằm trong `RUNTIME_CRITERIA`: `[system_one]` không được
-nhờ mô hình phán nó. Gate nói "đúng bridge Muse" bằng `call_source`, hoặc "mọi bridge đã bật" bằng `call_channel`:
+**`call_channel` — source family.** The dispatcher also injects derived fact `call_channel`: prefix before first `:` of
+`call_source` (or full name for five built-ins) — `bridge` for `bridge:muse`, `mcp` for `mcp:hub`. Injected at the **exact call site** where
+`call_source` enters gate context (`Conversation._context`), *after* merging fact sources, so `c.facts`,
+`[sim.facts]`, fact sources, and models cannot override it; it persists across `ask` prompts (§6), nested `c.do()`,
+and `degrade` fallbacks. Missing valid `call_source` ⇒ missing `call_channel` ⇒ `criterion_unavailable`. Lives in `RUNTIME_CRITERIA`: `[system_one]` cannot
+delegate it to models. Gates specify "exactly Muse bridge" via `call_source`, or "all active bridges" via `call_channel`:
 
 ```yaml
 evaluate:
   call_source:  { type: choice, options: [local_grammar, mcp, bridge:muse, test], instructions: "…" }
   call_channel: { type: choice, options: [local_grammar, system_one, system_two, mcp, bridge, test], instructions: "…" }
 allow_when:
-  call_source:  { in: [local_grammar, bridge:muse] }   # đúng Muse; bridge khác ⇒ BLOCK
-# hoặc "mọi bridge":  call_channel: { in: [local_grammar, bridge] }
+  call_source:  { in: [local_grammar, bridge:muse] }   # exactly Muse; other bridges ⇒ BLOCK
+# or "all bridges":  call_channel: { in: [local_grammar, bridge] }
 ```
 
-**Fail-closed.** Giá trị ngoài `options` của gate ⇒ `BLOCK`, `criterion_unavailable`, kể cả dưới `fail: open`; mọi gate hiện có
-liệt kê năm nguồn nên mọi bridge `BLOCK` mặc định cho tới khi một gate gọi tên nó hoặc họ của nó. `gate.v1` và bố cục `NETR` không đổi
-(`bridge:muse` là một chuỗi trong miền của chính gate đó; một miền tối đa 32 giá trị, nên "mọi bridge" cần `call_channel`).
-`bridge:*` và `mcp:*` không thuộc `HUMAN_SOURCES` (§6). Replay chỉ dùng `gate_facts` đã ghi, không cần bridge có mặt (§7).
+**Fail-closed.** Values outside gate `options` ⇒ `BLOCK`, `criterion_unavailable`, even under `fail: open`; all current gates
+enumerate five sources, so all bridges `BLOCK` by default until a gate explicitly names the bridge or family. `gate.v1` and `NETR` layout unchanged
+(`bridge:muse` is a string in that gate's domain; domains support up to 32 values, so "all bridges" uses `call_channel`).
+`bridge:*` and `mcp:*` are not in `HUMAN_SOURCES` (§6). Replay uses recorded `gate_facts` only, requiring no bridge present (§7).
 
-Bên gọi **KHÔNG ĐƯỢC** tự khai nguồn: `call_source` không phải tham số của tool nào, nên
-một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bước 3
-(`test_a_model_cannot_claim_its_own_call_source`). Ví dụ đầy đủ:
-`fixtures/agents/home-voice/gates/`, và `fixtures/agents/driveway/gates/open_gate@1.0.0.yaml`
-(client MCP không mở được cổng).
+Callers **MUST NOT** declare their own source: `call_source` is not a tool parameter, so
+models passing `{"call_source": "local_grammar"}` are `REJECTED` in step 3
+(`test_a_model_cannot_claim_its_own_call_source`). Complete examples:
+`fixtures/agents/home-voice/gates/`, and `fixtures/agents/driveway/gates/open_gate@1.0.0.yaml`
+(MCP client cannot open gate).
 
-## 6. Xác nhận `on_block: ask` (Q-26)
+## 6. Confirmation `on_block: ask` (Q-26)
 
-`ask` nghĩa là *hỏi lại người*. Vì vậy:
+`ask` means *ask the human*. Therefore:
 
-- Chỉ **người, qua kênh của thiết bị**, được xác nhận: giọng nói hoặc chữ gõ khớp ngữ
-  pháp (`local_grammar`), hoặc nút trên trang của thiết bị (`ui`). Đây là tập **nguồn xác
-  nhận** (`HUMAN_SOURCES`, `actions/confirmation.py`), khác năm giá trị `source` của §1: `ui`
-  không phát tool call, và `call_source` không bao giờ bằng `ui`.
-- Nguồn `system_two`, `mcp`, `bridge:<id>` và `mcp:<client>` **KHÔNG ĐƯỢC** phát lời xác nhận. Nếu được, một mô hình bị
-  prompt injection, hoặc một agent tự động phía client, sẽ tự trả lời câu hỏi an toàn
-  dành cho người.
-- Gate nói trước **điều gì** người được xác nhận thay: `on_block.confirms` (RFC-0006).
-  Không có `confirms` ⇒ `ask` chỉ thông báo, không có câu hỏi nào chờ.
-- Câu hỏi chỉ được mở (`tool_confirm_requested`) khi một lời "có" **đủ** để cho qua — cùng
-  dữ kiện, các tiêu chí trong `confirms` coi như đạt, phải ALLOW. Gate chặn vì tiêu chí
-  khác, hoặc vì giới hạn tham số, thì không hỏi.
-- Lời xác nhận gắn với câu hỏi (`confirm_N`) và `gate_digest` của lần bị chặn; dùng **một
-  lần** (kể cả khi lượng giá lại vẫn chặn); hết hạn sau `max(p95 × 3, 10 s)`; gate đổi giữa
-  chừng ⇒ vô hiệu. Nguồn khác `local_grammar` / `ui` ⇒ `tool_confirm_rejected`, câu hỏi
-  vẫn chờ người.
-- Chữ gõ và nút trả lời câu hỏi mới nhất còn chờ. Lời **nói** chỉ trả lời câu hỏi trong
-  lượt trả lời của chính nó — luật ở `docs/spec/voice_fsm.md` §5.4 (Q-46 (D3)).
-- Xác nhận không bỏ qua gate: gate được **lượng giá lại** với dữ kiện **hiện tại** và
-  `call_source` của **yêu cầu gốc** (và `call_channel` suy từ nó); chỉ tiêu chí trong `confirms` coi như đạt. Mọi tiêu chí
-  khác, giới hạn tham số và fail-closed khi adjudicator suy giảm vẫn áp dụng. Kết quả ghi
+- Only **humans, through device channels**, may confirm: voice or typing matching grammar
+  (`local_grammar`), or buttons on device page (`ui`). This is the set of **confirmation
+  sources** (`HUMAN_SOURCES`, `actions/confirmation.py`), distinct from the five `source` values of §1: `ui`
+  does not emit tool calls, and `call_source` never equals `ui`.
+- Sources `system_two`, `mcp`, `bridge:<id>`, and `mcp:<client>` **MUST NOT** issue confirmations. Otherwise, prompt-injected models
+  or client-side autonomous agents could answer safety questions intended for humans.
+- Gates declare upfront **what** humans may confirm: `on_block.confirms` (RFC-0006).
+  Lacking `confirms` ⇒ `ask` notifies only, with no pending question.
+- Questions open (`tool_confirm_requested`) only when a "có" ("yes") response is **enough** to allow — given identical
+  facts, treating criteria in `confirms` as met must result in ALLOW. If gate blocks due to other
+  criteria or argument bounds, no question is asked.
+- Confirmations bind to question (`confirm_N`) and `gate_digest` of the blocked instance; **single-use**
+  (even if re-evaluation still blocks); expires after `max(p95 × 3, 10 s)`; gate changes mid-flight
+  ⇒ invalidated. Sources other than `local_grammar` / `ui` ⇒ `tool_confirm_rejected`, question
+  remains pending human answer.
+- Text input and UI buttons answer latest pending question. Spoken **voice** answers questions only within
+  its own turn — rules in `docs/spec/voice_fsm.md` §5.4 (Q-46 (D3)).
+- Confirmation does not bypass gates: gate is **re-evaluated** with **current** facts and
+  `call_source` of the **original request** (and `call_channel` derived from it); only criteria in `confirms` are treated as met. All other criteria,
+  argument bounds, and fail-closed handling during adjudicator degradation remain active. Results log
   `confirmed: [...]`.
-- Bên gọi (System 2, client MCP) được báo trong kết quả `BLOCK`: `confirmation: {id, message,
-  expires_in_ms, who}` — để nói với người dùng, không để tự trả lời. Không có tool xác nhận.
+- Caller (System 2, MCP client) is notified in `BLOCK` result: `confirmation: {id, message,
+  expires_in_ms, who}` — for reporting to users, not for autonomous answering. No confirmation tool exists.
 
-**Bước xác minh do người dùng khai — planned · Q-73 (FR-CH-06), chờ RFC TSK-I2d-20.** Ngoài có/không, `on_block` sẽ khai được một bước xác minh (đọc mã, giọng nói, khuôn mặt, vân tay trên điện thoại…) qua plugin bộ kiểm, kèm nhãn rủi ro; quy tắc nguồn ở trên không đổi: chỉ người qua kênh của thiết bị mới trả lời được.
+**User-declared verification steps — planned · Q-73 (FR-CH-06), awaiting RFC TSK-I2d-20.** Beyond yes/no, `on_block` will support declaring a verification step (passcode, voiceprint, facial recognition, phone fingerprint…) via validator plugins, accompanied by risk labels; source rules above remain unchanged: only humans through device channels may answer.
 
-Trên `sim`: REPL — gõ `có` / `không` (hoặc `:confirm` / `:decline`); UI — banner *Thiết bị
-hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`POST /confirm`, cùng nguồn gốc).
+On `sim`: REPL — type `có` ("yes") / `không` ("no") (or `:confirm` / `:decline`); UI — banner *Thiết bị
+hỏi xác nhận* (Device requests confirmation) with buttons Đồng ý (Approve) / Huỷ (Cancel) and remaining time (`POST /confirm`, same origin).
 
-**Đường bản ghi duyệt qua kênh chat — planned · Q-72 (I2d), chờ RFC nguồn `chat:<id>`.** Q-72 mở rộng Q-26: người
-duyệt được qua kênh chat đã ghép đôi, cả câu hỏi `ask` lẫn sửa đổi hợp đồng nhiệm vụ, trừ sửa đổi mở rộng quyền dữ liệu (chỉ duyệt tại chỗ,
-FR-MSN-14); LLM vẫn không bao giờ duyệt.
-Thiết kế đã chốt ở rà soát kiến trúc theo Q-72 (2026-10-11), chưa có mã — `HUMAN_SOURCES` hôm nay vẫn chỉ là
-`local_grammar` và `ui`:
+**Approval record path via chat channels — planned · Q-72 (I2d), awaiting RFC for source `chat:<id>`.** Q-72 extends Q-26: humans
+may approve via paired chat channels, covering both `ask` prompts and mission contract amendments, excluding data authority expansions (local approval only,
+FR-MSN-14); LLMs never approve.
+Design decided in Q-72 architectural review (2026-10-11), unbuilt — `HUMAN_SOURCES` today remains `local_grammar` and
+`ui` only:
 
-- Runtime gửi tới chat đã ghép đôi một **bản ghi duyệt** `{id, nonce, hạn, digest thay đổi, bản duyệt ≤ 5 dòng}`.
-  Bản duyệt do runtime và trình biên dịch sinh tất định từ diff có cấu trúc, không từ chữ của LLM.
-- Trả lời phải nhắm đúng `id` (nút bấm hoặc mã). Runtime kiểm: người gửi đã ghép đôi, không phải nhóm, nonce chưa
-  dùng, còn hạn theo đồng hồ đơn điệu, digest khớp thay đổi đem áp.
-- Đủ cả năm thì lời duyệt vào **đúng đường xác nhận ở trên** với nguồn `chat:<id>`: gate lượng giá lại, chỉ tiêu
-  chí trong `confirms` coi như đạt. Thiếu một điều ⇒ từ chối và ghi vết, không bao giờ hỏi LLM.
-- Ghép đôi làm tại chỗ; thu hồi, hạn ghép đôi và trần số lời duyệt hoãn ở `TODOS.md` #62. Mối đe doạ:
-  `threat_model.md` §2e.
+- Runtime transmits an **approval record** `{id, nonce, deadline, change digest, approval text ≤ 5 lines}` to paired chat.
+  Approval text is deterministically generated by runtime and compiler from structured diffs, not from LLM prose.
+- Responses must target matching `id` (button or code). Runtime verifies: sender is paired, not a group chat, unused nonce,
+  unexpired on monotonic clock, digest matches proposed change.
+- Meeting all five conditions routes approval into the **identical confirmation pipeline above** with source `chat:<id>`: gate re-evaluates, treating only criteria
+  in `confirms` as met. Missing any condition ⇒ reject and trace, never consulting LLM.
+- Pairing performed locally; revocation, pairing expiry, and approval rate ceilings deferred in `TODOS.md` #62. Threat
+  model: `threat_model.md` §2e.
 
-## 7. Vết ghi
+## 7. Traces
 
-Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host, System 2, model cloud
-của System 1 và đo lượt (§7.1). Sự kiện
-theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) ở
+This is the **sole** catalog of events for tool calling, confirmations, MCP host, System 2, System 1 cloud
+models, and turn measurements (§7.1). HAL primitive events (`actuator_command`, `sensor_read`, `display_frame`…) live in
 `docs/spec/simulation_coverage.md` §3.
 
-| Sự kiện | Dữ liệu | Có từ |
+| Event | Data | Available Since |
 |:---|:---|:---|
 | `tool_call` | `id`, `name`, `arguments`, `source` | v0 |
-| `plugin_loaded` | `kind`, `name`, `distribution`, `version`, `files_sha256` (hoặc `editable: true`, không băm) — một sự kiện cho mỗi entry point đã bật, lúc khởi động, cùng dữ liệu với `metadata.plugins` ([`extension_sdk.md`](extension_sdk.md) §7); replay bỏ qua | RFC-0016 §3d (TSK-I2c-16) |
+| `plugin_loaded` | `kind`, `name`, `distribution`, `version`, `files_sha256` (or `editable: true`, unhashed) — one event per enabled entry point at boot, matching `metadata.plugins` ([`extension_sdk.md`](extension_sdk.md) §7); replay skips | RFC-0016 §3d (TSK-I2c-16) |
 | `tool_call_rejected` | `id`, `name`, `problems` | v0 |
-| `tool_confirm_requested` | `id`, `action`, `gate`, `message`, `confirms`, `expires_ms` (thời gian vết ghi, như `offset_ms`), `ttl_ms` | RFC-0006 |
+| `tool_confirm_requested` | `id`, `action`, `gate`, `message`, `confirms`, `expires_ms` (trace timeline, like `offset_ms`), `ttl_ms` | RFC-0006 |
 | `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | RFC-0006 |
 | `tool_confirm_rejected` | `id`, `source`, `reason` | RFC-0006 |
 | `tool_confirm_expired` | `id` | RFC-0006 |
-| `mcp_auth_refused` | `reason`, `status`, `subject?` — một yêu cầu tới cửa mạng (§8.1) bị 401 hoặc 403, nên không có gì được chuyển tiếp. `reason`: `no_token` · `malformed_authorization` · `invalid_token` (chữ ký, định dạng, thiếu `exp` `iss` `sub`) · `expired` · `wrong_audience` · `wrong_issuer` · `not_cert_bound` · `cert_mismatch` · `insufficient_scope` (`status` 403). `subject` chỉ có khi chữ ký đã đúng (`cert_mismatch`, `not_cert_bound`, `insufficient_scope`). **Không bao giờ** có token, địa chỉ client hay chứng chỉ. Ghi tối đa 10 000 sự kiện mỗi phiên; sự kiện cuối có `last_recorded: true`. Không phải lượt (không `turn_latency`); replay bỏ qua | TSK-P2-04 |
-| `mcp_tool_result` | `id`, `server`, `tool`, `status`, `sha256`, `bytes` — không lưu nội dung (§10 quy tắc 3) | Q-27 |
-| `mcp_server_unavailable` | `server`, `reason` (§10 quy tắc 4) | Q-27 |
-| `system_two_call` | `provider`, `model`, `task`, `latency_ms`, `status`, `prompt_tokens?`, `completion_tokens?`, `cost_usd?`, `error?` — không prompt, không key; replay bỏ qua | FR-MDL-06 |
-| `system_two_unavailable` | `task`, `reason` — model không trả lời được | FR-MDL-06 |
-| `system_two_rounds_exceeded` | `task`, `rounds` — quá `max_rounds` (§10 quy tắc 6) | FR-MDL-11 |
-| `system_one_call` | `provider`, `model`, `criterion`, `latency_ms`, `status` (`ok` · `unavailable`), `reason?` (lý do `Unavailable`: `offline`, `timeout`, `rate_limited`, `refused`, `malformed`, `empty`), `http_status?`, `confidence?`, `served_by?` (bản model đã trả lời), `prompt_tokens?`, `completion_tokens?`, `cost_usd?` — mỗi lượt SystemOne hỏi model cloud một tiêu chí (`[system_one]`). Model chỉ nhận lời người nói (`state = {utterance}`), không bao giờ action hay tham số của bên gọi; không có lời người nói (vd lời gọi từ MCP client) hay thiếu key thì không gọi, không ghi. Sự kiện không mang state, chữ hay key; replay bỏ qua | TSK-I4-02 |
+| `mcp_auth_refused` | `reason`, `status`, `subject?` — request to network port (§8.1) met 401 or 403, forwarding nothing. `reason`: `no_token` · `malformed_authorization` · `invalid_token` (signature, formatting, missing `exp` `iss` `sub`) · `expired` · `wrong_audience` · `wrong_issuer` · `not_cert_bound` · `cert_mismatch` · `insufficient_scope` (`status` 403). `subject` present only after signature validated (`cert_mismatch`, `not_cert_bound`, `insufficient_scope`). **Never** contains token, client address, or certificate. Max 10,000 events per session; final event marked `last_recorded: true`. Not a turn (no `turn_latency`); replay skips | TSK-P2-04 |
+| `mcp_tool_result` | `id`, `server`, `tool`, `status`, `sha256`, `bytes` — payload unrecorded (§10 rule 3) | Q-27 |
+| `mcp_server_unavailable` | `server`, `reason` (§10 rule 4) | Q-27 |
+| `system_two_call` | `provider`, `model`, `task`, `latency_ms`, `status`, `prompt_tokens?`, `completion_tokens?`, `cost_usd?`, `error?` — no prompts, no keys; replay skips | FR-MDL-06 |
+| `system_two_unavailable` | `task`, `reason` — model failed to answer | FR-MDL-06 |
+| `system_two_rounds_exceeded` | `task`, `rounds` — exceeded `max_rounds` (§10 rule 6) | FR-MDL-11 |
+| `system_one_call` | `provider`, `model`, `criterion`, `latency_ms`, `status` (`ok` · `unavailable`), `reason?` (`Unavailable` reason: `offline`, `timeout`, `rate_limited`, `refused`, `malformed`, `empty`), `http_status?`, `confidence?`, `served_by?` (responding model version), `prompt_tokens?`, `completion_tokens?`, `cost_usd?` — per-turn SystemOne evaluation of cloud model for a criterion (`[system_one]`). Model receives speaker utterance only (`state = {utterance}`), never caller action or parameters; absent speaker utterance (e.g. MCP client call) or missing key skips call and logging. Events omit state, text, or keys; replay skips | TSK-I4-02 |
 
-Câu thiết bị nói ghi ở `tts_stream_start` (simulation_coverage §3); nguồn của câu nằm ở
-`reply_source` của lượt (vd `gate_ask`, `confirmed`, `offline_help` — §10 quy tắc 5; danh sách đủ ở
+Utterances spoken by device are logged in `tts_stream_start` (simulation_coverage §3); utterance origin tracked in turn
+`reply_source` (e.g. `gate_ask`, `confirmed`, `offline_help` — §10 rule 5; complete list in
 `Turn.reply_source`, `python/neuroedge/sim/session.py`).
 
-**Sự kiện dự kiến — planned · Q-72 (I2d, I2e).** Chưa có mã phát các sự kiện dưới đây; tên họ sự kiện là
-hướng đã chốt ở rà soát kiến trúc 2026-10-11, còn tên đầy đủ và dữ liệu chốt ở RFC của từng phần. Khi có mã, mỗi
-dòng thay bằng tên và dữ liệu thật, cột "Có từ" ghi task.
+**Planned events — planned · Q-72 (I2d, I2e).** Code emitting following events unbuilt; event family
+names represent directions decided in 2026-10-11 architecture review, with full names and data finalized in respective RFCs. Upon implementation, each
+row replaces with real name and data, recording task in "Available Since" column.
 
-| Sự kiện | Ý nghĩa | Có từ |
+| Event | Meaning | Available Since |
 |:---|:---|:---|
-| `mission_*` | Vòng đời hợp đồng nhiệm vụ: nháp, hỏi lại, biên dịch và kiểm mâu thuẫn, khoá, hết hạn | planned · Q-72, RFC `mission.v1` |
-| `detector_fired` | Bộ phát hiện tất định bắn sự kiện (ngưỡng, xu hướng, cảm biến đứng im) — chỉ sau đó mới gọi LLM | planned · Q-72 |
-| `llm_budget_*` | Trần chi phí LLM của hợp đồng: dùng, gần hết, hết — hết thì phản xạ và cảnh báo mẫu cứng vẫn chạy | planned · Q-72 |
-| `chat_in` · `chat_out` | Tin vào từ và ra tới kênh chat đã ghép đôi | planned · Q-72 |
-| `approval_*` | Bản ghi duyệt (§6): yêu cầu, được duyệt, bị từ chối (người gửi lạ, nhóm, nonce đã dùng, hết hạn, digest lệch), hết hạn | planned · Q-72, RFC nguồn `chat:<id>` |
-| `egress_blocked` | Runtime hoặc mạng của LLM worker chặn một lần gửi tới đích không khai | planned · Q-72, RFC luồng dữ liệu |
-| `segment_*` | Ranh giới đoạn vết ghi của runtime 24/7: mỗi đoạn mang trạng thái đầu đoạn và digest đoạn trước | planned · Q-72, RFC đoạn vết ghi `trace.v1` |
+| `mission_*` | Mission contract lifecycle: draft, question, compile and conflict check, lock, expiry | planned · Q-72, RFC `mission.v1` |
+| `detector_fired` | Deterministic detector fires event (threshold, trend, stuck sensor) — calls LLM only thereafter | planned · Q-72 |
+| `llm_budget_*` | Contract LLM cost ceiling: usage, near limit, exhausted — upon exhaustion reflexes and hardcoded alerts continue running | planned · Q-72 |
+| `chat_in` · `chat_out` | Inbound and outbound messages with paired chat channels | planned · Q-72 |
+| `approval_*` | Approval record (§6): requested, approved, rejected (unknown sender, group, reused nonce, expired, digest mismatch), expired | planned · Q-72, RFC source `chat:<id>` |
+| `egress_blocked` | Runtime or worker LLM network blocks transmission to undeclared destination | planned · Q-72, RFC data flow |
+| `segment_*` | Trace segment boundary for 24/7 runtime: each segment carries initial state and digest of prior segment | planned · Q-72, RFC trace segmentation `trace.v1` |
 
-Trường `type` của sự kiện trong `trace.v1` là chuỗi mở, nên thêm sự kiện **không** cần
-RFC; riêng `segment_*` đổi cách cắt vết ghi chuẩn mực nên cần RFC. Replay (`testing/player.py`) tính lại từng lần lượng giá gate từ `gate_facts` đã
-ghi — kể cả `call_source` — nên một lời gọi từ LLM replay tất định mà không hỏi lại mô
-hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quyết replay.
+Field `type` in `trace.v1` is open, so adding events **requires no RFC**; except `segment_*` which alters canonical trace chunking and requires an RFC. Replay (`testing/player.py`) recomputes each gate evaluation from recorded `gate_facts` —
+including `call_source` — ensuring LLM calls replay deterministically without re-querying models.
+`REJECTED` calls do not reach gates and are absent from replay verdicts.
 
-### 7.1 Độ trễ từng chặng và tỷ lệ System 1 / System 2 (TSK-I4-03)
+### 7.1 Stage Latencies and System 1 / System 2 Ratios (TSK-I4-03)
 
-FR-ACE-06, FR-TEL-03, NFR-OBS-02. Mỗi lượt của phiên `sim` / `linux` — một dòng gõ hay một
-transcript (`SimSession.handle`), câu trả lời của System 2 mà bộ điều khiển giọng nói chuyển tới
-(`run_tool_calls`), câu `offline_help` khi System 2 không trả lời (`say_offline`), nút xác nhận
-(`confirm` / `decline`) — kết thúc bằng **một** `turn_latency`. Vết ghi xuất từ một log có
-`turn_latency` kết thúc bằng **một** `session_summary`, tính lại từ các `turn_latency` lúc xuất,
-không lưu trong log. Lời gọi tool từ MCP client bên ngoài không phải lượt: không có
-`turn_latency`. Hiện thực: `python/neuroedge/engine/latency.py`.
+FR-ACE-06, FR-TEL-03, NFR-OBS-02. Each turn in `sim` / `linux` sessions — typed line or
+transcript (`SimSession.handle`), System 2 reply routed by voice controller
+(`run_tool_calls`), `offline_help` prompt when System 2 is unavailable (`say_offline`), confirmation button
+(`confirm` / `decline`) — concludes with **one** `turn_latency`. Traces exported from logs with
+`turn_latency` conclude with **one** `session_summary`, recomputed from `turn_latency` entries at export,
+not stored in logs. Tool calls from external MCP clients are not turns: no
+`turn_latency`. Implementation: `python/neuroedge/engine/latency.py`.
 
-| Sự kiện | Dữ liệu |
+| Event | Data |
 |:---|:---|
-| `turn_latency` | `turn` (1, 2, …), `path`, `stages_ms` `{perception, system_two, gate, action, other}`, `total_ms`, `reply_source?`, `usage?` `{prompt_tokens?, completion_tokens?, cost_usd?}` — cộng từ các `system_two_call` của lượt, chỉ khi provider báo (FR-TEL-03) |
-| `session_summary` | `turns`, `paths` `{system_1, system_2, fallback, none}` (số lượt), `shares` (tỷ lệ trên tổng số lượt, 4 chữ số), `stages_ms` `{perception, system_two, gate, action, other, total}` — mỗi chặng `{sum, max}`, `usage?` (tổng của các lượt) |
+| `turn_latency` | `turn` (1, 2, …), `path`, `stages_ms` `{perception, system_two, gate, action, other}`, `total_ms`, `reply_source?`, `usage?` `{prompt_tokens?, completion_tokens?, cost_usd?}` — aggregated from turn's `system_two_call` entries, only when reported by provider (FR-TEL-03) |
+| `session_summary` | `turns`, `paths` `{system_1, system_2, fallback, none}` (turn counts), `shares` (ratio of total turns, 4 decimal places), `stages_ms` `{perception, system_two, gate, action, other, total}` — each stage `{sum, max}`, `usage?` (aggregate across turns) |
 
-**Chặng** — không chồng lên nhau, cộng lại đúng `total_ms` (ms, số thực 3 chữ số, không âm):
+**Stages** — non-overlapping, summing exactly to `total_ms` (ms, 3-decimal float, non-negative):
 
-| Chặng | Đo gì |
+| Stage | What is Measured |
 |:---|:---|
-| `perception` | Đọc đầu vào và khớp ngữ pháp lệnh (chữ gõ / transcript → lệnh); với giọng nói qua provider STT (TSK-S3-13), cả thời gian chờ STT — từ lúc gửi âm thanh của lượt (T04) tới lúc có transcript, hoặc tới lúc STT hỏng (`stt_unavailable`) |
-| `system_two` | Chờ System 2: mọi `respond` / `reply` của lượt; với giọng nói, từ lúc có transcript tới lúc câu trả lời (hoặc hết giờ chờ) tới |
-| `gate` | `ActionContractEngine.evaluate()` — mọi gate của lượt, cộng dồn |
-| `action` | Thân các `@action` chạy sau ALLOW, cộng dồn |
-| `other` | Phần còn lại: lời nói, điều phối, đường ống tool |
+| `perception` | Input reading and command grammar parsing (typed text / transcript → command); for voice via STT provider (TSK-S3-13), includes STT latency — from dispatching turn audio (T04) until transcript received or STT failure (`stt_unavailable`) |
+| `system_two` | Waiting on System 2: all `respond` / `reply` of turn; for voice, from transcript receipt until response (or timeout) arrives |
+| `gate` | `ActionContractEngine.evaluate()` — all gates of turn, aggregated |
+| `action` | Bodies of `@action` executed after ALLOW, aggregated |
+| `other` | Remainder: speech synthesis, coordination, tool pipeline |
 
-Chặng mở bên trong một chặng khác (một `@action` gọi lại `c.do()`) tính cho chặng ngoài.
-Đồng hồ là đồng hồ của `offset_ms` (tiêm được, ảo trong test), nên số đo trong test tất định.
+Stages opened inside other stages (an `@action` re-invoking `c.do()`) attribute to outer stage.
+Clocks use `offset_ms` clock (injectable, virtual in tests), ensuring deterministic test metrics.
 
-**`path`** — ai phục vụ lượt:
+**`path`** — who served the turn:
 
-| `path` | Khi nào |
+| `path` | When |
 |:---|:---|
-| `system_1` | Ngữ pháp lệnh / System 1 của thiết bị phục vụ, System 2 không được hỏi — kể cả câu "có" / "không" nói với câu hỏi `ask` của thiết bị |
-| `system_2` | System 2 trả lời (có ít nhất một câu trả lời trong lượt) |
-| `fallback` | System 2 được hỏi mà không trả lời được, thiết bị tự trả lời (Q-14): `reply_source` là `offline`, `offline_help` hoặc `knowledge_local` — cả khi một vòng trước của System 2 đã trả lời. Agent không có System 2 thì những câu trả lời đó là `system_1` hoặc `none`, theo việc lệnh có được nhận ra |
-| `none` | Không mô hình nào phục vụ: không nhận ra lệnh và không có System 2, hoặc người bấm nút xác nhận, hoặc STT hỏng và thiết bị nói câu offline (`offline_help`, System 2 không được hỏi — `docs/spec/voice_fsm.md` §7) |
+| `system_1` | Device command grammar / System 1 served turn, System 2 unconsulted — including "có" / "không" ("yes" / "no") spoken to device `ask` prompts |
+| `system_2` | System 2 answered (at least one response in turn) |
+| `fallback` | System 2 consulted but failed to respond, device answered autonomously (Q-14): `reply_source` is `offline`, `offline_help`, or `knowledge_local` — even if an earlier System 2 round answered. In agents lacking System 2, such answers classify as `system_1` or `none`, depending on command recognition |
+| `none` | No model served: command unrecognized without System 2, user clicked confirmation button, or STT failed and device spoke offline fallback (`offline_help`, System 2 unconsulted — `docs/spec/voice_fsm.md` §7) |
 
-`system_one_fallback` (System 1 chính → ngữ pháp cục bộ, FR-MDL-03) vẫn là sự kiện riêng, không
-đổi `path`. Hai sự kiện này **không mang chữ** — chế độ ẩn danh không cần băm gì thêm — và **không
-vào so khớp quyết định**: replay và golden bỏ qua chúng, nên vết ghi cũ không có chúng vẫn replay,
-và vết ghi mới replay trên bản cũ. `neuroedge trace show` in tỷ lệ và chặng, tính lại từ
+`system_one_fallback` (primary System 1 → local grammar, FR-MDL-03) remains a distinct event without
+altering `path`. These two events **carry no text** — redaction requires no extra hashing — and **do not
+enter decision matching**: replay and goldens ignore them, allowing legacy traces to replay without them and new
+traces to replay against older engines. `neuroedge trace show` prints ratios and stages, recomputed from
 `turn_latency`.
 
-## 8. Theo target
+## 8. By Target
 
-| Target | Tool call | Máy chủ MCP |
+| Target | Tool Calls | MCP Server |
 |:---|:---|:---|
-| `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio; `--ui` phục vụ thêm trang web của **cùng phiên** trên 127.0.0.1: lời gọi MCP, lệnh gõ trên trang (kể cả `:sensor`) và nút xác nhận (§6) chạy lần lượt dưới một khóa, nên người trên trang đổi được cảm biến và trả lời câu hỏi `ask` mà lời gọi MCP mở ra |
-| `linux` | Đầy đủ | Như `sim`, trên máy thiết bị |
-| `esp32s3` | Gate: walker C99 đọc cây `NETR` v1 do `neuroedge build` sinh (Q-23, RFC-0003). Giới hạn tham số (RFC-0005) và `confirms` (RFC-0006) nằm **trong** bố cục đó; `call_source` là một dữ kiện `choice` như mọi tiêu chí, chỉ số của nó do `neuroedge build` sinh (`<gate>.netree.h`). Ngữ pháp → tool call tổng hợp trong C: chưa có (TSK-S5-07) | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
+| `sim` | Full (§1–§7) | `neuroedge mcp serve` via stdio; `--ui` additionally serves web page for **same session** on 127.0.0.1: MCP calls, typed commands on page (including `:sensor`), and confirmation buttons (§6) execute sequentially under single lock, allowing users on page to adjust sensors and answer `ask` questions opened by MCP calls |
+| `linux` | Full | Same as `sim`, on device host |
+| `esp32s3` | Gate: C99 walker traversing `NETR` v1 tree generated by `neuroedge build` (Q-23, RFC-0003). Parameter constraints (RFC-0005) and `confirms` (RFC-0006) reside **within** that layout; `call_source` is a `choice` fact like any criterion, indexed by `neuroedge build` (`<gate>.netree.h`). Grammar → synthetic tool call in C: unbuilt (TSK-S5-07) | **Does not** run on MCU. MCP for device routes via gateway or a `linux` host (FR-GW), with device retaining autonomous gate evaluation. MCU **does not act as MCP host**: host (§10) resides where System 2 executes |
 
-Transport MCP mặc định là **stdio**: bên có quyền chạy tiến trình chính là người vận
-hành. Transport mạng (Streamable HTTP) có từ TSK-P2-04 (Q-58, NFR-SEC-09), **mặc định tắt**, và chỉ
-bật bằng `neuroedge mcp serve --http` kèm đủ cấu hình xác thực (§8.1). Mục cấu hình cho
-Claude Desktop do `neuroedge mcp desktop-config` sinh — đường dẫn tuyệt đối, vì Desktop khởi
-động server từ `/` với `PATH` tối giản; nó chỉ sinh mục stdio.
+Default MCP transport is **stdio**: caller with execution privileges is the operator.
+Network transport (Streamable HTTP) introduced in TSK-P2-04 (Q-58, NFR-SEC-09), **disabled by default**, activated
+only via `neuroedge mcp serve --http` with full authentication configuration (§8.1). Configuration block for
+Claude Desktop generated via `neuroedge mcp desktop-config` — uses absolute paths, as Desktop launches servers
+from `/` with minimal `PATH`; emits stdio blocks only.
 
-Hai quy tắc giữ cho `mcp serve` qua stdio sống sót khi client bỏ rơi nó (`--http` không có chúng: nó nghe cổng, không giữ stdin). Claude Desktop có thể bỏ một tiến
-trình trước `initialize` mà vẫn giữ stdin của nó, nên tiến trình không bao giờ nhận được EOF.
+Two rules keep stdio `mcp serve` alive when abandoned by clients (`--http` lacks these: listens on port, does not hold stdin). Claude Desktop may terminate client before `initialize` while holding stdin open, preventing EOF.
 
-- Không có `initialize` sau `--init-timeout` giây (mặc định 30) thì tiến trình thoát 0 và nhả
-  cổng. Phiên đã `initialize` không bị giới hạn thời gian.
-- Trang `--ui` không bao giờ làm sập MCP. Cổng bận, kể cả `--port` ghi rõ, thì trang chạy ở cổng
-  trống và URL thật được in ra stderr.
+- No `initialize` after `--init-timeout` seconds (default 30) causes process to exit 0 and release
+  port. Initialized sessions have no timeout.
+- The `--ui` page never crashes MCP. If port is busy, even when explicitly specified via `--port`, the page binds
+  to a free port and prints actual URL to stderr.
 
-### 8.1 MCP qua mạng: `mcp serve --http` (TSK-P2-04, Q-58, Q-32)
+### 8.1 MCP over Network: `mcp serve --http` (TSK-P2-04, Q-58, Q-32)
 
-Cùng một máy chủ, cùng một đường tới phần cứng như stdio: `SimSession.load`, `build_server`, gate,
-token phán quyết dùng một lần, HAL, vết ghi (băm theo mặc định). Chỉ **cửa** khác (`mcp_http.py`);
-không có cờ nào tắt gate, và `call_source` vẫn là `mcp` (§5). MCP SDK cấp ứng dụng Streamable HTTP,
-lớp kiểm bearer và metadata tài nguyên được bảo vệ (RFC 9728, `/.well-known/oauth-protected-resource`);
-`mcp_http.py` cấp ngữ cảnh TLS, bộ kiểm token và lớp gác quanh chúng.
+Same server, same hardware pipeline as stdio: `SimSession.load`, `build_server`, gates,
+single-use verdict tokens, HAL, traces (redacted by default). Only the **gateway port** differs (`mcp_http.py`);
+no flags bypass gates, and `call_source` remains `mcp` (§5). MCP SDK provides Streamable HTTP application,
+bearer validation middleware, and protected resource metadata (RFC 9728, `/.well-known/oauth-protected-resource`);
+`mcp_http.py` supplies TLS context, token validator, and perimeter guards.
 
-**Khởi động đóng.** `--http` đòi **cả sáu**: `--tls-cert` và `--tls-key` (chứng chỉ máy chủ), `--client-ca`
-(CA ký chứng chỉ thiết bị — mTLS), `--issuer` (URL https của máy chủ cấp quyền), `--audience` (URL https
-của chính MCP server, là `aud` của mọi token; đường dẫn của nó là đường dẫn của endpoint, mặc định `/mcp`),
-`--jwks` (khoá công khai ký token của issuer). Thiếu bất kỳ cái nào, hoặc tệp không đọc được (chứng chỉ
-không khớp khoá, CA rỗng, JWKS không có khoá ký), thì **thoát mã 1 với lỗi ba phần, trước khi dựng phiên và trước
-khi mở bất kỳ socket nào**. Bind vào địa chỉ không phải loopback (`--host`) không đòi thêm gì — vì cấu hình
-đủ đã là điều kiện cho mọi địa chỉ. Mặc định nghe `127.0.0.1`, cổng 8443 (`--port 0` chọn cổng trống).
-`--http --ui` chạy cả hai trên **cùng phiên**: client ở xa (bộ não trên NeuroEdge Cloud, Q-76) gọi tool qua
-cửa mạng, còn trang trên 127.0.0.1 (cổng 8765, `--port` khi đó là cổng của `--http`) là **người ở nhà**. Chỉ
-trang trả lời được câu hỏi `ask` (nguồn `ui`, §6); MCP không có tool xác nhận và không tự khai `call_source`,
-nên lệnh từ xa chỉ mở được câu hỏi, không bao giờ tự trả lời nó (test
-`test_the_door_never_opens_from_the_cloud_without_the_owner_at_home`). Các cờ mạng không có `--http` bị từ
-chối (mã 1), không bị lờ đi. `--required-scope` (mặc định `neuroedge:call`)
-là cờ duy nhất có mặc định.
+**Closed startup.** `--http` requires **all six**: `--tls-cert` and `--tls-key` (server certificate), `--client-ca`
+(device certificate issuing CA — mTLS), `--issuer` (authorization server https URL), `--audience` (MCP server https URL,
+matching token `aud`; its path is endpoint path, default `/mcp`), `--jwks` (issuer token signing public keys). If any is
+missing, or unreadable (certificate key mismatch, empty CA, JWKS lacking signing keys), **exits code 1 with tripartite error, before building session and before
+opening any socket**. Binding non-loopback addresses (`--host`) requires no extra flags — full configuration is
+mandatory for all addresses. Defaults to `127.0.0.1`, port 8443 (`--port 0` selects random free port).
+`--http --ui` runs both on **same session**: remote clients (brain on NeuroEdge Cloud, Q-76) call tools via
+network port, while 127.0.0.1 page (port 8765, `--port` then applies to `--http`) represents the **home owner**. Only
+the page can answer `ask` questions (`ui` source, §6); MCP lacks confirmation tools and cannot forge `call_source`,
+so remote commands can only open questions, never answer them (test
+`test_the_door_never_opens_from_the_cloud_without_the_owner_at_home`). Network flags without `--http` rejected
+(code 1), not ignored. `--required-scope` (default `neuroedge:call`)
+is the sole flag with a default.
 
-**Lớp 1 — mTLS, TLS 1.3 trở lên (NFR-SEC-04).** Chứng chỉ client **bắt buộc** và phải do `--client-ca` ký;
-client không có (hoặc do CA lạ ký, hoặc chỉ nói TLS 1.2) không qua được bắt tay, nên không có byte HTTP nào
-tới ứng dụng. Việc này xảy ra ở tầng TLS, trước mọi mã của ứng dụng nên **không có sự kiện vết ghi**; nhật ký
-của uvicorn trên stderr là dấu vết duy nhất.
+**Layer 1 — mTLS, TLS 1.3 or higher (NFR-SEC-04).** Client certificates **mandatory** and must be signed by `--client-ca`;
+clients without certificates (or signed by unknown CA, or offering TLS 1.2 only) fail handshake, admitting zero HTTP bytes to
+application. Occurs at TLS layer before application code, producing **no trace events**; uvicorn
+stderr log is sole footprint.
 
-**Lớp 2 — một token bearer cho mỗi thiết bị.** Máy chủ là *resource server* OAuth 2.1; việc cấp token là của
-`--issuer` (ngoài phạm vi), và máy chủ chỉ kiểm, không gọi mạng nào để kiểm. Token là JWT (RFC 9068); mọi
-điều kiện sau phải đúng, nếu không thì **401** (kèm `WWW-Authenticate: Bearer`, trỏ tới metadata tài nguyên) và
-không gì được chuyển tiếp tới MCP:
+**Layer 2 — per-device bearer token.** Server acts as OAuth 2.1 *resource server*; token issuance belongs to
+`--issuer` (out of scope), and server validates without outbound network verification calls. Tokens are JWTs (RFC 9068); all
+conditions below must hold, otherwise **401** (with `WWW-Authenticate: Bearer` pointing to resource metadata) and
+nothing forwards to MCP:
 
-| Kiểm | Chi tiết |
+| Check | Details |
 |:---|:---|
-| Chữ ký | Chỉ thuật toán bất đối xứng (`RS*`, `PS*`, `ES*`, `EdDSA`) với khoá của `--jwks`, chọn theo `kid` (không `kid` thì chỉ khi có đúng một khoá). `none` và `HS*` không bao giờ được nhận. JWKS có khoá riêng (`d`), khoá đối xứng (`oct`) hoặc không có khoá ký thì **không khởi động**: một resource server giữ được khoá ký là một resource server tự làm giả được token của mình |
-| `iss`, `aud`, `exp`, `sub` | Đều bắt buộc. `iss` bằng `--issuer`; `aud` chứa `--audience` (RFC 8707); `exp` chưa qua, không dung sai; `sub` là mã thiết bị |
-| Ràng buộc chứng chỉ (RFC 8705) | `cnf.x5t#S256` bắt buộc và phải bằng SHA-256 của chứng chỉ client đang kết nối. Token cấp cho thiết bị A trình bằng chứng chỉ của B là 401; token không ràng buộc cũng là 401. Cả hai cùng bị đánh cắp mới dùng được |
-| Phạm vi | Token mang `--required-scope` trong `scope` (chuỗi cách nhau bằng khoảng trắng) hoặc `scp`; thiếu thì **403** (`insufficient_scope`) |
+| Signature | Asymmetric algorithms only (`RS*`, `PS*`, `ES*`, `EdDSA`) against `--jwks` keys, matched by `kid` (omitted `kid` allowed only with single key). `none` and `HS*` rejected unconditionally. JWKS containing private keys (`d`), symmetric keys (`oct`), or lacking signing keys **aborts startup**: a resource server holding signing keys can forge its own tokens |
+| `iss`, `aud`, `exp`, `sub` | All mandatory. `iss` equals `--issuer`; `aud` contains `--audience` (RFC 8707); `exp` unexpired, no clock skew tolerance; `sub` is device ID |
+| Certificate binding (RFC 8705) | `cnf.x5t#S256` mandatory and must match SHA-256 of connecting client certificate. Token issued to device A presented with certificate B returns 401; unbound tokens return 401. Both must be compromised together to exploit |
+| Scope | Token contains `--required-scope` in `scope` (space-delimited string) or `scp`; missing returns **403** (`insufficient_scope`) |
 
-Phiên MCP gắn với người cấp (issuer, `client_id`, `sub`) của token tạo ra nó: thiết bị khác, dù đã xác thực đủ,
-không dùng lại được phiên (404; `test_a_session_belongs_to_the_device_that_opened_it`). Mọi 401/403 ghi `mcp_auth_refused` (§7) — chỉ `reason` là chữ cố định, không bao giờ có
-token.
+MCP sessions bind to creator's identity (issuer, `client_id`, `sub`): differing devices, even if authenticated,
+cannot hijack sessions (404; `test_a_session_belongs_to_the_device_that_opened_it`). All 401/403 log `mcp_auth_refused` (§7) — fixed `reason` text only, never logging
+tokens.
 
-**Một đường tới gate.** Một lời gọi đã qua hai lớp là một `tools/call` như của stdio: `ToolCall` có
-`source = "mcp"`, schema, `c.do()`, gate, token, HAL; kết quả `BLOCK` vẫn là kết quả, không phải lỗi giao thức (§4).
-Lặp một lời gọi bị chặn không đổi được phán quyết: gate tất định, mỗi lần là một `BLOCK` và một chuỗi sự kiện
-vết ghi (`tests/test_mcp_http.py`, `TODOS.md` #29; `docs/spec/threat_model.md` §2b). Lời gọi chạy lần lượt (`build_server`), như stdio.
+**Single path to gates.** Calls passing both layers become standard `tools/call` like stdio: `ToolCall` with
+`source = "mcp"`, schema, `c.do()`, gate, token, HAL; `BLOCK` results remain valid responses, not protocol errors (§4).
+Repeating blocked calls does not alter verdicts: gates are deterministic, each attempt generating a `BLOCK` and a trace sequence
+(`tests/test_mcp_http.py`, `TODOS.md` #29; `docs/spec/threat_model.md` §2b). Calls execute sequentially (`build_server`), matching stdio.
 
-**Chưa có, nói rõ.** Không có danh sách thu hồi: token chết khi hết hạn (nên cấp ngắn hạn) hoặc khi issuer
-đổi khoá — `--jwks` đọc **một lần lúc khởi động**, đổi khoá thì khởi động lại; chứng chỉ client bị thu hồi chỉ
-hết hiệu lực khi đổi `--client-ca` (không kiểm CRL/OCSP). Token chỉ kiểm lúc **nhận yêu cầu**, nên một luồng
-SSE đang mở sống tiếp tới khi đóng dù token trong đó đã hết hạn. Không giới hạn tốc độ ở tầng ứng dụng.
-Metadata tài nguyên được bảo vệ phục vụ không cần token (RFC 9728 đòi vậy) — nhưng chỉ sau mTLS.
-Chưa có API Python công khai cho cửa mạng (`serve_mcp` vẫn chỉ stdio); chưa có cầu MCP cho MCU (TSK-P2-05, I14).
-Chưa kiểm trên hai máy thật: test chạy trong một tiến trình trên 127.0.0.1 với CA tạm.
+**Explicitly unbuilt.** No revocation lists: tokens die on expiry (use short lifespans) or when issuer
+rotates keys — `--jwks` read **once at startup**, key rotations require restart; client certificate revocations take effect only
+by replacing `--client-ca` (no CRL/OCSP checks). Tokens verified upon **request receipt**, so active SSE streams
+survive past token expiry until closed. No application-layer rate limiting.
+Protected resource metadata served without token (RFC 9728 requirement) — but gated behind mTLS.
+No public Python API for network port (`serve_mcp` remains stdio-only); no MCU MCP bridge (TSK-P2-05, I14).
+Untested across two physical machines: tests execute in-process on 127.0.0.1 with temporary CAs.
 
-## 9. Tuân thủ
+## 9. Compliance
 
-Một runtime được gọi là **NeuroEdge-gated** khi nó qua corpus
-`fixtures/tool_calls/{valid,invalid}/` với `expected_results.yaml` — khép kín hai chiều
-như corpus gate: mỗi tệp có một mục, mỗi mục có một tệp (TSK-S3-24).
+A runtime is certified **NeuroEdge-gated** when it passes the corpus
+`fixtures/tool_calls/{valid,invalid}/` with `expected_results.yaml` — bidirectional closure
+like gate corpora: every file has an entry, every entry has a file (TSK-S3-24).
 
-- **Tệp ca** nêu đầu vào: `agent` (một thư mục của `fixtures/agents/`), `call`
-  (`name`, `arguments`, `source` — nguồn do runtime gán như một kết nối), `facts` (ghi đè
-  `[sim.facts]`), `sensors` (số đọc giả lập trước lời gọi) và `board` (id một bo mạch của `boards/`, mặc
-  định là bo tham chiếu của target — vd. `sim-rpi5` cho agent cần PWM hoặc `motion.*`, RFC-0010, RFC-0011).
-- **`expected_results.yaml`** nêu đáp án theo từng tệp: `status`, các trường của §4 (`reason`,
-  `failed_criterion`, `on_block`, `escalated_to` phải khớp đúng; `problems` so chuỗi con;
-  `confirmation`, `fallback` có/không phải khớp), `pins` — mọi lệnh chân, đúng thứ tự (một
-  lệnh `pwm` ghi thêm `frequency_hz` và `duty` — `duty` là giá trị HAL đã lượng tử hoá, RFC-0010 §9.15) —
-  và `motion` — mọi lệnh chuyển động và lệnh về trạng thái an toàn của kênh, đúng thứ tự (`command:
+- **Case files** specify inputs: `agent` (directory in `fixtures/agents/`), `call`
+  (`name`, `arguments`, `source` — runtime-assigned connection source), `facts` (overriding
+  `[sim.facts]`), `sensors` (simulated readings prior to call), and `board` (board ID from `boards/`, defaulting
+  to target reference board — e.g. `sim-rpi5` for agents requiring PWM or `motion.*`, RFC-0010, RFC-0011).
+- **`expected_results.yaml`** declares expected outputs per file: `status`, §4 fields (`reason`,
+  `failed_criterion`, `on_block`, `escalated_to` must match exactly; `problems` substring comparison;
+  `confirmation`, `fallback` presence must match), `pins` — all pin commands in exact sequence (`pwm`
+  commands append `frequency_hz` and `duty` — `duty` is HAL-quantised value, RFC-0010 §9.15) —
+  and `motion` — all motion commands and safe-state commands per channel in exact sequence (`command:
   {channel, kind, speed|target, run}`, `safe: {channel, state, cause}`).
-- **`valid/`** là lời gọi khớp `inputSchema` tool khai ra (sau phép ép chuỗi của §2): gate quyết
-  định, `ALLOW` hoặc `BLOCK`. **`invalid/`** là lời gọi không khớp: tool lạ, tham số lạ, sai kiểu,
-  thiếu tham số bắt buộc, tự khai `call_source` ⇒ `REJECTED`; giá trị ngoài giới hạn tham số
-  (`minimum`, `maximum`, `enum`, `maxLength` — RFC-0005) ⇒ gate chặn, `BLOCK`
-  `argument_out_of_range` (§3). Không lời gọi `invalid/` nào được `ALLOW`. Runner kiểm cả
-  phép chia này, nên một ca không nằm nhầm nửa được.
+- **`valid/`** contains calls matching declared tool `inputSchema` (after string coercion in §2): gate decides,
+  `ALLOW` or `BLOCK`. **`invalid/`** contains malformed calls: unknown tool, unknown argument, type mismatch,
+  missing required argument, self-declared `call_source` ⇒ `REJECTED`; values exceeding parameter limits
+  (`minimum`, `maximum`, `enum`, `maxLength` — RFC-0005) ⇒ blocked by gate, `BLOCK`
+  `argument_out_of_range` (§3). No `invalid/` call may result in `ALLOW`. The test runner validates this
+  partition, preventing test cases from misplaced directories.
 
-Corpus phủ cả hai không gian tên: agent `bridge-lamp` (gate nói đúng `bridge:muse`, hoặc cả họ `bridge` bằng `call_channel`) và
-`open_gate_from_a_bridge_degrades.yaml` của `driveway` (`test_the_corpus_of_tool_calls_covers_every_family`). Runner đóng vai bộ nạp: nó
-đăng ký id nó đọc từ `call.source` của ca (§5).
+The corpus spans both namespaces: agent `bridge-lamp` (gate explicitly targeting `bridge:muse`, or entire family `bridge` via `call_channel`) and
+`open_gate_from_a_bridge_degrades.yaml` in `driveway` (`test_the_corpus_of_tool_calls_covers_every_family`). The runner acts as loader: registering
+IDs read from test case `call.source` (§5).
 
-Runner `neuroedge.testing.tool_corpus` chạy mỗi ca qua `dispatch()` thật của một `SimSession`
-mới — đúng đường của client MCP và System 2 — rồi so với đáp án. `neuroedge verify` chạy cả
-corpus; `pytest tests/test_tool_corpus.py` chạy thêm từng ca qua một client MCP thật và kiểm kết
-quả khớp `outputSchema` (§4). Wheel mang corpus (`neuroedge/_data/fixtures/tool_calls/`), nên
-bản đã cài cũng tự kiểm được.
+Runner `neuroedge.testing.tool_corpus` executes each case through genuine `dispatch()` of a fresh `SimSession`
+— identical to MCP client and System 2 pipelines — then asserts against expected outputs. `neuroedge verify` executes the entire
+corpus; `pytest tests/test_tool_corpus.py` additionally routes each case through a live MCP client, verifying result conformity
+with `outputSchema` (§4). The distributed wheel bundles the corpus (`neuroedge/_data/fixtures/tool_calls/`), enabling
+installed packages to self-verify.
 
-Lược đồ phong bì (`tool-call.v1.json`, gồm mô tả tool) và kết quả (`tool-result.v1.json`) đã đóng băng
-trong `schemas/` bằng [RFC-0015](../rfc/0015-hop-dong-cho-nguoi-tich-hop.md) (TSK-I6-05, Q-58, Q-66), cùng hình dạng một
-lỗi (`error.v1.json`) và danh mục mã lỗi `NE*` dạng máy đọc được (`error-codes.v1.json`, Q-63), để OSS khác hiện
-thực profile mà không đọc mã Python. Mỗi ca của corpus thẩm định theo chúng (`python/tests/test_contracts.py`:
+Envelope schemas (`tool-call.v1.json`, including tool descriptions) and results (`tool-result.v1.json`) are frozen
+in `schemas/` via [RFC-0015](../rfc/0015-hop-dong-cho-nguoi-tich-hop.md) (TSK-I6-05, Q-58, Q-66), alongside error shapes
+(`error.v1.json`) and machine-readable `NE*` error code catalog (`error-codes.v1.json`, Q-63), allowing external OSS implementations
+without Python codebase dependencies. Every corpus case validates against them (`python/tests/test_contracts.py`:
 `test_every_tool_call_corpus_case_validates_against_the_tool_call_schema`,
-`test_every_tool_call_corpus_result_validates_against_the_tool_result_schema`); `fixtures/contracts/` là corpus phản chứng của
-các lược đồ đó, khép kín hai chiều. Từ đây profile là **v1** ở phần hình dạng; đổi hình dạng là RFC (`CONTRIBUTING.md` §3).
-Giấy phép của corpus tuân thủ chưa thuộc phần Apache-2.0: `TODOS.md` #57.
+`test_every_tool_call_corpus_result_validates_against_the_tool_result_schema`); `fixtures/contracts/` serves as counter-example corpus for
+these schemas, with bidirectional closure. Hence the profile shape is **v1**; modifying shapes requires an RFC (`CONTRIBUTING.md` §3).
+Compliance corpus licensing not yet under Apache-2.0: `TODOS.md` #57.
 
-## 10. NeuroEdge làm MCP client (Q-27)
+## 10. NeuroEdge as MCP Client (Q-27)
 
-System 2 là một **MCP host**: mọi tool nó dùng đều đi qua một MCP client
-(`ToolHost`, `python/neuroedge/mcp_host.py`), tới hai loại server.
+System 2 acts as an **MCP host**: every tool it invokes routes through an MCP client
+(`ToolHost`, `python/neuroedge/mcp_host.py`), connecting to two server categories:
 
 ```text
                   ┌─────────────────────── ToolHost ───────────────────────┐
 System 2 ─tool──► │ agent: in-process → build_server(source="system_two")   │─► dispatch() → gate → HAL
- ▲ (≤ max_rounds) │ news:  stdio → [mcp.servers.news], chỉ tool trong allowlist │─► dữ liệu không tin cậy
- └── kết quả ◄─── └────────────────────────────────────────────────────────┘
+ ▲ (≤ max_rounds) │ news:  stdio → [mcp.servers.news], allowlisted tools only │─► untrusted data
+ └── result ◄──── └────────────────────────────────────────────────────────┘
 ```
 
-Sáu quy tắc:
+Six rules:
 
-1. **Tool của thiết bị chỉ đến được qua MCP server của chính agent.** Mọi lời gọi vẫn qua
-   §2. `call_source = system_two` gắn theo kết nối (§5). Lỗi hợp đồng ném ra nguyên vẹn
-   qua kết nối in-process, không thành kết quả MCP. Bản cài lõi không có extra `mcp`:
-   kết nối này thành lời gọi trực tiếp — cùng nguồn, cùng `dispatch()`; server bên ngoài
-   bị bỏ qua kèm lý do.
-2. **MCP server bên ngoài chỉ để lấy thông tin.** `agent.toml` liệt kê tường minh tool
-   được dùng (`tools = [...]`) — tác giả agent khẳng định chúng không có hiệu ứng vật lý.
-   Tool ngoài allowlist bị ẩn khỏi mô hình và gọi tới thì `REJECTED`. Annotation
-   `readOnlyHint` do server tự khai **không** được tin. Tool của bên thứ ba có hiệu ứng
-   vật lý (ví dụ Home Assistant) **PHẢI** được bọc thành `@action` có gate, **hoặc** thiết bị
-   được khai là **cơ cấu chấp hành từ xa** (`[actuators.<tên>]`, RFC-0018,
-   [`extension_sdk.md`](extension_sdk.md) §6) — cách nên dùng: lệnh tới nó đi qua token, phong
-   bì và tự tắt như một chân, còn thân `@action` gọi thẳng MCP hay HTTP thì chỉ có gate ở cổng
-   vào (`neuroedge build` cảnh báo khi module `@action` import một client mạng phổ biến). Thân
-   hàm chỉ chạy được trong `c.do()`. Tên `server__tool` trùng tên `@action` ⇒
-   `neuroedge build` báo lỗi.
-3. **Kết quả tool bên ngoài là dữ liệu không tin cậy.** Nó chỉ trả lại mô hình, đánh dấu
-   `"trust": "untrusted data …"`, không bao giờ được phân tích thành lệnh. Vết ghi lưu
-   `mcp_tool_result` (trường ở §7) — không lưu nội dung. Mô
-   hình "nghe lời" một nội dung bị cài lệnh thì lời gọi của nó vẫn qua gate
+1. **Device tools accessible exclusively through agent's own MCP server.** All calls route through
+   §2. `call_source = system_two` connection-bound (§5). Contract violations raised unmodified
+   across in-process connection, not converted to MCP results. Core installs lacking `mcp` extra:
+   connection resolves to direct calls — same source, same `dispatch()`; external servers
+   skipped with logged reasons.
+2. **External MCP servers provide information only.** `agent.toml` explicitly enumerates permitted tools
+   (`tools = [...]`) — agent authors attest these lack physical side-effects. Tools outside allowlist
+   hidden from models; invocations return `REJECTED`. Server-declared `readOnlyHint` annotations are
+   **not** trusted. Third-party tools with physical effects (e.g. Home Assistant) **MUST** be wrapped in
+   gated `@action` functions, **or** devices declared as **remote actuators** (`[actuators.<name>]`, RFC-0018,
+   [`extension_sdk.md`](extension_sdk.md) §6) — the recommended pattern: commands route via tokens, envelopes,
+   and auto-off like pins, whereas `@action` bodies calling MCP or HTTP directly only enforce gates at
+   ingress (`neuroedge build` warns when `@action` modules import common network clients). Functions
+   executable only within `c.do()`. Name collisions between `server__tool` and `@action` ⇒
+   `neuroedge build` raises error.
+3. **External tool outputs treated as untrusted data.** Returned to model marked
+   `"trust": "untrusted data …"`, never parsed as commands. Traces record `mcp_tool_result`
+   (§7 fields) — payload unrecorded. Models acting on instruction-injected outputs still encounter gates
    (`test_prompt_injection_in_the_news_still_meets_the_gate`).
-4. **Server không kết nối được thì bỏ qua, và nói ra**: ghi `mcp_server_unavailable` (§7); tool của thiết bị vẫn chạy. Mô hình được báo trong `instructions` nguồn nào
-   đang tắt và vì sao (kể cả thiếu SDK `mcp`), để nói với người dùng là *tạm thời không lấy
-   được* — không nói "không có công cụ", không bịa. REPL in cảnh báo; banner của `run` liệt
-   kê server và trạng thái. Mất mạng hẳn ⇒ không có System 2 ⇒ host không mở; ngữ pháp cục
-   bộ dispatch thẳng (§1, Q-14).
-5. **Dự phòng cục bộ cho hành động**: System 2 không trả lời được một câu tự do ⇒ thiết bị
-   **nói các lệnh cục bộ vẫn dùng được** (một câu mẫu mỗi lệnh có `tool` trong
-   `commands.toml`, `reply_source = offline_help`). Không bao giờ đoán hành động từ một câu
-   gần giống — đoán sai là hành động vật lý sai; người nói lại lệnh và lệnh đó đi qua gate
-   như mọi lần.
-6. **Vòng có giới hạn** (FR-MDL-11): kết quả mỗi tool quay lại mô hình trong
-   `state["messages"]`, tối đa `max_rounds` vòng (mặc định 4, 1..16); quá ⇒
-   `system_two_rounds_exceeded`. Gate trả `ask` ⇒ dừng vòng và thiết bị nói `message` của
-   gate; câu hỏi chỉ được mở khi §6 cho phép (có `confirms` và một lời "có" là đủ). Mô hình
-   không được trả lời thay người (§6).
+4. **Unreachable servers skipped and reported**: log `mcp_server_unavailable` (§7); device tools continue operating. Models informed in `instructions` which sources
+   are disabled and why (including missing `mcp` SDK), enabling user notifications of *temporary unavailability*
+   — never claiming tools do not exist, never hallucinating. REPL prints warnings; `run` banner lists
+   servers and statuses. Complete network loss ⇒ no System 2 ⇒ host unopened; local grammar
+   dispatches directly (§1, Q-14).
+5. **Local fallback for actions**: System 2 failing to answer free-form utterances ⇒ device
+   **announces available local commands** (one sample sentence per tool in `commands.toml`,
+   `reply_source = offline_help`). Never guess actions from approximate phrasing — incorrect
+   guesses cause unintended physical actions; users restate commands, which traverse gates as normal.
+6. **Bounded loops** (FR-MDL-11): tool results return to model in `state["messages"]`,
+   up to `max_rounds` (default 4, range 1..16); exceeding ⇒ `system_two_rounds_exceeded`. Gate returning
+   `ask` ⇒ loop halts, device speaks gate `message`; questions open only when permitted by §6
+   (`confirms` present and single "có" ("yes") suffices). Models cannot answer on human's behalf (§6).
 
-Cấu hình (`agent.toml`, không thuộc `schemas/`):
+Configuration (`agent.toml`, outside `schemas/`):
 
 ```toml
 [mcp]
 max_rounds = 4
 
-[mcp.servers.news]                # tool của nó đưa cho mô hình là news__<tool>
-command = "python"                # "python" / "python3" = trình thông dịch đang chạy
-args    = ["mcp/news_server.py"]  # tương đối với thư mục agent
-tools   = ["headlines"]           # allowlist — chỉ công cụ thông tin
+[mcp.servers.news]                # tools presented to model as news__<tool>
+command = "python"                # "python" / "python3" = running interpreter
+args    = ["mcp/news_server.py"]  # relative to agent directory
+tools   = ["headlines"]           # allowlist — informational tools only
 # env = { NEWS_FILE = "..." } · timeout_s = 10
 ```
 
-Model đứng sau System 2 khai ở bảng `[system_two]` của `agent.toml` (LiteLLM hoặc adapter tự viết,
-TSK-S2-11, `python/neuroedge/models/providers/`): `tools` và các vòng `state["messages"]` được gửi
-đúng dạng function calling OpenAI; tham số tool không phải JSON được chuyển nguyên cho dispatch, nên
-lời gọi đó `REJECTED` (§2) — không đoán. Model không trả lời được ⇒ `system_two_unavailable`.
+Models driving System 2 declared in `[system_two]` of `agent.toml` (LiteLLM or custom adapter,
+TSK-S2-11, `python/neuroedge/models/providers/`): `tools` and `state["messages"]` rounds formatted
+per OpenAI function calling; non-JSON tool arguments forwarded raw to dispatch, resulting in `REJECTED`
+calls (§2) — no guessing. Model failures ⇒ `system_two_unavailable`.
 
-Ví dụ chạy được: `fixtures/agents/home-voice/mcp/news_server.py`. Kết nối mở theo từng
-lượt; kết nối bền giữa các lượt và transport HTTP tới server bên ngoài là việc hoãn
+Working example: `fixtures/agents/home-voice/mcp/news_server.py`. Connections open per
+turn; persistent inter-turn connections and outbound HTTP transports deferred
 (`TODOS.md` #25).

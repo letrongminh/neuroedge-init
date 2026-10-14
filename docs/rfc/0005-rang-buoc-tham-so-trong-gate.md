@@ -1,56 +1,56 @@
-# RFC-0005: Gate tự khai ràng buộc tham số của hành động
+# RFC-0005: Gates Declare Action Argument Constraints
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0005 |
-| **Tiêu đề** | Khối `arguments:` trong gate — ràng buộc tham số tool call, kế thừa chỉ thu hẹp |
-| **Lược đồ bị ảnh hưởng** | `gate.v1` (thêm trường tuỳ chọn) · ngữ nghĩa phân giải · bố cục nhị phân Q-23 |
-| **Yêu cầu PRD liên quan** | FR-ACE-08, FR-GATE-06, FR-MDL-10 |
-| **Người đề xuất** | V1 — Kỹ sư lõi nền tảng *(theo quyết định Q-25)* |
-| **Ngày mở** | 2026-09-23 |
-| **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (TSK-S3-25, PR #22; walker C: TSK-S4-02, PR #27) |
-| **Người phê duyệt** | Trong-Minh Le (@letrongminh, kỹ thuật trưởng), 2026-09-24 — quyết định **Q-25** (`neuroedge-prd.md` §15); không có `arguments_closed` ở v1 |
-| **Kiểm chứng** | §7 — `python/tests/test_gate_arguments.py`, corpus `fixtures/gates/invalid/`, `fixtures/tool_calls/invalid/` |
+| **RFC ID** | 0005 |
+| **Title** | `arguments:` block in gates — tool call argument constraints, narrowing-only inheritance |
+| **Affected Schema** | `gate.v1` (adds optional field) · resolution semantics · Q-23 binary layout |
+| **Related PRD Requirements** | FR-ACE-08, FR-GATE-06, FR-MDL-10 |
+| **Author** | V1 — Platform Core Engineer *(per decision Q-25)* |
+| **Date Opened** | 2026-09-23 |
+| **Status** | ✅ Approved · ✅ Implemented (TSK-S3-25, PR #22; C walker: TSK-S4-02, PR #27) |
+| **Approver** | Trong-Minh Le (@letrongminh, lead architect), 2026-09-24 — decision **Q-25** (`neuroedge-prd.md` §15); no `arguments_closed` in v1 |
+| **Verification** | §7 — `python/tests/test_gate_arguments.py`, corpus `fixtures/gates/invalid/`, `fixtures/tool_calls/invalid/` |
 
-> **Khi nào cần RFC:** mọi thay đổi trong `schemas/`, và mọi thay đổi ngữ nghĩa
-> phân giải gate. Xem `CONTRIBUTING.md` §3 để biết ranh giới chính xác.
+> **When an RFC is required:** all changes in `schemas/`, and all changes to gate resolution
+> semantics. See `CONTRIBUTING.md` §3 for exact boundaries.
 
-## 1. Vấn đề
+## 1. Problem
 
-Từ Q-24, hành động đến từ LLM và client MCP, không chỉ từ câu lệnh đã soạn sẵn. Mô
-hình chọn **cả tham số**. Gate hôm nay không thấy tham số:
+Since Q-24, actions arrive from LLMs and MCP clients, not just pre-composed commands.
+The model selects **arguments too**. Today's gates do not see arguments:
 
 ```python
-# System 2 bị prompt injection, hoặc đơn giản là nhầm
+# System 2 prompt-injected, or simply mistaken
 ToolCall("unlock_door", {"guest_id": "101", "duration_s": 3600}, source="system_two")
 ```
 
-Gate `unlock_door@1.2.0` kiểm khách đã xác thực, phòng khớp — và cho qua. Cửa mở một
-giờ. Không có cách nào viết *"không quá 60 giây"* trong gate.
+Gate `unlock_door@1.2.0` checks authenticated guest, room match — and allows through.
+The door unlocks for one hour. There is no way to write *"at most 60 seconds"* in the gate.
 
-## 2. Vì sao lược đồ hiện tại không giải quyết được
+## 2. Why the Current Schema Does Not Solve It
 
-- `evaluate` chỉ có ba kiểu `bool` / `level` / `choice` (Phụ lục B.2), và mỗi tiêu chí là
-  một **dữ kiện** do System 1 hoặc session cấp — không phải tham số của lời gọi.
-- `gate.v1.json` đặt `additionalProperties: false` ở cấp cao, nên không có chỗ khai.
-- Cách vòng qua là tính dữ kiện ở agent (`duration_ok = duration_s ≤ 60` trong
-  `agent.toml`). Nhưng khi đó **ý nghĩa** của `duration_ok` nằm ngoài gate: tác giả agent
-  viết `duration_ok = duration_s ≤ 3600` là nới lỏng một gate chia sẻ mà `gate lint`
-  không thấy — trái với lời hứa trung tâm của `extends` (B.5). Q-25 bác bỏ cách này.
+- `evaluate` only supports three types `bool` / `level` / `choice` (Appendix B.2), and
+  each criterion is a **fact** supplied by System 1 or session — not a call argument.
+- `gate.v1.json` sets `additionalProperties: false` at top level, leaving no place for declarations.
+- A workaround is computing facts at the agent (`duration_ok = duration_s ≤ 60` in
+  `agent.toml`). But then the **meaning** of `duration_ok` lives outside the gate: an agent author
+  writing `duration_ok = duration_s ≤ 3600` loosens a shared gate without `gate lint`
+  noticing — violating the core promise of `extends` (B.5). Q-25 rejected this approach.
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
-Thêm trường cấp cao tuỳ chọn `arguments`:
+Add optional top-level field `arguments`:
 
 ```yaml
 schema:  neuroedge.gate/v1
 name:    unlock_door
 version: 1.3.0
-arguments:                      # mới — ràng buộc trên tham số của @action
+arguments:                      # new — constraints on @action arguments
   duration_s: { type: integer, minimum: 1, maximum: 60 }
   guest_id:   { type: string, max_length: 16 }
-evaluate: { ... }               # không đổi
-allow_when: ...                 # không đổi
+evaluate: { ... }               # unchanged
+allow_when: ...                 # unchanged
 ```
 
 ```json
@@ -71,82 +71,81 @@ allow_when: ...                 # không đổi
 }
 ```
 
-**Lượng giá.** Ràng buộc tham số chạy **trước** `evaluate`, tất định, không tốn ngân
-sách mô hình. Vi phạm ⇒ `BLOCK`, `reason = argument_out_of_range`,
-`failed_criterion = <tên tham số>`, rồi `on_block` như mọi lần chặn. Tham số có trong
-`arguments` mà `@action` không có ⇒ `neuroedge build` báo lỗi (gate và hành động lệch
-nhau).
+**Evaluation.** Argument constraints run **before** `evaluate`, deterministically, with
+zero model budget cost. Violation ⇒ `BLOCK`, `reason = argument_out_of_range`,
+`failed_criterion = <argument name>`, followed by `on_block` like any block. An argument
+present in `arguments` but absent in `@action` ⇒ `neuroedge build` error (gate and action mismatch).
 
-**Kế thừa (B.5).** Gate con chỉ được thu hẹp:
+**Inheritance (B.5).** Child gates may only narrow:
 
-| Ràng buộc | Con được phép |
+| Constraint | Child Permitted |
 |:---|:---|
-| `minimum` / `maximum` | Tăng / giảm (khoảng hiệu dụng là **giao** với cha) |
-| `enum` | Tập con của cha |
-| `max_length` | Nhỏ hơn hoặc bằng |
-| `type` | Giữ nguyên |
-| Bỏ ràng buộc cha đã khai | **Không thể** — không nhắc lại nghĩa là kế thừa nguyên vẹn, giống `allow_when`; không có cú pháp để xoá |
+| `minimum` / `maximum` | Increase / decrease (effective range is **intersection** with parent) |
+| `enum` | Subset of parent |
+| `max_length` | Less than or equal |
+| `type` | Unchanged |
+| Remove parent-declared constraint | **Impossible** — not restating means inheriting intact, identical to `allow_when`; no syntax exists for removal |
 
-Khoảng rỗng sau khi giao (`minimum > maximum`) ⇒ `GateSchemaError`: gate không bao giờ
-cho qua được là gate viết sai.
+Empty range after intersection (`minimum > maximum`) ⇒ `GateSchemaError`: a gate that
+can never allow is an invalid gate.
 
-**Compiler và MCU.** `neuroedge build` sinh các nút so sánh tham số đứng trước cây quyết
-định. Bố cục nhị phân Q-23 thêm một loại nút (`ARG_CMP`: chỉ số tham số, phép so sánh,
-hằng) và **tăng số phiên bản bố cục** — trước khi TSK-S4-02 viết walker C, nên không
-thiết bị nào phải nạp lại.
+**Compiler and MCU.** `neuroedge build` emits argument-comparison nodes preceding the
+decision tree. The Q-23 binary layout adds a node kind (`ARG_CMP`: argument index,
+comparison operation, constant) and **bumps layout version** — before TSK-S4-02 writes
+the C walker, so no devices need re-flashing.
 
-**Tool schema.** `mcp tools` và `openai` đưa ràng buộc vào `inputSchema`
-(`minimum`, `maximum`, `enum`, `maxLength`), để mô hình thấy giới hạn trước khi gọi
+**Tool schema.** `mcp tools` and `openai` include constraints in `inputSchema`
+(`minimum`, `maximum`, `enum`, `maxLength`), so models see boundaries before calling
 (`docs/spec/tool_calling.md` §3).
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — `arguments` là tuỳ chọn |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Có, đúng một loại: gate có khối `arguments` (hôm nay bị `additionalProperties: false` từ chối). Là nới lỏng lược đồ, làm được trong `v1` |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không — gate không có `arguments` băm ra y như cũ |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không |
+| Do currently valid files remain valid? | Yes — `arguments` is optional |
+| Do currently invalid files become valid? | Yes, exactly one category: gates with an `arguments` block (currently rejected by `additionalProperties: false`). Schema relaxation, permissible within `v1` |
+| Is a schema version bump required (`v1` → `v2`)? | No |
+| Impact on hashes / digital signatures of published gates? | None — gates without `arguments` hash identically to before |
+| Impact on the three canonical trace files? | None |
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-Thay đổi này chỉ thêm cách **chặn**; không có đường nào làm một gate lỏng hơn:
+This change adds only ways to **block**; there is no path to make a gate more lax:
 
-- Gate không có `arguments` giữ nguyên ngữ nghĩa.
-- Kế thừa chỉ thu hẹp, và không nhắc lại nghĩa là kế thừa nên không bỏ được ràng buộc — cùng hình dạng với Q-18 cho `budget`.
-- Ràng buộc chạy tất định trước mô hình, nên không có lý do suy giảm mới
-  (`gate_unreachable` / `budget_exceeded` không áp dụng).
+- Gates without `arguments` retain identical semantics.
+- Inheritance only narrows, and not restating means inheriting so constraints cannot be dropped — matching the shape of Q-18 for `budget`.
+- Constraints execute deterministically before the model, introducing no new degradation causes
+  (`gate_unreachable` / `budget_exceeded` do not apply).
 
-Một điểm cần duyệt: tham số **không** khai trong `arguments` thì không bị giới hạn ngoài
-kiểu của chữ ký. Có nên có chế độ `arguments_closed: true` buộc mọi tham số phải khai?
-**Quyết định (2026-09-24): không** ở v1 — thêm sau nếu gate chia sẻ đầu tiên cần.
+One point requiring review: arguments **not** declared in `arguments` are unconstrained beyond
+signature types. Should there be an `arguments_closed: true` mode forcing all arguments to be declared?
+**Decision (2026-09-24): no** in v1 — add later if the first shared gate requires it.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| `argument_facts` trong `agent.toml` (dữ kiện bool tính từ tham số) | Ý nghĩa an toàn nằm ngoài gate: tác giả agent nới lỏng được mà `lint` không thấy; gate chia sẻ qua registry không mang theo giới hạn (Q-25) |
-| Biểu thức CEL trên tham số trong `allow_when` (`arguments.temp <= 30`) | Kế thừa không so sánh được hai biểu thức tuỳ ý để chứng minh "con chặt hơn"; MCU không có CEL (Q-9) |
-| Chỉ dựa vào JSON Schema của tool | Là gợi ý cho mô hình, không phải cưỡng chế; client MCP bỏ qua được |
+| `argument_facts` in `agent.toml` (boolean facts computed from arguments) | Safety meaning resides outside the gate: agent authors can loosen without `lint` noticing; gates shared via registry do not carry constraints (Q-25) |
+| CEL expression over arguments in `allow_when` (`arguments.temp <= 30`) | Inheritance cannot compare arbitrary expressions to prove "child is stricter"; MCU lacks CEL (Q-9) |
+| Rely solely on tool JSON Schema | Advisory for models, not enforcement; MCP clients can bypass it |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-- [x] Ví dụ hợp lệ: `fixtures/gates/valid/narrows_arguments.yaml` thu hẹp cả bốn loại giới hạn của
-  `fixtures/gates/registry/args-base@1.0.0.yaml`. *(Không sửa `gates/unlock_door@1.2.0.yaml`: đổi nó là đổi
-  digest của ba vết ghi chuẩn mực.)*
-- [x] Phản chứng trong `fixtures/gates/invalid/` + `expected_errors.yaml`: nới `maximum`, hạ `minimum`, enum
-  không phải tập con, đổi kiểu, khoảng rỗng, cận trên chuỗi, từ khoá lạ
-- [x] Test (`python/tests/test_gate_arguments.py`): `ToolCall` với `duration_s = 3600` từ `system_two` ⇒ BLOCK
-  `argument_out_of_range`, chân không đổi, không dữ kiện nào được hỏi; giá trị mặc định cũng được kiểm; agent
-  trên `sim` ghi rồi replay ra cùng phán quyết
-- [x] `neuroedge verify` vẫn xanh; ba vết ghi chuẩn mực không đổi
+- [x] Valid example: `fixtures/gates/valid/narrows_arguments.yaml` narrows all four constraint kinds from
+  `fixtures/gates/registry/args-base@1.0.0.yaml`. *(Do not edit `gates/unlock_door@1.2.0.yaml`: changing it changes
+  digests of the three canonical traces.)*
+- [x] Counterexamples in `fixtures/gates/invalid/` + `expected_errors.yaml`: relaxing `maximum`, lowering `minimum`, non-subset enum,
+  type changes, empty intervals, string upper bounds, unknown keywords
+- [x] Test (`python/tests/test_gate_arguments.py`): `ToolCall` with `duration_s = 3600` from `system_two` ⇒ BLOCK
+  `argument_out_of_range`, pins unchanged, no facts queried; default values also verified; agent
+  on `sim` records and replays to identical verdict
+- [x] `neuroedge verify` remains green; three canonical traces unchanged
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Tasks upon Approval
 
-- [x] Cập nhật `schemas/gate.v1.json`
-- [x] Phụ lục B.6 trong `docs/spec/core_contracts.md` từ "đề xuất" thành chuẩn tắc
-- [x] `neuroedge-prd.md` FR-ACE-08 thành P0
-- [x] `neuroedge-roadmap.md` TSK-S3-25 ✅ · TSK-S4-02 (walker C đọc khối `arguments` của cây)
-- [x] Resolver, `gate lint`, compiler (`check_gate_arguments`), cây quyết định, engine, `c.do()` (giá trị mặc
-  định), `input_schema()`, `gate explain`; fixture và test
+- [x] Update `schemas/gate.v1.json`
+- [x] Appendix B.6 in `docs/spec/core_contracts.md` promoted from "proposal" to normative
+- [x] `neuroedge-prd.md` FR-ACE-08 promoted to P0
+- [x] `neuroedge-roadmap.md` TSK-S3-25 ✅ · TSK-S4-02 (C walker reads tree `arguments` block)
+- [x] Resolver, `gate lint`, compiler (`check_gate_arguments`), decision tree, engine, `c.do()` (default
+  values), `input_schema()`, `gate explain`; fixtures and tests
