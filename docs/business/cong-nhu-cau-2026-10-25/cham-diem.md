@@ -32,7 +32,7 @@ Bốn mã `M-*` chấm phần Maker (`phong-van.md` §5b, Q-72); cột "Câu c�
 | `CEO-X4` | C3 | **A** — nỗi đau chỉ giải được bằng gate chạy trên thiết bị (chặn tại chỗ, khi mất mạng, khi đổi chip) · **C** — nỗi đau là kiểm thử thay đổi trên stack họ đang có; họ không đổi runtime · **E** — sự cố nặng nhất nằm ở hành động phần mềm của agent (hoàn tiền, đổi tài khoản, cam kết thanh toán) · **—** không có. Kèm **độ mạnh** = điểm `P1` của chính sự cố đó |
 | `CEO-X5` | C4 | Đường thu: **(i)** họ muốn mua **kết quả vận hành** (thiết bị + dịch vụ, kiểu AURA), tức tổ chức mình tự làm U3 · **(ii)** họ là chủ đội U2, trả cho công cụ kiểm thử theo đội · **(iii)** = nhãn E ở trên |
 | `CEO-T2` | C6 | **R** — không có chứng nhận thì không mua · **P** — ưu tiên, không bắt buộc · **N** — không liên quan. Kèm **tên tiêu chuẩn họ tự nêu** |
-| `M-MSG` | — (Maker, `phong-van.md` §5c) | Thẻ chọn ở MS1 (**A** / **B** / **C** / **—**) và thẻ được kể lại đúng ý ở MS2 (**A** / **B** / **C** / **sai**). Không cộng điểm. Chọn câu định vị sau cổng: thẻ được **kể lại đúng ý** ở ≥ 3 trên 5 cuộc Maker thắng; không thẻ nào đạt thì viết lại câu, chưa chốt (`TODOS.md` #67) |
+| `M-MSG` | — (Maker, `phong-van.md` §5c) | Thẻ chọn ở MS1 (**A** / **B** / **C** / **D** / **—**) và thẻ được kể lại đúng ý ở MS2 (**A** / **B** / **C** / **D** / **sai**). Không cộng điểm. Cuộc dùng ba thẻ (trước Q-81) ghi `M-MSG/3`, không gộp với cuộc bốn thẻ. Chọn câu định vị sau cổng: thẻ được **kể lại đúng ý** ở ≥ 3 trên 5 cuộc Maker thắng; không thẻ nào đạt thì viết lại câu, chưa chốt (`TODOS.md` #67) |
 | Quy mô | C2 | Số thiết bị có actuator (ghi số thô) và đơn vị tính tiền họ đang trả (thiết bị / site / dự án / đội / một lần) |
 
 ### 1.3 Hai người chấm lệch nhau
@@ -90,8 +90,8 @@ bảng dưới chỉ nói cách đếm.
 
 | Điều kiện | Ngưỡng (Q-72) | Đếm thế nào | Nguồn dữ liệu |
 |:---:|:---|:---|:---|
-| ① | ≥ 3 người ngoài đội tự cài một NeuroEdge Blueprint và chạy được | Người không thuộc đội, tự làm theo tài liệu, có vết ghi chạy thật; người được đội cài hộ không tính | Vết ghi và phiên đo; không từ phỏng vấn |
-| ② | ≥ 1 người chạy liên tục 2 tuần trên giả lập G2 hoặc G3 | Một chuỗi vết ghi 14 ngày liền, không có khoảng hở do người chạy tự dừng | Chuỗi vết ghi |
+| ① | ≥ 3 người ngoài đội tự cài một NeuroEdge Blueprint và chạy được | Người không thuộc đội, tự làm theo tài liệu, có vết ghi chạy thật; người được đội cài hộ không tính. Hộp + NeuroClaw tính như một Blueprint mẫu (Q-81) khi người đó điều khiển ít nhất một thiết bị qua chat và vết ghi có phán quyết của lệnh đó; ghi rõ người đó cài Blueprint nào | Vết ghi và phiên đo; không từ phỏng vấn |
+| ② | ≥ 1 người chạy liên tục 2 tuần trên giả lập G2 hoặc G3 | Một chuỗi vết ghi 14 ngày liền, không có khoảng hở do người chạy tự dừng. Hộp + NeuroClaw tính khi hộp chạy trên G2 (`--target linux` trên `gpio-sim`) hoặc G3; hộp `--target sim` không tính | Chuỗi vết ghi |
 | ③ | ≥ 1 maker muốn đóng gói và bán Blueprint của mình | Một maker có `M-SELL = 2` **và** một cam kết có ngày (E4) để đóng gói Blueprint đầu tiên; "chắc sẽ bán" là 0 | Phỏng vấn §5b, bảng §2 |
 
 Song song: chấm ba buổi đã có (`PV-01` → `PV-03`, khi có ghi chép gốc) và phỏng vấn thêm 10 người, trong đó

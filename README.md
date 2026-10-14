@@ -5,15 +5,26 @@ Physical AI, under contract — no contract, no action: every command to the har
 the gate.
 *Nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán.*
 
-Đó là hướng đi (Q-72); agent vận hành và NeuroEdge Blueprint **chưa có mã**. Cái đã chạy hôm
-nay là lớp niềm tin bên dưới. Chatbot trả lời sai thì bấm
-*Regenerate*; agent vật lý sai thì chốt cửa đã mở, đèn cầu thang đã tắt — không bấm lại
-được. NeuroEdge đặt một **gate** (chính sách an toàn dạng YAML, có phiên bản, kế thừa được)
-trước mọi lệnh ra phần cứng. Lời gọi từ LLM hay từ agent khác chỉ là *yêu cầu*: gate quyết
-định, mọi phán quyết vào một vết ghi phát lại được. Cùng một gate chạy trên trình mô
-phỏng, Linux và ESP32-S3. Hôm nay agent chạy đầy đủ trên trình mô phỏng; trên Linux, chân
-GPIO, cảm biến và màn hình đã chạy trên phần cứng ảo, âm thanh chạy từ tệp WAV; trên ESP32-S3, gate của agent
-tự kiểm lúc khởi động và cập nhật OTA có ký đã chạy trên QEMU — bo mạch thật chưa về.
+NeuroEdge là **hộp giữ luật** đứng giữa AI và thiết bị. AI chỉ được *xin* làm một việc; luật
+trên hộp (gọi là *gate*) quyết định: làm ngay, hỏi bạn trước, hay từ chối kèm lý do — và ghi lại
+mọi quyết định để phát lại được. Lý do: chatbot nói sai thì bấm hỏi lại, còn cửa đã mở sai thì
+không bấm lại được.
+
+```text
+📱 Bạn nhắn tin ──► 🧠 NeuroClaw (bộ não) ──► 🛡️ Hộp NeuroEdge (luật) ──► 💡 Đèn, cửa, cảm biến
+```
+
+Bộ não là **NeuroClaw**, repo riêng `letrongminh/neuroclaw` (MIT): chat qua Telegram, gọi AI, nhớ,
+nhắc lịch, và chạm thiết bị **chỉ** qua hộp. Nó chạy trên Linux, cloud, Pi, macOS, Windows, hoặc
+chung một chip ESP32-S3 với hộp.
+
+**Hôm nay chạy được:** luật trên máy tính với thiết bị ảo, trên Linux với chân GPIO giả lập, trên
+chip ESP32-S3 giả lập (QEMU); nhắn Telegram cho NeuroClaw để bật đèn, mở cửa có hỏi chủ nhà — đã
+chạy trong bản demo. **Chưa có:** bo mạch thật, giao việc dài hạn bằng lời, gói chia sẻ hay bán
+(*Blueprint*).
+
+**Người mới đọc trước:** [Bắt đầu ở đây](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/bat-dau.md) (5 phút) · nối bộ não với hộp:
+[chat với nhà](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/chat-voi-nha.md).
 
 > Alpha. NeuroEdge **không** phải chức năng an toàn được chứng nhận (không SIL, không PL): gate
 > không thay nút dừng khẩn hay interlock phần cứng. Tiến độ ở

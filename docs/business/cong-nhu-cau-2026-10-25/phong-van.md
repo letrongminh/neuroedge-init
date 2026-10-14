@@ -145,8 +145,8 @@ làm thiết bị cho người khác**. Đây là phân khúc người dùng đ�
 
 ### 5c. Thử thông điệp (Maker; sau MK10, trước E3)
 
-Đây là lúc đầu tiên được nhắc tới NeuroEdge. Đặt ba thẻ lên bàn, mỗi thẻ đúng một câu; **không** giải thích
-thêm, **không** nói thẻ nào là của mình. Thứ tự thẻ xoay vòng giữa các cuộc (cuộc 1: A-B-C, cuộc 2: B-C-A…)
+Đây là lúc đầu tiên được nhắc tới NeuroEdge. Đặt bốn thẻ lên bàn (thẻ D thêm theo Q-81), mỗi thẻ đúng một câu; **không** giải thích
+thêm, **không** nói thẻ nào là của mình. Thứ tự thẻ xoay vòng giữa các cuộc (cuộc 1: A-B-C-D, cuộc 2: B-C-D-A…)
 để thứ tự không quyết thay người nghe. Câu chữ là bản thử của review định vị 2026-10-12; quyết định cuối
 sau cổng: `TODOS.md` #67.
 
@@ -155,6 +155,7 @@ sau cổng: `TODOS.md` #67.
 | A | "Runtime cho AI điều khiển đồ thật." | Hạng mục (như các runtime cho agent phần mềm) |
 | B | "AI nói hay. Thiết bị phải làm đúng." | Nỗi đau: model trò chuyện tốt nhưng làm hỏng hành động vật lý |
 | C | "Thử thiết bị AI trên giả lập trước khi nó chạm vào đời thật." | Một việc làm chủ: giả lập, phát lại |
+| D | "Nhắn tin cho nhà: việc thường thì làm, việc khó thì hỏi bạn." | Trải nghiệm: chat với nhà qua bộ não NeuroClaw, gate hỏi chủ nhà (Q-81) |
 
 | # | Hỏi | Mã | Mạnh | Yếu |
 |:---:|:---|:---|:---|:---|

@@ -48,11 +48,11 @@
 <text x="230.0" y="635.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">OEM hardware partner</text>
 <text x="230.0" y="656.0" font-size="12.5" fill="#ffffff" text-anchor="middle">Declares a board, ports the HAL</text>
 <text x="230.0" y="674.1" font-size="12.5" fill="#ffffff" text-anchor="middle">board.toml · compliance vectors</text>
-<rect x="64" y="740" width="332" height="118" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="230.0" y="776.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Home owner</text>
-<text x="230.0" y="796.9" font-size="12.5" fill="#475569" text-anchor="middle">chats with the brain</text>
-<text x="230.0" y="815.1" font-size="12.5" fill="#475569" text-anchor="middle">approves from the phone · I2d</text>
-<text x="230.0" y="833.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="64" y="740" width="332" height="118" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
+<text x="230.0" y="776.7" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">Home owner</text>
+<text x="230.0" y="796.9" font-size="12.5" fill="#ffffff" text-anchor="middle">chats with NeuroClaw (demo)</text>
+<text x="230.0" y="815.1" font-size="12.5" fill="#ffffff" text-anchor="middle">approves at home; phone · I2d</text>
+<text x="230.0" y="833.2" font-size="12.5" fill="#ffffff" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="64" y="890" width="332" height="118" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="230.0" y="926.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint installer</text>
 <text x="230.0" y="946.9" font-size="12.5" fill="#475569" text-anchor="middle">Installs a NeuroEdge Blueprint,</text>
@@ -98,8 +98,8 @@
 <text x="1590.0" y="461.1" font-size="12.5" fill="#431407" text-anchor="middle">cloud or local server</text>
 <rect x="1424" y="510" width="332" height="104" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1590.0" y="548.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">MCP clients</text>
-<text x="1590.0" y="569.0" font-size="12.5" fill="#431407" text-anchor="middle">Claude Desktop, other agents</text>
-<text x="1590.0" y="587.1" font-size="12.5" fill="#431407" text-anchor="middle">stdio JSON-RPC</text>
+<text x="1590.0" y="569.0" font-size="12.5" fill="#431407" text-anchor="middle">NeuroClaw brain, Claude Desktop</text>
+<text x="1590.0" y="587.1" font-size="12.5" fill="#431407" text-anchor="middle">stdio, or HTTP with mTLS</text>
 <rect x="1424" y="636" width="332" height="104" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1590.0" y="674.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">ESP-IDF v5.4 + QEMU</text>
 <text x="1590.0" y="695.0" font-size="12.5" fill="#431407" text-anchor="middle">Toolchain and emulator</text>

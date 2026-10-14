@@ -14,7 +14,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TARGET="${1:?cách dùng: chay-nao.sh <host:port của hộp> [lệnh neuroclaw…]}"; shift
-VERSION=v0.1.0
+VERSION=v0.2.2
 
 ENV="$HERE/.env.txt"; [ -f "$ENV" ] || ENV="$HERE/../../.env.txt"
 set -a
@@ -29,13 +29,22 @@ mkdir -p "$NAO_HOME/bin" "$NAO_HOME/workspace"
 BIN="${NEUROCLAW_BIN:-$NAO_HOME/bin/neuroclaw}"
 if [ ! -x "$BIN" ]; then
   case "$(uname -s)/$(uname -m)" in
-    Linux/x86_64) ASSET=neuroclaw_linux_amd64 ;;
-    Linux/aarch64|Linux/arm64) ASSET=neuroclaw_linux_arm64 ;;
-    Darwin/arm64) ASSET=neuroclaw_darwin_arm64 ;;
+    Linux/x86_64) ASSET=neuroclaw_Linux_x86_64 ;;
+    Linux/aarch64|Linux/arm64) ASSET=neuroclaw_Linux_arm64 ;;
+    Darwin/arm64) ASSET=neuroclaw_Darwin_arm64 ;;
+    Darwin/x86_64) ASSET=neuroclaw_Darwin_x86_64 ;;
     *) echo "chưa có bản NeuroClaw cho $(uname -s)/$(uname -m)" >&2; exit 1 ;;
   esac
-  curl -fsSL "https://github.com/letrongminh/neuroclaw/releases/download/$VERSION/$ASSET.tar.gz" \
-    | tar xz -C "$NAO_HOME/bin" --strip-components=1 "$ASSET/neuroclaw"
+  URL="https://github.com/letrongminh/neuroclaw/releases/download/$VERSION"
+  TMP="$(mktemp -d)"
+  curl -fsSL -o "$TMP/$ASSET.tar.gz" "$URL/$ASSET.tar.gz"
+  curl -fsSL -o "$TMP/sums.txt" "$URL/neuroclaw_${VERSION#v}_checksums.txt"
+  # tệp tải về phải khớp checksums của bản phát hành
+  WANT="$(awk -v f="$ASSET.tar.gz" '$2 == f {print $1}' "$TMP/sums.txt")"
+  GOT="$( (sha256sum "$TMP/$ASSET.tar.gz" 2>/dev/null || shasum -a 256 "$TMP/$ASSET.tar.gz") | cut -d' ' -f1)"
+  [ -n "$WANT" ] && [ "$WANT" = "$GOT" ] || { echo "checksum của $ASSET.tar.gz không khớp" >&2; exit 1; }
+  tar xzf "$TMP/$ASSET.tar.gz" -C "$NAO_HOME/bin" neuroclaw
+  rm -rf "$TMP"
 fi
 
 # cấu hình: bản trong kho + địa chỉ hộp, khoá mTLS, token, chủ nhà, key LLM, bot và workspace.

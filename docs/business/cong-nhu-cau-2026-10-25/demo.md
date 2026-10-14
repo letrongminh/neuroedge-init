@@ -566,6 +566,35 @@ không?"
 
 ---
 
+## 5. Maker — "nhắn tin cho nhà" (Q-81)
+
+**Cho thấy:** chủ nhà nhắn Telegram cho bộ não NeuroClaw; bộ não chạm thiết bị chỉ qua tool MCP của
+hộp tại nhà. Việc thường làm ngay; việc khó (mở cửa) thì hộp hỏi chủ nhà trên trang tại nhà, bộ não
+báo đang chờ. Cùng gate chặn lệnh sai luật kèm lý do; cắt mạng thì chat im mà nhà vẫn chạy.
+
+**Hỗ trợ:** thẻ D của `phong-van.md` §5c · điều kiện ① ② của cổng (`cham-diem.md` §4.0) — người xem
+muốn tự cài thì hẹn buổi cài (E4).
+
+Dựng sẵn và lệnh: [`demo/i2f-chat-den-cua/kich-ban.md`](../../../demo/i2f-chat-den-cua/kich-ban.md)
+§0 (hộp và bộ não), nơi duy nhất của thủ tục; ở đây chỉ chọn màn và lời nói.
+
+| Phút | Làm (màn trong `kich-ban.md`) | Nói |
+|:---:|:---|:---|
+| 0:00 | Mở trang tại nhà `127.0.0.1:8765`; điện thoại mở bot Telegram | "Bên trái là nhà. Bên phải là chat." |
+| 0:30 | Màn 1: "bật đèn phòng khách" | "Việc thường: làm ngay, vẫn qua gate, vẫn có vết ghi." |
+| 1:15 | Màn 2: "mở cửa trước" → bấm duyệt trên trang | "Việc khó: nhà hỏi bạn. AI không tự trả lời được câu hỏi đó." |
+| 2:30 | Màn 3: lệnh mở cửa sai luật | "Sai luật thì bị chặn, kèm lý do bằng lời." |
+| 3:15 | Màn 4: cắt mạng tới bộ não | "Chat im. Nhà vẫn chạy luật của nó." |
+| 4:00 | Màn 6: replay vết ghi | "Mọi quyết định phát lại được." |
+
+**Không nói:** đây là `sim`, không phải khoá thật; NeuroEdge Cloud chưa mở; lời duyệt chưa ký passkey
+(§0.1 và `kich-ban.md`).
+
+**Hỏi sau demo:** "Việc nào trong nhà anh/chị muốn nhắn một câu là xong, và việc nào anh/chị muốn nó hỏi
+lại trước?" · "Nếu có gói cài trong 30 phút, anh/chị có muốn tự dựng ở nhà không — ngày nào?"
+
+---
+
 ## Phụ lục A — client MCP dùng trong demo
 
 Đóng vai Claude Desktop (không có trong kho; đặt ở `$DEMO/mcp_client.py`). Dùng SDK `mcp` đã cài qua

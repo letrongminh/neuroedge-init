@@ -113,10 +113,10 @@
 <text x="1590.0" y="410.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">Home Assistant</text>
 <text x="1590.0" y="431.0" font-size="12.5" fill="#431407" text-anchor="middle">devices of other brands · I2c</text>
 <text x="1590.0" y="449.1" font-size="12.5" fill="#431407" text-anchor="middle" font-style="italic">◐ partial</text>
-<rect x="1424" y="494" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="528.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">PicoClaw · MCP clients</text>
-<text x="1590.0" y="549.0" font-size="12.5" fill="#475569" text-anchor="middle">the brain, or any MCP client · Q-76</text>
-<text x="1590.0" y="567.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="494" width="332" height="96" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1590.0" y="528.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">NeuroClaw · MCP clients</text>
+<text x="1590.0" y="549.0" font-size="12.5" fill="#431407" text-anchor="middle">the brain: Go and ESP32 · Q-78</text>
+<text x="1590.0" y="567.1" font-size="12.5" fill="#431407" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="1424" y="612" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1590.0" y="646.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Community plug-in index</text>
 <text x="1590.0" y="667.0" font-size="12.5" fill="#475569" text-anchor="middle">search/install · not a Marketplace · I2c</text>

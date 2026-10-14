@@ -63,6 +63,15 @@ mỗi mốc chứng minh lại sáu lời hứa ở roadmap §0.5.
 
 *Cách đọc hình E-01:* Hình thể hiện bối cảnh toàn hệ thống ở mức cao nhất: tác nhân người dùng và hệ thống bên ngoài nằm ngoài ranh giới; bên trong ranh giới là NeuroEdge (SDK + CLI Python, firmware C99), thiết bị (`sim` · `linux` · `esp32s3`) và tệp dự án. Khối viền nét liền là các thành phần đã có mã; khối viền nét đứt là các thành phần quy hoạch tương lai (`planned`). Điểm cốt lõi cần nhớ: dù bắt nguồn từ lệnh gõ, giọng nói hay kết nối mạng, mọi hành động tác động vật lý đều phải đi qua cùng một ranh giới kiểm soát an toàn của NeuroEdge.
 
+**Hai phần: bộ não và hộp.** Người dùng nhắn tin cho **bộ não** — [NeuroClaw](https://github.com/letrongminh/neuroclaw),
+repo riêng: chat, gọi LLM, nhớ, nhắc lịch. Bộ não không chạm phần cứng; nó gọi tool MCP của **hộp
+NeuroEdge** (kho này), và hộp đưa lời gọi qua gate như mọi nguồn khác. Bộ não chạy trên máy riêng hoặc
+chung một chip ESP32-S3 với hộp; cách chạy và hợp đồng giữa hai repo: [`15`](15-target-architecture.md) §6.10.
+
+```text
+ 📱 chat ──► NeuroClaw (bộ não, không tin cậy) ══ MCP, mTLS ══► hộp NeuroEdge: gate ──► chân, thiết bị
+```
+
 Đường đi duy nhất từ ý định tới chân phần cứng — **xương sống thực thi** — giống nhau ở mọi nguồn
 gọi và mọi môi trường:
 
@@ -71,7 +80,7 @@ flowchart LR
     subgraph Sources["Callers (untrusted)"]
         G["Local command grammar<br/>commands.toml"]
         S2["System 2 LLM<br/>via LiteLLM"]
-        MCP["MCP client<br/>Claude Desktop"]
+        MCP["MCP client<br/>NeuroClaw · Claude Desktop"]
     end
     TC["ToolCall<br/>name · arguments · source"]
     D["dispatch()<br/>schema check · call_source"]
