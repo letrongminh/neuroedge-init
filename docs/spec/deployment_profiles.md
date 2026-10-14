@@ -265,7 +265,10 @@ The terminal prints `http://127.0.0.1:<port>/#c=<code>`. The page reads `c` from
 Origin required, no key) for `{"ok": true, "key": …}`, keeps the key in `sessionStorage`, and
 sends `X-NeuroEdge-UI-Key: <key>` with every other POST. The code works once and for 10 minutes;
 after that the printed URL ends in `#c=spent`. Refusal reasons: `foreign_host`, `no_origin`,
-`foreign_origin`, `no_key`, `wrong_key`, `bad_code`. At most 10,000 refusals are traced per
+`foreign_origin`, `no_key`, `wrong_key`, `bad_code`, `bad_control`. Every page also writes `ui.json`
+(mode 0600, `$STATE_DIRECTORY` or `$XDG_STATE_HOME/neuroedge`) with its URL and a control secret;
+under a service manager the URL is not printed, and `neuroedge ui-link` trades the control secret
+at `POST /pair/new` for a fresh code, which voids the previous one (DP-A-10). At most 10,000 refusals are traced per
 session; the last one carries `last_recorded: true`.
 
 ---
@@ -312,15 +315,15 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-A-02-11 | DP-A-02 | integration | Refused POST to a 5,000-character path → traced path is 64 characters | implemented — python/tests/test_sim_ui.py::test_a_refused_path_is_traced_cut_short |
 | TC-A-03-1 | DP-A-03 | linux | Brain user in group `gpio`, able to read the key directory, or `/proc` without `hidepid` → `neuroedge doctor` exits 1 naming it | planned — TSK-I2d-24 |
 | TC-A-03-2 | DP-A-03 | linux | Process as brain user opens `/dev/gpiochip0` and the box key → EACCES; POST /confirm → 403 | planned — TSK-I2d-24 |
-| TC-A-04-1 | DP-A-04 | integration | Token with 8-day lifetime → refused at issue; `pair renew` → new token accepted, old one refused after expiry, box not restarted | planned — TSK-I2d-25 |
+| TC-A-04-1 | DP-A-04 | integration | Token with 8-day lifetime → refused at issue; `pair renew` → new token accepted, old one refused after expiry, box not restarted | implemented — python/tests/test_mcp_http.py::test_a_token_lives_at_most_seven_days_and_renews_without_a_restart |
 | TC-A-05-1 | DP-A-05 | linux | `mcp serve --http --ui --target linux` with an `ask` → page answers it; without page and bot → expires and is traced | planned — TSK-I2d-25 |
 | TC-A-06-1 | DP-A-06 | integration | Approval record with bad signature, reused nonce, expired, other gate digest → refused; valid → accepted as `chat:<id>` | planned — TSK-I2d-11 |
 | TC-A-06-2 | DP-A-06 | integration | Brain's bot token configured as approval bot → box refuses to start | planned — TSK-I2d-12 |
 | TC-A-07-1 | DP-A-07 | CI (Go) | NeuroClaw integration job starts the pinned box on `sim`, calls light / door / night cases and `fixtures/agents/contract-bench` → every result validates, `fallback` and `escalated_to` handled | implemented in NeuroClaw — pkg/tools/integration/neuroedge_box_test.go::TestNeuroEdgeBox_EscalationAndFallback |
 | TC-A-08-1 | DP-A-08 | unit | Without the flag: `run` answers with grammar, System 1 and the offline answer; no LiteLLM import; with the flag: the old path works | implemented — python/tests/test_legacy_system_two.py::test_without_the_flag_the_box_answers_with_grammar_and_the_offline_line |
 | TC-A-09-1 | DP-A-09 | demo | Blank VM → `neuroedge install --profile full` → services up, brain user isolated (TC-A-03-2 passes), chat turns on the light | planned — TSK-I2d-25 |
-| TC-A-10-1 | DP-A-10 | linux | Box under systemd → URL file mode 0600 owned by the box user; journal has no `#c=`; `neuroedge ui-link` prints a new code and the old one stops working | planned — TSK-I2d-25 |
-| TC-A-11-1 | DP-A-11 | integration | Rotate the brain certificate → new one works without restart; revoked thumbprint → handshake refused | planned — TSK-I2d-25 |
+| TC-A-10-1 | DP-A-10 | linux | Box under systemd → URL file mode 0600 owned by the box user; journal has no `#c=`; `neuroedge ui-link` prints a new code and the old one stops working | implemented — python/tests/test_mcp_serve_ui.py::test_under_a_service_manager_the_link_goes_to_a_private_file_and_ui_link_renews_it |
+| TC-A-11-1 | DP-A-11 | integration | Rotate the brain certificate → new one works without restart; revoked thumbprint → handshake refused | implemented — python/tests/test_mcp_http.py::test_a_brain_certificate_rotates_without_a_restart_and_a_revoked_one_is_cut_off |
 | TC-B-01-1 | DP-B-01 | unit | `build --brain neuroclaw` writes the component pin; tampered SHA-256 → build error naming the file | planned — TSK-I2f-14 |
 | TC-B-02-1 | DP-B-02 | inspection | Image symbols contain no MCP server, no `mbedtls_ssl_conf_*` server role | planned — TSK-I2f-15 |
 | TC-B-03-1 | DP-B-03 | host C | Bridge tool list for the demo agent equals the MCP tool list (names, schemas) | implemented — python/tests/test_c_bridge.py::test_the_bridge_offers_the_tools_the_box_lists_over_mcp |

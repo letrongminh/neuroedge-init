@@ -19,6 +19,11 @@ this module adds is the door, and the door fails closed:
   so a stolen token is useless without its device's key. A request that fails any of these gets
   401 (403 for a missing scope) and nothing is dispatched; it is recorded as `mcp_auth_refused`
   (tool_calling.md §7), never with the token.
+* **Short-lived tokens, revocable certificates** (Q-83, DP-A-04, DP-A-11): a token must carry
+  `iat` and live at most `MAX_TOKEN_LIFETIME_S` (7 days), else `lifetime_too_long`; a client
+  certificate whose thumbprint is in `--revoked` (read again whenever the file changes, no
+  restart) is cut off right after the handshake, before any HTTP, as `revoked_certificate`.
+  `neuroedge pair renew` and `pair rotate` (`neuroedge.pairing`) make both routine.
 
 The MCP SDK supplies the Streamable HTTP app, the bearer middleware and the protected-resource
 metadata (RFC 9728); this module supplies the `TokenVerifier`, the TLS context and the guard
@@ -68,6 +73,7 @@ SIGNING_ALGORITHMS = (
 # The trace keeps the first refusals; a client that holds a valid certificate and hammers the
 # port must not grow the log of a long-running server without bound.
 MAX_REFUSALS_TRACED = 10_000
+MAX_TOKEN_LIFETIME_S = 7 * 86_400  # DP-A-04
 PEER_KEY = "neuroedge.peer_cert_sha256"
 
 # What `_Guard` hands the verifier for the request being served, and what it hands back.
@@ -105,6 +111,7 @@ class HttpConfig:
     audience: str | None = None
     jwks: Path | None = None
     required_scope: str = DEFAULT_SCOPE
+    revoked: Path | None = None  # brain certificate thumbprints refused (DP-A-11), optional
 
 
 _REQUIRED = (
@@ -126,6 +133,42 @@ class Prepared:
     verifier: DeviceTokenVerifier
     path: str = "/mcp"
     refusals: int = field(default=0, init=False)
+    revoked: Revocations | None = None
+
+
+class Revocations:
+    """
+    `--revoked`: one `x5t#S256` thumbprint per line (`#` starts a comment), read again whenever
+    the file's modification time or size changes, so a revocation takes effect on the next
+    connection without a restart (DP-A-11). A file that cannot be read keeps the last list.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self._stamp: tuple[int, int] | None = None
+        self._thumbprints: frozenset[str] = frozenset()
+        self._lock = threading.Lock()
+        self.current()
+
+    def current(self) -> frozenset[str]:
+        with self._lock:
+            try:
+                stat = self.path.stat()
+                stamp = (stat.st_mtime_ns, stat.st_size)
+                if stamp != self._stamp:
+                    lines = self.path.read_text(encoding="ascii").splitlines()
+                    self._thumbprints = frozenset(
+                        line.split("#", 1)[0].strip()
+                        for line in lines
+                        if line.split("#", 1)[0].strip()
+                    )
+                    self._stamp = stamp
+            except (OSError, UnicodeDecodeError):
+                pass
+            return self._thumbprints
+
+    def __contains__(self, thumbprint: str) -> bool:
+        return thumbprint in self.current()
 
 
 def _error(why: str, how: str, where: str = WHERE) -> NeuroEdgeError:
@@ -217,7 +260,17 @@ def prepare(config: HttpConfig) -> Prepared:
         required_scope=config.required_scope,
     )
     path = urlsplit(audience).path.rstrip("/") or "/mcp"
-    return Prepared(config=config, tls=tls, verifier=verifier, path=path)
+    revoked = None
+    if config.revoked is not None:
+        if not config.revoked.is_file():
+            raise _error(
+                f"the revocation list {config.revoked} is not a file",
+                "create it (one certificate thumbprint per line; `neuroedge pair init` writes "
+                "revoked.txt) or leave --revoked out",
+                f"{WHERE} (--revoked)",
+            )
+        revoked = Revocations(config.revoked)
+    return Prepared(config=config, tls=tls, verifier=verifier, path=path, revoked=revoked)
 
 
 def _load_keys(path: Path) -> list[tuple[str | None, Any]]:
@@ -316,7 +369,7 @@ class DeviceTokenVerifier:
                 algorithms=[alg],
                 audience=self.audience,
                 issuer=self.issuer,
-                options={"require": ["exp", "iss", "aud", "sub"]},
+                options={"require": ["exp", "iat", "iss", "aud", "sub"]},
             )
         except Refused:
             raise
@@ -332,6 +385,9 @@ class DeviceTokenVerifier:
         subject = claims["sub"]
         if not isinstance(subject, str) or not subject:
             raise Refused("invalid_token")
+        lifetime = claims["exp"] - claims["iat"]
+        if not isinstance(lifetime, int | float) or lifetime > MAX_TOKEN_LIFETIME_S:
+            raise Refused("lifetime_too_long", subject)  # DP-A-04: a leaked token must expire
         # From here the signature held: the subject is the issuer's word, safe to trace.
         bound = (
             (claims.get("cnf") or {}).get("x5t#S256")
@@ -522,6 +578,15 @@ async def serve_http(
             ssl_object = transport.get_extra_info("ssl_object")
             der = ssl_object.getpeercert(binary_form=True) if ssl_object is not None else None
             self._peer = thumbprint(der) if der else None
+            if (
+                self._peer is not None
+                and prepared.revoked is not None
+                and self._peer in prepared.revoked
+            ):
+                # DP-A-11: a revoked brain certificate gets no HTTP at all
+                self._peer = None
+                transport.close()
+                refuse_revoked()
 
     class Server(uvicorn.Server):
         @contextlib.contextmanager
@@ -530,6 +595,10 @@ async def serve_http(
 
     sock = bind(prepared.config)
     app = build_app(session, prepared, lock=lock, on_change=on_change)
+
+    def refuse_revoked() -> None:
+        app.record({"reason": "revoked_certificate"})
+
     config = uvicorn.Config(
         app,
         http=CertAware,

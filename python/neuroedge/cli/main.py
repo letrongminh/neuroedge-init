@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +85,11 @@ proxy_app = typer.Typer(
 plugin_app = typer.Typer(
     name="plugin", help="Check the extensions and the Guard around them", epilog=epilog("plugin")
 )
+pair_app = typer.Typer(
+    name="pair",
+    help="Keys, certificates and short-lived tokens for a brain over the network (Q-83)",
+    epilog=epilog("pair"),
+)
 
 app.add_typer(gate_app, name="gate")
 app.add_typer(trace_app, name="trace")
@@ -93,6 +99,7 @@ app.add_typer(add_app, name="add")
 app.add_typer(guard_app, name="guard")
 app.add_typer(proxy_app, name="proxy")
 app.add_typer(plugin_app, name="plugin")
+app.add_typer(pair_app, name="pair")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -736,6 +743,12 @@ def mcp_serve(
         "--required-scope",
         help="With --http: the scope a token must carry (default neuroedge:call)",
     ),
+    revoked: Path | None = typer.Option(
+        None,
+        "--revoked",
+        help="With --http: brain certificate thumbprints to refuse, read again when it changes "
+        "(`neuroedge pair` writes revoked.txt)",
+    ),
 ):
     """
     Serve the agent as a gated MCP server over stdio: every @action is a tool,
@@ -768,6 +781,7 @@ def mcp_serve(
         "--audience": audience,
         "--jwks": jwks,
         "--required-scope": required_scope,
+        "--revoked": revoked,
     }
     if not http and any(value is not None for value in network.values()):
         given = ", ".join(flag for flag, value in network.items() if value is not None)
@@ -795,12 +809,14 @@ def mcp_serve(
                     audience=audience,
                     jwks=jwks,
                     required_scope=required_scope or DEFAULT_SCOPE,
+                    revoked=revoked,
                 )
             )
         except NeuroEdgeError as error:
             _fail(error)
             return
-    if trace_out is not None and target != "linux" and not http:
+    if (trace_out is not None or ui) and target != "linux" and not http:
+        # (--ui: the page's link file, DP-A-10, is removed on the way out too)
         # SIGTERM / SIGHUP must still write the trace and close the HAL (TSK-N2-03): the host
         # that stops a server sends SIGTERM. `linux` installs the handlers in `_start_session`;
         # the network server (--http) listens for both signals itself and closes the same way.
@@ -839,7 +855,7 @@ def mcp_serve(
             # The person at home answers `ask` questions on this page (source `ui`, 127.0.0.1
             # only); the remote client is told a question is waiting and can never answer it.
             err_console.print(
-                f"sim UI at {page.open_url} (same session; `ask` is answered here)",
+                f"sim UI at {page.announced_url} (same session; `ask` is answered here)",
                 markup=False,
                 highlight=False,
                 soft_wrap=True,  # one line: the key after `#` stays part of the URL
@@ -859,14 +875,16 @@ def mcp_serve(
         return
     if page is not None:
         err_console.print(
-            f"sim UI at {page.open_url} (same session)",
+            f"sim UI at {page.announced_url} (same session)",
             markup=False,
             highlight=False,
             soft_wrap=True,
         )
 
     def on_ready() -> None:
-        if page is not None and open_browser:
+        from ..sim.ui import under_service_manager
+
+        if page is not None and open_browser and not under_service_manager():
             import webbrowser
 
             webbrowser.open(page.open_url)
@@ -906,7 +924,7 @@ def _mcp_page(session: Any, port: int) -> Any:
         else:
             err_console.print(
                 f"warning: sim UI port {port} is taken ({taken.why}) — an older server may "
-                f"still be running; the page is at {page.open_url} instead",
+                f"still be running; the page is at {page.announced_url} instead",
                 markup=False,
                 highlight=False,
                 soft_wrap=True,
@@ -2988,6 +3006,140 @@ def _record_from_device(target, port, baud, timeout, out, raw, board, agent, com
             f"{escape(what)}, device {escape(session.info['device_id'])}"
         )
     raise typer.Exit(code=0)
+
+
+@app.command("ui-link", epilog=epilog("ui-link"))
+def ui_link():
+    """
+    Print a fresh link to the running box's local page (DP-A-10): under a service manager the
+    URL is never printed to the journal; this asks the page for a new one-time code, and the
+    previous code stops working. Run it as the box's own user.
+    """
+    import urllib.error
+    import urllib.request
+    from urllib.parse import urlsplit
+
+    from ..sim.ui import CONTROL_HEADER, LINK_FILE, state_dir
+
+    link = state_dir() / LINK_FILE
+    try:
+        known = json.loads(link.read_text(encoding="utf-8"))
+        url, control = str(known["url"]), str(known["control"])
+    except (OSError, ValueError, KeyError, TypeError):
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge ui-link ({link})",
+                why="no running page has written its link file here",
+                how="start the box with --ui, as this user (or with the same $STATE_DIRECTORY)",
+            )
+        )
+        return
+    parts = urlsplit(url)
+    request = urllib.request.Request(
+        f"{parts.scheme}://{parts.netloc}/pair/new",
+        data=b"{}",
+        method="POST",
+        headers={CONTROL_HEADER: control, "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310 - loopback only
+            fresh = json.loads(response.read())["url"]
+    except (OSError, ValueError, KeyError, urllib.error.URLError) as error:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge ui-link ({parts.netloc})",
+                why=f"the page did not give a new link: {error}",
+                how="check that the box is still running; its link file may be from an old run",
+            )
+        )
+        return
+    console.print(fresh, soft_wrap=True)
+    err_console.print(
+        "the code after # works once, within ten minutes; open it before anything else"
+    )
+
+
+# --- pair: a brain over the network (Q-83, DP-A-04, DP-A-11) --------------------------------
+
+
+def _pair(step: Callable[[], Any], directory: Path, what: str) -> None:
+    from .. import pairing
+
+    try:
+        step()
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    settings = json.loads((directory / "hop.json").read_text())
+    console.print(f"[green]✓[/green] {escape(what)} in {escape(str(directory))}")
+    console.print(
+        f"  box:   --tls-cert hop.pem --tls-key hop.key --client-ca ca.pem --jwks jwks.json "
+        f"--revoked {pairing.REVOKED}"
+    )
+    console.print(
+        f"         --issuer {escape(settings['issuer'])} --audience {escape(settings['audience'])}"
+    )
+    console.print("  brain: nao.pem, nao.key, nao.token (never issuer.key or ca.key)")
+
+
+@pair_app.command("init", epilog=epilog("pair init"))
+def pair_init(
+    out: Path = typer.Option(..., "--out", "-o", help="Directory for the keys (created)"),
+    audience: str = typer.Option(
+        ..., "--audience", help="https://<box>:8443/mcp, exactly the URL the brain calls"
+    ),
+    issuer: str | None = typer.Option(None, "--issuer", help="Token issuer URL"),
+    host: list[str] = typer.Option([], "--host", help="Another name or IP of the box"),
+    cert_days: int = typer.Option(365, "--cert-days", help="Lifetime of the certificates"),
+    token_days: int = typer.Option(7, "--token-days", help="Lifetime of the brain token, 1-7"),
+):
+    """
+    Create the CA, the box and brain certificates, the token signing key and a brain token
+    that lives at most 7 days (DP-A-04).
+    """
+    from .. import pairing
+
+    _pair(
+        lambda: pairing.create(
+            out,
+            audience,
+            issuer or pairing.ISSUER,
+            cert_days=cert_days,
+            token_days=token_days,
+            hosts=host,
+        ),
+        out,
+        "keys, certificates and a brain token",
+    )
+
+
+@pair_app.command("renew", epilog=epilog("pair renew"))
+def pair_renew(
+    directory: Path = typer.Option(..., "--dir", "-d", help="The directory `pair init` wrote"),
+    token_days: int = typer.Option(7, "--token-days", help="Lifetime of the new token, 1-7"),
+):
+    """A new brain token for the same certificate; the running box accepts it as is (DP-A-04)."""
+    from .. import pairing
+
+    _pair(lambda: pairing.renew(directory, token_days), directory, "a new brain token")
+
+
+@pair_app.command("rotate", epilog=epilog("pair rotate"))
+def pair_rotate(
+    directory: Path = typer.Option(..., "--dir", "-d", help="The directory `pair init` wrote"),
+    token_days: int = typer.Option(7, "--token-days", help="Lifetime of the new token, 1-7"),
+):
+    """
+    A new brain certificate and token; the old certificate goes into revoked.txt, which a
+    running box (`--revoked`) reads again on its next connection (DP-A-11).
+    """
+    from .. import pairing
+
+    _pair(
+        lambda: pairing.rotate(directory, token_days=token_days),
+        directory,
+        "a new brain certificate and token; the old one is revoked",
+    )
 
 
 if __name__ == "__main__":

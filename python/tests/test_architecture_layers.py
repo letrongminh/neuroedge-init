@@ -31,6 +31,8 @@ ALLOWED: dict[str, set[str]] = {
     "mcp_server": {"actions", "errors"},
     # the network door (TSK-P2-04): the same server as stdio's, behind TLS and token checks
     "mcp_http": {"errors", "mcp_server"},
+    # `neuroedge pair` (Q-83, DP-A-04, DP-A-11): keys, certificates and tokens for the network door
+    "pairing": {"errors"},
     "viz": {"errors", "hal", "trace"},
     "templates": {"errors", "paths"},
     "sim": {
@@ -88,6 +90,7 @@ LAZY: dict[str, set[str]] = {
     # the chip's tools are the ones `mcp serve` lists, from the same function (DP-COM-02, DP-B-03)
     "engine/firmware.py": {"actions"},
     "cli/main.py": {
+        "pairing",
         "guard",
         "plugins",
         "mcp_desktop",

@@ -61,6 +61,18 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge proxy mcp --desktop-config --write",
     ),
     "plugin": ("neuroedge plugin list", "neuroedge plugin doctor"),
+    # -- pair (Q-83) -----------------------------------------------------------------------
+    "pair": (
+        "neuroedge pair init --out keys --audience https://box.local:8443/mcp",
+        "neuroedge pair renew --dir keys",
+    ),
+    "pair init": (
+        "neuroedge pair init --out keys --audience https://box.local:8443/mcp",
+        "neuroedge pair init -o keys --audience https://box.local:8443/mcp --host 192.168.1.20",
+    ),
+    "pair renew": ("neuroedge pair renew --dir keys",),
+    "pair rotate": ("neuroedge pair rotate --dir keys",),
+    "ui-link": ("neuroedge ui-link",),
     "plugin list": ("neuroedge plugin list", "neuroedge plugin list --json"),
     # -- conformance (TSK-I2c-12, the actuator kind of TSK-I2c-16) ----------------------
     "conformance": (

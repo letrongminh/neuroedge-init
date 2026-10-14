@@ -13,6 +13,10 @@ def envelope_state(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_STATE", str(tmp_path / "envelope-state"))
     monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_INIT", "1")
+    # the local page's link file (DP-A-10) is the test's own, and the URL is printed
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    for name in ("STATE_DIRECTORY", "INVOCATION_ID", "NEUROEDGE_SERVICE"):
+        monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture

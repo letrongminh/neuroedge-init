@@ -191,6 +191,9 @@ NOT_RUN = {
         "tests/test_hal_linux_audio.py runs it on the fake gpiod"
     ),
     "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json": "as above",
+    "neuroedge ui-link": (
+        "needs a running page; tests/test_mcp_serve_ui.py runs it against `mcp serve --ui`"
+    ),
 }
 
 
