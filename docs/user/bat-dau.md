@@ -1,5 +1,7 @@
 # Start here
 
+**NeuroEdge: the Physical AI that really does things, safely by design.**
+
 This page is for newcomers: what the system consists of, what runs today, and what to read next.
 It takes five minutes to read. Codes like `Q-72` or `TSK-I2d-25` in other documents are decision codes and task
 codes; on first read they can be skipped.

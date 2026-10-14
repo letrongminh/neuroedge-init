@@ -235,7 +235,7 @@ def test_guard_init_mcp_writes_the_key_and_refuses_it_for_a_command(tmp_path, mo
             for f in doctor_mcp(tmp_path / "m" / "guard.toml")
             if f.level == "warning" and "allow_lan_http" in f.message
         ]
-        assert len(warned) == 1 and "THUẦN" in warned[0].message
+        assert len(warned) == 1 and "PLAIN" in warned[0].message
     finally:
         server.terminate()
         server.wait(timeout=10)
@@ -250,7 +250,7 @@ def test_doctor_warns_when_the_key_is_on_and_not_when_it_is_off(tmp_path):
     on = doctor_http(load_config(tmp_path / "on" / "guard.toml"))
     off = doctor_http(load_config(tmp_path / "off" / "guard.toml"))
     lan = [f for f in on if f.level == "warning" and "allow_lan_http" in f.message]
-    assert len(lan) == 1 and "192.168.1.50" in lan[0].message and "THUẦN" in lan[0].message
+    assert len(lan) == 1 and "192.168.1.50" in lan[0].message and "PLAIN" in lan[0].message
     assert not [f for f in off if "allow_lan_http" in f.message]
     result = runner.invoke(
         app, ["plugin", "doctor", "--config", str(tmp_path / "on" / "guard.toml"), "--json"]

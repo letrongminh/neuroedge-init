@@ -1,5 +1,7 @@
 # Bắt đầu ở đây
 
+**NeuroEdge: The Physical AI that really does things, safely by design** — AI làm việc thật (rơ-le, van, chốt cửa), và an toàn nhờ chính kiến trúc chứ không nhờ AI ngoan.
+
 Trang này cho người mới: hệ thống gồm những gì, hôm nay chạy được gì, và nên đọc gì tiếp.
 Đọc mất năm phút. Các mã như `Q-72` hay `TSK-I2d-25` trong tài liệu khác là mã quyết định và mã
 việc; lần đầu đọc thì bỏ qua được.

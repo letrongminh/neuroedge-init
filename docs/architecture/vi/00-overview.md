@@ -9,6 +9,11 @@
 
 ## 1. What problem NeuroEdge solves
 
+**The Physical AI that really does things, safely by design** (Q-82). *Really does things*: the AI drives
+relays, valves and door latches, not just text. *Safely by design*: safety comes from the structure — gate,
+one-time token, fail-closed, physical envelope — not from the model behaving well. The rest of this chapter is
+how that structure works.
+
 When a chatbot gives a wrong answer, the user clicks "regenerate". When an agent controlling physical devices makes an error,
 a door latch has already opened, a fan has already turned off, a relay has already closed — there is no "regenerate" button. An AI model generates proposals;
 it cannot be the place that decides whether a physical action is permitted to occur.

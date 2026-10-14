@@ -1,8 +1,10 @@
 # NeuroEdge
 
-**From an idea to a physical AI product: build it, run it safely, share and sell it.**
-Physical AI, under contract — no contract, no action: every command to the hardware passes
-the gate.
+**The Physical AI that really does things, safely by design.**
+
+It is built to switch relays, open valves and latch doors — real actions, not text on a screen. Safety
+does not depend on the model behaving well: it is built into the architecture. Every command to
+the hardware passes a gate; no token, no action; when in doubt, block.
 
 NeuroEdge is a **rules-enforcing box** standing between AI and physical devices. AI may only *request* an action; the rule
 on the box (called a *gate*) decides: execute immediately, ask you first, or reject with a reason — and records

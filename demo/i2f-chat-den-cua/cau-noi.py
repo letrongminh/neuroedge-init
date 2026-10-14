@@ -1,15 +1,16 @@
 """
-Cầu nối mTLS cạnh bộ não: PicoClaw nói HTTP với 127.0.0.1, cầu nối mở TLS 1.3 tới hộp tại nhà
-và trình chứng chỉ của bộ não.
+mTLS bridge beside the brain: PicoClaw speaks HTTP to 127.0.0.1, the bridge opens TLS 1.3 to the box at home
+and presents the brain's certificate.
 
     python3 demo/i2f-chat-den-cua/cau-noi.py --target hop-nha.tailnet.ts.net:8443 \
         --ca khoa/ca.pem --cert khoa/nao.pem --key khoa/nao.key
 
-Client MCP HTTP của PicoClaw chỉ thêm header (`pkg/mcp/manager.go`, `headerTransport` trên
-`http.DefaultTransport`), không trình được chứng chỉ client, mà `mcp serve --http` đòi mTLS. Cầu
-nối giữ nguyên luật của hộp thay vì nới nó. Chỉ thư viện chuẩn, chạy được trên VPS có python3.
+PicoClaw's HTTP MCP client only adds headers (`pkg/mcp/manager.go`, `headerTransport` over
+`http.DefaultTransport`) and cannot present a client certificate, while `mcp serve --http` demands mTLS.
+The bridge keeps the box's rule as it is instead of loosening it. Standard library only; runs on a VPS
+with python3.
 
-Nó chỉ nghe trên loopback: phía HTTP chưa mã hoá và mang token, nên không bao giờ ra mạng.
+It listens on loopback only: the HTTP side is unencrypted and carries the token, so it never reaches the network.
 """
 
 from __future__ import annotations
@@ -84,7 +85,7 @@ async def serve(
                 server_hostname=server_name or target_host,
             )
         except (OSError, ssl.SSLError) as error:
-            log(f"cầu nối: không tới được hộp {target}: {error}")
+            log(f"bridge: cannot reach the box {target}: {error}")
             client_writer.close()
             return
         await asyncio.gather(
@@ -96,7 +97,7 @@ async def serve(
 
     server = await asyncio.start_server(handle, listen_host, listen_port)
     port = server.sockets[0].getsockname()[1]
-    log(f"cầu nối: http://{listen_host}:{port} → https://{target} (mTLS)")
+    log(f"bridge: http://{listen_host}:{port} → https://{target} (mTLS)")
     if on_ready is not None:
         on_ready(port)
     async with server:
@@ -106,11 +107,11 @@ async def serve(
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0].strip())
     parser.add_argument("--listen", default="127.0.0.1:8444")
-    parser.add_argument("--target", required=True, help="host:port của hộp (mcp serve --http)")
+    parser.add_argument("--target", required=True, help="the box's host:port (mcp serve --http)")
     parser.add_argument("--ca", required=True)
     parser.add_argument("--cert", required=True)
     parser.add_argument("--key", required=True)
-    parser.add_argument("--server-name", help="tên trong chứng chỉ hộp, nếu khác host của --target")
+    parser.add_argument("--server-name", help="name in the box's certificate, if different from the host of --target")
     args = parser.parse_args(argv)
     context = tls_context(args.ca, args.cert, args.key)
     with contextlib.suppress(KeyboardInterrupt):

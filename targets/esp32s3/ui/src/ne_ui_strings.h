@@ -8,7 +8,7 @@
  *
  * Adding a language means adding one table here and the glyphs its strings need
  * to fonts/ranges.txt (checked by python/tests/test_ui_assets.py); the rule is
- * docs/spec/ui.md §Ngôn ngữ.
+ * docs/spec/ui.md §2 (Language).
  */
 #ifndef NE_UI_STRINGS_H
 #define NE_UI_STRINGS_H

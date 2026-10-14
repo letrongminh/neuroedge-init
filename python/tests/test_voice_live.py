@@ -666,7 +666,7 @@ def test_cli_mic_happy_path(project: Any, tmp_path: Path, monkeypatch: pytest.Mo
     assert "turn 1 ·" in result.output
     assert "heard: “mở cửa”" in result.output
     assert "ALLOW" in result.output
-    assert "Dùng tai nghe — loa ngoài thì thêm --half-duplex" in result.output
+    assert "Use headphones — on speakers add --half-duplex" in result.output
     assert "1 turns" in result.output
 
     trace_data = load_trace(trace)
@@ -697,7 +697,7 @@ def test_cli_mic_half_duplex_banner(project: Any, monkeypatch: pytest.MonkeyPatc
         ["run", "--mic", "--half-duplex", "--agent", str(agent)],
     )
     assert result.exit_code == 0, result.output
-    assert "half-duplex: bật" in result.output
+    assert "half-duplex: on" in result.output
 
 
 def test_cli_mic_ctrl_c_exits_0(

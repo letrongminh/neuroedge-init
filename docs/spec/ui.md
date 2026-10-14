@@ -28,7 +28,7 @@ What firmware carries from now on is **language** (§2): `NE_AGENT_LANGUAGE` in 
 animation parameters take `LV_ANIM_OFF`), no auto-scrolling. The same state struct yields the exact same pixels —
 that is what makes golden screenshots meaningful.
 
-## 2. Ngôn ngữ — the single rule
+## 2. Language — the single rule
 
 Each agent has one language, selected in order:
 

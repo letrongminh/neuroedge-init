@@ -245,10 +245,10 @@ def _run_live(
     console.print(f"  speaker (output): {escape(str(out_name))}")
     if not half_duplex:
         console.print(
-            "  Dùng tai nghe — loa ngoài thì thêm --half-duplex (tắt micro khi agent đang nói, không cắt lời được)"
+            "  Use headphones — on speakers add --half-duplex (mutes the mic while the agent speaks, no barge-in)"
         )
     else:
-        console.print("  half-duplex: bật (tắt micro khi agent đang nói, không cắt lời được)")
+        console.print("  half-duplex: on (mutes the mic while the agent speaks, no barge-in)")
     console.print(f"  stt: {escape(stt_config.label)}")
     if stt_fallback is not None:
         console.print(f"  stt fallback: {escape(stt_config.fallback.label)}")

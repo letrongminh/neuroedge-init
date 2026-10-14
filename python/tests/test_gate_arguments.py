@@ -317,8 +317,8 @@ def test_gate_explain_shows_the_limits_and_what_the_child_narrowed(root):
         ],
     )
     assert result.exit_code == 0, result.output
-    assert "Giới hạn tham số" in result.output
-    assert "con đã thu hẹp so với cha" in result.output
+    assert "Argument limits" in result.output
+    assert "child narrowed it versus parent" in result.output
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])

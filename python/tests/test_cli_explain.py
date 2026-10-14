@@ -26,33 +26,33 @@ def test_explain_shows_evaluate_allow_when_and_on_block(gates_dir):
     assert result.exit_code == 0, result.output
     out = result.output
     assert "Gate: unlock_door@1.2.0" in out
-    assert "Kế thừa từ: neuroedge://gates/hospitality/base-access@1.0.0" in out
-    assert "Phân cấp: 2 cấp" in out
+    assert "Extends: neuroedge://gates/hospitality/base-access@1.0.0" in out
+    assert "Levels: 2" in out
     assert "fail-closed" in out
-    for section in ("1. Các tiêu chí đánh giá", "2. Điều kiện cho phép", "3. Ngân sách"):
+    for section in ("1. Evaluation criteria", "2. Allow conditions", "3. Budget"):
         assert section in out
     for criterion in ("guest_authenticated", "risk_level", "room_matches"):
         assert criterion in out
-    assert "(Từ base-access@1.0.0)" in out
-    assert "(Mới)" in out
-    assert "cha cho phép {low, medium} — con đã siết chặt" in out
-    assert "120 ms (kế thừa và siết chặt từ cha 200 ms)" in out
+    assert "(From base-access@1.0.0)" in out
+    assert "(New)" in out
+    assert "parent allows {low, medium} — child tightened it" in out
+    assert "120 ms (inherited from parent 200 ms and tightened)" in out
     assert "escalate → human_receptionist" in out
 
 
 def test_explain_accepts_a_registry_uri():
     result = explain("neuroedge://gates/unlock_door_night@1.0.0")
     assert result.exit_code == 0, result.output
-    assert "Phân cấp: 3 cấp" in result.output
-    assert "(Từ unlock_door@1.2.0)" in result.output
-    assert "cha: escalate → human_receptionist" in result.output
+    assert "Levels: 3" in result.output
+    assert "(From unlock_door@1.2.0)" in result.output
+    assert "parent: escalate → human_receptionist" in result.output
 
 
 def test_a_root_gate_says_it_inherits_nothing(gates_dir):
     result = explain(str(gates_dir / "hospitality" / "base-access@1.0.0.yaml"))
     assert result.exit_code == 0, result.output
-    assert "Gate gốc" in result.output
-    assert "(Từ " not in result.output
+    assert "Root gate" in result.output
+    assert "(From " not in result.output
 
 
 def test_an_invalid_gate_exits_one_with_a_three_part_diagnostic(gate_fixtures_dir):
@@ -81,7 +81,7 @@ def test_fail_open_is_called_out(gate_fixtures_dir):
     )
     assert result.exit_code == 0, result.output
     assert "fail-open" in result.output
-    assert "trừ khi một tiêu chí đã biết là không đạt" in result.output
+    assert "unless a known criterion fails" in result.output
 
 
 def test_degrade_names_its_fallback(gate_fixtures_dir):
@@ -91,7 +91,7 @@ def test_degrade_names_its_fallback(gate_fixtures_dir):
         str(gate_fixtures_dir / "registry"),
     )
     assert result.exit_code == 0, result.output
-    assert "degrade → chạy notify_front_desk qua gate riêng của nó" in result.output
+    assert "degrade → runs notify_front_desk through its own gate" in result.output
 
 
 # --- the provenance data ----------------------------------------------------------

@@ -1,21 +1,22 @@
 """
-Khoá cho demo chat đèn và cửa: một CA, chứng chỉ hộp, chứng chỉ bộ não, khoá ký token và token.
+Keys for the light-and-door chat demo: one CA, the box certificate, the brain certificate, the token signing key and the token.
 
     python demo/i2f-chat-den-cua/tao-khoa.py --out ~/neuroedge-demo-khoa \
         --audience https://hop-nha.tailnet.ts.net:8443/mcp
     python demo/i2f-chat-den-cua/tao-khoa.py --out ~/neuroedge-demo-khoa --renew-token
 
-Chỉ cho demo: CA và issuer là tệp trên máy, token sống `--days` ngày. Bản thật cấp chứng chỉ
-và token qua relay (TSK-I2f-09). Cần `cryptography` và `PyJWT`, đã có khi cài `neuroedge[mcp]`.
+Demo only: the CA and issuer are files on this machine, the token lives `--days` days. The real thing issues
+certificates and tokens through the relay (TSK-I2f-09). Needs `cryptography` and `PyJWT`, both present when
+`neuroedge[mcp]` is installed.
 
-Ra thư mục `--out`:
-    ca.pem                         CA ký cả hai chứng chỉ (hộp: --client-ca; cầu nối: --ca)
-    hop.pem, hop.key               chứng chỉ máy chủ của hộp (SAN: tên trong --audience, localhost)
-    nao.pem, nao.key               chứng chỉ client của bộ não (cầu nối trình nó)
-    jwks.json                      khoá công khai ký token (hộp: --jwks)
-    issuer.key                     khoá riêng ký token — giữ ở nhà, đừng chép lên VPS
-    nao.token                      token gắn với nao.pem (cnf.x5t#S256), PicoClaw gửi trong header
-    hop.json                       issuer và audience, để --renew-token dùng lại
+Written to the `--out` directory:
+    ca.pem                         CA signing both certificates (box: --client-ca; bridge: --ca)
+    hop.pem, hop.key               the box's server certificate (SAN: name in --audience, localhost)
+    nao.pem, nao.key               the brain's client certificate (the bridge presents it)
+    jwks.json                      public key for the token signature (box: --jwks)
+    issuer.key                     private token-signing key — keep it at home, never upload it to the VPS
+    nao.token                      token bound to nao.pem (cnf.x5t#S256), sent by PicoClaw in a header
+    hop.json                       issuer and audience, reused by --renew-token
 """
 
 from __future__ import annotations
@@ -145,11 +146,11 @@ def create(out: Path, audience: str, issuer: str, days: int, extra_hosts: list[s
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0].strip())
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--audience", help="https://<tên hộp>:8443/mcp, đúng URL bộ não gọi")
+    parser.add_argument("--audience", help="https://<box name>:8443/mcp, exactly the URL the brain calls")
     parser.add_argument("--issuer", default=ISSUER)
-    parser.add_argument("--host", action="append", default=[], help="tên hay IP khác của hộp")
+    parser.add_argument("--host", action="append", default=[], help="another name or IP of the box")
     parser.add_argument("--days", type=int, default=30)
-    parser.add_argument("--renew-token", action="store_true", help="chỉ cấp lại nao.token")
+    parser.add_argument("--renew-token", action="store_true", help="only reissue nao.token")
     args = parser.parse_args(argv)
     if args.renew_token:
         mint(args.out, args.days)
@@ -158,8 +159,8 @@ def main(argv: list[str] | None = None) -> None:
             parser.error("--audience is required (except with --renew-token)")
         create(args.out, args.audience, args.issuer, args.days, args.host)
     settings = json.loads((args.out / "hop.json").read_text())
-    print(f"khoá ở {args.out}; token sống {args.days} ngày")
-    print(f"  hộp:  --issuer {settings['issuer']} --audience {settings['audience']}")
+    print(f"keys in {args.out}; token lives {args.days} days")
+    print(f"  box:  --issuer {settings['issuer']} --audience {settings['audience']}")
 
 
 if __name__ == "__main__":

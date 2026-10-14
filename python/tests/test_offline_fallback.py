@@ -98,7 +98,7 @@ def test_the_repl_shows_a_source_that_is_down(broken_news):
     session = SimSession.load(broken_news, slow=SystemTwo("x", provider=lambda *a: "ok"))
     console = Console(record=True, width=200)
     assert _turn("đọc tin tức", session, console, console)
-    assert "! news không dùng được" in console.export_text()
+    assert "! news unavailable" in console.export_text()
 
 
 def test_the_banner_says_the_mcp_sdk_is_missing(home, monkeypatch):
@@ -108,14 +108,14 @@ def test_the_banner_says_the_mcp_sdk_is_missing(home, monkeypatch):
         importlib.util, "find_spec", lambda name, *a: None if name == "mcp" else real(name, *a)
     )
     (line,) = mcp_lines(session)
-    assert "chưa cài SDK" in line and "neuroedge[mcp]" in line and "news (headlines)" in line
+    assert "SDK not installed" in line and "neuroedge[mcp]" in line and "news (headlines)" in line
 
 
 def test_the_banner_lists_the_sources_when_they_can_be_used(home):
     (online,) = mcp_lines(SimSession.load(home, slow=SystemTwo("x", provider=lambda *a: "ok")))
-    assert "thông tin, không phải lệnh" in online
+    assert "information, not commands" in online
     (offline,) = mcp_lines(SimSession.load(home))
-    assert "chỉ dùng khi có System 2" in offline
+    assert "used only when System 2 is available" in offline
 
 
 # --- 3. local fallback for actions ------------------------------------------------------------------

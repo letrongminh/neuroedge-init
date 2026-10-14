@@ -110,7 +110,7 @@ def test_gate_publish_emits_canonical_bytes_and_digest(invoke, gates_dir, tmp_pa
 
 
 def test_gate_publish_does_not_claim_to_have_signed(invoke, gates_dir):
-    """Signing needs registry key material (Khối 3); the command must not overstate."""
+    """Signing needs registry key material (Block 3); the command must not overstate."""
     result = invoke("gate", "publish", str(gates_dir / "unlock_door@1.2.0.yaml"))
     assert result.exit_code == 0
     assert "canonical bytes and digest only" in result.output

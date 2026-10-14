@@ -40,7 +40,7 @@ Before the demo session, the presenter prepares the machine (macOS Apple Silicon
 - Verification success notification: `ui-golden: 66/66 passed` then `ui-golden: every screen matches its golden`.
 - Final line:
   ```text
-  ✓ ui: 66 ảnh golden khớp hoàn toàn (vi và en)
+  ✓ ui: all 66 golden screenshots match (vi and en)
   ```
 - Table illustrating 8 representative Vietnamese screens:
 
