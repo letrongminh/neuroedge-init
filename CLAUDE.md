@@ -1,46 +1,46 @@
 # CLAUDE.md — NeuroEdge
 
-Hướng dẫn cho coding agent làm việc trên kho này.
+Instructions for coding agents working on this repository.
 
-**Đọc `CHANGELOG.md` §3 (bàn giao ngữ cảnh) trước khi bắt đầu một phiên mới.** Nguồn
-sự thật và thứ tự ưu tiên khi lệch nhau: §3.1 của tệp đó. Tiến độ: `roadmap/neuroedge-roadmap.md`
-§0. Quyết định: `roadmap/neuroedge-prd.md` §15 (`Q-N`). Việc hoãn có chủ ý: `TODOS.md`. Giải mã
-mọi ký hiệu (`FR-*`, `Q-N`, `A1`, `CEO-X1`…): `docs/user/thuat-ngu.md`. Cấu trúc kho:
+**Read `CHANGELOG.md` §3 (context handoff) before starting a new session.** Sources
+of truth and order of precedence on divergence: §3.1 of that file. Progress: `roadmap/neuroedge-roadmap.md`
+§0. Decisions: `roadmap/neuroedge-prd.md` §15 (`Q-N`). Intentionally deferred work: `TODOS.md`. Symbol decoding
+(`FR-*`, `Q-N`, `A1`, `CEO-X1`…): `docs/user/thuat-ngu.md`. Repository structure:
 `CONTRIBUTING.md` §6.
 
-Hai điều dễ sai nhất:
+Two most common mistakes:
 
-- **Một số thay đổi bắt buộc có RFC** — `schemas/`, ngữ nghĩa phân giải gate, ba vết
-  ghi chuẩn mực, gate đã khoá trong `digests.lock`, bố cục `NETR`. Danh sách đầy đủ, duy
-  nhất: `CONTRIBUTING.md` §3.
-- **Thẩm định lược đồ không đủ để kết luận một gate an toàn.** Cổng kiểm tra là
-  `neuroedge gate lint` (phân giải) — bất biến `CHANGELOG.md` §3.3 #1.
+- **Certain changes strictly require an RFC** — `schemas/`, gate resolution semantics, the three
+  normative traces, gates locked in `digests.lock`, `NETR` layout. Complete, sole
+  list: `CONTRIBUTING.md` §3.
+- **Schema validation is not sufficient to conclude a gate is safe.** The verification gate is
+  `neuroedge gate lint` (resolution) — invariant `CHANGELOG.md` §3.3 #1.
 
 ## Testing
 
 ```bash
-cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 0 failed, 0 skipped
+cd python && .venv/bin/python -m pytest -q      # expected: 0 failed, 0 skipped
 ```
 
-Framework: **pytest**. `testpaths = ["tests"]` trong `python/pyproject.toml`;
-`python/tests_linux/` chạy riêng trên gpio-sim (job `linux-hal`). Bản đã cài (wheel, không
-phải editable) được kiểm bằng `scripts/wheel_smoke.sh` — chạy nó khi đụng tới `paths.py`,
-`hatch_build.py`, `README.md` hay đường dẫn tới `schemas/`, `boards/`, `gates/`.
+Framework: **pytest**. `testpaths = ["tests"]` in `python/pyproject.toml`;
+`python/tests_linux/` runs separately on gpio-sim (`linux-hal` job). Installed package (wheel, non-editable)
+is verified with `scripts/wheel_smoke.sh` — run it when touching `paths.py`,
+`hatch_build.py`, `README.md`, or paths to `schemas/`, `boards/`, `gates/`.
 
-Hai luật không thương lượng, chi tiết ở `CONTRIBUTING.md`:
+Two non-negotiable rules, detailed in `CONTRIBUTING.md`:
 
-- **Không test nào được skip** (§5). CI fail build nếu có bất kỳ skip nào.
-- **Mọi corpus khép kín hai chiều** (§3): mỗi tệp một mục đáp án, mỗi mục một tệp —
-  `expected_errors.yaml` cho gate và vết ghi, `expected_results.yaml` cho tool call.
+- **No tests may be skipped** (§5). CI fails the build on any skip.
+- **Every corpus is bidirectionally closed** (§3): one expected entry per file, one file per entry —
+  `expected_errors.yaml` for gates and traces, `expected_results.yaml` for tool calls.
 
-Số test hiện hành ở `roadmap/neuroedge-roadmap.md` §0.1, không ghi ở đây.
+Current test count lives in `roadmap/neuroedge-roadmap.md` §0.1, not recorded here.
 
-## Khi xong một task
+## Completing a Task
 
-Làm theo **`CONTRIBUTING.md` §8**, trong cùng PR với mã: tiến độ ở roadmap, một mục
-trong `CHANGELOG.md` `[Chưa phát hành]`, đặc tả nếu hành vi đổi. Mỗi sự thật có
-đúng một nơi (§8.1) — nơi khác dẫn mã, không chép lại. Chạy `ruff check .` và
-`ruff format --check .` (trong `python/`) trước khi commit; CI chặn cả hai.
+Follow **`CONTRIBUTING.md` §8**, in the same PR as code: progress in roadmap, one entry
+in `CHANGELOG.md` `[Unreleased]`, specification if behavior changed. Every truth has
+exactly one place (§8.1) — other places reference codes, do not duplicate. Run `ruff check .` and
+`ruff format --check .` (in `python/`) before committing; CI blocks on both.
 
 ## Skill routing
 

@@ -1,29 +1,29 @@
-# Danh mục demo theo increment — NeuroEdge
+# Demo catalog by increment — NeuroEdge
 
-Thư mục `demo/` tập hợp các kịch bản trình diễn và mã lệnh chuẩn bị cho từng mốc phát triển của dự án NeuroEdge. Theo quyết định Q-49, mỗi increment ra kèm một demo trong `demo/<increment>/`, chạy được bằng lệnh có thật, ghi commit đã chạy lại; quy tắc này được kiểm tra bằng review trước khi hoàn thành một increment. Tài liệu giúp người thuyết trình trình diễn trực tiếp các năng lực hiện có của NeuroEdge cho người ngoài đội ngũ kỹ thuật.
+The `demo/` directory collects demo scenarios and prepared commands for each milestone of the NeuroEdge project. Per decision Q-49, each increment ships with a demo in `demo/<increment>/`, runnable via real commands, recording the re-run commit; this rule is verified during review before completing an increment. The documentation helps presenters showcase current NeuroEdge capabilities live to audiences outside the engineering team.
 
-## Các bản demo
+## Demos
 
-| Increment | Thư mục | Trạng thái | Chạy ở đâu | Chạy lại lần cuối |
+| Increment | Directory | Status | Where to run | Last re-run |
 |:---|:---|:---|:---|:---|
-| I1 — **NeuroEdge Studio** (giao diện) | [`i1-studio/`](i1-studio/) | sẵn sàng — bảy màn kiểm trên trình duyệt | local macOS/Linux, `neuroedge studio` | nhánh `studio/integration` (2026-09-29) |
-| I1 — terminal | [`i1-sim/`](i1-sim/) | sẵn sàng | local macOS/Linux, không cần phần cứng | `6a69626` (2026-09-29) |
-| I3 (phần không cần bo mạch) + OTA của I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | sẵn sàng | Docker `espressif/idf:v5.4` (Mac Apple Silicon hoặc Linux) | `6a69626` (2026-09-29) |
-| I4 (thoại trên laptop) | [`i4-thoai-laptop/`](i4-thoai-laptop/) | sẵn sàng — đường provider đã chạy thật; micro: chạy thử trên máy trình bày | local macOS, tai nghe, `OPENROUTER_API_KEY` | nhánh `voice/integration` (2026-09-29) |
-| I2d/I2f — **chat điều khiển đèn và cửa qua NeuroEdge Cloud** (Q-76) | [`i2f-chat-den-cua/`](i2f-chat-den-cua/) | đã chạy đủ sáu màn qua Telegram (OrbStack làm cloud); chưa có video, chưa chạy trên VPS thật | laptop làm hộp + máy OrbStack hoặc VPS, bot Telegram, key OpenRouter | nhánh `feat/demo-chat-den-cua` (2026-10-13) |
+| I1 — **NeuroEdge Studio** (UI) | [`i1-studio/`](i1-studio/) | ready — seven screens verified in browser | local macOS/Linux, `neuroedge studio` | branch `studio/integration` (2026-09-29) |
+| I1 — terminal | [`i1-sim/`](i1-sim/) | ready | local macOS/Linux, no hardware needed | `6a69626` (2026-09-29) |
+| I3 (boardless portion) + OTA of I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | ready | Docker `espressif/idf:v5.4` (Mac Apple Silicon or Linux) | `6a69626` (2026-09-29) |
+| I4 (voice on laptop) | [`i4-thoai-laptop/`](i4-thoai-laptop/) | ready — provider path tested live; microphone: tested on presenter machine | local macOS, headphones, `OPENROUTER_API_KEY` | branch `voice/integration` (2026-09-29) |
+| I2d/I2f — **chat controlling light and door via NeuroEdge Cloud** (Q-76) | [`i2f-chat-den-cua/`](i2f-chat-den-cua/) | ran all six screens via Telegram (OrbStack as cloud); no video yet, not yet run on real VPS | laptop as box + OrbStack VM or VPS, Telegram bot, OpenRouter key | branch `feat/demo-chat-den-cua` (2026-10-13) |
 
-## Vì sao chạy local, không Docker
+## Why run locally instead of Docker
 
-Bản demo `sim` chạy trực tiếp trên máy cục bộ (macOS hoặc Linux) thay vì chạy trong container Docker vì trang giao diện trực quan `--ui` chỉ bind vào địa chỉ loopback `127.0.0.1`, đồng thời Docker trên macOS không thể chuyển tiếp trực tiếp micro và loa vào container cho các tác vụ âm thanh. Ngược lại, các demo firmware (như I3) chạy trong Docker với cùng image môi trường của CI (`espressif/idf:v5.4`). Với target `linux`, hệ thống đòi hỏi nhân Linux thật có mô-đun `gpio-sim` (máy ảo Linux), nên phần này được chứng minh qua nhật ký chạy của CI (job `linux-hal`).
+The `sim` demo runs directly on the local machine (macOS or Linux) rather than inside a Docker container because the visual UI page `--ui` binds only to the loopback address `127.0.0.1`, and Docker on macOS cannot forward the microphone and speaker directly into containers for audio tasks. Conversely, firmware demos (such as I3) run inside Docker using the same environment image as CI (`espressif/idf:v5.4`). For target `linux`, the system requires a real Linux kernel with the `gpio-sim` module (Linux VM), so this portion is proven via CI run logs (`linux-hal` job).
 
-## Demo phỏng vấn khách hàng
+## Customer interview demos
 
-Ngoài các demo theo từng increment kỹ thuật tại thư mục này, tài liệu kịch bản demo phỏng vấn theo từng phân khúc nhu cầu khách hàng (≤ 5 phút mỗi phân khúc, phục vụ kiểm chứng giả thuyết kinh doanh) được lưu tại [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../docs/business/cong-nhu-cau-2026-10-25/demo.md).
+In addition to technical demos for each increment in this directory, interview demo scenario documents tailored to customer demand segments (≤ 5 minutes per segment, used to validate business hypotheses) are stored at [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../docs/business/cong-nhu-cau-2026-10-25/demo.md).
 
-## Thêm demo cho increment mới
+## Adding a demo for a new increment
 
-Khi thêm demo cho một increment mới theo quyết định Q-49:
-- Đặt tên thư mục con theo quy ước `i<N>-<slug>/` (ví dụ `i1-sim/`, `i3-firmware-qemu/`).
-- Tạo tệp `kich-ban.md` gồm lời dẫn của người thuyết trình, khối lệnh gõ có thật và khối đầu ra thực tế trích từ hệ thống (rút gọn bằng ký hiệu `…`).
-- Ghi rõ commit git và môi trường đã chạy lại lần cuối ở đầu tệp kịch bản.
-- Cập nhật dòng tương ứng trong bảng danh mục demo của tệp này.
+When adding a demo for a new increment per decision Q-49:
+- Name the subdirectory following the convention `i<N>-<slug>/` (e.g. `i1-sim/`, `i3-firmware-qemu/`).
+- Create a `kich-ban.md` file containing the presenter's narrative, actual typed command blocks, and real system output blocks (truncated using `…`).
+- Record the git commit and re-run environment clearly at the top of the scenario file.
+- Update the corresponding row in the demo catalog table of this file.

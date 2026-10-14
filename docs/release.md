@@ -1,66 +1,66 @@
-# Phát hành `neuroedge`
+# Releasing `neuroedge`
 
-**Chính sách (Q-39):** mỗi increment kết thúc bằng một tag; tag của từng increment ở
-`neuroedge-roadmap.md` §0.2. **Trước I6, mọi tag là nội bộ** — không đẩy lên index nào.
-Lần phát hành ra ngoài đầu tiên là **I6 — Công khai**, lên PyPI; các bước dưới dùng số của
-nó (`0.6.0`).
+**Policy (Q-39):** every increment ends with a tag; the tag for each increment is listed in
+`neuroedge-roadmap.md` §0.2. **Before I6, all tags are internal** — nothing is pushed to any index.
+The first external release is **I6 — Public**, onto PyPI; the steps below use its
+version number (`0.6.0`).
 
-Workflow là [`.github/workflows/release-pypi.yml`](../.github/workflows/release-pypi.yml)
-(`TSK-S3-14`). Nó có sáu job:
+The workflow is [`.github/workflows/release-pypi.yml`](../.github/workflows/release-pypi.yml)
+(`TSK-S3-14`). It has six jobs:
 
-| Job | Chạy khi | Làm gì |
+| Job | Runs on | What it does |
 |:---|:---|:---|
-| `build` | mọi lần chạy | sdist, rồi wheel build **từ** sdist; `twine check --strict` (README render được trên PyPI); với tag, kiểm tag bằng `v` + `version` trong `python/pyproject.toml` |
-| `sbom` | mọi lần chạy, sau `build` | SBOM CycloneDX của wheel cài theo `requirements-lock.txt` (`scripts/sbom.sh`, artifact `sbom`, `TSK-W0-02`). Job riêng: công cụ SBOM cài từ index không chạm được `dist` mà `attest` ký |
-| `smoke` | mọi lần chạy | runner sạch tải đúng wheel vừa build, chạy `scripts/wheel_smoke.sh --wheel` trên Python 3.11 và 3.13 |
-| `attest` | tag, và chạy tay **từ `main`**; không bao giờ PR | ký provenance bản build cho wheel, sdist và SBOM (Sigstore), rồi `gh attestation verify` từng tệp (`TSK-W2-07`) — chạy tay là bản chạy thử |
-| `publish-testpypi` | tag pre-release (`v0.6.0rc1`, `v0.7.0b1`…) **và** `PUBLISH_ENABLED == 'true'` | đẩy lên test.pypi.org |
-| `publish-pypi` | tag bản chính (`v0.6.0`) **và** `PUBLISH_ENABLED == 'true'` | đẩy lên pypi.org |
-| `github-release` | sau khi một job `publish-*` xanh | tạo GitHub Release của tag, gắn wheel, sdist và SBOM |
+| `build` | every run | sdist, then wheel built **from** sdist; `twine check --strict` (README renders on PyPI); for tags, verifies tag equals `v` + `version` in `python/pyproject.toml` |
+| `sbom` | every run, after `build` | CycloneDX SBOM of wheel installed per `requirements-lock.txt` (`scripts/sbom.sh`, artifact `sbom`, `TSK-W0-02`). Separate job: SBOM tools installed from index cannot touch `dist` signed by `attest` |
+| `smoke` | every run | clean runner downloads the exact built wheel, runs `scripts/wheel_smoke.sh --wheel` on Python 3.11 and 3.13 |
+| `attest` | tags, and manual runs **from `main`**; never PRs | signs build provenance for wheel, sdist, and SBOM (Sigstore), then `gh attestation verify` each file (`TSK-W2-07`) — manual run serves as dry run |
+| `publish-testpypi` | pre-release tags (`v0.6.0rc1`, `v0.7.0b1`…) **and** `PUBLISH_ENABLED == 'true'` | pushes to test.pypi.org |
+| `publish-pypi` | release tags (`v0.6.0`) **and** `PUBLISH_ENABLED == 'true'` | pushes to pypi.org |
+| `github-release` | after either `publish-*` job succeeds | creates GitHub Release for the tag, attaches wheel, sdist, and SBOM |
 
-Đẩy lên index dùng trusted publishing (OIDC): kho không giữ token PyPI nào. Khi chưa
-đặt biến `PUBLISH_ENABLED`, dù có ai đẩy tag thì hai job `publish-*` và `github-release` cũng bị bỏ qua.
-Pull request đổi tệp đóng gói chạy `build`, `sbom` và `smoke`, không bao giờ tới `attest` hay `publish-*`.
-**Giữ `PUBLISH_ENABLED` chưa đặt cho tới I6.**
+Publishing to indexes uses trusted publishing (OIDC): the repository holds no PyPI tokens. When
+`PUBLISH_ENABLED` is unset, even if someone pushes a tag, both `publish-*` jobs and `github-release` are skipped.
+Pull requests modifying packaging files run `build`, `sbom`, and `smoke`, never reaching `attest` or `publish-*`.
+**Keep `PUBLISH_ENABLED` unset until I6.**
 
-## Tag nội bộ (I1–I5)
+## Internal tags (I1–I5)
 
-Ví dụ dưới là I1 (`v0.1.0`). Kho còn riêng tư, nên wheel chỉ tới người trong tổ chức hoặc
-người đo được đội đưa tận tay (I1: buổi đo TTFV tại chỗ, `TSK-I1-02`).
+The example below is I1 (`v0.1.0`). The repository is still private, so wheels only go to people in the organization or
+testers handed them directly by the team (I1: on-site TTFV test session, `TSK-I1-02`).
 
-- **PR phiên bản.** Đổi `version` trong `python/pyproject.toml` (I1: `0.1.0`); đổi tiêu đề
-  `### [Chưa phát hành]` trong `CHANGELOG.md` §1 thành `### [0.1.0] — YYYY-MM-DD — nội bộ`, thêm
-  một `### [Chưa phát hành]` rỗng phía trên. Không thêm link phiên bản cuối tệp — repo còn
-  riêng tư. CI xanh, merge.
-- **Tag.** `git tag v0.1.0 && git push origin v0.1.0`. `PUBLISH_ENABLED` chưa đặt nên chỉ
-  `build`, `sbom`, `smoke` và `attest` chạy; `publish-*` và `github-release` bị bỏ qua.
-- **GitHub Release nội bộ** kèm đúng wheel mà `smoke` đã kiểm, và SBOM của nó:
+- **Version PR.** Update `version` in `python/pyproject.toml` (I1: `0.1.0`); change the heading
+  `### [Chưa phát hành]` in `CHANGELOG.md` §1 to `### [0.1.0] — YYYY-MM-DD — internal`, add an
+  empty `### [Unreleased]` above it. Do not add a version link at the end of the file — the repo is
+  still private. CI passes, merge.
+- **Tag.** `git tag v0.1.0 && git push origin v0.1.0`. Since `PUBLISH_ENABLED` is not set, only
+  `build`, `sbom`, `smoke`, and `attest` run; `publish-*` and `github-release` are skipped.
+- **Internal GitHub Release** attaching the exact wheel verified by `smoke`, and its SBOM:
 
   ```bash
-  gh run download <run-id> --name dist --dir dist   # run của tag v0.1.0
+  gh run download <run-id> --name dist --dir dist   # run for tag v0.1.0
   gh run download <run-id> --name sbom --dir sbom
-  # --source-ref: một bản chạy tay từ main cũng có provenance; chỉ tag mới là bản phát hành
+  # --source-ref: manual run from main also has provenance; only tags are release builds
   gh attestation verify dist/*.whl --repo letrongminh/neuroedge-init --source-ref refs/tags/v0.1.0
-  gh release create v0.1.0 dist/* sbom/* --title "v0.1.0 — nội bộ (I1)" \
-      --notes "Preview nội bộ, chưa phát hành ra ngoài. Thay đổi: CHANGELOG.md [0.1.0]."
+  gh release create v0.1.0 dist/* sbom/* --title "v0.1.0 — internal (I1)" \
+      --notes "Internal preview, not released externally. Changes: CHANGELOG.md [0.1.0]."
   ```
 
-- **Nghiệm thu.** Job `smoke` của run tag xanh là bằng chứng `wheel_smoke.sh --wheel` chạy
-  trên đúng wheel đó (I1 tiêu chí 5). Cập nhật roadmap theo `CONTRIBUTING.md` §8.
+- **Acceptance.** The passing `smoke` job on the tag run proves `wheel_smoke.sh --wheel` ran
+  on that exact wheel (I1 criterion 5). Update roadmap per `CONTRIBUTING.md` §8.
 
-## Các bước go-live — ở I6 (làm một lần)
+## Go-live steps — at I6 (one-time setup)
 
-Làm theo đúng thứ tự, khi I6 mở. Bước 1–4 là cấu hình; chưa bước nào phát hành gì.
+Follow in exact order when I6 opens. Steps 1–4 are configuration; none of them releases anything yet.
 
-1. **Repo đã công khai** từ 2026-09-25 — toàn bộ kho (Q-45, `TSK-I6-01`). Trước khi phát hành,
-   gitleaks quét toàn lịch sử phải sạch (`TSK-W0-03`, I6 tiêu chí 1). Trang PyPI dẫn người đọc về các link
-   `https://github.com/letrongminh/neuroedge-init/...` trong `README.md`; repo private thì
-   mọi link đó trả 404.
-2. **Tạo pending trusted publisher** trên cả hai index. Vào
-   <https://test.pypi.org/manage/account/publishing/> rồi
-   <https://pypi.org/manage/account/publishing/>, mục *Add a new pending publisher* → GitHub:
+1. **Repo is public** as of 2026-09-25 — the entire repository (Q-45, `TSK-I6-01`). Before releasing,
+   gitleaks full-history scan must be clean (`TSK-W0-03`, I6 criterion 1). The PyPI page directs readers to
+   `https://github.com/letrongminh/neuroedge-init/...` links in `README.md`; if the repo were private,
+   all those links would return 404.
+2. **Create pending trusted publishers** on both indexes. Go to
+   <https://test.pypi.org/manage/account/publishing/> then
+   <https://pypi.org/manage/account/publishing/>, under *Add a new pending publisher* → GitHub:
 
-   | Trường | test.pypi.org | pypi.org |
+   | Field | test.pypi.org | pypi.org |
    |:---|:---|:---|
    | PyPI Project Name | `neuroedge` | `neuroedge` |
    | Owner | `letrongminh` | `letrongminh` |
@@ -68,25 +68,25 @@ Làm theo đúng thứ tự, khi I6 mở. Bước 1–4 là cấu hình; chưa b
    | Workflow name | `release-pypi.yml` | `release-pypi.yml` |
    | Environment name | `testpypi` | `pypi` |
 
-   Pending publisher **không giữ chỗ** tên: tên chỉ thuộc về bạn sau lần đẩy đầu tiên.
-3. **Tạo hai environment** trong GitHub → Settings → Environments: `testpypi` và `pypi`
-   (tên phải trùng bảng trên). Nên đặt cho `pypi` *Required reviewers* là chính bạn, và
-   *Deployment branches and tags* chỉ cho tag `v*`: bản chính chỉ lên PyPI khi bạn bấm duyệt.
-4. **Bật công tắc:** Settings → Secrets and variables → Actions → *Variables* →
-   `PUBLISH_ENABLED` = `true` (hoặc `gh variable set PUBLISH_ENABLED --body true`).
+   Pending publishers **do not reserve** names: the name belongs to you only after the first push.
+3. **Create two environments** in GitHub → Settings → Environments: `testpypi` and `pypi`
+   (names must match the table above). Recommended: set *Required reviewers* for `pypi` to yourself, and
+   restrict *Deployment branches and tags* to `v*` tags only: release builds reach PyPI only when you click approve.
+4. **Flip the switch:** Settings → Secrets and variables → Actions → *Variables* →
+   `PUBLISH_ENABLED` = `true` (or `gh variable set PUBLISH_ENABLED --body true`).
 
-## Mỗi lần phát hành lên PyPI (từ I6)
+## Each PyPI release (from I6 onward)
 
-5. **Tập trên TestPyPI trước.** Mở PR đổi `version` trong `python/pyproject.toml` thành
-   `0.6.0rc1`, chờ CI xanh, merge. Bản pre-release không đổi `CHANGELOG.md`. Rồi:
+5. **Rehearse on TestPyPI first.** Open a PR updating `version` in `python/pyproject.toml` to
+   `0.6.0rc1`, wait for CI to pass, merge. Pre-releases do not modify `CHANGELOG.md`. Then:
 
    ```bash
    git switch main && git pull
    git tag v0.6.0rc1 && git push origin v0.6.0rc1
    ```
 
-   Chờ `build` → `smoke` → `publish-testpypi` xanh. Kiểm trên một máy (hoặc venv) sạch,
-   ngoài mọi checkout — phụ thuộc lấy từ PyPI thật vì TestPyPI không có đủ:
+   Wait for `build` → `smoke` → `publish-testpypi` to pass. Verify on a clean machine (or venv)
+   outside any checkout — dependencies come from real PyPI because TestPyPI does not have them all:
 
    ```bash
    pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
@@ -94,21 +94,21 @@ Làm theo đúng thứ tự, khi I6 mở. Bước 1–4 là cấu hình; chưa b
    neuroedge gate lint && neuroedge new my-home --template home-voice
    ```
 
-6. **Bản chính.** Một PR đổi `version` thành `0.6.0` **và** đổi tiêu đề
-   `### [Chưa phát hành]` trong `CHANGELOG.md` §1 thành `### [0.6.0] — YYYY-MM-DD`, thêm một
-   `### [Chưa phát hành]` rỗng phía trên, và link cuối tệp
-   `[0.6.0]: https://github.com/letrongminh/neuroedge-init/releases/tag/v0.6.0` (theo repo công
-   khai ở bước 1). Merge, rồi `git tag v0.6.0 && git push origin v0.6.0`. Duyệt environment
-   `pypi` khi GitHub hỏi. Nghiệm thu `TSK-S3-14`: `pip install 'neuroedge[mcp]==0.6.0'` trong
-   venv sạch, rồi `neuroedge gate lint` và `neuroedge trace validate` chạy xanh từ bản cài.
-7. **Sau khi phát hành:** cập nhật `TSK-S3-14` và I6 tiêu chí 3 trong `neuroedge-roadmap.md`
-   theo `CONTRIBUTING.md` §8. A1 đo đầy đủ từ bản PyPI ở I7 (`TSK-I7-02`).
+6. **Production release.** A PR updating `version` to `0.6.0` **and** changing heading
+   `### [Chưa phát hành]` in `CHANGELOG.md` §1 to `### [0.6.0] — YYYY-MM-DD`, adding an empty
+   `### [Unreleased]` above it, and adding the link at the end of the file
+   `[0.6.0]: https://github.com/letrongminh/neuroedge-init/releases/tag/v0.6.0` (following the public repo
+   from step 1). Merge, then `git tag v0.6.0 && git push origin v0.6.0`. Approve the `pypi` environment
+   when prompted by GitHub. Acceptance for `TSK-S3-14`: `pip install 'neuroedge[mcp]==0.6.0'` in a
+   clean venv, then `neuroedge gate lint` and `neuroedge trace validate` run green from the installed package.
+7. **Post-release:** update `TSK-S3-14` and I6 criterion 3 in `neuroedge-roadmap.md`
+   per `CONTRIBUTING.md` §8. A1 runs full measurements from the PyPI build at I7 (`TSK-I7-02`).
 
-## Khi có sự cố
+## Troubleshooting
 
-- **Tag lệch `version`:** job `build` dừng với lỗi nêu cả hai giá trị; chưa có gì được
-  đẩy. Xoá tag (`git push origin :refs/tags/vX`), sửa `version` qua PR, gắn lại tag.
-- **Một phiên bản đã lên index thì không thay được.** PyPI không cho đẩy lại cùng số
-  phiên bản, kể cả sau khi xoá. Sửa lỗi bằng số mới (`0.6.0rc2`, `0.6.1`).
-- **Tắt phát hành ngay:** đặt `PUBLISH_ENABLED` khác `true` (hoặc xoá biến). Hai job
-  `publish-*` bị bỏ qua từ lần chạy kế tiếp.
+- **Tag differs from `version`:** the `build` job halts with an error stating both values; nothing has been
+  pushed. Delete the tag (`git push origin :refs/tags/vX`), fix `version` via PR, and re-tag.
+- **Once a version reaches an index, it cannot be replaced.** PyPI forbids re-uploading the same
+  version number, even after deletion. Fix issues with a new version number (`0.6.0rc2`, `0.6.1`).
+- **Emergency cutoff:** set `PUBLISH_ENABLED` to a value other than `true` (or delete the variable). Both
+  `publish-*` jobs will be skipped from the next run onward.

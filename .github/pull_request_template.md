@@ -1,17 +1,17 @@
 ## Task
 
-<!-- Increment · mã task / quyết định / RFC, ví dụ: I3 · TSK-S4-01 · Q-17 -->
+<!-- Increment · task ID / decision / RFC, e.g.: I3 · TSK-S4-01 · Q-17 -->
 
-## Thay đổi
+## Changes
 
-<!-- Một đến ba câu: thay đổi quan sát được. Lý do dài để ở đây, không ở changelog. -->
+<!-- One to three sentences: observable changes. Put long rationales here, not in the changelog. -->
 
-## Hoàn thành task — `CONTRIBUTING.md` §8
+## Task completion — `CONTRIBUTING.md` §8
 
-- [ ] Máy xanh: `pytest -q` (0 failed, 0 skipped) · `ruff check .` · `ruff format --check .` (trong `python/`) · `neuroedge gate lint` · gate mới/đổi: `scripts/check_digests.py`
-- [ ] Roadmap: dòng task (một glyph trạng thái) · tiêu chí ra kèm bằng chứng · §0.2 khi tiến độ hoặc dự báo đổi (dự báo chỉ kèm bằng chứng, dời cả increment phụ thuộc) · §0.1, §0.3 (thay, không nối)
-- [ ] Demo (Q-49): kịch bản `demo/<increment>/` thêm hoặc chạy lại, ghi commit — hoặc: *không áp dụng*
-- [ ] `CHANGELOG.md` `[Chưa phát hành]`: một mục ≤ 3 dòng (task đã có mục thì sửa mục đó) · §2 nếu lệnh hoặc đầu ra đổi
-- [ ] Đặc tả / PRD §15 / RFC (`CONTRIBUTING.md` §3) — chỉ khi hành vi hoặc quyết định đổi, hoặc: *không áp dụng*
-- [ ] `TODOS.md`: thêm việc hoãn kèm mốc, xoá mục đã xong, đọc lại mốc nhắc tới task này — hoặc: *không áp dụng*
-- [ ] Đã `grep` tham chiếu lỗi thời của mọi sự thật vừa đổi
+- [ ] Clean CI: `pytest -q` (0 failed, 0 skipped) · `ruff check .` · `ruff format --check .` (in `python/`) · `neuroedge gate lint` · new/modified gates: `scripts/check_digests.py`
+- [ ] Roadmap: task row (single status glyph) · exit criteria with evidence · §0.2 if progress or forecast changes (forecast changes require evidence and moving dependent increments) · §0.1, §0.3 (replace, do not append)
+- [ ] Demo (Q-49): script `demo/<increment>/` added or re-run, recording commit — or: *not applicable*
+- [ ] `CHANGELOG.md` `[Unreleased]`: single entry ≤ 3 lines (update existing entry if present) · §2 if commands or outputs changed
+- [ ] Spec / PRD §15 / RFC (`CONTRIBUTING.md` §3) — only if behavior or decisions changed, or: *not applicable*
+- [ ] `TODOS.md`: add deferred work with milestone, delete completed items, review milestones mentioning this task — or: *not applicable*
+- [ ] Grepped for stale references of every fact just changed
