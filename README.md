@@ -21,7 +21,7 @@ tự kiểm lúc khởi động và cập nhật OTA có ký đã chạy trên Q
 
 ## Chat với nhà
 
-Bộ não của nhà là [**NeuroClaw**](https://github.com/letrongminh/neuroclaw) (repo riêng, MIT):
+Bộ não của nhà là **NeuroClaw** (repo riêng `letrongminh/neuroclaw`, MIT):
 bạn nhắn Telegram, nó gọi LLM, nhớ, nhắc lịch, và chạm thiết bị **chỉ** qua bộ tool MCP của hộp
 NeuroEdge — gate vẫn quyết từng lệnh, việc cần hỏi thì hỏi chủ nhà. Nó chạy trên Linux, cloud,
 Pi, macOS, Windows; bản cho chip (NeuroClaw-ESP) chung một ESP32-S3 với gate, hôm nay trên QEMU. Cách nối:
