@@ -1,13 +1,13 @@
 <!doctype html>
-<!-- Ảnh chụp tay ngày 2026-10-14 (sau Q-82), không sinh tự động. Nguồn sự thật: docs/architecture/ (CONTRIBUTING.md §8.1); trang này lệch thì nguồn đúng. -->
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kiến trúc NeuroEdge</title>
+<!-- Hand-made snapshot of 2026-10-14 (after Q-82), not generated. Source of truth: docs/architecture/ (CONTRIBUTING.md §8.1); where this page disagrees, the source wins. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeuroEdge Architecture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: sổ tay hai cột (mục lục trái, nội dung phải), chữ có chân, nhấn bằng một màu san hô.
-   Mỗi phần là một hình; chữ chỉ để gọi tên. Sơ đồ là SVG nội tuyến dùng chung token màu. */
+/* Layout: a two-column field guide (chapter list left, content right), serif type, one coral accent.
+   Each chapter is one figure; words only name things. Diagrams are inline SVG sharing the colour tokens. */
 :root {
   --bg: #fefefc;
   --surface: #ffffff;
@@ -15,7 +15,7 @@
   --ink: #141414;
   --muted: #6a675f;
   --line: #e3e0d8;
-  --gate: #d9472b;        /* màu "cổng": nơi duy nhất ra quyết định, cũng là màu nhấn */
+  --gate: #d9472b;        /* gate colour: the only place that decides, also the accent */
   --gate-soft: #fdf0ec;
   --core: #1f2933;
   --core-soft: #f4f3ef;
@@ -45,7 +45,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.6; margin: 0;
   display: grid; grid-template-columns: 272px minmax(0, 1fr); min-height: 100vh }
 
-/* Mục lục bên trái */
+/* Chapter list on the left */
 .side { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--side); border-right: 1px solid var(--line); padding: 36px 20px 28px; display: grid; align-content: start; gap: 18px }
 .brand { font-family: var(--f-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; text-decoration: none; color: var(--ink) }
 .brand b { color: var(--gate); font-weight: 700 }
@@ -92,7 +92,7 @@ section { display: grid; gap: 20px; min-width: 0 }
 .term { font-family: var(--f-mono); font-size: 12.5px; line-height: 1.7; background: var(--core-soft); border: 1px solid var(--line); border-radius: 2px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere }
 .term .tk { color: var(--muted) } .term .tg { color: var(--gate); font-weight: 600 } .term .tok { color: var(--ok); font-weight: 600 }
 
-/* Chú giải trạng thái */
+/* Status legend */
 .chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 2px; white-space: nowrap; vertical-align: 1px }
 .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50% }
 .ok { background: var(--ok-soft); color: var(--ok) } .ok::before { background: var(--ok) }
@@ -100,7 +100,7 @@ section { display: grid; gap: 20px; min-width: 0 }
 .plan { background: var(--plan-soft); color: var(--plan) } .plan::before { border: 1.5px dashed var(--plan); width: 6px; height: 6px }
 .legend { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 14px; color: var(--muted) }
 
-/* Khung chứa SVG: cuộn ngang trên điện thoại thay vì co chữ quá nhỏ */
+/* SVG frame: scrolls sideways on a phone instead of shrinking the text */
 .fig { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px; overflow-x: auto }
 .fig svg { display: block; width: 100%; height: auto; min-width: 680px }
 .fig.narrow svg { min-width: 520px }
@@ -130,7 +130,7 @@ svg .c-gate { fill: var(--gate) } svg .c-ok { fill: var(--ok) } svg .c-blk { fil
 svg .c-core { fill: var(--core) } svg .c-part { fill: var(--part) } svg .c-plan { fill: var(--plan) } svg .c-muted { fill: var(--muted) }
 svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arrow-o { fill: var(--ok) } svg .arrow-b { fill: var(--block) } svg .arrow-p { fill: var(--plan) }
 
-/* Năm tầng */
+/* Five layers */
 .layers { display: grid; gap: 6px }
 .layer { display: grid; grid-template-columns: 44px minmax(0, 220px) minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 2px; padding: 10px 14px }
 .layer .n { font-family: var(--f-mono); font-size: 20px; font-weight: 500; color: var(--muted); text-align: center }
@@ -145,7 +145,7 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 .layer.l5 { border-left-color: var(--plan); border-style: dashed; border-left-style: solid }
 .down { text-align: center; color: var(--muted); font-size: 12px; line-height: 1 }
 
-/* Kịch bản một lệnh */
+/* One command, three outcomes */
 .scen { display: grid; gap: 10px }
 .row { display: grid; grid-template-columns: minmax(0, 1.1fr) 28px minmax(0, 1fr) 28px minmax(0, 1.3fr); align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 14px 18px }
 .say { font-size: 15px; font-weight: 600 }
@@ -158,7 +158,7 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 .res { font-size: 14px }
 .res small { display: block; color: var(--muted); font-size: 12.5px }
 
-/* Thẻ ba cột */
+/* Three-column cards */
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px; display: grid; gap: 10px; align-content: start }
 .card .ttl { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap }
@@ -173,7 +173,7 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 .mini { text-align: center; color: var(--muted); font-size: 11.5px; line-height: 1.2 }
 .card .note { font-size: 12.5px; color: var(--muted) }
 
-/* Ma trận hiện trạng */
+/* Capability matrix */
 .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 2px; background: var(--surface) }
 table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 560px }
 th, td { text-align: left; vertical-align: middle; padding: 9px 14px; border-bottom: 1px solid var(--line) }
@@ -186,13 +186,13 @@ tr:last-child td { border-bottom: 0 }
 .d-plan { border: 2px dashed var(--plan) }
 .d-na { width: 14px; height: 2px; border-radius: 0; background: var(--line); vertical-align: 4px }
 
-/* Ba bảo đảm */
+/* Three guarantees */
 .guarantees { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
 .g { display: grid; gap: 6px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--gate); border-radius: 2px; padding: 18px }
 .g .big { font-size: 28px; line-height: 1 }
 .g ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 15px; color: var(--muted) }
 
-/* Lộ trình */
+/* Roadmap */
 .road { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; position: relative }
 .road::before { content: ""; position: absolute; left: 16px; right: 16px; top: 13px; height: 2px; background: linear-gradient(90deg, var(--gate) 0 33%, var(--core) 33% 66%, var(--line) 66%) }
 .stop { display: grid; gap: 8px; padding: 0 10px; position: relative; align-content: start }
@@ -202,7 +202,7 @@ tr:last-child td { border-bottom: 0 }
 .stop .when { font-family: var(--f-mono); font-size: 12px; color: var(--muted) }
 .stop ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 15px }
 
-/* Hiểu sai thường gặp */
+/* Common misconceptions */
 .myths { display: grid; border: 1px solid var(--line); border-radius: 2px; background: var(--surface); overflow: hidden }
 .myth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; padding: 11px 18px; border-bottom: 1px solid var(--line); font-size: 15.5px }
 .myth:last-child { border-bottom: 0 }
@@ -239,25 +239,25 @@ details .tbl { margin-top: 10px; border: 0 }
 </head><body>
 <aside class="side">
   <a class="brand" href="#s0">Neuro<b>Edge</b></a>
-  <div class="brand-sub">Kiến trúc tổng thể</div>
-  <nav class="toc" aria-label="Mục lục">
-    <a href="#s0"><span>00</span>Tổng quan</a>
-    <a href="#s1"><span>01</span>Bộ não xin, hộp quyết định</a>
-    <a href="#s2"><span>02</span>Năm tầng, từ người dùng tới thiết bị</a>
-    <a href="#s3"><span>03</span>Một đường duy nhất tới chân phần cứng</a>
-    <a href="#s4"><span>04</span>Ba kết cục của cùng một câu nhắn</a>
-    <a href="#s5"><span>05</span>Bộ não chạy ở đâu, gate luôn ở nhà</a>
-    <a href="#s6"><span>06</span>Một gate, ba nơi chạy, cùng phán quyết</a>
-    <a href="#s7"><span>07</span>Vòng bằng chứng</a>
-    <a href="#s8"><span>08</span>Ba bảo đảm</a>
-    <a href="#s9"><span>09</span>Cắm vào mà không sửa lõi</a>
-    <a href="#s10"><span>10</span>Dựng → Chạy → Chia sẻ</a>
-    <a href="#s11"><span>11</span>Ba chặng</a>
-    <a href="#s12"><span>12</span>Những điểm hay bị mô tả sai</a>
+  <div class="brand-sub">Architecture overview</div>
+  <nav class="toc" aria-label="Chapters">
+    <a href="#s0"><span>00</span>Overview</a>
+    <a href="#s1"><span>01</span>The brain asks, the box decides</a>
+    <a href="#s2"><span>02</span>Five layers, from user to device</a>
+    <a href="#s3"><span>03</span>One path to the hardware</a>
+    <a href="#s4"><span>04</span>One message, three outcomes</a>
+    <a href="#s5"><span>05</span>Where the brain runs</a>
+    <a href="#s6"><span>06</span>One gate, three targets</a>
+    <a href="#s7"><span>07</span>The evidence loop</a>
+    <a href="#s8"><span>08</span>Three guarantees</a>
+    <a href="#s9"><span>09</span>Plug in, leave the core alone</a>
+    <a href="#s10"><span>10</span>Build → Run → Share</a>
+    <a href="#s11"><span>11</span>Three stages</a>
+    <a href="#s12"><span>12</span>Common misconceptions</a>
   </nav>
-  <div class="side-note">Bản vẽ cho người đọc nhanh. Nguồn sự thật vẫn là mã và <code>docs/architecture/</code>.</div>
-  <div class="theme" role="group" aria-label="Giao diện">
-    <button type="button" data-t="auto">Tự động</button><button type="button" data-t="light">Ngày</button><button type="button" data-t="dark">Đêm</button>
+  <div class="side-note">Drawn for quick reading. The source of truth is still the code and <code>docs/architecture/</code>.</div>
+  <div class="theme" role="group" aria-label="Theme">
+    <button type="button" data-t="auto">Auto</button><button type="button" data-t="light">Day</button><button type="button" data-t="dark">Dusk</button>
   </div>
   <div class="side-links">
     <a href="../architecture/vi/00-overview.md">00-overview</a>
@@ -267,38 +267,38 @@ details .tbl { margin-top: 10px; border: 0 }
 <main>
 <div class="wrap">
 
-<!-- ============ MỞ ĐẦU ============ -->
+<!-- ============ OPENING ============ -->
 <header class="hero" id="s0">
-  <div><div class="eyebrow">Chương 0 · Tổng quan · nhánh main, 2026-10-14</div>
+  <div><div class="eyebrow">Chapter 0 · Overview · main branch, 2026-10-14</div>
   <h1>The Physical AI that <em>really</em> does things, safely by design.</h1></div>
-  <p class="lede">AI <strong>làm thật</strong>: bật relay, mở van, chốt cửa. <strong>An toàn từ thiết kế</strong>: model chỉ đề xuất, gate quyết định; không token, không hành động; không chắc thì chặn (Q-82).</p>
+  <p class="lede">AI that <strong>acts for real</strong>: it switches relays, opens valves, locks doors. <strong>Safe by design</strong>: the model only proposes and the gate decides; no token, no action; when in doubt, block (Q-82).</p>
   <div class="try">
     <div class="panel">
-      <h3>Nhắn như nói chuyện</h3>
-      <ul><li>"Bật đèn hiên."</li><li>"Mở cửa cho khách."</li><li>"Tưới cây lúc 6 giờ."</li></ul>
-      <div class="say-q">Bạn nói, NeuroClaw đề xuất, hộp NeuroEdge quyết định rồi mới chạm thiết bị.</div>
-      <div class="term"><span class="tk">Bạn:</span> mở cửa cho khách
-<span class="tk">Hộp:</span> <span class="tg">ASK</span> · hỏi chủ nhà trước khi mở
-<span class="tk">Chủ nhà:</span> có  →  <span class="tok">ALLOW</span> · ghi vết trace.v1</div>
+      <h3>Just say it</h3>
+      <ul><li>"Turn on the porch light."</li><li>"Let the guest in."</li><li>"Water the plants at 6."</li></ul>
+      <div class="say-q">You speak, NeuroClaw proposes, and the NeuroEdge box decides before anything touches a device.</div>
+      <div class="term"><span class="tk">You:</span>   let the guest in
+<span class="tk">Box:</span>   <span class="tg">ASK</span> · checks with the owner first
+<span class="tk">Owner:</span> yes  →  <span class="tok">ALLOW</span> · recorded in trace.v1</div>
     </div>
     <div class="panel">
-      <h3>Đọc hình thế nào</h3>
+      <h3>How to read the figures</h3>
       <div class="legend" style="display:grid; gap:8px; justify-items:start">
-    <span class="chip ok">đã có mã</span>
-    <span class="chip part">có một phần</span>
-    <span class="chip plan">mới quy hoạch</span>
-    <span>· nét đứt cũng là quy hoạch · nguồn sự thật: <a href="../architecture/vi/00-overview.md"><code>00-overview.md</code></a></span>
+    <span class="chip ok">done</span>
+    <span class="chip part">partial</span>
+    <span class="chip plan">planned</span>
+    <span>Dashed outlines are planned too. Source of truth: <a href="../architecture/vi/00-overview.md"><code>00-overview.md</code></a></span>
   </div>
     </div>
   </div>
 </header>
 
-<!-- ============ 1. BỨC TRANH TỔNG ============ -->
+<!-- ============ 1. THE BIG PICTURE ============ -->
 <section id="s1">
-  <div class="head"><div><div class="eyebrow">Chương 1 · Bức tranh tổng</div><h2>Bộ não xin, hộp quyết định</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/assets/svg/E-01-system-context.svg">E-01</a> · <a href="../architecture/assets/svg/E-11-ecosystem.svg">E-11</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 1 · The big picture</div><h2>The brain asks, the box decides</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-01-system-context.svg">E-01</a> · <a href="../architecture/assets/svg/E-11-ecosystem.svg">E-11</a></span></div>
   <div class="fig">
-    <svg viewBox="0 -34 960 474" role="img" aria-label="Người dùng nhắn bộ não NeuroClaw; bộ não gọi hộp NeuroEdge qua MCP; chỉ hộp chạm thiết bị">
+    <svg viewBox="0 -34 960 474" role="img" aria-label="Users message the NeuroClaw brain; the brain calls the NeuroEdge box over MCP; only the box touches devices">
       <defs>
         <marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
         <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-g"/></marker>
@@ -306,271 +306,271 @@ details .tbl { margin-top: 10px; border: 0 }
         <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-p"/></marker>
       </defs>
 
-      <!-- Người dùng -->
-      <text x="20" y="34" class="zl c-muted">NGƯỜI DÙNG</text>
+      <!-- Users -->
+      <text x="20" y="34" class="zl c-muted">USERS</text>
       <rect x="10" y="48" width="160" height="78" rx="10" class="box"/>
-      <text x="26" y="80" class="em">📱</text><text x="58" y="78" class="t">Chủ nhà</text>
-      <text x="26" y="106" class="s">Telegram · trang web</text>
+      <text x="26" y="80" class="em">📱</text><text x="58" y="78" class="t">Owner</text>
+      <text x="26" y="106" class="s">Telegram · web page</text>
       <rect x="10" y="236" width="160" height="78" rx="10" class="box"/>
-      <text x="26" y="268" class="em">🤖</text><text x="58" y="266" class="t">AI khác</text>
+      <text x="26" y="268" class="em">🤖</text><text x="58" y="266" class="t">Other AIs</text>
       <text x="26" y="294" class="s">Claude, OpenClaw…</text>
 
-      <!-- Vùng không tin cậy -->
+      <!-- Untrusted zone -->
       <rect x="200" y="20" width="200" height="140" rx="14" class="zone-un"/>
-      <text x="214" y="40" class="zl c-blk">KHÔNG TIN CẬY</text>
+      <text x="214" y="40" class="zl c-blk">UNTRUSTED</text>
       <rect x="214" y="52" width="172" height="94" rx="10" class="box"/>
       <text x="228" y="84" class="em">🧠</text><text x="260" y="82" class="t">NeuroClaw</text>
-      <text x="228" y="108" class="s">chat · LLM · nhớ</text>
-      <text x="228" y="126" class="s">nhắc lịch · nhãn rủi ro</text>
+      <text x="228" y="108" class="s">chat · LLM · memory</text>
+      <text x="228" y="126" class="s">reminders · risk labels</text>
       <path d="M170 87 H212" class="ln" marker-end="url(#am)"/>
 
-      <!-- Vùng tin cậy: hộp -->
+      <!-- Trusted zone: the box -->
       <rect x="450" y="20" width="300" height="320" rx="16" class="zone-tr"/>
-      <text x="466" y="42" class="zl c-core">TIN CẬY · HỘP NEUROEDGE</text>
+      <text x="466" y="42" class="zl c-core">TRUSTED · NEUROEDGE BOX</text>
       <rect x="470" y="56" width="260" height="40" rx="8" class="box"/>
-      <text x="486" y="81" class="t">c.do()</text><text x="556" y="81" class="s">cửa duy nhất</text>
+      <text x="486" y="81" class="t">c.do()</text><text x="556" y="81" class="s">the only way in</text>
       <rect x="470" y="112" width="260" height="52" rx="8" class="box-gate"/>
       <text x="486" y="144" class="em">⚖️</text><text x="518" y="136" class="t c-gate">Gate</text>
-      <text x="518" y="154" class="s">luật YAML · tất định · fail-closed</text>
+      <text x="518" y="154" class="s">YAML rules · fail-closed</text>
       <rect x="470" y="180" width="260" height="40" rx="8" class="box"/>
-      <text x="486" y="206" class="em">🔑</text><text x="518" y="205" class="t">Token dùng một lần</text>
+      <text x="486" y="206" class="em">🔑</text><text x="518" y="205" class="t">Single-use token</text>
       <rect x="470" y="236" width="260" height="40" rx="8" class="box"/>
-      <text x="486" y="261" class="t">HAL</text><text x="530" y="261" class="s">authorize(token, chân)</text>
+      <text x="486" y="261" class="t">HAL</text><text x="530" y="261" class="s">authorize(token, pin)</text>
       <rect x="470" y="290" width="260" height="36" rx="8" class="box"/>
-      <text x="486" y="313" class="em" style="font-size:16px">📝</text><text x="512" y="313" class="s">vết ghi phát lại được · Action CI</text>
+      <text x="486" y="313" class="em" style="font-size:16px">📝</text><text x="512" y="313" class="s">replayable trace · Action CI</text>
       <path d="M600 96 V110" class="ln" marker-end="url(#am)"/>
       <path d="M600 164 V178" class="ln-ok" marker-end="url(#ao)"/>
       <path d="M600 220 V234" class="ln" marker-end="url(#am)"/>
 
-      <!-- Bộ não → hộp -->
+      <!-- Brain → box -->
       <path d="M386 99 C420 99 430 76 468 76" class="ln-gate" marker-end="url(#ag)"/>
       <text x="392" y="122" class="m">MCP</text>
       <path d="M170 275 H424 V88 H468" class="ln" marker-end="url(#am)"/>
-      <text x="200" y="266" class="m">MCP + mTLS · chỉ xin</text>
+      <text x="200" y="266" class="m">MCP + mTLS · requests only</text>
 
-      <!-- Hỏi chủ nhà -->
+      <!-- Ask the owner -->
       <path d="M470 138 H440 V-12 H140 V44" class="ln-gate" stroke-dasharray="6 4" marker-end="url(#ag)"/>
-      <text x="200" y="-18" class="s" style="fill:var(--gate)">ASK: gate hỏi chủ nhà, chỉ người thật trả lời</text>
+      <text x="200" y="-18" class="s" style="fill:var(--gate)">ASK: the gate asks the owner; only a person can answer</text>
 
-      <!-- Thiết bị -->
-      <text x="794" y="34" class="zl c-muted">THIẾT BỊ THẬT</text>
+      <!-- Devices -->
+      <text x="794" y="34" class="zl c-muted">REAL DEVICES</text>
       <rect x="784" y="48" width="166" height="292" rx="12" class="box"/>
-      <text x="800" y="90" class="em-l">💡</text><text x="840" y="86" class="t">Đèn, relay</text>
-      <text x="800" y="150" class="em-l">🚪</text><text x="840" y="146" class="t">Chốt cửa</text>
-      <text x="800" y="210" class="em-l">💧</text><text x="840" y="206" class="t">Bơm, van</text>
-      <text x="800" y="270" class="em-l">🌡️</text><text x="840" y="266" class="t">Cảm biến</text>
+      <text x="800" y="90" class="em-l">💡</text><text x="840" y="86" class="t">Lights, relays</text>
+      <text x="800" y="150" class="em-l">🚪</text><text x="840" y="146" class="t">Door locks</text>
+      <text x="800" y="210" class="em-l">💧</text><text x="840" y="206" class="t">Pumps, valves</text>
+      <text x="800" y="270" class="em-l">🌡️</text><text x="840" y="266" class="t">Sensors</text>
       <text x="800" y="318" class="s">sim · linux · esp32s3</text>
       <path d="M730 256 H782" class="ln-ok" marker-end="url(#ao)"/>
       <text x="738" y="248" class="m">token</text>
 
-      <!-- Quy hoạch -->
+      <!-- Planned -->
       <rect x="200" y="370" width="240" height="56" rx="10" class="box-plan"/>
       <text x="216" y="402" class="em">☁️</text><text x="248" y="396" class="t">NeuroEdge Cloud</text>
-      <text x="248" y="414" class="s">bộ não cho từng người · I2f</text>
+      <text x="248" y="414" class="s">a brain per user · I2f</text>
       <rect x="470" y="370" width="260" height="56" rx="10" class="box-plan"/>
       <text x="486" y="402" class="em">📦</text><text x="518" y="396" class="t">Blueprint + Hub</text>
-      <text x="518" y="414" class="s">đóng gói, chia sẻ, bán · I2e</text>
+      <text x="518" y="414" class="s">package, share, sell · I2e</text>
       <path d="M320 370 V162" class="ln-plan" marker-end="url(#ap)"/>
       <path d="M600 370 V342" class="ln-plan" marker-end="url(#ap)"/>
     </svg>
   </div>
-  <p class="cap">Đường đỏ nét đứt là ranh giới tin cậy: mọi thứ bên trái chỉ được <em>xin</em>. Bên trong hộp, đường xanh chỉ mở khi gate ra ALLOW.</p>
+  <p class="cap">The dashed red line is the trust boundary: everything to its left can only <em>ask</em>. Inside the box, the green path opens only when the gate says ALLOW.</p>
 </section>
 
-<!-- ============ 2. NĂM TẦNG ============ -->
+<!-- ============ 2. FIVE LAYERS ============ -->
 <section id="s2">
-  <div class="head"><div><div class="eyebrow">Chương 2 · Kiến trúc 00 §2.1</div><h2>Năm tầng, từ người dùng tới thiết bị</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/vi/00-overview.md">00 §2.1</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 2 · Architecture 00 §2.1</div><h2>Five layers, from user to device</h2></div>
+    <span class="more">details: <a href="../architecture/vi/00-overview.md">00 §2.1</a></span></div>
   <div class="layers">
-    <div class="layer l1"><span class="n">1</span><h3><span class="ic">🧠</span>Tương tác, bộ não</h3>
+    <div class="layer l1"><span class="n">1</span><h3><span class="ic">🧠</span>Interaction and brain</h3>
       <div class="pills"><span class="pill">Telegram</span><span class="pill">NeuroClaw</span><span class="pill">Claude Desktop</span><span class="pill">OpenClaw</span></div>
-      <span class="st"><span class="chip part">một phần</span></span></div>
-    <div class="down">▼ chỉ xin, không chạm phần cứng</div>
-    <div class="layer l2"><span class="n">2</span><h3><span class="ic">🔌</span>Lớp mở rộng</h3>
-      <div class="pills"><span class="pill">mcp serve + mTLS</span><span class="pill">proxy mcp</span><span class="pill">proxy http</span><span class="pill">Home Assistant</span><span class="pill">neuroedge.guard</span><span class="pill dashed">add-on HA</span></div>
-      <span class="st"><span class="chip ok">có</span></span></div>
-    <div class="down">▼ tool call có kiểu</div>
-    <div class="layer l3"><span class="n">3</span><h3><span class="ic">🛡️</span>Hộp an toàn</h3>
-      <div class="pills"><span class="pill">c.do()</span><span class="pill">gate</span><span class="pill">ALLOW · ASK · BLOCK</span><span class="pill">token</span><span class="pill">vết ghi</span><span class="pill">Action CI</span></div>
-      <span class="st"><span class="chip ok">có</span></span></div>
-    <div class="down">▼ chỉ khi có token</div>
-    <div class="layer l4"><span class="n">4</span><h3><span class="ic">⚡</span>Thực thi, phần cứng</h3>
-      <div class="pills"><span class="pill">HAL</span><span class="pill">phong bì vật lý</span><span class="pill">sim</span><span class="pill">linux</span><span class="pill">esp32s3</span></div>
-      <span class="st"><span class="chip ok">sim, linux ảo</span> <span class="chip part">QEMU</span></span></div>
-    <div class="down">▲ gói lại, chia sẻ, cập nhật</div>
-    <div class="layer l5"><span class="n">5</span><h3><span class="ic">📦</span>Chia sẻ, bán, vận hành</h3>
-      <div class="pills"><span class="pill dashed">Blueprint</span><span class="pill dashed">Hub</span><span class="pill dashed">Cloud</span><span class="pill">OTA có ký</span></div>
+      <span class="st"><span class="chip part">partial</span></span></div>
+    <div class="down">▼ requests only, never touches hardware</div>
+    <div class="layer l2"><span class="n">2</span><h3><span class="ic">🔌</span>Extension layer</h3>
+      <div class="pills"><span class="pill">mcp serve + mTLS</span><span class="pill">proxy mcp</span><span class="pill">proxy http</span><span class="pill">Home Assistant</span><span class="pill">neuroedge.guard</span><span class="pill dashed">HA add-on</span></div>
+      <span class="st"><span class="chip ok">done</span></span></div>
+    <div class="down">▼ typed tool calls</div>
+    <div class="layer l3"><span class="n">3</span><h3><span class="ic">🛡️</span>The safety box</h3>
+      <div class="pills"><span class="pill">c.do()</span><span class="pill">gate</span><span class="pill">ALLOW · ASK · BLOCK</span><span class="pill">token</span><span class="pill">trace</span><span class="pill">Action CI</span></div>
+      <span class="st"><span class="chip ok">done</span></span></div>
+    <div class="down">▼ only with a token</div>
+    <div class="layer l4"><span class="n">4</span><h3><span class="ic">⚡</span>Execution and hardware</h3>
+      <div class="pills"><span class="pill">HAL</span><span class="pill">physical envelope</span><span class="pill">sim</span><span class="pill">linux</span><span class="pill">esp32s3</span></div>
+      <span class="st"><span class="chip ok">sim, virtual linux</span> <span class="chip part">QEMU</span></span></div>
+    <div class="down">▲ package, share, update</div>
+    <div class="layer l5"><span class="n">5</span><h3><span class="ic">📦</span>Share, sell, operate</h3>
+      <div class="pills"><span class="pill dashed">Blueprint</span><span class="pill dashed">Hub</span><span class="pill dashed">Cloud</span><span class="pill">signed OTA</span></div>
       <span class="st"><span class="chip plan">I2e, I2f</span> <span class="chip part">OTA</span></span></div>
   </div>
   <details>
-    <summary>Cho kỹ sư: năm tầng mã L0–L4 bên trong gói <code>neuroedge</code> (00 §5.1)</summary>
+    <summary>For engineers: the five code layers L0–L4 inside the <code>neuroedge</code> package (00 §5.1)</summary>
     <div class="tbl"><table>
-      <thead><tr><th>Tầng</th><th>Vai trò</th><th>Mã</th><th>Trạng thái</th></tr></thead>
+      <thead><tr><th>Layer</th><th>Role</th><th>Code</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td class="mono">L4</td><td>Ứng dụng agent: MCP, System 2</td><td><code>mcp_server</code>, <code>mcp_host</code></td><td><span class="chip ok">có</span></td></tr>
-        <tr><td class="mono">L3</td><td>Động cơ hợp đồng: gate, token</td><td><code>engine/</code>, <code>actions/</code>, <code>ne_gate</code></td><td><span class="chip ok">host + QEMU</span></td></tr>
-        <tr><td class="mono">L2</td><td>Nhận thức, hội thoại</td><td><code>perception/</code>, <code>models/</code></td><td><span class="chip part">một phần</span> <span class="chip plan">thoại hoãn, Q-77</span></td></tr>
-        <tr><td class="mono">L1</td><td>HAL, năm nguyên thủy</td><td><code>hal/</code>, <code>boards/</code></td><td><span class="chip ok">host</span> <span class="chip plan">chip</span></td></tr>
-        <tr><td class="mono">L0</td><td>Ba target ngang hàng</td><td><code>hal/sim.py</code>, <code>hal/linux.py</code>, <code>targets/esp32s3/</code></td><td><span class="chip ok">sim</span> <span class="chip part">linux, esp32s3</span></td></tr>
+        <tr><td class="mono">L4</td><td>Agent applications: MCP, System 2</td><td><code>mcp_server</code>, <code>mcp_host</code></td><td><span class="chip ok">done</span></td></tr>
+        <tr><td class="mono">L3</td><td>Contract engine: gate, token</td><td><code>engine/</code>, <code>actions/</code>, <code>ne_gate</code></td><td><span class="chip ok">host + QEMU</span></td></tr>
+        <tr><td class="mono">L2</td><td>Perception, conversation</td><td><code>perception/</code>, <code>models/</code></td><td><span class="chip part">partial</span> <span class="chip plan">voice deferred, Q-77</span></td></tr>
+        <tr><td class="mono">L1</td><td>HAL, five primitives</td><td><code>hal/</code>, <code>boards/</code></td><td><span class="chip ok">host</span> <span class="chip plan">chip</span></td></tr>
+        <tr><td class="mono">L0</td><td>Three peer targets</td><td><code>hal/sim.py</code>, <code>hal/linux.py</code>, <code>targets/esp32s3/</code></td><td><span class="chip ok">sim</span> <span class="chip part">linux, esp32s3</span></td></tr>
       </tbody>
     </table></div>
   </details>
 </section>
 
-<!-- ============ 3. XƯƠNG SỐNG ============ -->
+<!-- ============ 3. BACKBONE ============ -->
 <section id="s3">
-  <div class="head"><div><div class="eyebrow">Chương 3 · Xương sống thực thi</div><h2>Một đường duy nhất tới chân phần cứng</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/assets/svg/E-05-gate-spine.svg">E-05</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 3 · The execution backbone</div><h2>One path to the hardware</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-05-gate-spine.svg">E-05</a></span></div>
   <div class="fig">
-    <svg viewBox="0 0 960 250" role="img" aria-label="Nguồn gọi → dispatch → c.do → gate → token → HAL → chân; BLOCK đi on_block; mọi bước ghi vết">
+    <svg viewBox="0 0 960 250" role="img" aria-label="Callers → dispatch → c.do → gate → token → HAL → pin; BLOCK goes to on_block; every step is traced">
       <defs>
         <marker id="bm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
         <marker id="bo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-o"/></marker>
         <marker id="bb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-b"/></marker>
       </defs>
-      <!-- nguồn -->
+      <!-- callers -->
       <rect x="10" y="20" width="150" height="150" rx="12" class="zone-un"/>
-      <text x="22" y="40" class="zl c-blk">NGUỒN GỌI</text>
+      <text x="22" y="40" class="zl c-blk">CALLERS</text>
       <text x="24" y="66" class="s">🧠 NeuroClaw</text>
-      <text x="24" y="88" class="s">🤖 Claude qua MCP</text>
+      <text x="24" y="88" class="s">🤖 Claude via MCP</text>
       <text x="24" y="110" class="s">💬 LLM System 2</text>
-      <text x="24" y="132" class="s">⌨️ lệnh gõ</text>
+      <text x="24" y="132" class="s">⌨️ typed commands</text>
       <text x="24" y="154" class="s">🔌 proxy mcp/http</text>
       <path d="M160 95 H186" class="ln" marker-end="url(#bm)"/>
-      <!-- các bước -->
+      <!-- steps -->
       <rect x="190" y="68" width="110" height="54" rx="10" class="box"/>
       <text x="204" y="92" class="t" style="font-family:var(--f-mono);font-size:13px">dispatch()</text>
-      <text x="204" y="110" class="s">kiểm kiểu</text>
+      <text x="204" y="110" class="s">type check</text>
       <path d="M300 95 H322" class="ln" marker-end="url(#bm)"/>
       <rect x="326" y="68" width="90" height="54" rx="10" class="box"/>
       <text x="340" y="92" class="t" style="font-family:var(--f-mono);font-size:13px">c.do()</text>
-      <text x="340" y="110" class="s">cửa duy nhất</text>
+      <text x="340" y="110" class="s">only way in</text>
       <path d="M416 95 H440" class="ln" marker-end="url(#bm)"/>
       <path d="M500 45 L560 95 L500 145 L440 95 Z" class="box-gate"/>
       <text x="478" y="92" class="t c-gate" style="fill:var(--gate)">⚖️ Gate</text>
-      <text x="472" y="110" class="s">tất định</text>
+      <text x="462" y="110" class="s">deterministic</text>
       <path d="M560 95 H596" class="ln-ok" marker-end="url(#bo)"/>
       <text x="562" y="86" class="m" style="fill:var(--ok)">ALLOW</text>
       <rect x="600" y="68" width="100" height="54" rx="10" class="box-ok"/>
       <text x="614" y="92" class="t">🔑 Token</text>
-      <text x="614" y="110" class="s">một lần</text>
+      <text x="614" y="110" class="s">single use</text>
       <path d="M700 95 H724" class="ln-ok" marker-end="url(#bo)"/>
       <rect x="728" y="68" width="90" height="54" rx="10" class="box"/>
       <text x="744" y="92" class="t">HAL</text>
-      <text x="744" y="110" class="s">kiểm token</text>
+      <text x="744" y="110" class="s">verifies</text>
       <path d="M818 95 H842" class="ln-ok" marker-end="url(#bo)"/>
       <rect x="846" y="68" width="104" height="54" rx="27" class="box-core"/>
-      <text x="866" y="100" class="t">💡 Chân</text>
+      <text x="866" y="100" class="t">💡 Pin</text>
       <!-- BLOCK -->
       <path d="M500 145 V178" class="ln-blk" marker-end="url(#bb)"/>
       <text x="508" y="166" class="m" style="fill:var(--block)">BLOCK</text>
       <rect x="400" y="182" width="210" height="50" rx="10" class="box-blk"/>
       <text x="424" y="204" class="t">on_block</text>
-      <text x="424" y="222" class="s">từ chối · hỏi lại · báo · giảm cấp</text>
-      <!-- vết ghi -->
+      <text x="424" y="222" class="s">deny · ask · escalate · degrade</text>
+      <!-- trace -->
       <rect x="660" y="182" width="290" height="56" rx="10" class="box"/>
-      <text x="676" y="205" class="t">📝 Vết ghi trace.v1</text>
-      <text x="676" y="226" class="s">dữ kiện · phán quyết · lệnh chân</text>
+      <text x="676" y="205" class="t">📝 Trace (trace.v1)</text>
+      <text x="676" y="226" class="s">facts · verdict · pin commands</text>
       <path d="M520 130 C600 160 640 190 658 200" class="ln-dot"/>
       <path d="M773 122 V180" class="ln-dot"/>
-      <!-- đường tắt bị chặn -->
+      <!-- blocked shortcuts -->
       <path d="M160 52 C400 30 700 30 846 70" class="ln-blk" stroke-dasharray="4 4"/>
-      <text x="300" y="22" class="s" style="fill:var(--block)">✕ gọi thẳng chân, token giả, token cũ: bị từ chối và ghi vết</text>
+      <text x="300" y="22" class="s" style="fill:var(--block)">✕ direct pin calls, forged or stale tokens: denied and traced</text>
     </svg>
   </div>
 </section>
 
-<!-- ============ 4. BA KỊCH BẢN ============ -->
+<!-- ============ 4. THREE OUTCOMES ============ -->
 <section id="s4">
-  <div class="head"><div><div class="eyebrow">Chương 4 · Một lệnh đi qua hộp</div><h2>Ba kết cục của cùng một câu nhắn</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/vi/06-runtime-flows.md">06 · luồng chạy</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 4 · One command through the box</div><h2>One message, three outcomes</h2></div>
+    <span class="more">details: <a href="../architecture/vi/06-runtime-flows.md">06 · runtime flows</a></span></div>
   <div class="scen">
     <div class="row">
-      <div class="say">“bật đèn hiên”<small>ngữ pháp lệnh hoặc NeuroClaw</small></div><div class="to">→</div>
+      <div class="say">“turn on the porch light”<small>command grammar or NeuroClaw</small></div><div class="to">→</div>
       <div class="verdict v-allow">ALLOW</div><div class="to">→</div>
-      <div class="res">💡 Đèn bật<small>token mở đúng chân, dùng một lần</small></div>
+      <div class="res">💡 Light on<small>the token opens exactly that pin, once</small></div>
     </div>
     <div class="row">
-      <div class="say">“mở cửa”<small>gate có <code>on_block: ask</code></small></div><div class="to">→</div>
-      <div class="verdict v-ask">ASK chủ nhà</div><div class="to">→</div>
-      <div class="res">🙋 Chủ nhà gõ “có” → 🚪 cửa mở<small>chỉ người thật trả lời được; LLM, MCP không duyệt thay</small></div>
+      <div class="say">“open the door”<small>the gate has <code>on_block: ask</code></small></div><div class="to">→</div>
+      <div class="verdict v-ask">ASK the owner</div><div class="to">→</div>
+      <div class="res">🙋 Owner types “yes” → 🚪 door opens<small>only a person can answer; no LLM or MCP client can approve</small></div>
     </div>
     <div class="row">
-      <div class="say">“mở cửa” lúc mất cảm biến<small>dữ kiện thiếu hoặc quá hạn</small></div><div class="to">→</div>
+      <div class="say">“open the door” with a sensor down<small>facts missing or stale</small></div><div class="to">→</div>
       <div class="verdict v-block">BLOCK</div><div class="to">→</div>
-      <div class="res">🔒 Không làm gì, báo lý do<small>không chắc thì chặn; vết ghi lưu để phát lại</small></div>
+      <div class="res">🔒 Nothing happens; the reason is reported<small>when in doubt, block; the trace is kept for replay</small></div>
     </div>
   </div>
 </section>
 
-<!-- ============ 5. CHẠY Ở ĐÂU ============ -->
+<!-- ============ 5. WHERE IT RUNS ============ -->
 <section id="s5">
-  <div class="head"><div><div class="eyebrow">Chương 5 · Triển khai · Q-76, Q-79</div><h2>Bộ não chạy ở đâu, gate luôn ở nhà</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/assets/svg/E-08-deployment.svg">E-08</a> · <a href="../architecture/vi/15-target-architecture.md">15 §6.10</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 5 · Deployment · Q-76, Q-79</div><h2>The brain can run anywhere; the gate stays home</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-08-deployment.svg">E-08</a> · <a href="../architecture/vi/15-target-architecture.md">15 §6.10</a></span></div>
   <div class="cards">
     <div class="card">
-      <div class="ttl"><h3>Tự host</h3><span class="chip ok">có</span></div>
+      <div class="ttl"><h3>Self-hosted</h3><span class="chip ok">done</span></div>
       <div class="stack">
-        <div class="blk host"><span>Pi · máy Linux · Mac · Windows</span>
-          <div class="blk brain">🧠 NeuroClaw<br><small>user riêng, không quyền thiết bị</small></div>
+        <div class="blk host"><span>Pi · Linux · Mac · Windows</span>
+          <div class="blk brain">🧠 NeuroClaw<br><small>own user, no device access</small></div>
           <div class="mini">▼ MCP + mTLS</div>
-          <div class="blk box">🛡️ Hộp NeuroEdge</div>
+          <div class="blk box">🛡️ NeuroEdge box</div>
         </div>
         <div class="mini">▼ token</div>
         <div class="blk dev">💡🚪💧</div>
       </div>
-      <p class="note">Demo thật 2026-10-13: nhắn Telegram bật đèn, mở cửa.</p>
+      <p class="note">Live demo, 2026-10-13: a Telegram message turns on a light and opens a door.</p>
     </div>
     <div class="card">
-      <div class="ttl"><h3>NeuroEdge Cloud</h3><span class="chip plan">I2f, có điều kiện</span></div>
+      <div class="ttl"><h3>NeuroEdge Cloud</h3><span class="chip plan">I2f, conditional</span></div>
       <div class="stack">
-        <div class="blk host" style="border-style:dashed"><span>☁️ cloud · mỗi người một instance</span>
+        <div class="blk host" style="border-style:dashed"><span>☁️ cloud · one instance per user</span>
           <div class="blk brain">🧠 NeuroClaw</div>
         </div>
-        <div class="mini">▲ nhà tự kết nối ra, không mở cổng</div>
-        <div class="blk host"><span>🏠 nhà</span><div class="blk box">🛡️ Hộp NeuroEdge</div></div>
+        <div class="mini">▲ the home dials out; no open ports</div>
+        <div class="blk host"><span>🏠 home</span><div class="blk box">🛡️ NeuroEdge box</div></div>
         <div class="mini">▼ token</div>
         <div class="blk dev">💡🚪💧</div>
       </div>
-      <p class="note">Mất cloud: gate, phản xạ, cảnh báo tại nhà vẫn chạy.</p>
+      <p class="note">If the cloud goes down, the gate, reflexes and alerts keep running at home.</p>
     </div>
     <div class="card">
-      <div class="ttl"><h3>Một chip</h3><span class="chip part">QEMU</span></div>
+      <div class="ttl"><h3>One chip</h3><span class="chip part">QEMU</span></div>
       <div class="stack">
-        <div class="blk host"><span>⚡ một ESP32-S3, vài đô</span>
+        <div class="blk host"><span>⚡ one ESP32-S3, a few dollars</span>
           <div class="blk brain">🧠 NeuroClaw-ESP</div>
-          <div class="mini">▼ mọi tool call</div>
+          <div class="mini">▼ every tool call</div>
           <div class="blk gate">⚖️ ne_gate</div>
         </div>
         <div class="mini">▼ GPIO</div>
         <div class="blk dev">💡🚪💧</div>
       </div>
-      <p class="note">Nhãn <code>risk=single_chip</code>: bộ não và gate chung chip.</p>
+      <p class="note">Labelled <code>risk=single_chip</code>: the brain and the gate share one chip.</p>
     </div>
   </div>
 </section>
 
-<!-- ============ 6. MỘT HỢP ĐỒNG MỌI NƠI ============ -->
+<!-- ============ 6. ONE CONTRACT EVERYWHERE ============ -->
 <section id="s6">
-  <div class="head"><div><div class="eyebrow">Chương 6 · Tương đương giữa target</div><h2>Một gate, ba nơi chạy, cùng phán quyết</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/assets/svg/E-07-target-matrix.svg">E-07</a> · <a href="../architecture/vi/10-target-equivalence.md">10</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 6 · Target equivalence</div><h2>One gate, three targets, the same verdict</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-07-target-matrix.svg">E-07</a> · <a href="../architecture/vi/10-target-equivalence.md">10</a></span></div>
   <div class="fig narrow">
-    <svg viewBox="0 0 960 230" role="img" aria-label="gate.yaml đọc bằng Python trên sim và linux, biên dịch NETR cho C trên esp32s3; verify so phán quyết">
+    <svg viewBox="0 0 960 230" role="img" aria-label="gate.yaml is read by Python on sim and linux and compiled to NETR for C on esp32s3; verify compares verdicts">
       <defs>
         <marker id="cm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
         <marker id="co" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-o"/></marker>
       </defs>
       <rect x="10" y="80" width="150" height="70" rx="10" class="box-gate"/>
       <text x="26" y="110" class="t">📄 gate.yaml</text>
-      <text x="26" y="132" class="s">luật người đọc được</text>
+      <text x="26" y="132" class="s">human-readable rules</text>
       <path d="M160 105 C200 105 210 55 246 55" class="ln" marker-end="url(#cm)"/>
       <path d="M160 125 C200 125 210 175 246 175" class="ln" marker-end="url(#cm)"/>
       <rect x="250" y="25" width="230" height="60" rx="10" class="box"/>
       <text x="266" y="52" class="t">🐍 Python engine</text>
-      <text x="266" y="72" class="s">phân giải thuần, không đồng hồ</text>
+      <text x="266" y="72" class="s">pure resolution, no clock</text>
       <rect x="250" y="145" width="230" height="60" rx="10" class="box"/>
-      <text x="266" y="172" class="t">⚙️ Biên dịch NETR</text>
-      <text x="266" y="192" class="s">cây nhị phân, đọc tại chỗ</text>
+      <text x="266" y="172" class="t">⚙️ NETR compiler</text>
+      <text x="266" y="192" class="s">binary tree, read in place</text>
       <path d="M480 55 H506" class="ln" marker-end="url(#cm)"/>
       <path d="M480 175 H506" class="ln" marker-end="url(#cm)"/>
       <rect x="510" y="10" width="120" height="40" rx="8" class="box-ok"/><text x="526" y="35" class="t">💻 sim</text>
@@ -582,93 +582,93 @@ details .tbl { margin-top: 10px; border: 0 }
       <path d="M630 175 C690 175 690 118 716 116" class="ln-ok" marker-end="url(#co)"/>
       <rect x="720" y="80" width="230" height="70" rx="12" class="box-core"/>
       <text x="736" y="110" class="t">✓ neuroedge verify</text>
-      <text x="736" y="132" class="s">cùng phán quyết, hoặc chặn merge</text>
+      <text x="736" y="132" class="s">same verdict, or no merge</text>
     </svg>
   </div>
   <div class="tbl"><table>
-    <thead><tr><th>Năng lực</th><th class="c">sim</th><th class="c">linux</th><th class="c">esp32s3</th></tr></thead>
+    <thead><tr><th>Capability</th><th class="c">sim</th><th class="c">linux</th><th class="c">esp32s3</th></tr></thead>
     <tbody>
-      <tr><td>Gate, token</td><td class="c"><span class="dot d-ok" title="có"></span></td><td class="c"><span class="dot d-ok" title="có"></span></td><td class="c"><span class="dot d-ok" title="có trên host và QEMU"></span></td></tr>
-      <tr><td>Điều khiển chân</td><td class="c"><span class="dot d-ok" title="ảo"></span></td><td class="c"><span class="dot d-ok" title="gpio-sim"></span></td><td class="c"><span class="dot d-plan" title="TSK-S4-01"></span></td></tr>
-      <tr><td>Cảm biến, màn hình</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok" title="i2c-stub, vkms"></span></td><td class="c"><span class="dot d-plan"></span></td></tr>
-      <tr><td>Vết ghi, replay, verify</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok" title="UART, QEMU"></span></td></tr>
-      <tr><td>MCP</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-na" title="không áp dụng"></span></td></tr>
-      <tr><td>OTA có ký, rollback</td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-part" title="trên QEMU"></span></td></tr>
-      <tr><td>Bo mạch thật</td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-plan" title="Pi 5 chưa về"></span></td><td class="c"><span class="dot d-plan" title="Box-3 chưa về"></span></td></tr>
+      <tr><td>Gate, token</td><td class="c"><span class="dot d-ok" title="done"></span></td><td class="c"><span class="dot d-ok" title="done"></span></td><td class="c"><span class="dot d-ok" title="done on host and QEMU"></span></td></tr>
+      <tr><td>Pin control</td><td class="c"><span class="dot d-ok" title="virtual"></span></td><td class="c"><span class="dot d-ok" title="gpio-sim"></span></td><td class="c"><span class="dot d-plan" title="TSK-S4-01"></span></td></tr>
+      <tr><td>Sensors, display</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok" title="i2c-stub, vkms"></span></td><td class="c"><span class="dot d-plan"></span></td></tr>
+      <tr><td>Trace, replay, verify</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok" title="UART, QEMU"></span></td></tr>
+      <tr><td>MCP</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-na" title="not applicable"></span></td></tr>
+      <tr><td>Signed OTA, rollback</td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-part" title="on QEMU"></span></td></tr>
+      <tr><td>Real board</td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-plan" title="Pi 5 not delivered yet"></span></td><td class="c"><span class="dot d-plan" title="Box-3 not delivered yet"></span></td></tr>
     </tbody>
   </table></div>
-  <p class="cap"><span class="dot d-ok"></span> có &nbsp; <span class="dot d-part"></span> một phần &nbsp; <span class="dot d-plan"></span> quy hoạch &nbsp; <span class="dot d-na"></span> không áp dụng · nguồn: 00 §6</p>
+  <p class="cap"><span class="dot d-ok"></span> done &nbsp; <span class="dot d-part"></span> partial &nbsp; <span class="dot d-plan"></span> planned &nbsp; <span class="dot d-na"></span> not applicable · source: 00 §6</p>
 </section>
 
-<!-- ============ 7. VÒNG BẰNG CHỨNG ============ -->
+<!-- ============ 7. EVIDENCE LOOP ============ -->
 <section id="s7">
-  <div class="head"><div><div class="eyebrow">Chương 7 · Bằng chứng thay lời hứa</div><h2>Vòng bằng chứng</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/assets/svg/E-06-evidence-loop.svg">E-06</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 7 · Evidence, not promises</div><h2>The evidence loop</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-06-evidence-loop.svg">E-06</a></span></div>
   <div class="fig narrow">
-    <svg viewBox="0 0 960 280" role="img" aria-label="Chạy → vết ghi → phát lại → so phán quyết → CI; lệch thì chặn merge">
+    <svg viewBox="0 0 960 280" role="img" aria-label="Run → trace → replay → compare verdicts → CI; a mismatch blocks the merge">
       <defs>
         <marker id="dm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
         <marker id="db" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-b"/></marker>
         <marker id="do" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-o"/></marker>
       </defs>
       <rect x="10" y="40" width="160" height="70" rx="12" class="box"/>
-      <text x="26" y="70" class="t">▶ Chạy</text><text x="26" y="92" class="s">sim · linux · QEMU</text>
+      <text x="26" y="70" class="t">▶ Run</text><text x="26" y="92" class="s">sim · linux · QEMU</text>
       <path d="M170 75 H196" class="ln" marker-end="url(#dm)"/>
       <rect x="200" y="40" width="190" height="70" rx="12" class="box"/>
-      <text x="214" y="70" class="t">📝 trace.v1</text><text x="214" y="92" class="s">dữ kiện · phán quyết · chân</text>
+      <text x="214" y="70" class="t">📝 trace.v1</text><text x="214" y="92" class="s">facts · verdict · pins</text>
       <path d="M390 75 H416" class="ln" marker-end="url(#dm)"/>
       <rect x="420" y="40" width="170" height="70" rx="12" class="box"/>
-      <text x="436" y="70" class="t">🔁 Phát lại</text><text x="436" y="92" class="s">tính lại, không gọi model</text>
+      <text x="436" y="70" class="t">🔁 Replay</text><text x="436" y="92" class="s">recompute, no LLM calls</text>
       <path d="M590 75 H626" class="ln" marker-end="url(#dm)"/>
       <path d="M700 30 L770 75 L700 120 L630 75 Z" class="box-gate"/>
-      <text x="676" y="80" class="t">⚖️ So</text>
+      <text x="676" y="80" class="t">⚖️ Compare</text>
       <path d="M770 75 H806" class="ln-ok" marker-end="url(#do)"/>
-      <text x="772" y="66" class="m" style="fill:var(--ok)">khớp</text>
+      <text x="772" y="66" class="m" style="fill:var(--ok)">match</text>
       <rect x="810" y="40" width="140" height="70" rx="12" class="box-ok"/>
       <text x="826" y="70" class="t">✓ merge</text><text x="826" y="92" class="s">→ flash, OTA</text>
       <path d="M700 120 V158" class="ln-blk" marker-end="url(#db)"/>
-      <text x="708" y="146" class="m" style="fill:var(--block)">lệch</text>
+      <text x="708" y="146" class="m" style="fill:var(--block)">mismatch</text>
       <rect x="590" y="162" width="220" height="60" rx="12" class="box-blk"/>
-      <text x="606" y="190" class="t">✕ NE4002</text><text x="606" y="210" class="s">hồi quy an toàn: chặn merge</text>
+      <text x="606" y="190" class="t">✕ NE4002</text><text x="606" y="210" class="s">safety regression: merge blocked</text>
       <path d="M880 110 V244 H90 V116" class="ln-dot" marker-end="url(#dm)"/>
-      <text x="300" y="266" class="s">mỗi PR chạy lại toàn bộ vết ghi chuẩn (Action CI)</text>
+      <text x="300" y="266" class="s">every PR replays the full set of reference traces (Action CI)</text>
     </svg>
   </div>
 </section>
 
-<!-- ============ 8. BA BẢO ĐẢM ============ -->
+<!-- ============ 8. THREE GUARANTEES ============ -->
 <section id="s8">
-  <div class="head"><div><div class="eyebrow">Chương 8 · Điều mọi phần khác dựa vào</div><h2>Ba bảo đảm</h2></div>
-    <span class="more">chi tiết: <a href="../spec/threat_model.md">threat_model</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 8 · What everything else relies on</div><h2>Three guarantees</h2></div>
+    <span class="more">details: <a href="../spec/threat_model.md">threat_model</a></span></div>
   <div class="guarantees">
-    <div class="g"><span class="big">🚫</span><h3>Không có đường tắt</h3>
-      <ul><li>Gọi thẳng <code>@action</code>, <code>digital.out()</code>: từ chối</li><li>Token giả, đã dùng, hết hạn: từ chối</li><li>Mỗi lần từ chối đều ghi vết</li></ul></div>
-    <div class="g"><span class="big">✋</span><h3>Không chắc thì chặn</h3>
-      <ul><li>Mặc định <code>fail: closed</code></li><li>Thiếu dữ kiện, quá hạn: không ALLOW</li><li>Lệnh về trạng thái an toàn luôn được phép</li></ul></div>
-    <div class="g"><span class="big">🔁</span><h3>Một hợp đồng ở mọi nơi</h3>
-      <ul><li>Phân giải là hàm thuần</li><li>Trên chip: không JSON, không cấp phát</li><li><code>verify</code> so phán quyết giữa target</li></ul></div>
+    <div class="g"><span class="big">🚫</span><h3>No shortcuts</h3>
+      <ul><li>Direct calls to <code>@action</code> or <code>digital.out()</code>: denied</li><li>Forged, spent or expired tokens: denied</li><li>Every denial is traced</li></ul></div>
+    <div class="g"><span class="big">✋</span><h3>When in doubt, block</h3>
+      <ul><li><code>fail: closed</code> by default</li><li>Missing or stale facts: no ALLOW</li><li>Commands to the safe state are always allowed</li></ul></div>
+    <div class="g"><span class="big">🔁</span><h3>One contract everywhere</h3>
+      <ul><li>Resolution is a pure function</li><li>On the chip: no JSON, no allocation</li><li><code>verify</code> compares verdicts across targets</li></ul></div>
   </div>
 </section>
 
-<!-- ============ 9. NỀN TẢNG MỞ ============ -->
+<!-- ============ 9. OPEN PLATFORM ============ -->
 <section id="s9">
-  <div class="head"><div><div class="eyebrow">Chương 9 · Nền tảng mở · I2c, 11 / 20</div><h2>Cắm vào mà không sửa lõi</h2></div>
-    <span class="more">chi tiết: <a href="../architecture/vi/16-ecosystem-landscape.md">16 §4</a> · <a href="../spec/extension_sdk.md">extension_sdk</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 9 · Open platform · I2c, 11 / 20</div><h2>Plug in, leave the core alone</h2></div>
+    <span class="more">details: <a href="../architecture/vi/16-ecosystem-landscape.md">16 §4</a> · <a href="../spec/extension_sdk.md">extension_sdk</a></span></div>
   <div class="fig narrow">
-    <svg viewBox="0 0 960 300" role="img" aria-label="Lõi an toàn ở giữa; proxy và guard đã có; sáu loại plugin quanh lõi">
-      <!-- lõi -->
+    <svg viewBox="0 0 960 300" role="img" aria-label="The safety core in the middle; proxies and guard are done; six plugin kinds around the core">
+      <!-- core -->
       <circle cx="480" cy="150" r="78" class="box-gate"/>
       <text x="480" y="140" text-anchor="middle" class="em-l">🛡️</text>
-      <text x="480" y="170" text-anchor="middle" class="t">Lõi an toàn</text>
+      <text x="480" y="170" text-anchor="middle" class="t">Safety core</text>
       <text x="480" y="188" text-anchor="middle" class="m">neuroedge.guard</text>
-      <!-- đã có, bên trái -->
+      <!-- done, left -->
       <g>
-        <rect x="20" y="40" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="70" class="t">proxy mcp</text><text x="140" y="70" class="s">✓ có</text>
-        <rect x="20" y="125" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="155" class="t">proxy http</text><text x="140" y="155" class="s">✓ có</text>
+        <rect x="20" y="40" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="70" class="t">proxy mcp</text><text x="140" y="70" class="s">✓ done</text>
+        <rect x="20" y="125" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="155" class="t">proxy http</text><text x="140" y="155" class="s">✓ done</text>
         <rect x="20" y="210" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="240" class="t">mcp serve + mTLS</text><text x="168" y="240" class="s">✓</text>
         <path d="M220 65 L404 130" class="ln"/><path d="M220 150 H402" class="ln"/><path d="M220 235 L404 170" class="ln"/>
       </g>
-      <!-- plugin, bên phải -->
+      <!-- plugins, right -->
       <g>
         <rect x="660" y="10" width="140" height="40" rx="8" class="box-ok"/><text x="674" y="35" class="t" style="font-size:13px">Actuator ✓</text>
         <rect x="820" y="10" width="130" height="40" rx="8" class="box-plan"/><text x="834" y="35" class="s">Bridge</text>
@@ -677,83 +677,83 @@ details .tbl { margin-top: 10px; border: 0 }
         <rect x="660" y="150" width="140" height="40" rx="8" class="box-plan"/><text x="674" y="175" class="s">Template</text>
         <rect x="820" y="150" width="130" height="40" rx="8" class="box-plan"/><text x="834" y="175" class="s">Exporter</text>
         <path d="M558 140 L656 34" class="ln"/><path d="M558 150 L656 100" class="ln-plan"/><path d="M558 160 L656 170" class="ln-plan"/>
-        <text x="660" y="222" class="s">🏠 Actuator đầu tiên: Home Assistant</text>
-        <text x="660" y="242" class="s">(mới kiểm với bản giả)</text>
-        <text x="660" y="272" class="s c-blk" style="fill:var(--block)">Plugin không chạm HAL, không tự gán nguồn,</text>
-        <text x="660" y="290" class="s c-blk" style="fill:var(--block)">không chạy lệnh ngoài token</text>
+        <text x="660" y="222" class="s">🏠 First Actuator: Home Assistant</text>
+        <text x="660" y="242" class="s">(tested against a test double only)</text>
+        <text x="660" y="272" class="s c-blk" style="fill:var(--block)">Plugins never touch the HAL, never claim</text>
+        <text x="660" y="290" class="s c-blk" style="fill:var(--block)">a source, never act without a token</text>
       </g>
     </svg>
   </div>
 </section>
 
-<!-- ============ 10. BA VÒNG SẢN PHẨM ============ -->
+<!-- ============ 10. THREE PRODUCT LOOPS ============ -->
 <section id="s10">
-  <div class="head"><div><div class="eyebrow">Chương 10 · Hướng sản phẩm · Q-72</div><h2>Dựng → Chạy → Chia sẻ</h2></div>
-    <span class="more">chi tiết: <a href="proposal-blueprint-2026-10-11.md">proposal Blueprint</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 10 · Product direction · Q-72</div><h2>Build → Run → Share</h2></div>
+    <span class="more">details: <a href="proposal-blueprint-2026-10-11.md">Blueprint proposal</a></span></div>
   <div class="fig narrow">
-    <svg viewBox="0 0 960 200" role="img" aria-label="Ba vòng: dựng hợp đồng qua MCP, chạy bằng agent vận hành, chia sẻ bằng Blueprint">
+    <svg viewBox="0 0 960 200" role="img" aria-label="Three loops: build contracts over MCP, run them with the operator agent, share them as Blueprints">
       <defs><marker id="em" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-p"/></marker></defs>
       <circle cx="140" cy="95" r="72" class="box-plan"/>
       <text x="140" y="82" text-anchor="middle" class="em-l">🛠️</text>
-      <text x="140" y="110" text-anchor="middle" class="t">Dựng</text>
-      <text x="140" y="128" text-anchor="middle" class="s">hợp đồng qua MCP</text>
+      <text x="140" y="110" text-anchor="middle" class="t">Build</text>
+      <text x="140" y="128" text-anchor="middle" class="s">contracts over MCP</text>
       <circle cx="480" cy="95" r="72" class="box-plan"/>
       <text x="480" y="82" text-anchor="middle" class="em-l">▶️</text>
-      <text x="480" y="110" text-anchor="middle" class="t">Chạy</text>
-      <text x="480" y="128" text-anchor="middle" class="s">agent vận hành 24/7</text>
+      <text x="480" y="110" text-anchor="middle" class="t">Run</text>
+      <text x="480" y="128" text-anchor="middle" class="s">operator agent, 24/7</text>
       <circle cx="820" cy="95" r="72" class="box-plan"/>
       <text x="820" y="82" text-anchor="middle" class="em-l">📦</text>
-      <text x="820" y="110" text-anchor="middle" class="t">Chia sẻ, bán</text>
+      <text x="820" y="110" text-anchor="middle" class="t">Share, sell</text>
       <text x="820" y="128" text-anchor="middle" class="s">NeuroEdge Blueprint</text>
       <path d="M214 95 H402" class="ln-plan" marker-end="url(#em)"/>
       <path d="M554 95 H742" class="ln-plan" marker-end="url(#em)"/>
-      <text x="230" y="84" class="m">người duyệt rồi mới khoá</text>
-      <text x="570" y="84" class="m">vết ghi làm bằng chứng</text>
-      <text x="308" y="190" text-anchor="middle" class="s">duyệt qua Telegram bằng bản ghi duyệt · I2d</text>
-      <text x="650" y="190" text-anchor="middle" class="s">cài bằng một lệnh · I2e</text>
+      <text x="230" y="84" class="m">approved, then locked</text>
+      <text x="570" y="84" class="m">traces as evidence</text>
+      <text x="308" y="190" text-anchor="middle" class="s">approve on Telegram with an approval record · I2d</text>
+      <text x="650" y="190" text-anchor="middle" class="s">one-command install · I2e</text>
     </svg>
   </div>
-  <p class="cap">Gate và hợp đồng là lớp tin cậy chung của cả ba vòng. Blueprint đầu tiên: bể cá, chạy trên giả lập, trước cổng nhu cầu 8 tuần.</p>
+  <p class="cap">The gate and the contract are the shared trust layer of all three loops. First Blueprint: an aquarium, running on the simulator, before the 8‑week demand gate.</p>
 </section>
 
-<!-- ============ 11. LỘ TRÌNH ============ -->
+<!-- ============ 11. ROADMAP ============ -->
 <section id="s11">
-  <div class="head"><div><div class="eyebrow">Chương 11 · Roadmap §0.5, §6 · sau Q-77</div><h2>Ba chặng</h2></div>
-    <span class="more">tiến độ: <a href="../user/trang-thai.md">trang trạng thái</a> · <a href="cpo-dashboard.html">CPO dashboard</a></span></div>
+  <div class="head"><div><div class="eyebrow">Chapter 11 · Roadmap §0.5, §6 · after Q-77</div><h2>Three stages</h2></div>
+    <span class="more">progress: <a href="../user/trang-thai.md">status page</a> · <a href="cpo-dashboard.html">CPO dashboard</a></span></div>
   <div class="road">
-    <div class="stop"><span class="pin"></span><span class="when">trước 2026-12-06</span><h3>Ba vòng trên giả lập</h3>
-      <ul><li>I2d hợp đồng nhiệm vụ, agent vận hành</li><li>I2e Blueprint tối thiểu</li><li>Hộp + NeuroClaw vào cổng 8 tuần (Q-81)</li><li>I2c thử với một đội đối tác</li></ul></div>
-    <div class="stop"><span class="pin"></span><span class="when">sau cổng 8 tuần</span><h3>Phần cứng, phát hành</h3>
-      <ul><li>Gate trên Box-3 thật (I3, I3a)</li><li>Cloud, hộp ESP32 (I2f)</li><li>Ra mắt công khai (I6), v1.0 (I7)</li><li>Beta 50–100 dev (I8)</li></ul></div>
-    <div class="stop"><span class="pin"></span><span class="when">chỉ mở khi có số liệu</span><h3>Hoãn có điều kiện</h3>
-      <ul><li>Thoại (I4, I5), Lab (I4a, I5a)</li><li>Fleet OS, Registry (I9, I10)</li><li>Robot, Jetson (I14, I16–I18)</li></ul></div>
+    <div class="stop"><span class="pin"></span><span class="when">before 2026-12-06</span><h3>Three loops on the simulator</h3>
+      <ul><li>I2d mission contracts, operator agent</li><li>I2e minimal Blueprint</li><li>Box + NeuroClaw in the 8-week gate (Q-81)</li><li>I2c trial with one partner team</li></ul></div>
+    <div class="stop"><span class="pin"></span><span class="when">after the 8-week gate</span><h3>Hardware and release</h3>
+      <ul><li>Gate on a real Box-3 (I3, I3a)</li><li>Cloud, ESP32 box (I2f)</li><li>Public launch (I6), v1.0 (I7)</li><li>Beta with 50–100 developers (I8)</li></ul></div>
+    <div class="stop"><span class="pin"></span><span class="when">reopened only on data</span><h3>Deferred, with triggers</h3>
+      <ul><li>Voice (I4, I5), Lab (I4a, I5a)</li><li>Fleet OS, Registry (I9, I10)</li><li>Robots, Jetson (I14, I16–I18)</li></ul></div>
   </div>
 </section>
 
-<!-- ============ 12. HIỂU SAI ============ -->
+<!-- ============ 12. MISCONCEPTIONS ============ -->
 <section id="s12">
-  <div class="head"><div><div class="eyebrow">Chương 12 · Đối chiếu với mã</div><h2>Những điểm hay bị mô tả sai</h2></div></div>
+  <div class="head"><div><div class="eyebrow">Chapter 12 · Checked against the code</div><h2>Common misconceptions</h2></div></div>
   <div class="myths">
-    <div class="myth"><span class="wrong">NeuroClaw tự điều khiển đèn, cửa</span><span>NeuroClaw chỉ gọi tool MCP của hộp; gate quyết định.</span></div>
-    <div class="myth"><span class="wrong">An toàn vì NeuroClaw đã khoá shell</span><span>Q-80 mở lại như PicoClaw, kèm nhãn rủi ro. An toàn đến từ gate và tách user.</span></div>
-    <div class="myth"><span class="wrong">Gate engine cấp token</span><span><code>TokenLedger</code> trong <code>actions/</code> cấp token.</span></div>
-    <div class="myth"><span class="wrong">Token là chữ ký mật mã</span><span>Nonce ngẫu nhiên trong sổ của tiến trình; mỗi chân dùng một lần.</span></div>
-    <div class="myth"><span class="wrong">Mất mạng → BLOCK ngay</span><span>Rơi về ngữ pháp lệnh cục bộ trước; chỉ chặn khi không có dự phòng.</span></div>
-    <div class="myth"><span class="wrong">esp32s3 đã điều khiển thiết bị</span><span>Gate chạy trên QEMU, chưa động chân (TSK-S4-01).</span></div>
-    <div class="myth"><span class="wrong">Đã có Muse Bridge, chợ plugin</span><span>Muse rời roadmap (Q-77). Mới có loại Actuator: Home Assistant.</span></div>
+    <div class="myth"><span class="wrong">NeuroClaw drives the lights and doors itself</span><span>NeuroClaw only calls the box's MCP tools; the gate decides.</span></div>
+    <div class="myth"><span class="wrong">It is safe because NeuroClaw has no shell</span><span>Q-80 restored the shell to match PicoClaw, with risk labels. Safety comes from the gate and a separate user account.</span></div>
+    <div class="myth"><span class="wrong">The gate engine issues tokens</span><span><code>TokenLedger</code> in <code>actions/</code> issues them.</span></div>
+    <div class="myth"><span class="wrong">A token is a cryptographic signature</span><span>It is a random nonce in the process's ledger, used once per pin.</span></div>
+    <div class="myth"><span class="wrong">Network down → instant BLOCK</span><span>It falls back to the local command grammar first; it blocks only when no fallback exists.</span></div>
+    <div class="myth"><span class="wrong">esp32s3 already drives devices</span><span>The gate runs on QEMU; it does not drive pins yet (TSK-S4-01).</span></div>
+    <div class="myth"><span class="wrong">Muse Bridge and a plugin marketplace exist</span><span>Muse left the roadmap (Q-77). The only plugin so far is an Actuator: Home Assistant.</span></div>
   </div>
 </section>
 
 <footer class="sources">
-  <div class="eyebrow">Nguồn trong kho</div>
-  <span><code>docs/architecture/vi/00-overview.md</code> §1, §2.1–§2.3, §5.1, §6 · <code>15-target-architecture.md</code> §6.10 · <code>16-ecosystem-landscape.md</code> §4 · hình E-01 → E-11 trong <code>docs/architecture/assets/svg/</code></span>
+  <div class="eyebrow">Sources in the repo</div>
+  <span><code>docs/architecture/vi/00-overview.md</code> §1, §2.1–§2.3, §5.1, §6 · <code>15-target-architecture.md</code> §6.10 · <code>16-ecosystem-landscape.md</code> §4 · figures E-01 → E-11 in <code>docs/architecture/assets/svg/</code></span>
   <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-82 · <code>docs/spec/threat_model.md</code> · repo <code>letrongminh/neuroclaw</code></span>
 </footer>
 
 </div>
 </main>
 <script>
-/* Chọn giao diện (lưu trong trình duyệt nếu được) và đánh dấu chương đang đọc. */
+/* Theme switch (remembered in the browser when allowed) and current-chapter marker. */
 (() => {
   const root = document.documentElement, btns = document.querySelectorAll(".theme button");
   const set = t => { if (t === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", t);
