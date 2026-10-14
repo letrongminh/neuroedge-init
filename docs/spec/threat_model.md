@@ -290,9 +290,13 @@ The core today considers **safety = off** (§1: Q-62 exception, auto-turn-off, L
 
 **Existing (internal demo, 2026-10-13, `demo/i2f-chat-den-cua/`):** brain sees only 3 box MCP tools. Brain is NeuroClaw (Q-78, Q-80): like PicoClaw, `exec`, i2c, spi, serial, skill install, cron shell commands, process hooks, USB monitoring, skill registry, and MCP stdio are configurable; each enabled item is logged at startup as `NeuroClaw risk=<name>` (`pkg/config/risk.go`, test `TestRiskLabels_*` in NeuroClaw repo). Demo config disables all (`test_the_demo_brain_is_configured_closed`). **No longer** a code guarantee: an openly configured brain on the same machine as the box, unisolated per TSK-I2d-24, can execute commands bypassing gates — hence the labels.
 
+**Same machine, local page (Profile A, Q-83 — done 2026-10-14):** when brain and box share a machine, the brain (with `risk=shell` or a web fetch tool) can reach `127.0.0.1`. Until 2026-10-14 the local page accepted a POST with no `Origin`, so any local process could answer `ask` as `source="ui"`, the person at home. Now every POST needs an `Origin` of the server **and** a key made for that run, printed only after `#` in the terminal URL (never in the page, `/state` or `/events`); refusals are traced as `ui_auth_refused` (`docs/spec/deployment_profiles.md` DP-A-02, TC-A-02-*). Remaining: a brain running as the **same OS user** as the box can read the box's terminal or process environment; DP-A-03 (separate user, TSK-I2d-24) closes that.
+
 **Residual risk, explicitly stated:** compromised clouds can still read user data declared for cloud use (images, summaries) and issue commands permitted by policies without human approval (turning on lights…). Where policy signing keys reside is a question for RFC TSK-I2f-01 (roadmap §4.3.6).
 
-## 2l. In scope, risk-labeled: brain and gate on the same ESP32-S3 (Q-79)
+## 2l. In scope, risk-labeled: brain and gate on the same ESP32-S3 (Q-79; Profile B of Q-83)
+
+Requirements of the single image, including the owner check done by the box side and the labels printed at boot: `docs/spec/deployment_profiles.md` §3.3 (DP-B-*). Real isolation on one board (Profile B+) is evaluated in TSK-I2f-17.
 
 **Asset:** doors, locks, all actuators wired to the chip; Telegram bot tokens, LLM keys, Wi-Fi credentials stored on-chip. **Attacker:** anyone messaging the bot; malicious payloads in LLM replies or read web content (prompt injection); someone with physical access to the board. **Their objective:** single command unlocking doors without the owner; extracting tokens and keys.
 

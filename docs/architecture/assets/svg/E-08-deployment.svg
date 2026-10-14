@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1620" width="1800" height="1620" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-08-deployment-title E-08-deployment-desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1840" width="1800" height="1840" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-08-deployment-title E-08-deployment-desc">
 <title id="E-08-deployment-title">E-08 · Deployment (C4)</title>
-<desc id="E-08-deployment-desc">Where each part runs today, where it will run once the boards arrive, the home machine (Q-72), the optional cloud (Q-74).</desc>
+<desc id="E-08-deployment-desc">Where each part runs today, once the boards arrive, and in the two deployment profiles of Q-83: Full (home machine, cloud) and One chip.</desc>
 <defs>
 <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
 </defs>
-<rect width="1800" height="1620" fill="#ffffff"/>
+<rect width="1800" height="1840" fill="#ffffff"/>
 <text x="32.0" y="42.0" font-size="22" fill="#0f172a" text-anchor="start" font-weight="700">E-08 · Deployment (C4)</text>
-<text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">Where each part runs today, where it will run once the boards arrive, the home machine (Q-72), the optional cloud (Q-74).</text>
+<text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">Where each part runs today, once the boards arrive, and in the two deployment profiles of Q-83: Full (home machine, cloud) and One chip.</text>
 <rect x="40" y="100" width="560" height="520" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
 <text x="54.0" y="121.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">Developer machine — macOS or Linux</text>
 <rect x="660" y="100" width="560" height="700" rx="14" fill="#fffef5" stroke="#a16207" stroke-width="1.6"/>
@@ -14,11 +14,13 @@
 <rect x="1280" y="100" width="480" height="700" rx="14" fill="#f7fdf9" stroke="#15803d" stroke-width="1.6"/>
 <text x="1294.0" y="121.0" font-size="13" fill="#15803d" text-anchor="start" font-weight="700">Devices</text>
 <rect x="40" y="920" width="1180" height="260" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="54.0" y="941.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Home machine — Pi 5 / mini PC / NAS · planned · Q-72</text>
+<text x="54.0" y="941.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Profile A — Pi 5 / mini PC / NAS · Q-72 · Q-83</text>
 <rect x="1280" y="920" width="480" height="410" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1294.0" y="941.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Outside services — planned · Q-72</text>
 <rect x="40" y="1370" width="1720" height="210" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="54.0" y="1391.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Optional cloud brain and small home box — conditional · Q-74 · I2f</text>
+<rect x="40" y="1620" width="1720" height="180" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="54.0" y="1641.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Profile B — one chip, risk=single_chip · Q-79 · Q-83 · I2f</text>
 <path d="M190.0,270.0 L190.0,285.0 L190.0,300.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M450.0,300.0 L450.0,285.0 L450.0,270.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M570.0,210.0 L620.0,210.0 L620.0,515.0 L570.0,515.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
@@ -84,12 +86,12 @@
 <rect x="1310" y="670" width="420" height="110" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1520.0" y="720.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">Model and speech providers</text>
 <text x="1520.0" y="741.1" font-size="12.5" fill="#431407" text-anchor="middle">HTTPS, keys from environment</text>
-<rect x="70" y="970" width="520" height="150" rx="10" fill="#f8fafc" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="330.0" y="1013.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">LLM worker — own OS user</text>
-<text x="330.0" y="1033.9" font-size="12.5" fill="#475569" text-anchor="middle">BYOK key only here · never approves</text>
-<text x="330.0" y="1052.0" font-size="12.5" fill="#475569" text-anchor="middle">network allowlist: declared provider only</text>
-<text x="330.0" y="1070.1" font-size="12.5" fill="#475569" text-anchor="middle">local MCP client of the runtime · I2d</text>
-<text x="330.0" y="1088.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="70" y="970" width="520" height="150" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
+<text x="330.0" y="1013.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">NeuroClaw brain — own OS user</text>
+<text x="330.0" y="1033.9" font-size="12.5" fill="#0f172a" text-anchor="middle">chat · LLM · memory · BYOK key only here</text>
+<text x="330.0" y="1052.0" font-size="12.5" fill="#0f172a" text-anchor="middle">never approves · no device groups</text>
+<text x="330.0" y="1070.1" font-size="12.5" fill="#0f172a" text-anchor="middle">MCP + mTLS to the runtime · I2d</text>
+<text x="330.0" y="1088.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="690" y="970" width="500" height="170" rx="10" fill="#f8fafc" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="940.0" y="1014.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Runtime 24/7 — systemd service</text>
 <text x="940.0" y="1034.8" font-size="12.5" fill="#475569" text-anchor="middle">HAL · gate · missions · detectors · scheduler</text>
@@ -121,6 +123,16 @@
 <text x="1485.0" y="1487.0" font-size="12.5" fill="#475569" text-anchor="middle">signed rules from the cloud</text>
 <text x="1485.0" y="1505.1" font-size="12.5" fill="#475569" text-anchor="middle">approval checked on chip · I2f</text>
 <text x="1485.0" y="1523.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="70" y="1660" width="820" height="110" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="480.0" y="1692.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">ESP32-S3 — one image</text>
+<text x="480.0" y="1712.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroClaw-ESP ─ nc_gate ─ ne_brain_bridge ─ ne_gate ─ token ─ pins</text>
+<text x="480.0" y="1731.1" font-size="12.5" fill="#475569" text-anchor="middle">approve: board button or owner callback · I2f</text>
+<text x="480.0" y="1749.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="940" y="1660" width="790" height="110" rx="10" fill="#f8fafc" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1335.0" y="1692.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Built and kept by the box</text>
+<text x="1335.0" y="1712.9" font-size="12.5" fill="#475569" text-anchor="middle">neuroedge build --target esp32s3 --brain neuroclaw</text>
+<text x="1335.0" y="1731.1" font-size="12.5" fill="#475569" text-anchor="middle">pinned NeuroClaw-ESP · signed OTA of the whole image · I2f</text>
+<text x="1335.0" y="1749.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="152.8" y="274.5" width="74.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="190.0" y="287.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTP · SSE</text>
 <rect x="428.9" y="274.5" width="42.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>

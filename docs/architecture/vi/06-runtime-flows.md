@@ -97,7 +97,17 @@ sequenceDiagram
 An MCP call has no speaker utterance, so `[system_one]` sends nothing to the model: that criterion falls
 back to grammar or blocks. A gate can deny the `mcp` source specifically via the `call_source` criterion.
 
+### 3.1 One contract, two transports (Q-83)
+
+The call above is Profile A. In Profile B the same tools and the same `tool-result.v1` objects
+travel through `nc_gate` function calls inside one ESP32-S3 image (§8.1); an `ask` is answered
+from the board button or the owner's Telegram callback, never over MCP. The mapping, step by
+step, and the requirements: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md) §4.1.
+
 ## 4. A System 2 (LLM) Turn, with an External MCP Server
+
+> **Legacy path, off by default (Q-83, DP-A-08).** In the product the LLM agent is the NeuroClaw
+> brain calling the box as in §3. The flow below stays for simulation and replay of older traces.
 
 ```mermaid
 sequenceDiagram
@@ -281,6 +291,36 @@ sequenceDiagram
     Q-->>R: UART NE1 lines
     R->>R: sessions to trace.v1, validate, compare with goldens
 ```
+
+### 8.1 One command on Profile B: brain and gate in one image (planned · Q-83)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant O as owner (Telegram)
+    participant N as NeuroClaw-ESP (brain)
+    participant W as ne_brain_bridge
+    participant G as ne_gate (walker, ledger)
+    participant H as HAL (pins)
+    O->>N: "open the door"
+    N->>N: LLM call over HTTPS (the only TLS on the chip is outbound)
+    N->>W: nc_gate.call("front_door_unlock", arguments JSON)
+    W->>W: JSON to ne_arg_value; facts from on-chip sources only
+    W->>G: ne_decide(tree, facts, args, confirmed=0)
+    G-->>W: BLOCK, answerable (on_block ask)
+    W-->>N: tool-result.v1 BLOCK with confirmation id
+    N->>O: approve / refuse buttons
+    O->>N: callback "approve" (user ID)
+    N->>W: nc_gate.answer(id, approve, user ID)
+    W->>W: user ID equals telegram.owner, id pending and unexpired
+    W->>G: ne_decide(..., confirmed=1) then ne_token_issue
+    G-->>W: ALLOW and a single-use token
+    W->>H: drive pin with ne_token_authorize, then ne_token_close
+    W-->>N: tool-result.v1 ALLOW
+```
+
+Each step is a requirement of [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md)
+(DP-B-02 → DP-B-08, DP-B-12 for the `NE1` trace lines).
 
 ## 9. Lifecycle of a `linux` Session
 

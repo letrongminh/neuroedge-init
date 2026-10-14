@@ -23,7 +23,8 @@ The box requires complete server certificates, device CA, issuer, and token sign
 opening the port ([`tool_calling.md`](../spec/tool_calling.md) §8.1). The fastest path today is the demo
 script: [`demo/i2f-chat-den-cua/kich-ban.md`](../../demo/i2f-chat-den-cua/kich-ban.md) §0.1.
 It creates keys once (`tao-khoa.py`), then runs `neuroedge mcp serve --http --ui --target sim`.
-The page `127.0.0.1:8765` is the home screen, where you approve actions requiring owner confirmation.
+The page `127.0.0.1:8765` is the home screen, where you approve actions requiring owner confirmation. Open it with the full URL
+the terminal prints, including `#k=…`: that key is made for this run, so no other program on the machine can approve for you.
 
 ## 2. Install NeuroClaw and connect to the box
 

@@ -163,16 +163,28 @@ flowchart TD
 
 Not drawn: robot bridges (ROS 2, Nav2) left the roadmap with Q-77; an ESPHome component has no task yet.
 
-### 2.2 Two parts: brain and box
+### 2.2 Two parts, two deployment profiles (Q-83)
 
 The user messages the **brain** — [NeuroClaw](https://github.com/letrongminh/neuroclaw),
-a separate repository (Q-76, Q-80): chat, LLM calls, memory, calendar reminders. The brain does not touch hardware; it calls MCP tools on the
-**NeuroEdge box** (this repo), and the box routes calls through gates like any other source. The brain runs on its own machine or
-coexists on an ESP32-S3 chip with the box (Q-79); execution modes and contracts between the two repos: [`15`](15-target-architecture.md) §6.10.
+a separate repository (Q-76, Q-80). The **box** is this repository. The split follows one rule:
+**the brain thinks, talks and remembers** (LLM loop, memory, retrieval, chat channels, reminders,
+LLM budget) and may be wrong; **the box decides, acts and proves** (gate, tokens, confirmation, HAL,
+traces, local grammar, System 1) and stays deterministic and offline-capable. The brain never
+touches hardware: it calls the box's tools, and the box routes them through gates like any
+other source.
+
+The product ships two ways, one contract (the tool list and `tool-result.v1`), two transports:
 
 ```text
- 📱 chat ──► NeuroClaw (brain, untrusted) ══ MCP, mTLS ══► NeuroEdge box: gate ──► pins, devices
+ Profile A — Full                                    Profile B — One chip (risk=single_chip)
+ 📱 chat ─► NeuroClaw (brain, own OS user,           📱 Telegram ─► [ ESP32-S3, one image:
+            other machine, or Cloud)                                 NeuroClaw-ESP ─ nc_gate ─►
+            ══ MCP · HTTPS · mTLS ══►                                ne_brain_bridge ─► ne_gate
+            NeuroEdge box: gate ─► pins                              ─► token ─► pins ]
 ```
+
+Requirements, interfaces and test cases of both profiles: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md).
+How the profiles fit the target architecture: [`15`](15-target-architecture.md) §6.10.
 
 ### 2.3 The execution backbone
 
@@ -183,7 +195,7 @@ and execution environments:
 flowchart LR
     subgraph Sources["Callers (untrusted)"]
         G["Local command grammar<br/>commands.toml"]
-        S2["System 2 LLM<br/>via LiteLLM"]
+        S2["System 2 LLM<br/>legacy, off by default · Q-83"]
         MCP["MCP client<br/>NeuroClaw · Claude Desktop"]
     end
     TC["ToolCall<br/>name · arguments · source"]
@@ -274,7 +286,7 @@ The 5-layer logical model of NeuroEdge (§5.1) is spanned horizontally by the Ac
 
 | Layer / Axis | Layer nature (§5.1) | Implemented by host packages (`03` §2) and firmware components (`04`) | Status |
 |:---|:---|:---|:---|
-| **L4: Agent Application Layer** | Agent logic, context memory, gated tool calls (MCP), System 2 | `mcp_host`, `mcp_server`, System 2 in `models/` | `done` |
+| **L4: Agent Application Layer** | Agent logic, gated tool calls (MCP); the LLM agent itself is the NeuroClaw brain (Q-83) | `mcp_server`; `mcp_host` and System 2 in `models/` are legacy, off by default (DP-A-08) | `done` |
 | **L3: Action Contract Engine** (core IP) | Typed gate evaluation, policy inheritance, fail-closed circuit breaker | `engine/`, `actions/` (one-time token ledger), `ne_gate` (`ne_walker.c`, `ne_token.c`), `ne_agent` | `done` (host and QEMU) |
 | **L2: Perception & Conversation Runtime** | Wake-word detection, neural VAD, AEC echo cancellation, low-latency STT/TTS, real-time conversation state machine (Q-48) | `perception/` (state machine, wake, STT/TTS), `hal/audio.py` (`EnergyVAD`), `models/` (System 1/2, grammar, knowledge) | `partial` — voice from WAV files and cloud STT/TTS `done`; real-time sessions, AEC (Q-22), remaining real wake-word models (roadmap I4) |
 | **L1: Hardware Abstraction Layer (HAL)** | 5 fundamental primitives v1.x (`audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display`), compile-time capability contract checking | `hal/` (board checking, API); firmware HAL on chip | `done` (`hal/` on host); `planned` on chip (TSK-S4-01) |
@@ -306,10 +318,11 @@ The table below is a capability snapshot, not a progress tracking table; task pr
 | Sensors, display | `done` (virtual) | `done` on `i2c-stub`, `vkms` | `planned`; LVGL interface built only on host |
 | Voice (from WAV files) | `done` | `done` | `planned` (I5) |
 | Real-time voice (microphone) | `done` on laptop (`run --mic`, TSK-I4-04) | `partial` — device opening only | `planned` |
-| Cloud models (System 1, System 2) | `done` | `done` | not applicable: chip only evaluates gates |
+| Cloud models (System 1, System 2) | `done` | `done` | Profile B: NeuroClaw-ESP calls the LLM from the chip; the box side only evaluates gates |
 | MCP | `done` | `done` | not applicable |
 | Traces, replay, verify | `done` | `done` | `done` (UART, QEMU) |
 | Signed OTA updates | not applicable | not applicable | `partial` — on QEMU |
+| Profile B: brain and gate in one image | not applicable | not applicable | `planned` (TSK-I2f-12, TSK-I2f-14) |
 
 ## 7. Boundaries — what NeuroEdge is not
 
