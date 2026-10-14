@@ -67,6 +67,9 @@ static void wipe(void *p, size_t n);
 /* --- facts (DP-B-05) ------------------------------------------------------------------------ */
 
 #define BRAIN_FACTS 16u
+/* NeuroClaw-ESP's start (LittleFS mount, session, system prompt) needs more than app_main's
+ * 3.5 KB: it runs in a task of its own, whose stack goes back to the heap when it is done. */
+#define BRAIN_START_STACK 8192u
 typedef struct {
     char name[32];
     char value[32];
@@ -539,7 +542,7 @@ static void forget(char *secret)
     }
 }
 
-void brain_start(void)
+static void start_brain(void)
 {
     const esp_vfs_littlefs_conf_t fs = {
         .base_path = "/ws",
@@ -587,6 +590,23 @@ void brain_start(void)
     forget(fb_model);
     forget(search_key);
     forget(tz);
+}
+
+static void start_task(void *waiting)
+{
+    start_brain();
+    xTaskNotifyGive((TaskHandle_t)waiting);
+    vTaskDelete(NULL);
+}
+
+void brain_start(void)
+{
+    if (xTaskCreate(start_task, "nc_start", BRAIN_START_STACK, xTaskGetCurrentTaskHandle(), 5,
+                    NULL) != pdPASS) {
+        printf("NE_BRAIN OFF\n");
+        return;
+    }
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY); /* main goes on once the brain has started, as before */
 }
 
 #endif /* NEUROEDGE_BRAIN */

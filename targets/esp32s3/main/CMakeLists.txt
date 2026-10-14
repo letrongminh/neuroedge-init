@@ -35,3 +35,10 @@ idf_component_register(
 if(neuroedge_brain)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE NEUROEDGE_BRAIN=1)
 endif()
+if(neuroedge_brain)
+    # NeuroClaw-ESP is pinned by SHA (DP-B-01) and not ours to edit. Built at -O2 here
+    # (CONFIG_COMPILER_OPTIMIZATION_PERF), GCC 14 sees a possible truncation in one of its
+    # snprintf calls (nc_brain.c, a bounded buffer): a warning in its code, never an error.
+    idf_component_get_property(neuroclaw_lib neuroclaw COMPONENT_LIB)
+    target_compile_options(${neuroclaw_lib} PRIVATE -Wno-error=format-truncation)
+endif()

@@ -81,6 +81,11 @@ def _reads(account: Account, path: Path) -> bool:
     return _can(account, info, stat.S_IRUSR, stat.S_IROTH, stat.S_IRGRP)
 
 
+def _enters(account: Account, path: Path) -> bool:
+    info = path.stat()
+    return _can(account, info, stat.S_IXUSR, stat.S_IXOTH, stat.S_IXGRP)
+
+
 def _opens_device(account: Account, path: Path) -> bool:
     info = path.stat()
     readable = _can(account, info, stat.S_IRUSR, stat.S_IROTH, stat.S_IRGRP)
@@ -119,9 +124,13 @@ def problems(system: System, keys: Path) -> list[str]:
     if keys.is_dir():
         if _reads(account, keys):
             found.append(f"{account.name} can read the key directory {keys}")
+        # Only what the brain can get to: every directory from `keys` down must let it in
+        # (the public certificates are 0644 by design, behind a 0700 directory).
         for path in sorted(keys.rglob("*")):
             try:
-                if (path.is_file() or path.is_dir()) and _reads(account, path):
+                parents = [keys, *list(path.relative_to(keys).parents)[-2::-1]]
+                reachable = all(_enters(account, keys / d) for d in parents)
+                if reachable and (path.is_file() or path.is_dir()) and _reads(account, path):
                     found.append(f"{account.name} can read {path}")
             except OSError:
                 continue

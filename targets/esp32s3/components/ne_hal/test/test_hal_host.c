@@ -30,9 +30,10 @@ static void fill(void *buf, size_t len)
     }
 }
 
-static void report(const char *name, ne_hal_status status, ne_token_reason why)
+/* `why` by address: read after the call it comes from (argument order is unspecified in C). */
+static void report(const char *name, ne_hal_status status, const ne_token_reason *why)
 {
-    printf("case\t%s\t%d\t%s\t%u%u%u\n", name, (int)status, ne_token_reason_name(why), levels[0],
+    printf("case\t%s\t%d\t%s\t%u%u%u\n", name, (int)status, ne_token_reason_name(*why), levels[0],
            levels[1], levels[2]);
 }
 
@@ -50,21 +51,22 @@ int main(void)
     tree.gate_digest = digest; /* the ledger copies NE_DIGEST_SIZE bytes from it */
     ne_ledger_init(&ledger, 0x1234u);
 
-    report("no token", ne_hal_on(&hal, NULL, 0u, 10u, &why), why);
+    report("no token", ne_hal_on(&hal, NULL, 0u, 10u, &why), &why);
     ne_token_issue(&ledger, &tree, 0x1u, 10u, fill, &token); /* pin 0 only */
-    report("another pin", ne_hal_on(&hal, &token, 1u, 11u, &why), why);
-    report("its pin", ne_hal_on(&hal, &token, 0u, 12u, &why), why);
-    report("again", ne_hal_on(&hal, &token, 0u, 13u, &why), why);
-    report("off, no token", ne_hal_off(&hal, 0u), NE_TOKEN_AUTHORIZED);
+    report("another pin", ne_hal_on(&hal, &token, 1u, 11u, &why), &why);
+    report("its pin", ne_hal_on(&hal, &token, 0u, 12u, &why), &why);
+    report("again", ne_hal_on(&hal, &token, 0u, 13u, &why), &why);
+    why = NE_TOKEN_AUTHORIZED;
+    report("off, no token", ne_hal_off(&hal, 0u), &why);
     ne_token_issue(&ledger, &tree, 0x4u, 20u, fill, &other); /* pin 2 */
     ne_token_close(&ledger, &other);
-    report("closed token", ne_hal_on(&hal, &other, 2u, 21u, &why), why);
+    report("closed token", ne_hal_on(&hal, &other, 2u, 21u, &why), &why);
     ne_token_issue(&ledger, &tree, 0x4u, 30u, fill, &other);
-    report("expired", ne_hal_on(&hal, &other, 2u, 30u + 301u, &why), why);
+    report("expired", ne_hal_on(&hal, &other, 2u, 30u + 301u, &why), &why);
     ne_token_issue(&ledger, &tree, 0x4u, 400u, fill, &other);
     other.nonce[0] ^= 1u;
-    report("forged", ne_hal_on(&hal, &other, 2u, 401u, &why), why);
-    report("no such pin", ne_hal_on(&hal, &token, PINS, 402u, &why), why);
+    report("forged", ne_hal_on(&hal, &other, 2u, 401u, &why), &why);
+    report("no such pin", ne_hal_on(&hal, &token, PINS, 402u, &why), &why);
     printf("writes\t%u\n", writes);
     return 0;
 }

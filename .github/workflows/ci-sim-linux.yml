@@ -249,7 +249,7 @@ jobs:
       - name: neuroedge in a venv the box's user can run
         run: |
           sudo python -m venv /opt/neuroedge
-          sudo /opt/neuroedge/bin/python -m pip install --quiet ./python
+          sudo /opt/neuroedge/bin/python -m pip install --quiet './python[mcp]'
           sudo ln -sf /opt/neuroedge/bin/neuroedge /usr/local/bin/neuroedge
 
       - name: A stand-in LLM that calls the light tool

@@ -378,7 +378,15 @@ static void repr(writer *w, const char *s, uint32_t n)
 }
 
 /* Python's repr() of a float: the shortest digits that read back, fixed for 1e-4 <= |x| < 1e16. */
-static void repr_float(writer *w, double x)
+/* A helper with a large frame keeps it to itself: inlined into its one caller (gcc 13 at -O2),
+ * the frames add up past the 512-byte budget per function (DP-B-13). */
+#if defined(__GNUC__)
+#define OWN_FRAME __attribute__((noinline))
+#else
+#define OWN_FRAME
+#endif
+
+OWN_FRAME static void repr_float(writer *w, double x)
 {
     char tmp[40];
     if (x != x) {
@@ -465,7 +473,8 @@ static void repr_value(ne_bridge *b, writer *w, const ne_bridge_span *v)
 
 /* --- the agent ----------------------------------------------------------------------------- */
 
-static const char *const REASONS[] = {
+/* Fixed-width rows, not pointers: no relocation, so .rodata even in a PIE (no static RAM). */
+static const char REASONS[][24] = {
     "",
     "condition_not_met",
     "criterion_unavailable",
@@ -475,7 +484,7 @@ static const char *const REASONS[] = {
     "budget_exceeded",
     "value_out_of_range",
 };
-static const char *const ON_BLOCK[] = {"deny", "escalate", "ask", "degrade"};
+static const char ON_BLOCK[][9] = {"deny", "escalate", "ask", "degrade"};
 
 static int find_action(const ne_agent *agent, const char *name)
 {
@@ -738,7 +747,7 @@ static void repr_span(ne_bridge *b, writer *w, const ne_bridge_span *s)
 }
 
 /* `sorted(properties)` as Python prints a list of str. */
-static void sorted_names(ne_bridge *b, writer *w, const ne_bridge_span *props)
+OWN_FRAME static void sorted_names(ne_bridge *b, writer *w, const ne_bridge_span *props)
 {
     reader r;
     ne_bridge_span key, value, last = {NULL, 0, J_BAD};
@@ -888,7 +897,7 @@ static int check_arguments(ne_bridge *b, uint32_t action, const ne_bridge_span *
 }
 
 /* The gate's arguments, in the tree's order: the call's, or the schema's default (`_effective`). */
-static void gate_arguments(ne_bridge *b, uint32_t action, const ne_tree *tree)
+OWN_FRAME static void gate_arguments(ne_bridge *b, uint32_t action, const ne_tree *tree)
 {
     const ne_agent_action *a = &b->agent->actions[action];
     ne_bridge_span schema, props, prop, def;
@@ -1266,7 +1275,7 @@ void ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
     finish(b, out, &w, status, tool);
 }
 
-static const char *const STATES[] = {"free", "pending", "confirmed", "declined", "expired"};
+static const char STATES[][10] = {"free", "pending", "confirmed", "declined", "expired"};
 
 static void answer(ne_bridge *b, int slot, int approve, ne_bridge_result *out)
 {
