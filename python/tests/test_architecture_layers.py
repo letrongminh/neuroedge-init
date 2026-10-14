@@ -33,6 +33,8 @@ ALLOWED: dict[str, set[str]] = {
     "mcp_http": {"errors", "mcp_server"},
     # `neuroedge pair` (Q-83, DP-A-04, DP-A-11): keys, certificates and tokens for the network door
     "pairing": {"errors"},
+    # `neuroedge doctor` (Q-83, DP-A-03): reads users, /dev and /proc; no other layer
+    "isolation": set(),
     "viz": {"errors", "hal", "trace"},
     "templates": {"errors", "paths"},
     "sim": {
@@ -90,6 +92,7 @@ LAZY: dict[str, set[str]] = {
     # the chip's tools are the ones `mcp serve` lists, from the same function (DP-COM-02, DP-B-03)
     "engine/firmware.py": {"actions"},
     "cli/main.py": {
+        "isolation",
         "pairing",
         "guard",
         "plugins",

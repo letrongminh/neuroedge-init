@@ -195,6 +195,10 @@ NOT_RUN = {
         "needs a NeuroClaw checkout at the pinned commit; tests/test_firmware_brain.py builds "
         "with a stand-in component"
     ),
+    "neuroedge doctor --brain-user neuroclaw --keys /var/lib/neuroedge/keys": (
+        "reads a Linux machine's users, /dev and /proc; tests/test_isolation.py runs it on a "
+        "fake one"
+    ),
     "neuroedge ui-link": (
         "needs a running page; tests/test_mcp_serve_ui.py runs it against `mcp serve --ui`"
     ),

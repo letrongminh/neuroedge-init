@@ -3076,6 +3076,41 @@ def ui_link():
     )
 
 
+@app.command("doctor", epilog=epilog("doctor"))
+def doctor(
+    brain_user: str = typer.Option(
+        "neuroclaw", "--brain-user", help="The OS user the brain (NeuroClaw) runs as"
+    ),
+    keys: Path = typer.Option(
+        ..., "--keys", help="The box's key directory (`neuroedge pair init --out`)"
+    ),
+):
+    """
+    Check that the brain's user is kept apart from the box (Q-83, DP-A-03): no device group,
+    no device node, no read of the key directory, /proc with hidepid=2. Exit 1 naming each
+    problem; 0 when there is none.
+    """
+    import sys
+
+    from .. import isolation
+
+    if sys.platform != "linux":
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge doctor",
+                why="the checks read Linux users, /dev and /proc",
+                how="run it on the box's Linux machine",
+            )
+        )
+        return
+    found = isolation.problems(isolation.System.live(brain_user), keys)
+    for problem in found:
+        console.print(f"[bold red]✗[/bold red] {escape(problem)}")
+    if found:
+        raise typer.Exit(code=1)
+    console.print(f"[bold green]✓[/bold green] {escape(brain_user)} is kept apart from the box")
+
+
 # --- pair: a brain over the network (Q-83, DP-A-04, DP-A-11) --------------------------------
 
 
