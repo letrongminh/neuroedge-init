@@ -479,7 +479,7 @@ jobs:
       - name: Install Espressif QEMU
         run: python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa
 
-      - name: Labels, one console, offline buttons, settings, the brain starting (TC-B-10-1, TC-B-11-1, TC-B-14-1, TC-B-16-1, TC-B-17-1)
+      - name: Labels, one console, offline buttons, settings, the brain starting (TC-COM-06-1, TC-B-10-1, TC-B-11-1, TC-B-14-1, TC-B-16-1, TC-B-17-1)
         run: |
           . "$IDF_PATH/export.sh"
           python3 scripts/qemu_brain.py "$PROJECT/build"

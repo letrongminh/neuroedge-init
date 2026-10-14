@@ -113,6 +113,13 @@ def run(build: Path) -> list[str]:
         ):
             note(b, match)
         note(b, b.command("status", r"^NE_STATUS .*risk=readable_flash risk=single_chip .*$"))
+        # DP-COM-06: each label once at start-up, then in `status` whenever asked
+        for label in (
+            r"^NE_RISK risk=single_chip$",
+            r"^NE_CONFIG STORAGE plaintext risk=readable_flash$",
+        ):
+            if len(re.findall(label, b.text, re.MULTILINE)) != 1:
+                raise Fail(f"/{label}/ is not printed exactly once at start-up (log: {b.log})")
         listed = output_of(b, "help")
         for command in ("config", "status", "button", "tasks", "memory_read", "diag"):
             if not re.search(rf"^{command}\b", listed, re.MULTILINE):
