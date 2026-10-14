@@ -452,6 +452,11 @@ BAD_TOKENS = {
     "from another issuer": (lambda pki: mint(pki, iss="https://evil.example.test"), "wrong_issuer"),
     "without an expiry": (lambda pki: mint(pki, exp=None), "invalid_token"),
     "without a subject": (lambda pki: mint(pki, sub=None), "invalid_token"),
+    "without an issue time": (lambda pki: mint(pki, iat=None), "invalid_token"),
+    "living eight days (DP-A-04)": (
+        lambda pki: mint(pki, exp=int(time.time()) + 8 * 86400),
+        "lifetime_too_long",
+    ),
     "not bound to a certificate": (lambda pki: mint(pki, cnf=None), "not_cert_bound"),
     "bound to another device's certificate": (
         lambda pki: mint(pki, cnf={"x5t#S256": thumbprint(b"another")}),
@@ -894,3 +899,154 @@ def test_the_cli_serves_over_the_network_and_leaves_cleanly_on_sigterm(pki, root
     # the refusal is an event a replay steps over: the recorded verdicts are recomputed and agree
     replayed = CliRunner().invoke(app, ["replay", str(trace), "--agent", str(agent)])
     assert replayed.exit_code == 0, replayed.output
+
+
+# --- short-lived tokens, revocable certificates (Q-83, DP-A-04, DP-A-11) -------------------
+
+
+def paired(tmp_path: Path) -> Path:
+    from neuroedge import pairing
+
+    keys = tmp_path / "keys"
+    pairing.create(keys, "https://localhost:8443/mcp", ISSUER)
+    return keys
+
+
+def serve_paired(serve, keys: Path, **override) -> Running:
+    return serve(
+        agent="chat-den-cua",
+        tls_cert=keys / "hop.pem",
+        tls_key=keys / "hop.key",
+        client_ca=keys / "ca.pem",
+        audience="https://localhost:8443/mcp",
+        jwks=keys / "jwks.json",
+        **override,
+    )
+
+
+def call_as(running: Running, keys: Path, cert: Path, key: Path, token: str) -> int:
+    """The status of one MCP request from a brain holding `cert`/`key` and `token`."""
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.load_verify_locations(cafile=str(keys / "ca.pem"))
+    context.load_cert_chain(cert, key)
+
+    async def go():
+        async with httpx2.AsyncClient(
+            verify=context, headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT
+        ) as client:
+            body = {**INITIALIZE, "params": {"name": "living_light_on", "arguments": {}}}
+            response = await client.post(
+                f"https://localhost:{running.port}/mcp", json=body, headers=MCP_HEADERS
+            )
+            return response.status_code
+
+    return anyio.run(go)
+
+
+def test_a_token_lives_at_most_seven_days_and_renews_without_a_restart(serve, tmp_path):
+    """TC-A-04-1: 8 days is refused at issue and by the box; `pair renew` works on the running box."""
+    from neuroedge import pairing
+
+    keys = paired(tmp_path)
+    with pytest.raises(NeuroEdgeError, match="1 to 7 days"):
+        pairing.renew(keys, 8)
+    refused = CliRunner().invoke(app, ["pair", "renew", "--dir", str(keys), "--token-days", "8"])
+    assert refused.exit_code == 1
+    running = serve_paired(serve, keys)
+    brain = (keys / "nao.pem", keys / "nao.key")
+    first = (keys / "nao.token").read_text().strip()
+    assert call_as(running, keys, *brain, first) != 401
+    # a token minted with the box's own issuer key, but for eight days: refused all the same
+    signing = serialization.load_pem_private_key((keys / "issuer.key").read_bytes(), None)
+    claims = jwt.decode(first, options={"verify_signature": False})
+    long = jwt.encode(
+        {**claims, "exp": claims["iat"] + 8 * 86400}, signing, "ES256", headers={"kid": "pair"}
+    )
+    assert call_as(running, keys, *brain, long) == 401
+    renewed = CliRunner().invoke(app, ["pair", "renew", "--dir", str(keys)])
+    assert renewed.exit_code == 0, renewed.output
+    second = (keys / "nao.token").read_text().strip()
+    assert second != first and call_as(running, keys, *brain, second) != 401  # no restart
+    stale = jwt.encode(
+        {**claims, "iat": claims["iat"] - 7 * 86400, "exp": claims["iat"] - 1},
+        signing,
+        "ES256",
+        headers={"kid": "pair"},
+    )
+    assert call_as(running, keys, *brain, stale) == 401  # an old token, past its expiry
+    assert [e["reason"] for e in running.events("mcp_auth_refused")] == [
+        "lifetime_too_long",
+        "expired",
+    ]
+
+
+def test_a_brain_certificate_rotates_without_a_restart_and_a_revoked_one_is_cut_off(
+    serve, tmp_path
+):
+    """TC-A-11-1: `pair rotate` on a running box; the old certificate never reaches HTTP."""
+    keys = paired(tmp_path)
+    running = serve_paired(serve, keys, revoked=keys / "revoked.txt")
+    old = tmp_path / "old"
+    old.mkdir()
+    for name in ("nao.pem", "nao.key", "nao.token"):
+        (old / name).write_bytes((keys / name).read_bytes())
+    old_token = (old / "nao.token").read_text().strip()
+    assert call_as(running, keys, old / "nao.pem", old / "nao.key", old_token) != 401
+    rotated = CliRunner().invoke(app, ["pair", "rotate", "--dir", str(keys)])
+    assert rotated.exit_code == 0, rotated.output
+    token = (keys / "nao.token").read_text().strip()
+    assert call_as(running, keys, keys / "nao.pem", keys / "nao.key", token) != 401
+    calls_before = len(running.events("tool_call"))
+    with pytest.raises((httpx2.HTTPError, ssl.SSLError, OSError)):
+        call_as(running, keys, old / "nao.pem", old / "nao.key", old_token)
+    assert len(running.events("tool_call")) == calls_before  # nothing dispatched
+    assert running.events("mcp_auth_refused") == [{"reason": "revoked_certificate"}]
+
+
+def test_a_connection_kept_alive_across_a_revocation_gets_no_further_request(serve, tmp_path):
+    """TC-A-11-1: the revocation is read per request, not only when a connection opens."""
+    from neuroedge import pairing
+
+    keys = paired(tmp_path)
+    running = serve_paired(serve, keys, revoked=keys / "revoked.txt")
+    token = (keys / "nao.token").read_text().strip()
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.load_verify_locations(cafile=str(keys / "ca.pem"))
+    context.load_cert_chain(keys / "nao.pem", keys / "nao.key")
+    body = {**INITIALIZE, "params": {"name": "living_light_on", "arguments": {}}}
+
+    async def go():
+        async with httpx2.AsyncClient(
+            verify=context, headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT
+        ) as client:
+            url = f"https://localhost:{running.port}/mcp"
+            first = await client.post(url, json=body, headers=MCP_HEADERS)
+            with (keys / "revoked.txt").open("a", encoding="ascii") as handle:
+                handle.write(pairing.thumbprint((keys / "nao.pem").read_bytes()) + "\n")
+            second = await client.post(url, json=body, headers=MCP_HEADERS)
+            return first.status_code, second.status_code
+
+    calls_before = len(running.events("tool_call"))
+    first, second = anyio.run(go)
+    assert first != 401 and second == 403
+    assert len(running.events("tool_call")) == calls_before
+    assert running.events("mcp_auth_refused") == [{"reason": "revoked_certificate"}]
+
+
+def test_a_revocation_list_never_read_refuses_every_certificate(tmp_path):
+    unreadable = tmp_path / "revoked.txt"
+    unreadable.mkdir()  # stat works, reading does not
+    assert "any-thumbprint" in mcp_http.Revocations(unreadable)
+
+
+def test_a_revocation_list_that_is_not_a_file_is_refused_at_startup(pki, tmp_path):
+    with pytest.raises(NeuroEdgeError, match="revocation list"):
+        prepare(config(pki, revoked=tmp_path / "missing.txt"))
+
+
+def test_the_pairing_secrets_are_private_from_the_first_byte(tmp_path):
+    keys = paired(tmp_path)
+    assert keys.stat().st_mode & 0o077 == 0
+    for name in ("ca.key", "hop.key", "nao.key", "issuer.key", "nao.token"):
+        assert (keys / name).stat().st_mode & 0o777 == 0o600, name
+    assert not list(keys.glob(".*.tmp"))

@@ -191,6 +191,28 @@ NOT_RUN = {
         "tests/test_hal_linux_audio.py runs it on the fake gpiod"
     ),
     "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json": "as above",
+    "neuroedge build --target esp32s3 --brain neuroclaw --brain-source ../neuroclaw": (
+        "needs a NeuroClaw checkout at the pinned commit; tests/test_firmware_brain.py builds "
+        "with a stand-in component"
+    ),
+    # Q-83 DP-A-09: as root it makes users and units; staged, it still downloads NeuroClaw.
+    # tests/test_install.py runs it staged with a stand-in release; CI job install-full, live
+    "neuroedge install --profile full --agent fixtures/agents/chat-den-cua --env-file .env.txt": (
+        "installs system users and services as root"
+    ),
+    "neuroedge status --brain-config /var/lib/neuroclaw/config.json": (
+        "reads the installed brain's config (tests/test_install.py runs it on a staged one)"
+    ),
+    "neuroedge install --profile full --agent my-agent --root /tmp/staged": (
+        "downloads the pinned NeuroClaw release"
+    ),
+    "neuroedge doctor --brain-user neuroclaw --keys /var/lib/neuroedge/keys": (
+        "reads a Linux machine's users, /dev and /proc; tests/test_isolation.py runs it on a "
+        "fake one"
+    ),
+    "neuroedge ui-link": (
+        "needs a running page; tests/test_mcp_serve_ui.py runs it against `mcp serve --ui`"
+    ),
 }
 
 

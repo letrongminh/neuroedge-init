@@ -414,10 +414,10 @@ MUTANTS = {
     "a digest in the gate table": [(AGENT_C, "{0x10, 0xfa, 0x42,", "{0x11, 0xfa, 0x42,")],
     "a gate's number of criteria": [(AGENT_C, "     4u, {NULL,", "     3u, {NULL,")],
     "an action's pins past the pin table": [
-        (AGENT_C, '{"fixture_buzz", 1u, 0x2u}', '{"fixture_buzz", 1u, 0xau}')
+        (AGENT_C, '{"fixture_buzz", 1u, 0x2u,', '{"fixture_buzz", 1u, 0xau,')
     ],
     "an action guarded by no gate": [
-        (AGENT_C, '{"fixture_announce", 2u, 0x0u}', '{"fixture_announce", 3u, 0x0u}')
+        (AGENT_C, '{"fixture_announce", 2u, 0x0u,', '{"fixture_announce", 3u, 0x0u,')
     ],
     "the self-test ignores a confirmation": [
         (SELFTEST_C, "g->args, k->confirmed,", "g->args, 0,"),

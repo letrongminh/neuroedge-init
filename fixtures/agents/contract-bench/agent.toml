@@ -1,0 +1,29 @@
+# The contract bench (Q-83, docs/spec/deployment_profiles.md): one gate per kind of block, so a
+# brain and the Profile B bridge can be checked against every field of tool-result.v1.
+#   heat  — a numeric reading and an argument limit (deny)
+#   guest — a confidence floor (escalate, `escalated_to`)
+#   siren — degrade to `porch_lamp_on` (`fallback`)
+#   lamp  — deny; `arm_zone` has required, typed arguments (REJECTED `problems`)
+# Used by python/tests/test_c_bridge.py and by NeuroClaw's contract job (TSK-I2d-26).
+[agent]
+name    = "contract-bench"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["door_lock", "porch_light", "gate_relay"] }
+
+[targets]
+supported = ["sim", "esp32s3"]
+
+[gates]
+heat  = "gates/heat@1.0.0.yaml"
+guest = "gates/guest@1.0.0.yaml"
+siren = "gates/siren@1.0.0.yaml"
+lamp  = "gates/lamp@1.0.0.yaml"
+
+# On `sim`: the siren degrades to the lamp, the guest has no confidence (escalate). A brain over
+# MCP sees each kind of result without setting a fact.
+[sim.facts]
+lamp_ok  = true
+armed    = false
+guest_ok = true

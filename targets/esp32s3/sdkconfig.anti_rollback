@@ -1,0 +1,13 @@
+# Anti-rollback by security version (Q-83 DP-B-17), layered on sdkconfig.ota (and, on a board,
+# sdkconfig.secure):
+#
+#   SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.ota;sdkconfig.anti_rollback" idf.py build
+#
+# An image carries CONFIG_BOOTLOADER_APP_SECURE_VERSION; marking it valid burns that number into
+# the chip's eFuse, and from then on the bootloader will not boot, and ne_ota will not download
+# (NE_OTA REJECTED reason=security_version), an image with a lower one. Raise the number in the
+# image that closes a hole: the images before it can never come back. ONE-WAY on a board: eFuse
+# bits only go up. scripts/qemu_ota.sh checks it on QEMU with an eFuse file of its own.
+CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK=y
+CONFIG_BOOTLOADER_APP_SEC_VER_SIZE_EFUSE_FIELD=16
+CONFIG_BOOTLOADER_APP_SECURE_VERSION=1

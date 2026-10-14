@@ -23,6 +23,12 @@ REQ_ROW = re.compile(r"^\| (DP-[A-Z]+-\d{2}) \|", re.M)
 TC_ROW = re.compile(r"^\| (TC-[A-Z]+-\d{2}-\d+) \| ([^|]+) \|[^|]+\|[^|]+\| ([^|\n]+) \|$", re.M)
 IMPLEMENTED = re.compile(r"^implemented — (python/tests/[\w/]+\.py)::(test_\w+)$")
 PLANNED = re.compile(r"^planned — (TSK-[A-Za-z0-9]+-\d+)$")
+# A Go test of the NeuroClaw repository (TSK-I2d-26), run there against this box at a pinned
+# commit; this repository cannot see it, so only its form is checked.
+IN_NEUROCLAW = re.compile(r"^implemented in NeuroClaw — pkg/[\w/]+_test\.go::Test\w+$")
+# A test case only an ESP-IDF build or Espressif QEMU can run: the CI job that runs it, which names
+# the test case in its own steps.
+IN_CI = re.compile(r"^implemented in CI — (\.github/workflows/[\w-]+\.yml)::([\w-]+)$")
 
 
 def text() -> str:
@@ -65,7 +71,7 @@ def test_every_test_case_verifies_requirements_that_exist() -> None:
         assert set(verifies) <= known, (tc, sorted(set(verifies) - known))
 
 
-@pytest.mark.parametrize("tc", [tc for tc, _, s in cases() if s.startswith("implemented")])
+@pytest.mark.parametrize("tc", [tc for tc, _, s in cases() if s.startswith("implemented — ")])
 def test_an_implemented_test_case_names_a_test_that_exists(tc: str) -> None:
     status = next(s for name, _, s in cases() if name == tc)
     found = IMPLEMENTED.match(status)
@@ -81,11 +87,30 @@ def test_an_implemented_test_case_names_a_test_that_exists(tc: str) -> None:
 def test_a_planned_test_case_names_a_roadmap_task() -> None:
     roadmap = ROADMAP.read_text(encoding="utf-8")
     for tc, _, status in cases():
-        if status.startswith("implemented"):
+        if status.startswith("implemented — "):
+            continue
+        if status.startswith("implemented in NeuroClaw"):
+            assert IN_NEUROCLAW.match(status), (tc, status)
+            continue
+        if status.startswith("implemented in CI"):
             continue
         found = PLANNED.match(status)
         assert found, (tc, status)
         assert f"**{found.group(1)}**" in roadmap, (tc, found.group(1))
+
+
+@pytest.mark.parametrize("tc", [tc for tc, _, s in cases() if s.startswith("implemented in CI")])
+def test_a_test_case_run_in_ci_names_a_job_that_runs_it(tc: str) -> None:
+    import yaml
+
+    status = next(s for name, _, s in cases() if name == tc)
+    found = IN_CI.match(status)
+    assert found, (tc, status)
+    path, job = found.groups()
+    workflow = yaml.safe_load((REPO_ROOT / path).read_text(encoding="utf-8"))
+    assert job in workflow["jobs"], (tc, path, job)
+    steps = workflow["jobs"][job]["steps"]
+    assert any(tc in step.get("name", "") for step in steps), (tc, "no step of the job names it")
 
 
 def test_every_decision_and_task_the_specification_cites_exists() -> None:

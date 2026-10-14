@@ -78,5 +78,14 @@ menu "NeuroEdge OTA (FR-OTA, TSK-S6-01..04)"
                 the gate self-test, marks itself invalid and reboots into the
                 previous app. Never enable this in a shipped image.
 
+        config NEUROEDGE_OTA_TEST_FAIL_BRAIN
+            bool "TEST ONLY: fail the bridge self-check before marking valid"
+            default n
+            help
+                For the Profile B rollback test (DP-B-15, TC-B-15-1): an image
+                with the brain whose bridge self-check fails marks itself
+                invalid and reboots into the previous app. Never enable this in
+                a shipped image.
+
     endif
 endmenu

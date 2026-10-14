@@ -57,6 +57,7 @@ FIRMWARE_SOURCES = (
     "sdkconfig.ota",
     "sdkconfig.qemu_ota",
     "sdkconfig.secure",
+    "sdkconfig.anti_rollback",
     "main/CMakeLists.txt",
     "main/Kconfig.projbuild",
     "main/*.c",
@@ -84,6 +85,17 @@ FIRMWARE_SOURCES = (
     "components/ne_console/Kconfig",
     "components/ne_console/include/*.h",
     "components/ne_console/src/*.c",
+)
+# What `neuroedge build --brain neuroclaw` reads besides (Q-83 Profile B, engine/brain.py
+# SOURCES): the pin, the bridge, the token door. Never copied into a project without the brain.
+BRAIN_SOURCES = (
+    "brain/neuroclaw.lock",
+    "components/ne_brain_bridge/CMakeLists.txt",
+    "components/ne_brain_bridge/include/*.h",
+    "components/ne_brain_bridge/src/*.c",
+    "components/ne_hal/CMakeLists.txt",
+    "components/ne_hal/include/*.h",
+    "components/ne_hal/src/*.c",
 )
 # Never shipped from any asset: what building in place leaves behind — an agent's
 # `neuroedge build` (build/, its esp32s3/ project) or `idf.py` inside fixtures/agents/<name>/
@@ -117,7 +129,7 @@ class CustomBuildHook(BuildHookInterface):
                     continue
                 relative = path.relative_to(repo).as_posix()
                 build_data["force_include"][str(path)] = f"{TARGET}/{relative}"
-        for pattern in FIRMWARE_SOURCES:
+        for pattern in (*FIRMWARE_SOURCES, *BRAIN_SOURCES):
             for path in sorted((repo / FIRMWARE).glob(pattern)):
                 if shipped(path, repo):
                     relative = path.relative_to(repo).as_posix()

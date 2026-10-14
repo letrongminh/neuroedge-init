@@ -36,6 +36,11 @@ def envelope_state(tmp_path, monkeypatch):
     # process, so they opt out of supervision explicitly. Tests of supervision pass
     # `supervise=True`, or delete this variable to see the default (`test_hal_linux_envelope.py`).
     monkeypatch.setenv("NEUROEDGE_LINUX_SUPERVISE", "0")
+    # The local page writes its link file (`ui.json`, DP-A-10) under the state directory: a
+    # test's own. Under a CI runner's service manager the URL would not be printed at all.
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    for name in ("STATE_DIRECTORY", "INVOCATION_ID", "NEUROEDGE_SERVICE"):
+        monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture(scope="session")

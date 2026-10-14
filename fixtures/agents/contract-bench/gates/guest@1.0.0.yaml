@@ -1,0 +1,18 @@
+schema:  neuroedge.gate/v1
+name:    guest
+version: 1.0.0
+
+evaluate:
+  guest_ok:
+    type: bool
+    instructions: "The guest is who they say"
+allow_when:
+  guest_ok: { confidence_gte: 0.9 }
+on_block:
+  action: escalate
+  to: night_manager
+  message: "A night manager must approve this guest."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

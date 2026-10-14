@@ -19,6 +19,13 @@ from neuroedge.templates import TEMPLATES
 
 from .ui_support import page_headers
 
+
+@pytest.fixture(autouse=True)
+def legacy_system_two(monkeypatch):
+    """These tests cover the box's own System 2, legacy since Q-83 (DP-A-08)."""
+    monkeypatch.setenv("NEUROEDGE_LEGACY_SYSTEM_TWO", "1")
+
+
 ROOT = Path(__file__).resolve().parents[2]
 AGENTS = ROOT / "fixtures" / "agents"
 VILLA = AGENTS / "villa-concierge" / "agent.toml"
@@ -337,8 +344,9 @@ def test_mcp_without_the_sdk_still_lists_the_tools(villa, monkeypatch):
 def test_mcp_writes_no_file(villa, tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    before = sorted(tmp_path.rglob("*"))  # the page's own link file (DP-A-10) is already there
     get(villa, "/api/mcp")
-    assert list(tmp_path.iterdir()) == []
+    assert sorted(tmp_path.rglob("*")) == before
 
 
 def test_a_path_that_is_not_a_gate_name_is_404(villa):

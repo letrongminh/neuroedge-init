@@ -184,8 +184,8 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
     if not turn.tool_results:
         if turn.reply is None:
             console.print(
-                "  no physical action for this intent; spoken replies need System 2 "
-                "([system_two] in agent.toml)"
+                "  no physical action for this intent; free phrasing is the brain's job "
+                "(NeuroClaw over MCP, Q-83)"
             )
         return
     for frame in session.hal.frames[frames_before:]:
@@ -363,6 +363,11 @@ def banner(session: SimSession, console: Console) -> None:
         console.print(f"  system 1: {escape(system_one_line(fast))}")
     if session.slow.available:
         console.print(f"  system 2: {escape(system_two_line(session.slow))}")
+    elif session.events.of_type("system_two_off"):
+        console.print(
+            "  system 2: off — [system_two] in the box is legacy, the brain is NeuroClaw (Q-83); "
+            "NEUROEDGE_LEGACY_SYSTEM_TWO=1 turns it on"
+        )
     for line in mcp_lines(session):
         console.print(f"  {line}")
 

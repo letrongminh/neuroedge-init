@@ -30,6 +30,15 @@ extern "C" {
 /* Take over the console UART and start the REPL task. */
 esp_err_t ne_console_start(bool safe_mode);
 
+/*
+ * Before ne_console_start: more commands on this one console (Profile B, DP-B-11: the brain
+ * registers its own, `neuroclaw_console_register`), called once esp_console is initialised.
+ */
+void ne_console_add_commands(esp_err_t (*register_more)(void));
+
+/* Before ne_console_start: a risk label `status` prints too (`single_chip`, DP-B-14). Up to 4. */
+void ne_console_add_risk(const char *label);
+
 #ifdef __cplusplus
 }
 #endif

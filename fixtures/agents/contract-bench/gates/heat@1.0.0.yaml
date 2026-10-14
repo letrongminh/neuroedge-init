@@ -1,0 +1,21 @@
+schema:  neuroedge.gate/v1
+name:    heat
+version: 1.0.0
+
+evaluate:
+  temperature:
+    type: numeric
+    unit: celsius
+    range: { min: -40, max: 80 }
+    max_age_ms: 5000
+    instructions: "Room temperature"
+allow_when:
+  temperature: { lt: 30 }
+arguments:
+  level: { type: integer, minimum: 1, maximum: 3 }
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

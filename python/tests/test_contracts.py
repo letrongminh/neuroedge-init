@@ -358,3 +358,25 @@ def test_every_error_code_of_the_catalog_has_a_valid_error_example():
         for p in (CONTRACTS / "error" / "valid").glob("*.json")
     }
     assert seen == {entry["code"] for entry in catalog["codes"]}
+
+
+def test_every_listed_tool_names_the_result_contract_it_answers_in(root):
+    """DP-COM-08: a brain checks `_meta["dev.neuroedge/contract"]` before it trusts a result."""
+    from mcp import Client
+
+    from neuroedge.mcp_server import CONTRACT, CONTRACT_KEY, build_server
+
+    schema = json.loads((repo_root() / "schemas" / f"{CONTRACT}.json").read_text(encoding="utf-8"))
+    assert schema["$id"].endswith("/tool-result/v1.json") and CONTRACT == "tool-result.v1"
+    session = SimSession.load(root / "fixtures" / "agents" / "home-voice" / "agent.toml")
+    seen = {}
+
+    async def main():
+        async with Client(build_server(session)) as client:
+            seen["tools"] = (await client.list_tools()).tools
+
+    import anyio
+
+    anyio.run(main)
+    assert seen["tools"]
+    assert all(tool.meta == {CONTRACT_KEY: CONTRACT} for tool in seen["tools"])

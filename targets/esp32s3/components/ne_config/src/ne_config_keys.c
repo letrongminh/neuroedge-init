@@ -19,6 +19,15 @@ static const ne_config_key KEYS[] = {
      "OpenAI-compatible chat completions endpoint"},
     {"llm.key", "llm_key", true, NE_CONFIG_CHECK_WORD, NE_CONFIG_VALUE_MAX, "LLM API key"},
     {"llm.model", "llm_model", false, NE_CONFIG_CHECK_WORD, 96u, "LLM model name"},
+    /* Profile B (DP-B-10): what NeuroClaw-ESP needs besides the above */
+    {"llm.fallback_url", "llm_fb_url", false, NE_CONFIG_CHECK_URL, 200u,
+     "fallback chat completions endpoint (used when the first fails)"},
+    {"llm.fallback_key", "llm_fb_key", true, NE_CONFIG_CHECK_WORD, NE_CONFIG_VALUE_MAX,
+     "fallback LLM API key"},
+    {"llm.fallback_model", "llm_fb_model", false, NE_CONFIG_CHECK_WORD, 96u,
+     "fallback LLM model name"},
+    {"search.key", "search_key", true, NE_CONFIG_CHECK_WORD, 128u, "web search API key"},
+    {"tz", "tz", false, NE_CONFIG_CHECK_WORD, 64u, "POSIX time zone, e.g. ICT-7"},
 };
 
 const ne_config_key *ne_config_keys(size_t *count)

@@ -216,7 +216,7 @@ def serve(
     """Serve until Ctrl-C. `on_start` runs once the server listens (the microphone, S2)."""
     server = StudioServer(session, agent_path=agent_path, port=port).start()
     console.print(
-        f"[bold green]✓[/bold green] studio at [link]{server.open_url}[/link] — Ctrl-C to stop",
+        f"[bold green]✓[/bold green] studio at [link]{server.announced_url}[/link] — Ctrl-C to stop",
         soft_wrap=True,  # one line: the key after `#` stays part of the URL
     )
     try:

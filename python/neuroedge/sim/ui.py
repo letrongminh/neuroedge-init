@@ -25,6 +25,13 @@ a script — may see the URL later; by then the code is spent or expired. A refu
 is traced as `ui_auth_refused`.
 
     POST /pair     {"code": "..."} — the one-time code from the URL, for the key; Origin only
+    POST /pair/new a fresh code, for `neuroedge ui-link`: the header `X-NeuroEdge-UI-Control`
+                   with the control secret of `ui.json`; the previous code stops working
+
+Every page writes `ui.json` (mode 0600, `state_dir()`): its URL and a control secret. Under a
+service manager (systemd sets `INVOCATION_ID`; `NEUROEDGE_SERVICE=1` says so for any other) the
+URL is not printed, as it would land in the journal: the owner runs `neuroedge ui-link`, which
+asks the running page for a fresh code (DP-A-10).
 
 Turns run one at a time under a lock: the session, like a device, handles one
 utterance after another. `neuroedge mcp serve --ui` (TSK-S3-27) serves this
@@ -37,11 +44,13 @@ from __future__ import annotations
 import asyncio
 import hmac
 import json
+import os
 import secrets
 import threading
 import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 
 from ..errors import NeuroEdgeError
@@ -60,6 +69,22 @@ KEY_HEADER = "X-NeuroEdge-UI-Key"
 MAX_REFUSALS_TRACED = 10_000  # as `mcp_auth_refused`: a flood cannot fill the trace
 MAX_TRACED_PATH = 64  # a refused request names its path, cut: the request line is the caller's
 PAIRING_TTL_S = 600.0  # the printed code works once, within ten minutes
+CONTROL_HEADER = "X-NeuroEdge-UI-Control"
+LINK_FILE = "ui.json"
+
+
+def state_dir() -> Path:
+    """Where `ui.json` lives: systemd's `$STATE_DIRECTORY`, else `$XDG_STATE_HOME/neuroedge`."""
+    given = os.environ.get("STATE_DIRECTORY", "").split(":")[0]
+    if given:
+        return Path(given)
+    base = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
+    return Path(base) / "neuroedge"
+
+
+def under_service_manager() -> bool:
+    """Run by systemd (or a manager that says so): stdout and stderr go to a journal."""
+    return bool(os.environ.get("INVOCATION_ID")) or os.environ.get("NEUROEDGE_SERVICE") == "1"
 
 
 def _parse_value(text: str) -> Any:
@@ -94,6 +119,9 @@ class SessionServer:
         self.key = secrets.token_urlsafe(32)
         self._code: str | None = secrets.token_urlsafe(16)
         self._code_deadline = time.monotonic() + PAIRING_TTL_S
+        self._control = secrets.token_urlsafe(32)
+        self.link_file: Path | None = None
+        self._link_lock = threading.Lock()  # one writer of `ui.json` at a time
         self.refusals = 0
 
     @property
@@ -119,6 +147,48 @@ class SessionServer:
                 return None
             self._code = None  # spent: whoever reads the URL later gets nothing
             return self.key
+
+    def new_code(self) -> str:
+        """A fresh pairing code, for `neuroedge ui-link`: the previous one stops working."""
+        with self.lock:
+            self._code = secrets.token_urlsafe(16)
+            self._code_deadline = time.monotonic() + PAIRING_TTL_S
+        self._write_link()
+        return self.open_url
+
+    def control_ok(self, given: str | None) -> bool:
+        return bool(given) and hmac.compare_digest(given.encode(), self._control.encode())
+
+    def publish(self, directory: Path | None = None) -> Path:
+        """Write `ui.json` (0600): the page's URL and the control secret `ui-link` needs."""
+        self.link_file = (directory or state_dir()) / LINK_FILE
+        self._write_link()
+        return self.link_file
+
+    def _write_link(self) -> None:
+        if self.link_file is None:
+            return
+        with self._link_lock:
+            self.link_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            body = json.dumps({"url": self.open_url, "control": self._control, "pid": os.getpid()})
+            # a fresh name, created here and nowhere else: a planted file or link is never followed
+            temporary = self.link_file.with_name(f".{LINK_FILE}.{secrets.token_hex(8)}")
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+            handle = os.open(temporary, flags, 0o600)
+            try:
+                with os.fdopen(handle, "w", encoding="utf-8") as out:
+                    out.write(body)
+                os.replace(temporary, self.link_file)
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
+
+    @property
+    def announced_url(self) -> str:
+        """What a terminal shows: the URL, or under a service manager where to get one."""
+        if under_service_manager():
+            return f"{self.link_file} (`neuroedge ui-link` prints a fresh link)"
+        return self.open_url
 
     def refuse(self, reason: str, path: str) -> None:
         """Trace one refused POST (`ui_auth_refused`): the reason and path, never a key."""
@@ -244,14 +314,33 @@ class SessionServer:
             self.changed.wait_for(lambda: self.version != seen, timeout=timeout)
             return self.version
 
-    def start(self) -> SessionServer:
+    def start(self, publish: bool = True) -> SessionServer:
         self._thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
         self._thread.start()
+        if publish:
+            try:
+                self.publish()
+            except OSError as error:
+                if under_service_manager():  # the journal must not get the URL instead
+                    self.stop()
+                    raise NeuroEdgeError(
+                        where=f"page link file {state_dir() / LINK_FILE}",
+                        why=f"cannot write it: {error.strerror or error}",
+                        how="give the service a writable StateDirectory= (or $STATE_DIRECTORY)",
+                    ) from error
+                self.link_file = None
         return self
 
     def stop(self) -> None:
         self.httpd.shutdown()
         self.httpd.server_close()
+        link, self.link_file = self.link_file, None
+        if link is not None:
+            try:
+                if json.loads(link.read_text(encoding="utf-8")).get("control") == self._control:
+                    link.unlink()
+            except (OSError, ValueError):
+                pass
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -383,9 +472,25 @@ class _Handler(BaseHTTPRequestHandler):
             return
         self._send(HTTPStatus.OK, _json({"ok": True, "key": key}).encode(), "application/json")
 
+    def _link(self) -> None:
+        """`POST /pair/new` from `neuroedge ui-link`: this host, and the control secret."""
+        if not self._host_ok():
+            self.server_state.refuse("foreign_host", "/pair/new")
+            self._send(HTTPStatus.FORBIDDEN, b"request refused: foreign_host", "text/plain")
+            return
+        if not self.server_state.control_ok(self.headers.get(CONTROL_HEADER)):
+            self.server_state.refuse("bad_control", "/pair/new")
+            self._send(HTTPStatus.FORBIDDEN, b"request refused: bad_control", "text/plain")
+            return
+        url = self.server_state.new_code()
+        self._send(HTTPStatus.OK, _json({"ok": True, "url": url}).encode(), "application/json")
+
     def do_POST(self) -> None:  # noqa: N802 - http.server API
         if self.path == "/pair":
             self._pair()
+            return
+        if self.path == "/pair/new":
+            self._link()
             return
         if self._refuse_post():
             return
@@ -411,10 +516,10 @@ def serve(session: SimSession, port: int, console: Any, open_browser: bool = Tru
     """Serve until Ctrl-C."""
     server = SessionServer(session, port=port).start()
     console.print(
-        f"[bold green]✓[/bold green] sim UI at [link]{server.open_url}[/link] — Ctrl-C to stop",
+        f"[bold green]✓[/bold green] sim UI at [link]{server.announced_url}[/link] — Ctrl-C to stop",
         soft_wrap=True,  # one line: the key after `#` stays part of the URL
     )
-    if open_browser:
+    if open_browser and not under_service_manager():
         import webbrowser
 
         webbrowser.open(server.open_url)
