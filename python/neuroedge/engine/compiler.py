@@ -1697,9 +1697,14 @@ def build(
     board_id: str | None = None,
     out_dir: str | Path | None = None,
     registry: GateRegistry | None = None,
+    brain: str | None = None,
+    brain_source: str | Path | None = None,
 ) -> BuildReport:
     """
     Check everything; raise `BuildFailed` with every problem, or write artifacts.
+
+    `brain` "neuroclaw" (Profile B, Q-83) puts NeuroClaw-ESP, checked against its pin, and the
+    bridge into the one `esp32s3` project (`engine/brain.py`); `brain_source` is a checkout.
 
     `board_id` None builds on the target's default board. It is never replaced by another
     board that would fit: the user must know which board they flash (RFC-0013 §3e).
@@ -1725,6 +1730,27 @@ def build(
                 how=f"pick a {target} board, or build with --target {board.target}",
             )
         )
+    brain_project: dict[str, bytes] | None = None
+    if brain is not None:
+        from .brain import BRAINS, brain_files
+        from .firmware import firmware_root
+
+        if brain not in BRAINS or target != "esp32s3":
+            problems.append(
+                NeuroEdgeError(
+                    where=f"--brain {brain} --target {target}",
+                    why=f"a brain goes into the one image of target esp32s3, and is one of {list(BRAINS)}",
+                    how="build with --target esp32s3 --brain neuroclaw, or leave --brain out "
+                    "(on other targets the brain runs beside the box, Profile A)",
+                )
+            )
+        else:
+            try:  # DP-B-01: checked against its pin before anything is written
+                brain_project = brain_files(
+                    firmware_root(), Path(brain_source) if brain_source is not None else None
+                )
+            except NeuroEdgeError as error:
+                problems.append(error)
     # `[plugins]` and `[actuators]` (RFC-0016 §3d, RFC-0018 §3b): the one check that `SimSession`
     # and `Guard` run at load time too. A remote actuator is a `digital.out` the board lacks.
     from ..plugins.actuators import remote_setup
@@ -1800,7 +1826,9 @@ def build(
         if project is not None:
             from . import firmware
 
-            project_files = firmware.render_project(manifest, board.id, gates, actions)
+            project_files = firmware.render_project(
+                manifest, board.id, gates, actions, brain=brain_project
+            )
         folder = Path(out_dir) / "gates"
         folder.mkdir(parents=True, exist_ok=True)
         from .binary_tree import c_header, encode

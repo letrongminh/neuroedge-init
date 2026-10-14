@@ -191,6 +191,10 @@ NOT_RUN = {
         "tests/test_hal_linux_audio.py runs it on the fake gpiod"
     ),
     "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json": "as above",
+    "neuroedge build --target esp32s3 --brain neuroclaw --brain-source ../neuroclaw": (
+        "needs a NeuroClaw checkout at the pinned commit; tests/test_firmware_brain.py builds "
+        "with a stand-in component"
+    ),
     "neuroedge ui-link": (
         "needs a running page; tests/test_mcp_serve_ui.py runs it against `mcp serve --ui`"
     ),

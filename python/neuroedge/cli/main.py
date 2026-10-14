@@ -2742,12 +2742,24 @@ def build(
     agent: Path = typer.Option(Path("agent.toml"), "--agent", "-a", help="Path to agent.toml"),
     out: Path = typer.Option(Path("build"), "--out", "-o", help="Directory for build artifacts"),
     registry: Path | None = REGISTRY_OPTION,
+    brain: str | None = typer.Option(
+        None,
+        "--brain",
+        help="esp32s3: put a brain in the same image (neuroclaw: Profile B, risk=single_chip)",
+    ),
+    brain_source: Path | None = typer.Option(
+        None,
+        "--brain-source",
+        help="With --brain: a NeuroClaw checkout at the pinned commit (default: fetch it)",
+    ),
 ):
     """
     Match the agent's capability needs against the board and compile its gates.
 
     For esp32s3 it also writes the agent's firmware: an ESP-IDF project in
-    <out>/esp32s3/ to build and flash with idf.py. Any problem: exit 1, nothing written.
+    <out>/esp32s3/ to build and flash with idf.py. With --brain neuroclaw the same project
+    holds NeuroClaw-ESP, checked against targets/esp32s3/brain/neuroclaw.lock, and the bridge
+    (Q-83, Profile B). Any problem: exit 1, nothing written.
     """
     from ..engine.compiler import build as run_build
 
@@ -2758,6 +2770,8 @@ def build(
             board_id=board,  # None: the target's default board, never another one (RFC-0013 §3e)
             out_dir=out,
             registry=GateRegistry(registry) if registry is not None else None,
+            brain=brain,
+            brain_source=brain_source,
         )
     except BuildFailed as failed:
         _fail_build(failed)

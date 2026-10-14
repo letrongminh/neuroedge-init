@@ -324,7 +324,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-A-09-1 | DP-A-09 | demo | Blank VM → `neuroedge install --profile full` → services up, brain user isolated (TC-A-03-2 passes), chat turns on the light | planned — TSK-I2d-25 |
 | TC-A-10-1 | DP-A-10 | linux | Box under systemd → URL file mode 0600 owned by the box user; journal has no `#c=`; `neuroedge ui-link` prints a new code and the old one stops working | implemented — python/tests/test_mcp_serve_ui.py::test_under_a_service_manager_the_link_goes_to_a_private_file_and_ui_link_renews_it |
 | TC-A-11-1 | DP-A-11 | integration | Rotate the brain certificate → new one works without restart; revoked thumbprint → handshake refused | implemented — python/tests/test_mcp_http.py::test_a_brain_certificate_rotates_without_a_restart_and_a_revoked_one_is_cut_off |
-| TC-B-01-1 | DP-B-01 | unit | `build --brain neuroclaw` writes the component pin; tampered SHA-256 → build error naming the file | planned — TSK-I2f-14 |
+| TC-B-01-1 | DP-B-01 | unit | `build --brain neuroclaw` writes the component pin; tampered SHA-256 → build error naming the file | implemented — python/tests/test_firmware_brain.py::test_a_tampered_brain_fails_the_build_naming_the_pin |
 | TC-B-02-1 | DP-B-02 | inspection | Image symbols contain no MCP server, no `mbedtls_ssl_conf_*` server role | planned — TSK-I2f-15 |
 | TC-B-03-1 | DP-B-03 | host C | Bridge tool list for the demo agent equals the MCP tool list (names, schemas) | implemented — python/tests/test_c_bridge.py::test_the_bridge_offers_the_tools_the_box_lists_over_mcp |
 | TC-B-04-1 | DP-B-04 | host C | Arguments table: unknown key, missing key, string for number, out of range → REJECTED with `problems`; walker never called | implemented — python/tests/test_c_bridge.py::test_bad_arguments_are_rejected_before_any_gate |
@@ -332,7 +332,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-B-06-1 | DP-B-06 | host C | Every `ne_result` reason and `on_block` action → mapped JSON valid against tool-result.v1 | implemented — python/tests/test_c_bridge.py::test_every_reason_and_on_block_action_maps_to_a_valid_result |
 | TC-B-07-1 | DP-B-07 | host C | Expired confirmation, second answer, wrong `from_id` → refused; owner callback and button → ALLOW once with the stored arguments and freshly read facts; ALLOW tokens still issue while 4 asks are pending | implemented — python/tests/test_c_bridge.py::test_only_the_owner_or_the_button_answers_once_and_facts_are_read_again |
 | TC-B-08-1 | DP-B-08 | host C | HAL drive without token, with closed token, with token for another pin → refused, pin unchanged | planned — TSK-S4-01 |
-| TC-B-09-1 | DP-B-09 | unit | Generated partition table: offsets aligned, OTA slots ≥ image, `ws` ≥ 1 MB, `nvs_keys` encrypted | planned — TSK-I2f-14 |
+| TC-B-09-1 | DP-B-09 | unit | Generated partition table: offsets aligned, OTA slots ≥ image, `ws` ≥ 1 MB, `nvs_keys` encrypted | implemented — python/tests/test_firmware_brain.py::test_the_brains_partition_table_holds_box_brain_and_signed_ota |
 | TC-B-10-1 | DP-B-10 | QEMU | Set all keys at the hidden prompt, reboot → brain configured; UART capture contains no secret | planned — TSK-I2f-14 |
 | TC-B-11-1 | DP-B-11 | QEMU | Boot combined image → one Wi-Fi start, one console with both command sets | planned — TSK-I2f-14 |
 | TC-B-12-1 | DP-B-12 | QEMU | Three tool calls → `record --port` writes a trace that `verify` replays to the same verdicts | planned — TSK-I2f-16 |
@@ -343,7 +343,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-B-17-1 | DP-B-17 | QEMU | OTA to an image with a lower security version → refused, old image keeps running; pairing without flash encryption → label printed, tokens stored only after acknowledgement | planned — TSK-I2f-14 |
 | TC-BP-01-1 | DP-BP-01 | analysis | Decision note merged under `docs/reports/` with measurements and a recommendation | planned — TSK-I2f-17 |
 | TC-NF-01-1 | DP-NF-01 | board | 1,000 calls on DevKitC → bridge overhead p95 ≤ 5 ms | planned — TSK-I2f-15 |
-| TC-NF-02-1 | DP-NF-02 | inspection | Every place that fetches NeuroClaw names a version and a SHA-256 | planned — TSK-I2d-26 |
+| TC-NF-02-1 | DP-NF-02 | inspection | Every place that fetches NeuroClaw names a version and a SHA-256 (today `build --brain neuroclaw`, from `targets/esp32s3/brain/neuroclaw.lock`; the installer of DP-A-09 reads the same kind of pin) | implemented — python/tests/test_firmware_brain.py::test_the_committed_pin_names_a_commit_and_a_tree |
 
 ---
 

@@ -152,6 +152,7 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
     "build": (
         "neuroedge build --target sim --board sim-default",
         "neuroedge build --target esp32s3 --board esp32s3-box-3   # + build/esp32s3/",
+        "neuroedge build --target esp32s3 --brain neuroclaw --brain-source ../neuroclaw",
     ),
     "test": (
         "neuroedge test",

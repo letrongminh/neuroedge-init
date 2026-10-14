@@ -105,7 +105,10 @@ COMPONENT_FILES = (
 )
 # Everything a build may write, remove or list in MANIFEST — nothing else is ever touched —
 # and the directories those files live in.
-OWNED = (*SOURCES, *COMPONENT_FILES, MANIFEST)
+# `--brain neuroclaw` (Q-83, Profile B): NeuroClaw-ESP and the bridge, `engine/brain.py`.
+from .brain import OWNED as BRAIN_FILES  # noqa: E402
+
+OWNED = (*SOURCES, *COMPONENT_FILES, *BRAIN_FILES, MANIFEST)
 OWNED_DIRS = tuple(
     sorted(
         {
@@ -928,6 +931,7 @@ def render_project(
     gates: Mapping[str, ResolvedGate],
     specs: Iterable[Any],
     source: Path | None = None,
+    brain: Mapping[str, bytes] | None = None,
 ) -> dict[str, bytes]:
     """
     The whole project, keyed by its path under `<out>/esp32s3/`: the firmware
@@ -946,6 +950,14 @@ def render_project(
     # ESP-IDF reads PROJECT_VER from version.txt when the CMakeLists does not set it:
     # the generated project outside git reports the agent's [agent] version, not "1".
     files["version.txt"] = f"{manifest.version}\n".encode()
+    if brain is not None:
+        # One image of box and brain (DP-B-01): the brain's components, and a `ws` partition.
+        from .brain import brain_partitions
+
+        files.update(brain)
+        files["partitions.csv"] = brain_partitions(files["partitions.csv"].decode("utf-8")).encode(
+            "utf-8"
+        )
     stray = sorted(name for name in files if not owned(name))
     if (
         stray
