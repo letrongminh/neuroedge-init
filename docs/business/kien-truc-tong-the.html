@@ -4,86 +4,122 @@
 <title>Kiến trúc NeuroEdge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: một cột ~980px; mỗi phần là một hình, chữ chỉ để gọi tên. Sơ đồ là SVG nội tuyến dùng chung token màu. */
+/* Layout: sổ tay hai cột (mục lục trái, nội dung phải), chữ có chân, nhấn bằng một màu san hô.
+   Mỗi phần là một hình; chữ chỉ để gọi tên. Sơ đồ là SVG nội tuyến dùng chung token màu. */
 :root {
-  --bg: #f3f5f7;
+  --bg: #fefefc;
   --surface: #ffffff;
-  --ink: #14202b;
-  --muted: #586773;
-  --line: #d3dae0;
-  --gate: #b45309;        /* màu "cổng": nơi duy nhất ra quyết định */
-  --gate-soft: #fdf1e3;
-  --core: #1f4e6b;
-  --core-soft: #e6eef4;
-  --ok: #1d7a4a;  --ok-soft: #e3f3ea;
-  --part: #8a6100; --part-soft: #fbf1d6;
-  --plan: #5d6875; --plan-soft: #eceff2;
-  --block: #b42318; --block-soft: #fde8e6;
-  --f-display: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
-  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --side: #fbfaf7;
+  --ink: #141414;
+  --muted: #6a675f;
+  --line: #e3e0d8;
+  --gate: #d9472b;        /* màu "cổng": nơi duy nhất ra quyết định, cũng là màu nhấn */
+  --gate-soft: #fdf0ec;
+  --core: #1f2933;
+  --core-soft: #f4f3ef;
+  --ok: #2f7d4f;  --ok-soft: #edf6f0;
+  --part: #8a6a12; --part-soft: #f8f2e1;
+  --plan: #77736b; --plan-soft: #f3f2ee;
+  --block: #a3123a; --block-soft: #fbecf0;
+  --f-display: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --f-body: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
   --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0f161c; --surface: #16212a; --ink: #e4eaef; --muted: #98a6b2; --line: #2b3a46;
-  --gate: #f0a24a; --gate-soft: #3a2810; --core: #8cc1e0; --core-soft: #17303f;
-  --ok: #5cc98d; --ok-soft: #14301f; --part: #e6bd55; --part-soft: #352a0d;
-  --plan: #a3afba; --plan-soft: #222d36; --block: #f2867c; --block-soft: #3a1714;
+  --bg: #0e0e0e; --surface: #151515; --side: #111111; --ink: #f2f1ee; --muted: #a29f98; --line: #2a2a2a;
+  --gate: #f5654a; --gate-soft: #2a1612; --core: #e6e4df; --core-soft: #1b1b1b;
+  --ok: #6fcf97; --ok-soft: #12261a; --part: #e3c065; --part-soft: #2a230f;
+  --plan: #9a968e; --plan-soft: #1c1c1c; --block: #f2678c; --block-soft: #2c1219;
   color-scheme: dark } }
 :root[data-theme="dark"] {
-  --bg: #0f161c; --surface: #16212a; --ink: #e4eaef; --muted: #98a6b2; --line: #2b3a46;
-  --gate: #f0a24a; --gate-soft: #3a2810; --core: #8cc1e0; --core-soft: #17303f;
-  --ok: #5cc98d; --ok-soft: #14301f; --part: #e6bd55; --part-soft: #352a0d;
-  --plan: #a3afba; --plan-soft: #222d36; --block: #f2867c; --block-soft: #3a1714;
+  --bg: #0e0e0e; --surface: #151515; --side: #111111; --ink: #f2f1ee; --muted: #a29f98; --line: #2a2a2a;
+  --gate: #f5654a; --gate-soft: #2a1612; --core: #e6e4df; --core-soft: #1b1b1b;
+  --ok: #6fcf97; --ok-soft: #12261a; --part: #e3c065; --part-soft: #2a230f;
+  --plan: #9a968e; --plan-soft: #1c1c1c; --block: #f2678c; --block-soft: #2c1219;
   color-scheme: dark }
 
 * { box-sizing: border-box }
-body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.6; padding-inline: 16px; padding-block: 40px 64px; margin: 0 }
-.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 64px }
-h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.25; margin: 0 }
-h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 800; letter-spacing: -0.02em }
-h2 { font-size: 22px; font-weight: 700 }
-h3 { font-size: 15px; font-weight: 700 }
-p { margin: 0; max-width: 68ch }
-code, .mono { font-family: var(--f-mono); font-size: 0.86em }
-code { background: var(--core-soft); color: var(--core); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere }
-a { color: var(--core) }
-.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) }
-section { display: grid; gap: 16px; min-width: 0 }
-.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px }
-.more { font-size: 13px; color: var(--muted) }
-.lede { font-size: 18px }
-.lede strong { color: var(--gate) }
-.cap { font-size: 13.5px; color: var(--muted) }
+html { scroll-behavior: smooth; scroll-padding-top: 24px }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.6; margin: 0;
+  display: grid; grid-template-columns: 272px minmax(0, 1fr); min-height: 100vh }
+
+/* Mục lục bên trái */
+.side { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--side); border-right: 1px solid var(--line); padding: 36px 20px 28px; display: grid; align-content: start; gap: 18px }
+.brand { font-family: var(--f-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; text-decoration: none; color: var(--ink) }
+.brand b { color: var(--gate); font-weight: 700 }
+.brand-sub { font-size: 14px; color: var(--muted); margin-top: -12px }
+.toc { display: grid; gap: 1px; border-top: 1px solid var(--line); padding-top: 14px }
+.toc a { display: grid; grid-template-columns: 26px 1fr; padding: 5px 10px; border-left: 2px solid transparent; color: var(--ink); text-decoration: none; font-size: 15px; line-height: 1.35 }
+.toc a span { font-family: var(--f-mono); font-size: 11px; color: var(--muted); padding-top: 3px }
+.toc a:hover { background: var(--core-soft) }
+.toc a.on { border-left-color: var(--gate); background: var(--core-soft) }
+.toc a.on span { color: var(--gate) }
+.side-note { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px }
+.theme { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px }
+.theme button { font-family: var(--f-mono); font-size: 11.5px; padding: 6px 0; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 2px; cursor: pointer }
+.theme button[aria-pressed="true"] { color: var(--gate); border-color: var(--gate); font-weight: 600 }
+.side-links { display: grid; gap: 6px }
+.side-links a { font-family: var(--f-mono); font-size: 11.5px; text-align: center; padding: 7px 0; border: 1px solid var(--line); border-radius: 2px; color: var(--ink); text-decoration: none; background: var(--surface) }
+.side-links a:hover { border-color: var(--gate); color: var(--gate) }
+
+main { padding: 56px clamp(16px, 5vw, 64px) 80px; min-width: 0 }
+.wrap { max-width: 900px; display: grid; gap: 88px }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0 }
+h1 { font-size: clamp(34px, 5.6vw, 60px); font-weight: 700; letter-spacing: -0.025em }
+h1 em { color: var(--gate); font-style: italic; font-weight: 600 }
+h2 { font-size: clamp(25px, 3vw, 32px); font-weight: 700; letter-spacing: -0.015em }
+h3 { font-size: 17px; font-weight: 700 }
+p { margin: 0; max-width: 64ch }
+code, .mono { font-family: var(--f-mono); font-size: 0.8em }
+code { background: var(--core-soft); color: var(--ink); padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; overflow-wrap: anywhere }
+a { color: var(--ink); text-decoration-color: var(--gate); text-underline-offset: 3px }
+a:hover { color: var(--gate) }
+.eyebrow { font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gate); margin-bottom: 10px }
+section { display: grid; gap: 20px; min-width: 0 }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 6px 16px }
+.more { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted) }
+.lede { font-size: 20px; line-height: 1.55; color: var(--muted) }
+.lede strong { color: var(--ink); font-weight: 600 }
+.cap { font-size: 15px; color: var(--muted) }
+.hero { display: grid; gap: 22px; padding-bottom: 8px }
+.try { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px 20px; display: grid; gap: 10px; align-content: start }
+.panel h3 { font-size: 16px }
+.panel ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+.say-q { border-left: 2px solid var(--gate); padding-left: 12px; font-size: 15.5px }
+.term { font-family: var(--f-mono); font-size: 12.5px; line-height: 1.7; background: var(--core-soft); border: 1px solid var(--line); border-radius: 2px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere }
+.term .tk { color: var(--muted) } .term .tg { color: var(--gate); font-weight: 600 } .term .tok { color: var(--ok); font-weight: 600 }
 
 /* Chú giải trạng thái */
-.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; vertical-align: 1px }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 2px; white-space: nowrap; vertical-align: 1px }
 .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50% }
 .ok { background: var(--ok-soft); color: var(--ok) } .ok::before { background: var(--ok) }
 .part { background: var(--part-soft); color: var(--part) } .part::before { background: var(--part) }
 .plan { background: var(--plan-soft); color: var(--plan) } .plan::before { border: 1.5px dashed var(--plan); width: 6px; height: 6px }
-.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; font-size: 13px; color: var(--muted) }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 14px; color: var(--muted) }
 
 /* Khung chứa SVG: cuộn ngang trên điện thoại thay vì co chữ quá nhỏ */
-.fig { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto }
+.fig { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px; overflow-x: auto }
 .fig svg { display: block; width: 100%; height: auto; min-width: 680px }
 .fig.narrow svg { min-width: 520px }
 svg text { font-family: var(--f-body); fill: var(--ink) }
-svg .t { font-size: 14px; font-weight: 700 }
+svg rect[rx="8"], svg rect[rx="10"], svg rect[rx="12"], svg rect[rx="14"], svg rect[rx="16"] { rx: 3px; ry: 3px }
+svg .t { font-size: 14.5px; font-weight: 700 }
 svg .s { font-size: 12px; fill: var(--muted) }
 svg .m { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted) }
-svg .zl { font-size: 11px; font-weight: 700; letter-spacing: 0.08em }
+svg .zl { font-family: var(--f-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em }
 svg .em { font-size: 20px }
 svg .em-l { font-size: 26px }
 svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2 }
-svg .box-core { fill: var(--core-soft); stroke: var(--core); stroke-width: 1.6 }
-svg .box-gate { fill: var(--gate-soft); stroke: var(--gate); stroke-width: 2 }
+svg .box-core { fill: var(--surface); stroke: var(--core); stroke-width: 1.3 }
+svg .box-gate { fill: var(--gate-soft); stroke: var(--gate); stroke-width: 1.8 }
 svg .box-ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.4 }
 svg .box-blk { fill: var(--block-soft); stroke: var(--block); stroke-width: 1.4 }
 svg .box-plan { fill: var(--plan-soft); stroke: var(--plan); stroke-width: 1.2; stroke-dasharray: 5 4 }
 svg .zone-un { fill: none; stroke: var(--block); stroke-width: 1.4; stroke-dasharray: 6 5 }
-svg .zone-tr { fill: var(--core-soft); stroke: var(--core); stroke-width: 2; fill-opacity: 0.45 }
+svg .zone-tr { fill: var(--core-soft); stroke: var(--core); stroke-width: 1.4; fill-opacity: 0.7 }
 svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none }
 svg .ln-gate { stroke: var(--gate); stroke-width: 2.2; fill: none }
 svg .ln-ok { stroke: var(--ok); stroke-width: 2.2; fill: none }
@@ -96,11 +132,11 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 
 /* Năm tầng */
 .layers { display: grid; gap: 6px }
-.layer { display: grid; grid-template-columns: 44px minmax(0, 220px) minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 10px 14px }
-.layer .n { font-family: var(--f-display); font-size: 26px; font-weight: 800; color: var(--muted); text-align: center }
+.layer { display: grid; grid-template-columns: 44px minmax(0, 220px) minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 2px; padding: 10px 14px }
+.layer .n { font-family: var(--f-mono); font-size: 20px; font-weight: 500; color: var(--muted); text-align: center }
 .layer .ic { font-size: 22px; margin-right: 6px }
 .layer .pills { display: flex; flex-wrap: wrap; gap: 5px }
-.pill { font-size: 12.5px; padding: 2px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); white-space: nowrap }
+.pill { font-size: 13.5px; padding: 1px 9px; border-radius: 2px; background: var(--bg); border: 1px solid var(--line); white-space: nowrap }
 .pill.dashed { border-style: dashed; color: var(--muted) }
 .layer.l1 { border-left-color: var(--block) }
 .layer.l2 { border-left-color: var(--part) }
@@ -111,11 +147,11 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 
 /* Kịch bản một lệnh */
 .scen { display: grid; gap: 10px }
-.row { display: grid; grid-template-columns: minmax(0, 1.1fr) 28px minmax(0, 1fr) 28px minmax(0, 1.3fr); align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px }
+.row { display: grid; grid-template-columns: minmax(0, 1.1fr) 28px minmax(0, 1fr) 28px minmax(0, 1.3fr); align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 14px 18px }
 .say { font-size: 15px; font-weight: 600 }
 .say small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px }
 .to { text-align: center; color: var(--muted); font-size: 18px }
-.verdict { font-family: var(--f-mono); font-weight: 600; font-size: 13.5px; padding: 6px 10px; border-radius: 8px; text-align: center; border: 2px solid }
+.verdict { font-family: var(--f-mono); font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 2px; text-align: center; border: 1.5px solid }
 .v-allow { color: var(--ok); border-color: var(--ok); background: var(--ok-soft) }
 .v-ask { color: var(--gate); border-color: var(--gate); background: var(--gate-soft) }
 .v-block { color: var(--block); border-color: var(--block); background: var(--block-soft) }
@@ -124,10 +160,10 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 
 /* Thẻ ba cột */
 .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; align-content: start }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px; display: grid; gap: 10px; align-content: start }
 .card .ttl { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap }
 .stack { display: grid; gap: 4px }
-.blk { border-radius: 8px; padding: 7px 10px; font-size: 13px; text-align: center; border: 1px solid var(--line); background: var(--bg) }
+.blk { border-radius: 2px; padding: 7px 10px; font-size: 13px; text-align: center; border: 1px solid var(--line); background: var(--bg) }
 .blk.brain { border: 1.5px dashed var(--block); background: var(--block-soft) }
 .blk.box { border: 2px solid var(--core); background: var(--core-soft); font-weight: 600 }
 .blk.gate { border: 2px solid var(--gate); background: var(--gate-soft); font-weight: 600 }
@@ -138,10 +174,10 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 .card .note { font-size: 12.5px; color: var(--muted) }
 
 /* Ma trận hiện trạng */
-.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface) }
-table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 560px }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 2px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 560px }
 th, td { text-align: left; vertical-align: middle; padding: 9px 14px; border-bottom: 1px solid var(--line) }
-th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--bg) }
+th { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--bg) }
 td.c { text-align: center }
 tr:last-child td { border-bottom: 0 }
 .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px }
@@ -152,31 +188,44 @@ tr:last-child td { border-bottom: 0 }
 
 /* Ba bảo đảm */
 .guarantees { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
-.g { display: grid; gap: 6px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--gate); border-radius: 12px; padding: 14px }
+.g { display: grid; gap: 6px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--gate); border-radius: 2px; padding: 18px }
 .g .big { font-size: 28px; line-height: 1 }
-.g ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px; color: var(--muted) }
+.g ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 15px; color: var(--muted) }
 
 /* Lộ trình */
 .road { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; position: relative }
-.road::before { content: ""; position: absolute; left: 16px; right: 16px; top: 13px; height: 3px; background: linear-gradient(90deg, var(--gate) 0 33%, var(--core) 33% 66%, var(--line) 66%) }
+.road::before { content: ""; position: absolute; left: 16px; right: 16px; top: 13px; height: 2px; background: linear-gradient(90deg, var(--gate) 0 33%, var(--core) 33% 66%, var(--line) 66%) }
 .stop { display: grid; gap: 8px; padding: 0 10px; position: relative; align-content: start }
-.stop .pin { width: 28px; height: 28px; border-radius: 50%; background: var(--surface); border: 3px solid var(--gate); z-index: 1 }
+.stop .pin { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 2px solid var(--gate); z-index: 1 }
 .stop:nth-child(2) .pin { border-color: var(--core) }
 .stop:nth-child(3) .pin { border-color: var(--line); border-style: dashed }
 .stop .when { font-family: var(--f-mono); font-size: 12px; color: var(--muted) }
-.stop ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px }
+.stop ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 15px }
 
 /* Hiểu sai thường gặp */
-.myths { display: grid; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden }
-.myth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 14px }
+.myths { display: grid; border: 1px solid var(--line); border-radius: 2px; background: var(--surface); overflow: hidden }
+.myth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; padding: 11px 18px; border-bottom: 1px solid var(--line); font-size: 15.5px }
 .myth:last-child { border-bottom: 0 }
 .myth .wrong { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--block) }
-details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px }
-details summary { cursor: pointer; font-weight: 600; font-size: 14px }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 10px 16px }
+details summary { cursor: pointer; font-family: var(--f-mono); font-size: 12px; color: var(--muted) }
 details .tbl { margin-top: 10px; border: 0 }
-.sources { font-size: 13px; color: var(--muted); display: grid; gap: 4px }
+.sources { font-size: 14px; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 24px }
 
+@media (max-width: 980px) {
+  body { display: block }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 24px 16px 18px; gap: 14px }
+  .toc { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) }
+  .side-links { grid-template-columns: repeat(2, 1fr) }
+  main { padding-top: 40px }
+}
 @media (max-width: 760px) {
+  .try { grid-template-columns: 1fr }
+  .toc { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; scrollbar-width: thin }
+  .toc a { display: block; white-space: nowrap; border: 1px solid var(--line); border-left-width: 1px; border-radius: 2px; padding: 4px 10px; font-size: 14px; background: var(--surface) }
+  .toc a span { margin-right: 6px }
+  .toc a.on { border-color: var(--gate) }
+  .side-note { display: none }
   .layer { grid-template-columns: 34px minmax(0, 1fr); }
   .layer .pills, .layer .st { grid-column: 2 }
   .row { grid-template-columns: 1fr; text-align: left }
@@ -188,24 +237,65 @@ details .tbl { margin-top: 10px; border: 0 }
 }
 </style>
 </head><body>
+<aside class="side">
+  <a class="brand" href="#s0">Neuro<b>Edge</b></a>
+  <div class="brand-sub">Kiến trúc tổng thể</div>
+  <nav class="toc" aria-label="Mục lục">
+    <a href="#s0"><span>00</span>Tổng quan</a>
+    <a href="#s1"><span>01</span>Bộ não xin, hộp quyết định</a>
+    <a href="#s2"><span>02</span>Năm tầng, từ người dùng tới thiết bị</a>
+    <a href="#s3"><span>03</span>Một đường duy nhất tới chân phần cứng</a>
+    <a href="#s4"><span>04</span>Ba kết cục của cùng một câu nhắn</a>
+    <a href="#s5"><span>05</span>Bộ não chạy ở đâu, gate luôn ở nhà</a>
+    <a href="#s6"><span>06</span>Một gate, ba nơi chạy, cùng phán quyết</a>
+    <a href="#s7"><span>07</span>Vòng bằng chứng</a>
+    <a href="#s8"><span>08</span>Ba bảo đảm</a>
+    <a href="#s9"><span>09</span>Cắm vào mà không sửa lõi</a>
+    <a href="#s10"><span>10</span>Dựng → Chạy → Chia sẻ</a>
+    <a href="#s11"><span>11</span>Ba chặng</a>
+    <a href="#s12"><span>12</span>Những điểm hay bị mô tả sai</a>
+  </nav>
+  <div class="side-note">Bản vẽ cho người đọc nhanh. Nguồn sự thật vẫn là mã và <code>docs/architecture/</code>.</div>
+  <div class="theme" role="group" aria-label="Giao diện">
+    <button type="button" data-t="auto">Tự động</button><button type="button" data-t="light">Ngày</button><button type="button" data-t="dark">Đêm</button>
+  </div>
+  <div class="side-links">
+    <a href="../architecture/vi/00-overview.md">00-overview</a>
+    <a href="../../roadmap/neuroedge-roadmap.md">Roadmap</a>
+  </div>
+</aside>
+<main>
 <div class="wrap">
 
 <!-- ============ MỞ ĐẦU ============ -->
-<header style="display:grid; gap:14px">
-  <div class="eyebrow">NeuroEdge · kiến trúc tổng thể · theo nhánh main, 2026-10-14</div>
-  <h1>The Physical AI that really does things, safely by design.</h1>
+<header class="hero" id="s0">
+  <div><div class="eyebrow">Chương 0 · Tổng quan · nhánh main, 2026-10-14</div>
+  <h1>The Physical AI that <em>really</em> does things, safely by design.</h1></div>
   <p class="lede">AI <strong>làm thật</strong>: bật relay, mở van, chốt cửa. <strong>An toàn từ thiết kế</strong>: model chỉ đề xuất, gate quyết định; không token, không hành động; không chắc thì chặn (Q-82).</p>
-  <div class="legend">
+  <div class="try">
+    <div class="panel">
+      <h3>Nhắn như nói chuyện</h3>
+      <ul><li>"Bật đèn hiên."</li><li>"Mở cửa cho khách."</li><li>"Tưới cây lúc 6 giờ."</li></ul>
+      <div class="say-q">Bạn nói, NeuroClaw đề xuất, hộp NeuroEdge quyết định rồi mới chạm thiết bị.</div>
+      <div class="term"><span class="tk">Bạn:</span> mở cửa cho khách
+<span class="tk">Hộp:</span> <span class="tg">ASK</span> · hỏi chủ nhà trước khi mở
+<span class="tk">Chủ nhà:</span> có  →  <span class="tok">ALLOW</span> · ghi vết trace.v1</div>
+    </div>
+    <div class="panel">
+      <h3>Đọc hình thế nào</h3>
+      <div class="legend" style="display:grid; gap:8px; justify-items:start">
     <span class="chip ok">đã có mã</span>
     <span class="chip part">có một phần</span>
     <span class="chip plan">mới quy hoạch</span>
     <span>· nét đứt cũng là quy hoạch · nguồn sự thật: <a href="../architecture/vi/00-overview.md"><code>00-overview.md</code></a></span>
   </div>
+    </div>
+  </div>
 </header>
 
 <!-- ============ 1. BỨC TRANH TỔNG ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">1 · Bức tranh tổng</div><h2>Bộ não xin, hộp quyết định</h2></div>
+<section id="s1">
+  <div class="head"><div><div class="eyebrow">Chương 1 · Bức tranh tổng</div><h2>Bộ não xin, hộp quyết định</h2></div>
     <span class="more">chi tiết: <a href="../architecture/assets/svg/E-01-system-context.svg">E-01</a> · <a href="../architecture/assets/svg/E-11-ecosystem.svg">E-11</a></span></div>
   <div class="fig">
     <svg viewBox="0 -34 960 474" role="img" aria-label="Người dùng nhắn bộ não NeuroClaw; bộ não gọi hộp NeuroEdge qua MCP; chỉ hộp chạm thiết bị">
@@ -223,7 +313,7 @@ details .tbl { margin-top: 10px; border: 0 }
       <text x="26" y="106" class="s">Telegram · trang web</text>
       <rect x="10" y="236" width="160" height="78" rx="10" class="box"/>
       <text x="26" y="268" class="em">🤖</text><text x="58" y="266" class="t">AI khác</text>
-      <text x="26" y="294" class="s">Claude Desktop, OpenClaw</text>
+      <text x="26" y="294" class="s">Claude, OpenClaw…</text>
 
       <!-- Vùng không tin cậy -->
       <rect x="200" y="20" width="200" height="140" rx="14" class="zone-un"/>
@@ -259,7 +349,7 @@ details .tbl { margin-top: 10px; border: 0 }
       <text x="200" y="266" class="m">MCP + mTLS · chỉ xin</text>
 
       <!-- Hỏi chủ nhà -->
-      <path d="M470 138 H440 V-12 H90 V44" class="ln-gate" stroke-dasharray="6 4" marker-end="url(#ag)"/>
+      <path d="M470 138 H440 V-12 H140 V44" class="ln-gate" stroke-dasharray="6 4" marker-end="url(#ag)"/>
       <text x="200" y="-18" class="s" style="fill:var(--gate)">ASK: gate hỏi chủ nhà, chỉ người thật trả lời</text>
 
       <!-- Thiết bị -->
@@ -288,8 +378,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 2. NĂM TẦNG ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">2 · Kiến trúc 00 §2.1</div><h2>Năm tầng, từ người dùng tới thiết bị</h2></div>
+<section id="s2">
+  <div class="head"><div><div class="eyebrow">Chương 2 · Kiến trúc 00 §2.1</div><h2>Năm tầng, từ người dùng tới thiết bị</h2></div>
     <span class="more">chi tiết: <a href="../architecture/vi/00-overview.md">00 §2.1</a></span></div>
   <div class="layers">
     <div class="layer l1"><span class="n">1</span><h3><span class="ic">🧠</span>Tương tác, bộ não</h3>
@@ -328,8 +418,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 3. XƯƠNG SỐNG ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">3 · Xương sống thực thi</div><h2>Một đường duy nhất tới chân phần cứng</h2></div>
+<section id="s3">
+  <div class="head"><div><div class="eyebrow">Chương 3 · Xương sống thực thi</div><h2>Một đường duy nhất tới chân phần cứng</h2></div>
     <span class="more">chi tiết: <a href="../architecture/assets/svg/E-05-gate-spine.svg">E-05</a></span></div>
   <div class="fig">
     <svg viewBox="0 0 960 250" role="img" aria-label="Nguồn gọi → dispatch → c.do → gate → token → HAL → chân; BLOCK đi on_block; mọi bước ghi vết">
@@ -391,8 +481,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 4. BA KỊCH BẢN ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">4 · Một lệnh đi qua hộp</div><h2>Ba kết cục của cùng một câu nhắn</h2></div>
+<section id="s4">
+  <div class="head"><div><div class="eyebrow">Chương 4 · Một lệnh đi qua hộp</div><h2>Ba kết cục của cùng một câu nhắn</h2></div>
     <span class="more">chi tiết: <a href="../architecture/vi/06-runtime-flows.md">06 · luồng chạy</a></span></div>
   <div class="scen">
     <div class="row">
@@ -414,8 +504,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 5. CHẠY Ở ĐÂU ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">5 · Triển khai · Q-76, Q-79</div><h2>Bộ não chạy ở đâu, gate luôn ở nhà</h2></div>
+<section id="s5">
+  <div class="head"><div><div class="eyebrow">Chương 5 · Triển khai · Q-76, Q-79</div><h2>Bộ não chạy ở đâu, gate luôn ở nhà</h2></div>
     <span class="more">chi tiết: <a href="../architecture/assets/svg/E-08-deployment.svg">E-08</a> · <a href="../architecture/vi/15-target-architecture.md">15 §6.10</a></span></div>
   <div class="cards">
     <div class="card">
@@ -461,8 +551,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 6. MỘT HỢP ĐỒNG MỌI NƠI ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">6 · Tương đương giữa target</div><h2>Một gate, ba nơi chạy, cùng phán quyết</h2></div>
+<section id="s6">
+  <div class="head"><div><div class="eyebrow">Chương 6 · Tương đương giữa target</div><h2>Một gate, ba nơi chạy, cùng phán quyết</h2></div>
     <span class="more">chi tiết: <a href="../architecture/assets/svg/E-07-target-matrix.svg">E-07</a> · <a href="../architecture/vi/10-target-equivalence.md">10</a></span></div>
   <div class="fig narrow">
     <svg viewBox="0 0 960 230" role="img" aria-label="gate.yaml đọc bằng Python trên sim và linux, biên dịch NETR cho C trên esp32s3; verify so phán quyết">
@@ -511,8 +601,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 7. VÒNG BẰNG CHỨNG ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">7 · Bằng chứng thay lời hứa</div><h2>Vòng bằng chứng</h2></div>
+<section id="s7">
+  <div class="head"><div><div class="eyebrow">Chương 7 · Bằng chứng thay lời hứa</div><h2>Vòng bằng chứng</h2></div>
     <span class="more">chi tiết: <a href="../architecture/assets/svg/E-06-evidence-loop.svg">E-06</a></span></div>
   <div class="fig narrow">
     <svg viewBox="0 0 960 280" role="img" aria-label="Chạy → vết ghi → phát lại → so phán quyết → CI; lệch thì chặn merge">
@@ -547,8 +637,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 8. BA BẢO ĐẢM ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">8 · Điều mọi phần khác dựa vào</div><h2>Ba bảo đảm</h2></div>
+<section id="s8">
+  <div class="head"><div><div class="eyebrow">Chương 8 · Điều mọi phần khác dựa vào</div><h2>Ba bảo đảm</h2></div>
     <span class="more">chi tiết: <a href="../spec/threat_model.md">threat_model</a></span></div>
   <div class="guarantees">
     <div class="g"><span class="big">🚫</span><h3>Không có đường tắt</h3>
@@ -561,8 +651,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 9. NỀN TẢNG MỞ ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">9 · Nền tảng mở · I2c, 11 / 20</div><h2>Cắm vào mà không sửa lõi</h2></div>
+<section id="s9">
+  <div class="head"><div><div class="eyebrow">Chương 9 · Nền tảng mở · I2c, 11 / 20</div><h2>Cắm vào mà không sửa lõi</h2></div>
     <span class="more">chi tiết: <a href="../architecture/vi/16-ecosystem-landscape.md">16 §4</a> · <a href="../spec/extension_sdk.md">extension_sdk</a></span></div>
   <div class="fig narrow">
     <svg viewBox="0 0 960 300" role="img" aria-label="Lõi an toàn ở giữa; proxy và guard đã có; sáu loại plugin quanh lõi">
@@ -597,8 +687,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 10. BA VÒNG SẢN PHẨM ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">10 · Hướng sản phẩm · Q-72</div><h2>Dựng → Chạy → Chia sẻ</h2></div>
+<section id="s10">
+  <div class="head"><div><div class="eyebrow">Chương 10 · Hướng sản phẩm · Q-72</div><h2>Dựng → Chạy → Chia sẻ</h2></div>
     <span class="more">chi tiết: <a href="proposal-blueprint-2026-10-11.md">proposal Blueprint</a></span></div>
   <div class="fig narrow">
     <svg viewBox="0 0 960 200" role="img" aria-label="Ba vòng: dựng hợp đồng qua MCP, chạy bằng agent vận hành, chia sẻ bằng Blueprint">
@@ -627,8 +717,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 11. LỘ TRÌNH ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">11 · Roadmap §0.5, §6 · sau Q-77</div><h2>Ba chặng</h2></div>
+<section id="s11">
+  <div class="head"><div><div class="eyebrow">Chương 11 · Roadmap §0.5, §6 · sau Q-77</div><h2>Ba chặng</h2></div>
     <span class="more">tiến độ: <a href="../user/trang-thai.md">trang trạng thái</a> · <a href="cpo-dashboard.html">CPO dashboard</a></span></div>
   <div class="road">
     <div class="stop"><span class="pin"></span><span class="when">trước 2026-12-06</span><h3>Ba vòng trên giả lập</h3>
@@ -641,8 +731,8 @@ details .tbl { margin-top: 10px; border: 0 }
 </section>
 
 <!-- ============ 12. HIỂU SAI ============ -->
-<section>
-  <div class="head"><div><div class="eyebrow">12 · Đối chiếu với mã</div><h2>Những điểm hay bị mô tả sai</h2></div></div>
+<section id="s12">
+  <div class="head"><div><div class="eyebrow">Chương 12 · Đối chiếu với mã</div><h2>Những điểm hay bị mô tả sai</h2></div></div>
   <div class="myths">
     <div class="myth"><span class="wrong">NeuroClaw tự điều khiển đèn, cửa</span><span>NeuroClaw chỉ gọi tool MCP của hộp; gate quyết định.</span></div>
     <div class="myth"><span class="wrong">An toàn vì NeuroClaw đã khoá shell</span><span>Q-80 mở lại như PicoClaw, kèm nhãn rủi ro. An toàn đến từ gate và tách user.</span></div>
@@ -661,4 +751,20 @@ details .tbl { margin-top: 10px; border: 0 }
 </footer>
 
 </div>
+</main>
+<script>
+/* Chọn giao diện (lưu trong trình duyệt nếu được) và đánh dấu chương đang đọc. */
+(() => {
+  const root = document.documentElement, btns = document.querySelectorAll(".theme button");
+  const set = t => { if (t === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", t);
+    btns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.t === t))); };
+  let saved = "auto"; try { saved = localStorage.getItem("ne-theme") || "auto" } catch (e) {}
+  set(saved);
+  btns.forEach(b => b.addEventListener("click", () => { set(b.dataset.t); try { localStorage.setItem("ne-theme", b.dataset.t) } catch (e) {} }));
+  const links = [...document.querySelectorAll(".toc a")];
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id)); }),
+    { rootMargin: "-20% 0px -70% 0px" });
+  document.querySelectorAll("main [id^=s]").forEach(el => io.observe(el));
+})();
+</script>
 </body></html>
