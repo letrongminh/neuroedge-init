@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import asyncio
 import fnmatch
+import json
 import math
 import os
 import re
@@ -644,6 +645,9 @@ typedef struct {{
     const char *name;           /* the @action */
     uint16_t gate;              /* index into gates: the gate that guards it */
     uint32_t pin_mask;          /* bit i = pins[i]: what a token for it may drive */
+    /* The tool the brain sees, as `neuroedge mcp serve` lists it (DP-COM-02, DP-B-03). */
+    const char *description;
+    const char *input_schema;   /* JSON Schema of the arguments, compact */
 }} ne_agent_action;
 
 typedef struct {{
@@ -700,6 +704,7 @@ def _source(
     gates: Mapping[str, ResolvedGate],
     rows: Mapping[str, list[Check]],
     actions: list[tuple[str, int, int]],
+    tools: list[tuple[str, str]],
 ) -> str:
     pins = _pins(manifest)
     keys = list(gates)
@@ -764,7 +769,12 @@ def _source(
     out += array(
         "ne_agent_action",
         "ne_agent_action_table",
-        [f"    {{{c_string(name)}, {gate}u, 0x{mask:x}u}}," for name, gate, mask in actions],
+        [
+            f"    {{{c_string(name)}, {gate}u, 0x{mask:x}u,\n"
+            f"     {c_string(description)},\n"
+            f"     {c_string(schema)}}},"
+            for (name, gate, mask), (description, schema) in zip(actions, tools, strict=True)
+        ],
     )
     out += array("ne_agent_check", "ne_agent_check_table", check_rows)
     counts = {
@@ -799,6 +809,26 @@ def action_table(
     pins = _pins(manifest)
     return [
         (spec.name, keys.index(spec.gate), sum(1 << pins.index(pin) for pin in spec.pins))
+        for spec in sorted(specs, key=lambda spec: spec.name)
+    ]
+
+
+def action_tools(gates: Mapping[str, ResolvedGate], specs: Iterable[Any]) -> list[tuple[str, str]]:
+    """
+    (description, compact input schema JSON) per @action, in `action_table` order: the tool the
+    brain sees, the same as `neuroedge mcp serve` lists it (DP-COM-02, DP-B-03).
+    """
+    from ..actions.tools import _description, input_schema
+
+    return [
+        (
+            _description(spec),
+            json.dumps(
+                input_schema(spec, gates[spec.gate].arguments),
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+        )
         for spec in sorted(specs, key=lambda spec: spec.name)
     ]
 
@@ -849,6 +879,7 @@ def render_component(
     manifest: Any, board: str, gates: Mapping[str, ResolvedGate], specs: Iterable[Any]
 ) -> dict[str, str]:
     """Every file of `components/ne_agent/`, keyed by its path in the component."""
+    specs = list(specs)
     rows = {key: checks(key, gate) for key, gate in gates.items()}
     trees = {key: compile_tree(gate) for key, gate in gates.items()}
     max_nodes = max([len(tree["nodes"]) for tree in trees.values()] + [1])
@@ -857,7 +888,13 @@ def render_component(
         "CMakeLists.txt": _CMAKE,
         "include/ne_agent.h": _header(manifest.label, board, max_nodes, ui_language(manifest)),
         "include/ne_agent_indices.h": _indices(manifest, gates),
-        "ne_agent.c": _source(manifest, gates, rows, action_table(manifest, gates, specs)),
+        "ne_agent.c": _source(
+            manifest,
+            gates,
+            rows,
+            action_table(manifest, gates, specs),
+            action_tools(gates, specs),
+        ),
     }
     for key, tree in trees.items():
         files[f"gates/{key}.netree.h"] = c_header(tree, key)

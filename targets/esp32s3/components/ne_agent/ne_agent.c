@@ -24,8 +24,12 @@ static const char *const ne_agent_pin_table[1] = {
 };
 
 static const ne_agent_action ne_agent_action_table[2] = {
-    {"light_off", 1u, 0x1u},
-    {"light_on", 0u, 0x1u},
+    {"light_off", 1u, 0x1u,
+     "light off (Guarded by gate `light_off`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"},
+    {"light_on", 0u, 0x1u,
+     "light on (Guarded by gate `light_on`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"},
 };
 
 static const ne_agent_check ne_agent_check_table[26] = {

@@ -32,9 +32,15 @@ static const char *const ne_agent_pin_table[3] = {
 };
 
 static const ne_agent_action ne_agent_action_table[3] = {
-    {"fixture_announce", 2u, 0x0u},
-    {"fixture_buzz", 1u, 0x2u},
-    {"fixture_open_door", 0u, 0x3u},
+    {"fixture_announce", 2u, 0x0u,
+     "Speech only: no pin. (Guarded by gate `announce`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"},
+    {"fixture_buzz", 1u, 0x2u,
+     "fixture buzz (Guarded by gate `buzz`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{\"zone\":{\"type\":\"string\",\"default\":\"front\",\"enum\":[\"front\",\"side\"]},\"seconds\":{\"type\":\"integer\",\"default\":2,\"minimum\":1,\"maximum\":10}},\"additionalProperties\":false}"},
+    {"fixture_open_door", 0u, 0x3u,
+     "fixture open door (Guarded by gate `open_door`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"},
 };
 
 static const ne_agent_check ne_agent_check_table[37] = {

@@ -211,23 +211,52 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 
 ### 4.3 Bridge (`targets/esp32s3/components/ne_brain_bridge/include/ne_brain_bridge.h`)
 
-```c
-#define NE_BRIDGE_CONTRACT "tool-result.v1"
+The core both builds share, tested on the host against the box (`python/tests/test_c_bridge.py`).
+The `nc_gate` adapter NeuroClaw-ESP takes (`ne_bridge_gate()`, filling `nc_tool_result` from the
+same JSON) is built with the one image (TSK-I2f-14), together with the `from_id` that
+`nc_gate.answer` needs (an interface change in NeuroClaw-ESP).
 
-typedef struct ne_fact_source {
+```c
+#define NE_BRIDGE_CONTRACT    "tool-result.v1"
+#define NE_BRIDGE_CALL_SOURCE "mcp"   /* call_source / call_channel: the bridge's, never a source's */
+#define NE_BRIDGE_PENDING     4u      /* DP-COM-09 */
+
+typedef struct {
     void *ctx;
     /* Fill facts[i] for every criterion of `gate` from on-chip sources only (DP-B-05). */
-    void (*read)(void *ctx, const ne_tree *gate, ne_fact *facts, uint32_t count, uint32_t now_ms);
+    ne_degraded (*read)(void *ctx, const ne_tree *gate, uint32_t gate_index, ne_fact *facts,
+                        uint32_t count, uint32_t now_ms);
 } ne_fact_source;
 
-typedef struct ne_bridge ne_bridge;   /* static storage: no heap (C2) */
+typedef struct {   /* run() moves pins only through ne_token_authorize (DP-B-08) */
+    void *ctx;
+    uint32_t (*now_ms)(void *ctx);
+    ne_random_fn fill_random;
+    void (*run)(void *ctx, uint32_t action, const ne_arg_value *args, uint32_t arg_count,
+                ne_ledger *ledger, const ne_token *token);
+} ne_bridge_hal;
 
-void     ne_bridge_init(ne_bridge *b, const ne_agent *agent, ne_ledger *ledger,
-                        const ne_fact_source *facts, const ne_hal *hal);
-nc_gate  ne_bridge_gate(ne_bridge *b);                       /* what neuroclaw_start() takes */
-void     ne_bridge_answer_button(ne_bridge *b, uint8_t button); /* board button = owner */
-bool     ne_bridge_selftest(ne_bridge *b);                   /* part of the OTA self-test (DP-B-15) */
+typedef struct { ne_bridge_status status; uint32_t len; char json[NE_BRIDGE_RESULT_MAX]; } ne_bridge_result;
+
+int      ne_bridge_init(ne_bridge *b, const ne_agent *agent, ne_ledger *ledger,
+                        const ne_fact_source *facts, const ne_bridge_hal *hal, const char *owner_id);
+uint32_t ne_bridge_tool_count(const ne_bridge *b);
+int      ne_bridge_tool(const ne_bridge *b, uint32_t i, const char **name,
+                        const char **description, const char **input_schema);
+void     ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
+                        ne_bridge_result *out);
+void     ne_bridge_answer(ne_bridge *b, const char *confirmation_id, int approve,
+                          const char *from_id, ne_bridge_result *out);   /* owner, Telegram */
+void     ne_bridge_answer_button(ne_bridge *b, int approve, ne_bridge_result *out); /* latest */
 ```
+
+`ne_bridge` is static storage the application owns; no heap, no globals, no recursion, every
+stack frame ≤ 512 bytes (C2). Each `@action` of the generated `ne_agent` carries the
+`description` and compact `input_schema` that `neuroedge mcp serve` lists (DP-B-03). Answers that
+cannot be taken are REJECTED with `problems` (wrong sender, no such question, already
+answered, past its TTL, gate changed); a "no" is BLOCK with `reason: "declined"`. Where the box is
+more lenient the bridge refuses: arguments over 256 bytes or 16 keys, a duplicate key, a numeric
+string that is not a plain decimal.
 
 ### 4.4 Local page key (DP-A-02)
 
@@ -250,7 +279,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC | Verifies | Level | Procedure → expected | Status |
 |:---|:---|:---|:---|:---|
 | TC-COM-01-1 | DP-COM-01 | unit | Every tool-call corpus result → valid against tool-result.v1 | implemented — python/tests/test_contracts.py::test_every_tool_call_corpus_result_validates_against_the_tool_result_schema |
-| TC-COM-01-2 | DP-COM-01, DP-COM-02 | host C | Same agent through MCP and through the bridge host harness → byte-identical canonical JSON per call | planned — TSK-I2f-12 |
+| TC-COM-01-2 | DP-COM-01, DP-COM-02 | host C | Same agent and facts through the box (`call_tool`, source `mcp`) and through the bridge host harness → equal result objects per call, each valid against tool-result.v1 (only `confirmation.who` names the chip's human channel) | implemented — python/tests/test_c_bridge.py::test_the_same_calls_give_the_same_results_through_mcp_and_through_the_bridge |
 | TC-COM-02-1 | DP-COM-02 | unit | Published `outputSchema` of every tool → the frozen schema pinned to its name | implemented — python/tests/test_contracts.py::test_the_published_output_schema_of_every_tool_is_the_frozen_result_schema_pinned_to_its_name |
 | TC-COM-03-1 | DP-COM-03 | host C | C walker vs host engine on every gate → same verdict, reason, failed criterion | implemented — python/tests/test_c_walker.py::test_the_c_walker_matches_the_host_engine_on_every_gate |
 | TC-COM-03-2 | DP-COM-03 | integration | Same facts with and without the network transport → same verdict | implemented — python/tests/test_mcp_http.py::test_the_same_facts_give_the_same_verdict_with_or_without_the_network |
@@ -264,7 +293,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-COM-08-1 | DP-COM-08 | unit (Go) | NeuroClaw reads a result with `status: "MAYBE"` and one with contract `tool-result.v2` → REJECTED, no retry as allowed | planned — TSK-I2d-26 |
 | TC-COM-08-2 | DP-COM-08 | integration | `tools/list` over MCP → every tool carries `_meta["dev.neuroedge/contract"] = "tool-result.v1"`, the name of `schemas/tool-result.v1.json` | implemented — python/tests/test_contracts.py::test_every_listed_tool_names_the_result_contract_it_answers_in |
 | TC-COM-09-1 | DP-COM-09 | integration | Five calls that ask, none answered → four questions pending, the fifth is BLOCK `budget_exceeded` with no question (Profile A) | implemented — python/tests/test_tool_confirm.py::test_a_fifth_question_while_four_wait_is_a_block_and_no_question |
-| TC-COM-09-2 | DP-COM-09 | host C | Same on the bridge's pending table (Profile B) | planned — TSK-I2f-12 |
+| TC-COM-09-2 | DP-COM-09 | host C | Same on the bridge's pending table (Profile B) | implemented — python/tests/test_c_bridge.py::test_four_questions_wait_at_most_and_allow_still_runs |
 | TC-A-01-1 | DP-A-01 | integration | No token, bad token, wrong scope, other device's token → 401/403, nothing dispatched, traced | implemented — python/tests/test_mcp_http.py::test_a_request_without_a_valid_token_is_refused_and_nothing_is_dispatched |
 | TC-A-01-2 | DP-A-01 | integration | Client without a trusted certificate → TLS handshake fails before HTTP | implemented — python/tests/test_mcp_http.py::test_a_client_without_a_trusted_certificate_never_reaches_http |
 | TC-A-01-3 | DP-A-01 | integration | Client limited to TLS 1.2 → refused | implemented — python/tests/test_mcp_http.py::test_a_client_that_will_not_speak_tls_13_is_refused |
@@ -292,11 +321,11 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-A-11-1 | DP-A-11 | integration | Rotate the brain certificate → new one works without restart; revoked thumbprint → handshake refused | planned — TSK-I2d-25 |
 | TC-B-01-1 | DP-B-01 | unit | `build --brain neuroclaw` writes the component pin; tampered SHA-256 → build error naming the file | planned — TSK-I2f-14 |
 | TC-B-02-1 | DP-B-02 | inspection | Image symbols contain no MCP server, no `mbedtls_ssl_conf_*` server role | planned — TSK-I2f-15 |
-| TC-B-03-1 | DP-B-03 | host C | Bridge tool list for the demo agent equals the MCP tool list (names, schemas) | planned — TSK-I2f-12 |
-| TC-B-04-1 | DP-B-04 | host C | Arguments table: unknown key, missing key, string for number, out of range → REJECTED with `problems`; walker never called | planned — TSK-I2f-12 |
-| TC-B-05-1 | DP-B-05 | host C | Call carries `"temperature": 99`; fact source reads 25 → verdict follows 25 | planned — TSK-I2f-12 |
-| TC-B-06-1 | DP-B-06 | host C | Every `ne_result` reason and `on_block` action → mapped JSON valid against tool-result.v1 | planned — TSK-I2f-12 |
-| TC-B-07-1 | DP-B-07 | host C | Expired confirmation, second answer, wrong `from_id` → refused; owner callback and button → ALLOW once with the stored arguments and freshly read facts; ALLOW tokens still issue while 4 asks are pending | planned — TSK-I2f-12 |
+| TC-B-03-1 | DP-B-03 | host C | Bridge tool list for the demo agent equals the MCP tool list (names, schemas) | implemented — python/tests/test_c_bridge.py::test_the_bridge_offers_the_tools_the_box_lists_over_mcp |
+| TC-B-04-1 | DP-B-04 | host C | Arguments table: unknown key, missing key, string for number, out of range → REJECTED with `problems`; walker never called | implemented — python/tests/test_c_bridge.py::test_bad_arguments_are_rejected_before_any_gate |
+| TC-B-05-1 | DP-B-05 | host C | Call carries `"temperature": 99`; fact source reads 25 → verdict follows 25 | implemented — python/tests/test_c_bridge.py::test_a_value_in_the_call_never_becomes_a_fact |
+| TC-B-06-1 | DP-B-06 | host C | Every `ne_result` reason and `on_block` action → mapped JSON valid against tool-result.v1 | implemented — python/tests/test_c_bridge.py::test_every_reason_and_on_block_action_maps_to_a_valid_result |
+| TC-B-07-1 | DP-B-07 | host C | Expired confirmation, second answer, wrong `from_id` → refused; owner callback and button → ALLOW once with the stored arguments and freshly read facts; ALLOW tokens still issue while 4 asks are pending | implemented — python/tests/test_c_bridge.py::test_only_the_owner_or_the_button_answers_once_and_facts_are_read_again |
 | TC-B-08-1 | DP-B-08 | host C | HAL drive without token, with closed token, with token for another pin → refused, pin unchanged | planned — TSK-S4-01 |
 | TC-B-09-1 | DP-B-09 | unit | Generated partition table: offsets aligned, OTA slots ≥ image, `ws` ≥ 1 MB, `nvs_keys` encrypted | planned — TSK-I2f-14 |
 | TC-B-10-1 | DP-B-10 | QEMU | Set all keys at the hidden prompt, reboot → brain configured; UART capture contains no secret | planned — TSK-I2f-14 |

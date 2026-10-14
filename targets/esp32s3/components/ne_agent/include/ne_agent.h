@@ -41,6 +41,9 @@ typedef struct {
     const char *name;           /* the @action */
     uint16_t gate;              /* index into gates: the gate that guards it */
     uint32_t pin_mask;          /* bit i = pins[i]: what a token for it may drive */
+    /* The tool the brain sees, as `neuroedge mcp serve` lists it (DP-COM-02, DP-B-03). */
+    const char *description;
+    const char *input_schema;   /* JSON Schema of the arguments, compact */
 } ne_agent_action;
 
 typedef struct {

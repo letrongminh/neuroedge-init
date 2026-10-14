@@ -42,9 +42,10 @@ Stated upfront so nobody reads diagrams as more than reality:
 | `ne_boot` | `components/ne_boot/` | Boot guard (Q-79): counts each boot in NVS, clears after stability window, enters safe mode on `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` attempt; policy is pure C99 (`ne_boot_policy.c`). Ported from zclaw | `nvs_flash` | `partial` — on QEMU |
 | `ne_config` | `components/ne_config/` | Owner configuration and secrets (Wi-Fi, bot token, owner ID, LLM) in `ne_config` NVS partition; encrypted when built with `sdkconfig.secure`, never falls back to plaintext; validation and rendering rules in pure C99 (`ne_config_keys.c`) | `nvs_flash` | `partial` — on QEMU |
 | `ne_console` | `components/ne_console/` | Serial console (`esp_console`): `status`, `config`, `bootguard`, `reboot`, `factory-reset`; secrets entered at hidden prompt; no command touches pins or calls tools. Framed after MimiClaw | `console`, `ne_boot`, `ne_config` | `partial` — on QEMU |
+| `ne_brain_bridge` | `components/ne_brain_bridge/` (**unlinked**) | Profile B (Q-83): NeuroClaw-ESP calls the gate by function call with the box's own contract — the tools `neuroedge mcp serve` lists, JSON arguments checked against their schema, facts only from on-chip sources, `tool-result.v1` results, a table of 4 questions answered by the owner's Telegram ID or the board button (`deployment_profiles.md` DP-B-03 → DP-B-07, §4.3); pure C99, no allocation | `ne_gate`, `ne_agent` | `partial` — host core, checked against the box (`test_c_bridge.py`); linked into the image with TSK-I2f-14 |
 | `ne_ui` | `ui/` (**unlinked**) | Nine LVGL screens, Vietnamese and English | LVGL v9.6 | `partial` — built on host only |
 
-`ne_gate`, `ne_trace`, `ne_agent` compile with `-std=c99 -Wall -Wextra -Wconversion -Werror`.
+`ne_gate`, `ne_trace`, `ne_agent`, `ne_brain_bridge` compile with `-std=c99 -Wall -Wextra -Wconversion -Werror`.
 
 ### Planned components
 
