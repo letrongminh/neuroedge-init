@@ -465,7 +465,8 @@ static void repr_value(ne_bridge *b, writer *w, const ne_bridge_span *v)
 
 /* --- the agent ----------------------------------------------------------------------------- */
 
-static const char *const REASONS[] = {
+/* Fixed-width rows, not pointers: no relocation, so .rodata even in a PIE (no static RAM). */
+static const char REASONS[][24] = {
     "",
     "condition_not_met",
     "criterion_unavailable",
@@ -475,7 +476,7 @@ static const char *const REASONS[] = {
     "budget_exceeded",
     "value_out_of_range",
 };
-static const char *const ON_BLOCK[] = {"deny", "escalate", "ask", "degrade"};
+static const char ON_BLOCK[][9] = {"deny", "escalate", "ask", "degrade"};
 
 static int find_action(const ne_agent *agent, const char *name)
 {
@@ -1266,7 +1267,7 @@ void ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
     finish(b, out, &w, status, tool);
 }
 
-static const char *const STATES[] = {"free", "pending", "confirmed", "declined", "expired"};
+static const char STATES[][10] = {"free", "pending", "confirmed", "declined", "expired"};
 
 static void answer(ne_bridge *b, int slot, int approve, ne_bridge_result *out)
 {

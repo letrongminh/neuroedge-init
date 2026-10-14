@@ -567,6 +567,7 @@ async def serve_http(
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             super().__init__(*args, **kwargs)
             self._peer: str | None = None
+            self._cut = False  # a revoked certificate: nothing on this connection reaches the app
             inner = self.app
 
             async def app(scope: Any, receive: Any, send: Any) -> None:
@@ -597,8 +598,14 @@ async def serve_http(
             if self._peer is not None and revoked(self._peer):
                 # DP-A-11: a revoked brain certificate gets no HTTP at all
                 self._peer = None
+                self._cut = True
                 transport.close()
                 refuse_revoked()
+
+        def data_received(self, data: bytes) -> None:  # type: ignore[override]
+            # A request read with the handshake can still arrive after close() (seen on Linux).
+            if not self._cut:
+                super().data_received(data)
 
     class Server(uvicorn.Server):
         @contextlib.contextmanager
