@@ -9,6 +9,27 @@
   const root = document.getElementById("studio");
   const VIEWS = ["live", "gate", "traces", "verify", "device", "mcp", "config"];
 
+  // The run's key (DP-A-02, docs/spec/deployment_profiles.md). The terminal URL carries, after `#`
+  // (never sent by a browser), a one-time pairing code: trade it once at POST /pair for the key,
+  // keep the key for this tab, take the code out of the address bar. Every POST waits for the key,
+  // so no other process on this machine can act as the page.
+  const UI_KEY = (function () {
+    let kept = "";
+    try { kept = sessionStorage.getItem("ne-ui-key") || ""; } catch (e) { /* private window */ }
+    const m = /[#&]c=([^&]+)/.exec(location.hash);
+    if (!m) return Promise.resolve(kept);
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+    return fetch("/pair", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: decodeURIComponent(m[1]) })
+    }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+      const k = j.key || kept;
+      try { sessionStorage.setItem("ne-ui-key", k); } catch (e) { /* keep it in memory */ }
+      return k;
+    }).catch(function () { return kept; });
+  })();
+
   // ---------------------------------------------------------------- state
   const S = {
     lang: "vi",
@@ -124,12 +145,15 @@
 
   // GET/POST /api/<tail>: always resolves to an object with `ok`; 501 => `na`.
   function api(method, tail, body) {
-    const opt = { method: method };
+    const opt = { method: method, headers: {} };
     if (body !== undefined) {
-      opt.headers = { "Content-Type": "application/json" };
+      opt.headers["Content-Type"] = "application/json";
       opt.body = JSON.stringify(body);
     }
-    return fetch("/api/" + tail, opt).then(function (r) {
+    const ready = method === "POST"
+      ? UI_KEY.then(function (k) { opt.headers["X-NeuroEdge-UI-Key"] = k; })
+      : Promise.resolve();
+    return ready.then(function () { return fetch("/api/" + tail, opt); }).then(function (r) {
       return r.json().then(function (j) {
         if (r.status === 501) j.na = true;
         return j;
@@ -491,7 +515,7 @@
   function sendCommand(line) {
     S.reply = { pending: true, line: line };
     paintReply();
-    fetch("/command", { method: "POST", body: line }).then(function (r) { return r.json(); }).then(function (j) {
+    UI_KEY.then(function (k) { return fetch("/command", { method: "POST", headers: { "X-NeuroEdge-UI-Key": k }, body: line }); }).then(function (r) { return r.json(); }).then(function (j) {
       S.reply = { line: line, res: j };
       paintReply();
     }).catch(function (e) {
@@ -628,7 +652,7 @@
 
   function answerConfirm(id, answer) {
     S.answerError = null;
-    fetch("/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id, answer: answer }) })
+    UI_KEY.then(function (k) { return fetch("/confirm", { method: "POST", headers: { "Content-Type": "application/json", "X-NeuroEdge-UI-Key": k }, body: JSON.stringify({ id: id, answer: answer }) }); })
       .then(function (r) { return r.json(); }).then(function (j) {
         if (!j.ok) { S.answerError = whyOf(j); regions.ask = null; paintLive(); }
       }).catch(function (e) { S.answerError = String(e); regions.ask = null; paintLive(); });

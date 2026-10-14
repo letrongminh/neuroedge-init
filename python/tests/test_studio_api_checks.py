@@ -15,6 +15,8 @@ from neuroedge.sim import SimSession
 from neuroedge.studio import StudioServer
 from neuroedge.templates import scaffold
 
+from .ui_support import page_headers
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -46,7 +48,9 @@ def get(server, path):
 
 
 def post(server, path, body=b"{}"):
-    request = urllib.request.Request(server.url.rstrip("/") + path, data=body, method="POST")
+    request = urllib.request.Request(
+        server.url.rstrip("/") + path, data=body, method="POST", headers=page_headers(server)
+    )
     request.add_header("Content-Type", "application/json")
     return _open(request)
 

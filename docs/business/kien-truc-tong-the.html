@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Hand-drawn architecture (2026-10-14, after Q-82); source of truth: docs/architecture/ (CONTRIBUTING.md §8.1).
+<!-- Hand-drawn architecture (2026-10-14, after Q-83); source of truth: docs/architecture/ (CONTRIBUTING.md §8.1).
      Progress blocks between GENERATED markers are written by scripts/gen_architecture_progress.py from the roadmap — do not edit them by hand. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NeuroEdge Architecture</title>
@@ -174,6 +174,20 @@ svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arro
 .mini { text-align: center; color: var(--muted); font-size: 11.5px; line-height: 1.2 }
 .card .note { font-size: 12.5px; color: var(--muted) }
 
+/* Two deployment profiles (chapter 5) */
+.rule-strip { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-size: 16px; padding: 10px 16px; border: 1px solid var(--line); border-left: 2px solid var(--gate); background: var(--surface); border-radius: 2px }
+.rule-strip small { color: var(--muted); font-size: 13px; margin-left: 4px }
+.rule-strip .vs { color: var(--muted) }
+.profiles { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px }
+.prof { display: grid; gap: 10px; align-content: start; border: 1px solid var(--line); border-radius: 2px; padding: 14px; background: var(--core-soft) }
+.prof-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+.prof-tag { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gate) }
+.prof-head h3 { font-size: 20px; margin-right: auto }
+.cards.two { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 14px }
+.facts dt { font-family: var(--f-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding-top: 3px }
+.facts dd { margin: 0 }
+
 /* Capability matrix */
 .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 2px; background: var(--surface) }
 table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 560px }
@@ -265,7 +279,7 @@ details .tbl { margin-top: 10px; border: 0 }
   .layer .pills, .layer .st { grid-column: 2 }
   .row { grid-template-columns: 1fr; text-align: left }
   .to { transform: rotate(90deg); justify-self: start; margin-left: 8px }
-  .cards, .guarantees, .road { grid-template-columns: 1fr }
+  .cards, .guarantees, .road, .profiles, .cards.two { grid-template-columns: 1fr }
   .pulse { grid-template-columns: 1fr 1fr } .pulse > div { border-left: 0; border-top: 1px solid var(--line) }
   .ms-grid { grid-template-columns: 1fr 1fr }
   .incs { grid-column: 1 / -1 }
@@ -285,7 +299,7 @@ details .tbl { margin-top: 10px; border: 0 }
     <a href="#s2"><span>02</span>Five layers, from user to device</a>
     <a href="#s3"><span>03</span>One path to the hardware</a>
     <a href="#s4"><span>04</span>One message, three outcomes</a>
-    <a href="#s5"><span>05</span>Where the brain runs</a>
+    <a href="#s5"><span>05</span>Two ways to deploy</a>
     <a href="#s6"><span>06</span>One gate, three targets</a>
     <a href="#s7"><span>07</span>The evidence loop</a>
     <a href="#s8"><span>08</span>Three guarantees</a>
@@ -330,7 +344,7 @@ details .tbl { margin-top: 10px; border: 0 }
   </div>
     </div>
   </div>
-  <!-- GENERATED:pulse --><div class="pulse"><div><span class="k">Figures as of</span><b>Oct 14, 2026</b><span class="s">roadmap §0</span></div><div><span class="k">Now</span><b>1 · Try on laptop</b><span class="s">96% done</span></div><div><span class="k">8-week demand gate</span><b>Dec 6, 2026</b><span class="s">53 days away</span></div><div><span class="k">Tests</span><b>4,908 passing</b><span class="s">0 skipped</span></div><div><span class="k">Waiting on a person</span><b>2 items</b><span class="s"><a href="#s11">see chapter 11</a></span></div></div><!-- /GENERATED:pulse -->
+  <!-- GENERATED:pulse --><div class="pulse"><div><span class="k">Figures as of</span><b>Oct 14, 2026</b><span class="s">roadmap §0</span></div><div><span class="k">Now</span><b>1 · Try on laptop</b><span class="s">96% done</span></div><div><span class="k">8-week demand gate</span><b>Dec 6, 2026</b><span class="s">53 days away</span></div><div><span class="k">Tests</span><b>4,947 passing</b><span class="s">0 skipped</span></div><div><span class="k">Waiting on a person</span><b>2 items</b><span class="s"><a href="#s11">see chapter 11</a></span></div></div><!-- /GENERATED:pulse -->
 </header>
 
 <!-- ============ 1. THE BIG PICTURE ============ -->
@@ -424,7 +438,7 @@ details .tbl { margin-top: 10px; border: 0 }
   <div class="layers">
     <div class="layer l1"><span class="n">1</span><h3><span class="ic">🧠</span>Interaction and brain</h3>
       <div class="pills"><span class="pill">Telegram</span><span class="pill">NeuroClaw</span><span class="pill">Claude Desktop</span><span class="pill">OpenClaw</span></div>
-      <!-- GENERATED:layer-1 --><div class="incs"><div class="inc partial" title="I2d — Missions and operator agents: 0 of 39 tasks done, in progress"><span class="id">I2d</span><span class="nm">Missions and operator agents</span><span class="bar" role="img" aria-label="I2d — Missions and operator agents: 0 of 39 tasks done, in progress"><i style="width:0%"></i></span><span class="nb">0/39</span></div></div><!-- /GENERATED:layer-1 --></div>
+      <!-- GENERATED:layer-1 --><div class="incs"><div class="inc partial" title="I2d — Missions and operator agents: 0 of 41 tasks done, in progress"><span class="id">I2d</span><span class="nm">Missions and operator agents</span><span class="bar" role="img" aria-label="I2d — Missions and operator agents: 0 of 41 tasks done, in progress"><i style="width:0%"></i></span><span class="nb">0/41</span></div></div><!-- /GENERATED:layer-1 --></div>
     <div class="down">▼ requests only, never touches hardware</div>
     <div class="layer l2"><span class="n">2</span><h3><span class="ic">🔌</span>Extension layer</h3>
       <div class="pills"><span class="pill">mcp serve + mTLS</span><span class="pill">proxy mcp</span><span class="pill">proxy http</span><span class="pill">Home Assistant</span><span class="pill">neuroedge.guard</span><span class="pill dashed">HA add-on</span></div>
@@ -440,7 +454,7 @@ details .tbl { margin-top: 10px; border: 0 }
     <div class="down">▲ package, share, update</div>
     <div class="layer l5"><span class="n">5</span><h3><span class="ic">📦</span>Share, sell, operate</h3>
       <div class="pills"><span class="pill dashed">Blueprint</span><span class="pill dashed">Hub</span><span class="pill dashed">Cloud</span><span class="pill">signed OTA</span></div>
-      <!-- GENERATED:layer-5 --><div class="incs"><div class="inc todo" title="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><span class="id">I2e</span><span class="nm">Minimal NeuroEdge Blueprint</span><span class="bar" role="img" aria-label="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/15</span></div><div class="inc deferred" title="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 13 tasks done, deferred"><span class="id">I2f</span><span class="nm">NeuroEdge Cloud and ESP32 home box</span><span class="bar" role="img" aria-label="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 13 tasks done, deferred"><i style="width:8%"></i></span><span class="nb">1/13</span></div><div class="inc partial" title="I6 — Public launch: 7 of 11 tasks done, in progress"><span class="id">I6</span><span class="nm">Public launch</span><span class="bar" role="img" aria-label="I6 — Public launch: 7 of 11 tasks done, in progress"><i style="width:64%"></i></span><span class="nb">7/11</span></div><div class="inc partial" title="I7 — v1.0: 4 of 12 tasks done, in progress"><span class="id">I7</span><span class="nm">v1.0</span><span class="bar" role="img" aria-label="I7 — v1.0: 4 of 12 tasks done, in progress"><i style="width:33%"></i></span><span class="nb">4/12</span></div><div class="inc todo" title="I8 — Developer Beta: 0 of 1 tasks done, not started"><span class="id">I8</span><span class="nm">Developer Beta</span><span class="bar" role="img" aria-label="I8 — Developer Beta: 0 of 1 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/1</span></div></div><!-- /GENERATED:layer-5 --></div>
+      <!-- GENERATED:layer-5 --><div class="incs"><div class="inc todo" title="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><span class="id">I2e</span><span class="nm">Minimal NeuroEdge Blueprint</span><span class="bar" role="img" aria-label="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/15</span></div><div class="inc deferred" title="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 17 tasks done, deferred"><span class="id">I2f</span><span class="nm">NeuroEdge Cloud and ESP32 home box</span><span class="bar" role="img" aria-label="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 17 tasks done, deferred"><i style="width:6%"></i></span><span class="nb">1/17</span></div><div class="inc partial" title="I6 — Public launch: 7 of 11 tasks done, in progress"><span class="id">I6</span><span class="nm">Public launch</span><span class="bar" role="img" aria-label="I6 — Public launch: 7 of 11 tasks done, in progress"><i style="width:64%"></i></span><span class="nb">7/11</span></div><div class="inc partial" title="I7 — v1.0: 4 of 12 tasks done, in progress"><span class="id">I7</span><span class="nm">v1.0</span><span class="bar" role="img" aria-label="I7 — v1.0: 4 of 12 tasks done, in progress"><i style="width:33%"></i></span><span class="nb">4/12</span></div><div class="inc todo" title="I8 — Developer Beta: 0 of 1 tasks done, not started"><span class="id">I8</span><span class="nm">Developer Beta</span><span class="bar" role="img" aria-label="I8 — Developer Beta: 0 of 1 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/1</span></div></div><!-- /GENERATED:layer-5 --></div>
   </div>
   <details>
     <summary>For engineers: the five code layers L0–L4 inside the <code>neuroedge</code> package (00 §5.1)</summary>
@@ -543,51 +557,68 @@ details .tbl { margin-top: 10px; border: 0 }
   </div>
 </section>
 
-<!-- ============ 5. WHERE IT RUNS ============ -->
+<!-- ============ 5. TWO WAYS TO DEPLOY ============ -->
 <section id="s5">
-  <div class="head"><div><div class="eyebrow">Chapter 5 · Deployment · Q-76, Q-79</div><h2>The brain can run anywhere; the gate stays home</h2></div>
-    <span class="more">details: <a href="../architecture/assets/svg/E-08-deployment.svg">E-08</a> · <a href="../architecture/vi/15-target-architecture.md">15 §6.10</a></span></div>
-  <div class="cards">
-    <div class="card">
-      <div class="ttl"><h3>Self-hosted</h3><span class="chip ok">done</span></div>
-      <div class="stack">
-        <div class="blk host"><span>Pi · Linux · Mac · Windows</span>
-          <div class="blk brain">🧠 NeuroClaw<br><small>own user, no device access</small></div>
-          <div class="mini">▼ MCP + mTLS</div>
-          <div class="blk box">🛡️ NeuroEdge box</div>
+  <div class="head"><div><div class="eyebrow">Chapter 5 · Deployment · Q-83</div><h2>Two ways to deploy, one product</h2></div>
+    <span class="more">details: <a href="../spec/deployment_profiles.md">SRS</a> · <a href="../architecture/assets/svg/E-08-deployment.svg">E-08</a> · <a href="../architecture/vi/15-target-architecture.md">15 §6.10</a></span></div>
+  <div class="rule-strip"><span><b>Brain</b> thinks, talks, remembers <small>may be wrong</small></span><span class="vs">·</span><span><b>Box</b> decides, acts, proves <small>deterministic, works offline</small></span></div>
+  <div class="profiles">
+    <div class="prof">
+      <div class="prof-head"><span class="prof-tag">Profile A</span><h3>Full</h3><span class="chip ok">done (demo)</span></div>
+      <div class="cards two">
+        <div class="card">
+          <div class="ttl"><h3>Self-hosted</h3><span class="chip ok">done</span></div>
+          <div class="stack">
+            <div class="blk host"><span>Pi · Linux · Mac · Windows</span>
+              <div class="blk brain">🧠 NeuroClaw<br><small>own user, no device access</small></div>
+              <div class="mini">▼ MCP + mTLS</div>
+              <div class="blk box">🛡️ NeuroEdge box</div>
+            </div>
+            <div class="mini">▼ token</div>
+            <div class="blk dev">💡🚪💧</div>
+          </div>
         </div>
-        <div class="mini">▼ token</div>
-        <div class="blk dev">💡🚪💧</div>
+        <div class="card">
+          <div class="ttl"><h3>NeuroEdge Cloud</h3><span class="chip plan">I2f, conditional</span></div>
+          <div class="stack">
+            <div class="blk host" style="border-style:dashed"><span>☁️ one instance per user</span>
+              <div class="blk brain">🧠 NeuroClaw</div>
+            </div>
+            <div class="mini">▲ home dials out, no open ports</div>
+            <div class="blk host"><span>🏠 home</span><div class="blk box">🛡️ NeuroEdge box</div></div>
+            <div class="mini">▼ token</div>
+            <div class="blk dev">💡🚪💧</div>
+          </div>
+        </div>
       </div>
-      <p class="note">Live demo, 2026-10-13: a Telegram message turns on a light and opens a door.</p>
+      <dl class="facts">
+        <dt>Install</dt><dd><code>neuroedge install --profile full</code> <span class="chip plan">TSK-I2d-25</span></dd>
+        <dt>For</dt><dd>integrators, homes that want the strongest isolation</dd>
+        <dt>Approvals</dt><dd>local page with a per-run key, or the box's own bot; never through the brain</dd>
+      </dl>
     </div>
-    <div class="card">
-      <div class="ttl"><h3>NeuroEdge Cloud</h3><span class="chip plan">I2f, conditional</span></div>
-      <div class="stack">
-        <div class="blk host" style="border-style:dashed"><span>☁️ cloud · one instance per user</span>
-          <div class="blk brain">🧠 NeuroClaw</div>
+    <div class="prof">
+      <div class="prof-head"><span class="prof-tag">Profile B</span><h3>One chip</h3><span class="chip part">QEMU</span></div>
+      <div class="card">
+        <div class="ttl"><h3>ESP32-S3, one image</h3><span class="chip plan">I2f</span></div>
+        <div class="stack">
+          <div class="blk host"><span>⚡ a few dollars</span>
+            <div class="blk brain">🧠 NeuroClaw-ESP</div>
+            <div class="mini">▼ nc_gate calls</div>
+            <div class="blk gate">⚖️ bridge → ne_gate</div>
+          </div>
+          <div class="mini">▼ token</div>
+          <div class="blk dev">💡🚪💧</div>
         </div>
-        <div class="mini">▲ the home dials out; no open ports</div>
-        <div class="blk host"><span>🏠 home</span><div class="blk box">🛡️ NeuroEdge box</div></div>
-        <div class="mini">▼ token</div>
-        <div class="blk dev">💡🚪💧</div>
       </div>
-      <p class="note">If the cloud goes down, the gate, reflexes and alerts keep running at home.</p>
-    </div>
-    <div class="card">
-      <div class="ttl"><h3>One chip</h3><span class="chip part">QEMU</span></div>
-      <div class="stack">
-        <div class="blk host"><span>⚡ one ESP32-S3, a few dollars</span>
-          <div class="blk brain">🧠 NeuroClaw-ESP</div>
-          <div class="mini">▼ every tool call</div>
-          <div class="blk gate">⚖️ ne_gate</div>
-        </div>
-        <div class="mini">▼ GPIO</div>
-        <div class="blk dev">💡🚪💧</div>
-      </div>
-      <p class="note">Labelled <code>risk=single_chip</code>: the brain and the gate share one chip.</p>
+      <dl class="facts">
+        <dt>Install</dt><dd><code>neuroedge build --target esp32s3 --brain neuroclaw</code>, flash <span class="chip plan">TSK-I2f-14</span></dd>
+        <dt>For</dt><dd>makers, the cheapest all-in-one device</dd>
+        <dt>Label</dt><dd><code>risk=single_chip</code>: brain and gate share memory</dd>
+      </dl>
     </div>
   </div>
+  <p class="cap">Same tools and the same <code>tool-result.v1</code> in both: over MCP with mTLS in Profile A, as function calls inside the chip in Profile B. A live demo of Profile A ran on 2026-10-13.</p>
 </section>
 
 <!-- ============ 6. ONE CONTRACT EVERYWHERE ============ -->
@@ -760,7 +791,7 @@ details .tbl { margin-top: 10px; border: 0 }
 <section id="s11">
   <div class="head"><div><div class="eyebrow">Chapter 11 · Progress · generated from roadmap §0</div><h2>Where the product is today</h2></div>
     <span class="more">details: <a href="../../roadmap/neuroedge-roadmap.md">roadmap §0</a> · <a href="../user/trang-thai.md">status page</a></span></div>
-  <!-- GENERATED:journey --><div class="fig"><svg viewBox="0 0 900 140" role="img" aria-label="Dated release milestones, today and the demand gate"><line x1="20" y1="74" x2="880" y2="74" class="ax"/><line x1="70.0" y1="58" x2="70.0" y2="90" class="now"/><text x="70.0" y="108" text-anchor="middle" class="tl-now">today</text><text x="70.0" y="123" text-anchor="middle" class="tl-d">Oct 14, 2026</text><line x1="614.3" y1="58" x2="614.3" y2="90" class="gate"/><text x="614.3" y="108" text-anchor="middle" class="tl-gate">demand gate</text><text x="614.3" y="123" text-anchor="middle" class="tl-d">Dec 6, 2026</text><line x1="398.6" y1="30" x2="398.6" y2="74" class="tick"/><circle cx="398.6" cy="74" r="7" class="dot-active"><title>1 · Try on laptop</title></circle><text x="398.6" y="24" text-anchor="middle" class="tl-m">1 · Try on laptop</text><line x1="501.4" y1="50" x2="501.4" y2="74" class="tick"/><circle cx="501.4" cy="74" r="7" class="dot-active"><title>4 · Assemble and run via conversation, share Blueprints</title></circle><text x="501.4" y="44" text-anchor="middle" class="tl-m">4 · Assemble and run via conversa…</text><line x1="830.0" y1="30" x2="830.0" y2="74" class="tick"/><circle cx="830.0" cy="74" r="7" class="dot-active"><title>2 · Physical device on Raspberry Pi</title></circle><text x="838.0" y="24" text-anchor="end" class="tl-m">2 · Physical device on Raspberry…</text></svg></div><div class="ms-grid"><article class="ms active"><div class="ms-top"><span class="num">1</span><span class="when">Nov 15, 2026</span></div><h3>Try on laptop</h3><span class="bar" role="img" aria-label="96% of the work done"><i style="width:96%"></i></span><div class="ms-meta"><span>96%</span><span>I0, I1</span></div></article><article class="ms active"><div class="ms-top"><span class="num">2</span><span class="when">Dec 27, 2026</span></div><h3>Physical device on Raspberry Pi</h3><span class="bar" role="img" aria-label="73% of the work done"><i style="width:73%"></i></span><div class="ms-meta"><span>73%</span><span>I2, I2a, I2b, I2c</span></div></article><article class="ms active"><div class="ms-top"><span class="num">3</span><span class="when">after milestone 4</span></div><h3>Gate running on a $5 chip</h3><span class="bar" role="img" aria-label="22% of the work done"><i style="width:22%"></i></span><div class="ms-meta"><span>22%</span><span>I3, I3a</span></div></article><article class="ms active"><div class="ms-top"><span class="num">4</span><span class="when">Nov 25, 2026</span></div><h3>Assemble and run via conversation, share Blueprints</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I2d, I2e</span></div></article><article class="ms active"><div class="ms-top"><span class="num">5</span><span class="when">after milestone 4</span></div><h3>Public launch</h3><span class="bar" role="img" aria-label="64% of the work done"><i style="width:64%"></i></span><div class="ms-meta"><span>64%</span><span>I6</span></div></article><article class="ms active"><div class="ms-top"><span class="num">6</span><span class="when">after milestone 4</span></div><h3>v1.0 — into production</h3><span class="bar" role="img" aria-label="33% of the work done"><i style="width:33%"></i></span><div class="ms-meta"><span>33%</span><span>I7</span></div></article><article class="ms upcoming"><div class="ms-top"><span class="num">7</span><span class="when">after milestone 4</span></div><h3>Developer Beta</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I8</span></div></article><article class="ms active"><div class="ms-top"><span class="num">8</span><span class="when">after 8-week gate</span></div><h3>One chat box for multiple devices, multiple homes</h3><span class="bar" role="img" aria-label="8% of the work done"><i style="width:8%"></i></span><div class="ms-meta"><span>8%</span><span>I2f</span></div></article></div><div class="panel waiting"><h3>Waiting on a person</h3><ul><li>Box-3 and RPi 5 have not arrived</li><li>Camera board selected is M5Stack CoreS3 but not yet ordered. Not blocking I2d, I2e: simulation first, physical hardware purchased later</li></ul></div><!-- /GENERATED:journey -->
+  <!-- GENERATED:journey --><div class="fig"><svg viewBox="0 0 900 140" role="img" aria-label="Dated release milestones, today and the demand gate"><line x1="20" y1="74" x2="880" y2="74" class="ax"/><line x1="70.0" y1="58" x2="70.0" y2="90" class="now"/><text x="70.0" y="108" text-anchor="middle" class="tl-now">today</text><text x="70.0" y="123" text-anchor="middle" class="tl-d">Oct 14, 2026</text><line x1="614.3" y1="58" x2="614.3" y2="90" class="gate"/><text x="614.3" y="108" text-anchor="middle" class="tl-gate">demand gate</text><text x="614.3" y="123" text-anchor="middle" class="tl-d">Dec 6, 2026</text><line x1="398.6" y1="30" x2="398.6" y2="74" class="tick"/><circle cx="398.6" cy="74" r="7" class="dot-active"><title>1 · Try on laptop</title></circle><text x="398.6" y="24" text-anchor="middle" class="tl-m">1 · Try on laptop</text><line x1="501.4" y1="50" x2="501.4" y2="74" class="tick"/><circle cx="501.4" cy="74" r="7" class="dot-active"><title>4 · Assemble and run via conversation, share Blueprints</title></circle><text x="501.4" y="44" text-anchor="middle" class="tl-m">4 · Assemble and run via conversa…</text><line x1="830.0" y1="30" x2="830.0" y2="74" class="tick"/><circle cx="830.0" cy="74" r="7" class="dot-active"><title>2 · Physical device on Raspberry Pi</title></circle><text x="838.0" y="24" text-anchor="end" class="tl-m">2 · Physical device on Raspberry…</text></svg></div><div class="ms-grid"><article class="ms active"><div class="ms-top"><span class="num">1</span><span class="when">Nov 15, 2026</span></div><h3>Try on laptop</h3><span class="bar" role="img" aria-label="96% of the work done"><i style="width:96%"></i></span><div class="ms-meta"><span>96%</span><span>I0, I1</span></div></article><article class="ms active"><div class="ms-top"><span class="num">2</span><span class="when">Dec 27, 2026</span></div><h3>Physical device on Raspberry Pi</h3><span class="bar" role="img" aria-label="73% of the work done"><i style="width:73%"></i></span><div class="ms-meta"><span>73%</span><span>I2, I2a, I2b, I2c</span></div></article><article class="ms active"><div class="ms-top"><span class="num">3</span><span class="when">after milestone 4</span></div><h3>Gate running on a $5 chip</h3><span class="bar" role="img" aria-label="22% of the work done"><i style="width:22%"></i></span><div class="ms-meta"><span>22%</span><span>I3, I3a</span></div></article><article class="ms active"><div class="ms-top"><span class="num">4</span><span class="when">Nov 25, 2026</span></div><h3>Assemble and run via conversation, share Blueprints</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I2d, I2e</span></div></article><article class="ms active"><div class="ms-top"><span class="num">5</span><span class="when">after milestone 4</span></div><h3>Public launch</h3><span class="bar" role="img" aria-label="64% of the work done"><i style="width:64%"></i></span><div class="ms-meta"><span>64%</span><span>I6</span></div></article><article class="ms active"><div class="ms-top"><span class="num">6</span><span class="when">after milestone 4</span></div><h3>v1.0 — into production</h3><span class="bar" role="img" aria-label="33% of the work done"><i style="width:33%"></i></span><div class="ms-meta"><span>33%</span><span>I7</span></div></article><article class="ms upcoming"><div class="ms-top"><span class="num">7</span><span class="when">after milestone 4</span></div><h3>Developer Beta</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I8</span></div></article><article class="ms active"><div class="ms-top"><span class="num">8</span><span class="when">after 8-week gate</span></div><h3>One chat box for multiple devices, multiple homes</h3><span class="bar" role="img" aria-label="6% of the work done"><i style="width:6%"></i></span><div class="ms-meta"><span>6%</span><span>I2f</span></div></article></div><div class="panel waiting"><h3>Waiting on a person</h3><ul><li>Box-3 and RPi 5 have not arrived</li><li>Camera board selected is M5Stack CoreS3 but not yet ordered. Not blocking I2d, I2e: simulation first, physical hardware purchased later</li></ul></div><!-- /GENERATED:journey -->
   <p class="cap">Each milestone is something a user can do; a date slips before scope is cut (Q-52). Deferred until data shows demand: voice, Lab, Fleet OS, Registry, robots (roadmap §6, Q-77).</p>
 </section>
 
@@ -768,6 +799,7 @@ details .tbl { margin-top: 10px; border: 0 }
 <section id="s12">
   <div class="head"><div><div class="eyebrow">Chapter 12 · Checked against the code</div><h2>Common misconceptions</h2></div></div>
   <div class="myths">
+    <div class="myth"><span class="wrong">Separating brain and box means installing two things</span><span>Each profile installs with one command; NeuroEdge is the product, NeuroClaw the open-source part inside (Q-83).</span></div>
     <div class="myth"><span class="wrong">NeuroClaw drives the lights and doors itself</span><span>NeuroClaw only calls the box's MCP tools; the gate decides.</span></div>
     <div class="myth"><span class="wrong">It is safe because NeuroClaw has no shell</span><span>Q-80 restored the shell to match PicoClaw, with risk labels. Safety comes from the gate and a separate user account.</span></div>
     <div class="myth"><span class="wrong">The gate engine issues tokens</span><span><code>TokenLedger</code> in <code>actions/</code> issues them.</span></div>
@@ -781,7 +813,7 @@ details .tbl { margin-top: 10px; border: 0 }
 <footer class="sources">
   <div class="eyebrow">Sources in the repo</div>
   <span><code>docs/architecture/vi/00-overview.md</code> §1, §2.1–§2.3, §5.1, §6 · <code>15-target-architecture.md</code> §6.10 · <code>16-ecosystem-landscape.md</code> §4 · figures E-01 → E-11 in <code>docs/architecture/assets/svg/</code></span>
-  <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-82 · <code>docs/spec/threat_model.md</code> · repo <code>letrongminh/neuroclaw</code></span>
+  <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-83 · <code>docs/spec/deployment_profiles.md</code> · <code>docs/spec/threat_model.md</code> · repo <code>letrongminh/neuroclaw</code></span>
 </footer>
 
 </div>

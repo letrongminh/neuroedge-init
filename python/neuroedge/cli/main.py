@@ -839,9 +839,10 @@ def mcp_serve(
             # The person at home answers `ask` questions on this page (source `ui`, 127.0.0.1
             # only); the remote client is told a question is waiting and can never answer it.
             err_console.print(
-                f"sim UI at {page.url} (same session; `ask` is answered here)",
+                f"sim UI at {page.open_url} (same session; `ask` is answered here)",
                 markup=False,
                 highlight=False,
+                soft_wrap=True,  # one line: the key after `#` stays part of the URL
             )
         try:
             run_http(
@@ -857,13 +858,18 @@ def mcp_serve(
             _fail(error)
         return
     if page is not None:
-        err_console.print(f"sim UI at {page.url} (same session)", markup=False, highlight=False)
+        err_console.print(
+            f"sim UI at {page.open_url} (same session)",
+            markup=False,
+            highlight=False,
+            soft_wrap=True,
+        )
 
     def on_ready() -> None:
         if page is not None and open_browser:
             import webbrowser
 
-            webbrowser.open(page.url)
+            webbrowser.open(page.open_url)
 
     run_stdio(
         session,
@@ -900,9 +906,10 @@ def _mcp_page(session: Any, port: int) -> Any:
         else:
             err_console.print(
                 f"warning: sim UI port {port} is taken ({taken.why}) — an older server may "
-                f"still be running; the page is at {page.url} instead",
+                f"still be running; the page is at {page.open_url} instead",
                 markup=False,
                 highlight=False,
+                soft_wrap=True,
             )
             return page
     err_console.print(

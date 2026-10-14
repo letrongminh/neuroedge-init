@@ -24,7 +24,7 @@
 | **Flash** | 16 MB, partition table `partitions.csv` | `factory`, `ota_0`, `ota_1` (3.5 MB each slot); `nvs`, `otadata`, `phy_init`, `storage` | — | `done` |
 | **Fleet OS, Gate Registry** | Not fully chosen; Eclipse Hawkbit decided (Q-11), ORAS and Harbor | Fleet management; signed gate registry | — | `planned` (I9, I10) |
 | **24/7 Runtime** (home box) | Python, systemd service | Sole trusted process holding HAL and GPIO privileges: gates, mission contract execution, scheduler, deterministic detectors, `llm_budget`, chat channel adapter and approval record verification, data egress, segment-based traces | none yet | `planned · Q-72` (I2d) |
-| **LLM worker** (home box) | Python, LiteLLM; dedicated OS user | Untrusted process: holds BYOK keys, explains, proposes, writes reports; calls runtime as a local MCP client; never approves | none yet | `planned · Q-72` (I2d) |
+| **NeuroClaw brain** (Profile A, Q-83) | Go (separate repository `letrongminh/neuroclaw`); dedicated OS user on a shared machine | Conversation, LLM calls, memory, reminders; calls the box only through MCP + mTLS; never holds a human source | NeuroClaw `gateway` | `partial` — demo 2026-10-13; isolation TSK-I2d-24 |
 
 ## 3. Process and threading model
 
@@ -41,7 +41,7 @@ the home box (the last two rows of the table).
 | `--target linux` | As above | Timed GPIO pulses released via `threading.Timer`; SIGTERM/SIGHUP restore all lines to idle before exit | today |
 | Firmware | Single `app_main` task | Spawns no FreeRTOS tasks; all boot steps run sequentially ([`04`](04-component-device-c4l3.md) §3) | today |
 | **24/7 Runtime** (trusted) | Single systemd service on home box (Pi, mini PC, NAS), restarts on crash | Long-running event loop: scheduler, detectors, chat adapter, local MCP server for worker; turn lock like `mcp serve`. Duration, approval deadlines, watchdog use monotonic clock; wall-clock time marked `unsynced` until synchronized | `planned · Q-72` (I2d) |
-| **LLM worker** (untrusted) | Separate process, dedicated OS user; runtime monitors and restarts | Calls runtime via local MCP; sources assigned by runtime per connection; network restricted to declared provider endpoints | `planned · Q-72` (I2d) |
+| **LLM worker** (untrusted) = the NeuroClaw brain (Q-83) | Separate process, dedicated OS user; runtime monitors and restarts | Calls runtime via local MCP; sources assigned by runtime per connection; network restricted to declared provider endpoints | `planned · Q-72` (I2d) |
 
 The two processes reuse the Q-71 boundary: only one process holds HAL, and the MCP client is an untrusted party.
 A worker hit by prompt injection can still only send calls that must pass through gates, unable to touch bot keys, approval
@@ -133,10 +133,11 @@ decryption). Design: [`15`](15-target-architecture.md) §6.
 | **Self-hosted runner with Box-3** | label `[self-hosted, esp32s3-box-3]` | `memory-spike` job in `nightly-hardware.yml` | ○ planned (TSK-S1-10, TSK-S4-05) |
 | **Raspberry Pi 5 + I2S HAT** | Linux, profile `boards/linux-rpi5.toml` | `neuroedge --target linux`: libgpiod, hwmon, audio | ○ planned (TSK-I2-01) |
 | **ESP32-S3-BOX-3** | firmware from `neuroedge build --target esp32s3` | on-chip gate, UART traces to host, OTA | ○ planned (TSK-S4-12) — runs on QEMU |
+| **ESP32-S3, one image** (Profile B, Q-83) | firmware from `neuroedge build --target esp32s3 --brain neuroclaw` | NeuroClaw-ESP, `ne_brain_bridge`, `ne_gate`, tokens and HAL in one image; `risk=single_chip`; requirements DP-B-* of `docs/spec/deployment_profiles.md` | ○ planned (TSK-I2f-12, TSK-I2f-14) |
 | **OTA image server** | any static HTTP(S) server | serves signed application images | ✅ on QEMU (`qemu_ota.sh` uses `python3 -m http.server` on 127.0.0.1) |
 | **Model and voice providers** | external services via HTTPS | language models, STT, TTS, Jev | ✅ optional; no network calls by default |
 | **Home box** (Pi, mini PC, or NAS) | Linux, systemd; runs G1 `sim` or G2 `linux` on `gpio-sim` simulation before physical hardware arrives | **trusted 24/7 runtime** (systemd service, restarts on crash): HAL, gates, mission contract execution, scheduler, deterministic detectors, chat channel adapter and approval record verification, egress portal, segmented traces | ○ planned · Q-72 · I2d |
-| **LLM worker** | same home box, **dedicated OS user**, not in `gpio`/`i2c` groups; firewall only permits outbound to declared provider endpoints | holds BYOK keys, calls runtime via local MCP like an MCP client (source assigned by runtime); never approves | ○ planned · Q-72 · I2d |
+| **NeuroClaw brain** (Profile A) | same home box, **dedicated OS user**, not in `gpio`/`i2c` groups; firewall only permits outbound to declared provider endpoints | holds BYOK keys, calls runtime via local MCP like an MCP client (source assigned by runtime); never approves | ○ planned · Q-72 · I2d |
 | **Chat platform** (Telegram first; Slack, Zalo later) | third-party cloud | receives proactive reports and approval requests, sends commands and approval responses back to runtime | ○ planned · Q-72 · I2d |
 | **Relay** (optional) | server operated by NeuroEdge | pass-through TLS pipe routing destination by SNI, no decryption (Nabu Casa SniTun pattern); stores encrypted trace backup blobs from home box | ○ planned · Q-72 (outside I2d, I2e) |
 | **Index Hub** | static git repository, read via HTTPS | lists URL, full-bundle digest, and "unsigned" evidence for each NeuroEdge Blueprint; bundles reside in seller repositories | ○ planned · Q-72 · I2e |

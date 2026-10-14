@@ -440,9 +440,9 @@ def e08_deployment() -> Diagram:
     d = Diagram(
         "E-08-deployment",
         "E-08 · Deployment (C4)",
-        "Where each part runs today, where it will run once the boards arrive, the home machine (Q-72), the optional cloud (Q-74).",
+        "Where each part runs today, once the boards arrive, and in the two deployment profiles of Q-83: Full (home machine, cloud) and One chip.",
         1800,
-        1620,
+        1840,
     )
     d.groups.append(Group("dev", 40, 100, 560, 520, "Developer machine — macOS or Linux", "host"))
     d.boxes += [
@@ -487,12 +487,12 @@ def e08_deployment() -> Diagram:
     ]
     # Q-72 (planned): the operating agent runs 24/7 on a machine at home; chat, relay and the Hub index
     # are outside services that never sit on the safety path (chapter 02 §6)
-    d.groups.append(Group("home", 40, 920, 1180, 260, "Home machine — Pi 5 / mini PC / NAS · planned · Q-72",
-                          "planned"))
+    d.groups.append(Group("home", 40, 920, 1180, 260,
+                          "Profile A — Pi 5 / mini PC / NAS · Q-72 · Q-83", "planned"))
     d.boxes += [
-        Box("worker", 70, 970, 520, 150, "LLM worker — own OS user",
-            ("BYOK key only here · never approves", "network allowlist: declared provider only",
-             "local MCP client of the runtime · I2d"), "container", "planned"),
+        Box("worker", 70, 970, 520, 150, "NeuroClaw brain — own OS user",
+            ("chat · LLM · memory · BYOK key only here", "never approves · no device groups",
+             "MCP + mTLS to the runtime · I2d"), "container", "partial"),
         Box("runtime", 690, 970, 500, 170, "Runtime 24/7 — systemd service",
             ("HAL · gate · missions · detectors · scheduler", "chat adapter (bot token) · approval records",
              "egress only to declared destinations · I2d", "trace segments kept 30 days · I2d"),
@@ -533,6 +533,17 @@ def e08_deployment() -> Diagram:
         Edge("ncloud", "espbox", "outbound · signed rules", dashed=True, via=((910, 1530), (1200, 1530)),
              label_at=(1060, 1530)),
     ]
+    # Q-83: Profile B — brain and gate in one ESP32-S3 image; the same contract through nc_gate calls
+    d.groups.append(Group("profb", 40, 1620, 1720, 180,
+                          "Profile B — one chip, risk=single_chip · Q-79 · Q-83 · I2f", "planned"))
+    d.boxes += [
+        Box("onechip", 70, 1660, 820, 110, "ESP32-S3 — one image",
+            ("NeuroClaw-ESP ─ nc_gate ─ ne_brain_bridge ─ ne_gate ─ token ─ pins",
+             "approve: board button or owner callback · I2f"), "device", "planned"),
+        Box("onechipcfg", 940, 1660, 790, 110, "Built and kept by the box",
+            ("neuroedge build --target esp32s3 --brain neuroclaw",
+             "pinned NeuroClaw-ESP · signed OTA of the whole image · I2f"), "container", "planned"),
+    ]
     return d
 
 
@@ -542,7 +553,7 @@ INCREMENTS = {
     "I0": "Contract core on sim", "I1": "Internal preview on sim", "I2": "linux on par with sim",
     "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I2c": "Open platform: plug-in SDK",
     "I2d": "Missions and operating agent", "I2e": "NeuroEdge Blueprint MVP",
-    "I2f": "Cloud brain · ESP32 home box",
+    "I2f": "Cloud brain · one-chip profile",
     "I3": "Gate on a real Box-3",
     "I3a": "New primitives on esp32s3", "I6": "Public release", "I7": "v1.0 = MVP",
     "I8": "Developer Beta",
@@ -746,7 +757,7 @@ def e11_ecosystem() -> Diagram:
         ("repo", "Source repository", ("public · issues · RFCs",), "done"),
         ("pypi", "PyPI + public schema URLs", ("release workflow ready · I6",), "planned"),
         ("registry", "Home Assistant", ("devices of other brands · I2c",), "partial"),
-        ("fleet", "NeuroClaw · MCP clients", ("the brain: Go and ESP32 · Q-78",), "partial"),
+        ("fleet", "NeuroClaw · MCP clients", ("brain: Go (A) · ESP32 (B) · Q-83",), "partial"),
         ("index", "Community plug-in index", ("search/install · not a Marketplace · I2c",), "planned"),
         ("aura", "Claw-family agents", ("ESP-Claw · zclaw · MimiClaw",), "planned"),
         ("market", "Blueprint Hub (paid)", ("after the 8-week gate · Q-72",), "planned"),

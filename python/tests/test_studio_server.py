@@ -18,6 +18,8 @@ from neuroedge.sim import SimSession
 from neuroedge.studio import StudioServer
 from neuroedge.studio.server import ROUTES
 
+from .ui_support import page_headers
+
 ROOT = Path(__file__).resolve().parents[2]
 VILLA = ROOT / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
 
@@ -39,6 +41,8 @@ def get(server, path):
 def post(server, path, body=b"{}", origin=None):
     request = urllib.request.Request(server.url.rstrip("/") + path, data=body, method="POST")
     request.add_header("Content-Type", "application/json")
+    for name, value in page_headers(server).items():
+        request.add_header(name, value)
     if origin is not None:
         request.add_header("Origin", origin)
     try:
@@ -138,9 +142,28 @@ def test_a_bad_content_length_is_400_and_does_not_hang(studio):
     for value in ("abc", "-1"):
         reply = raw_request(
             studio,
-            f"POST /api/lint HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: {value}\r\n\r\n".encode(),
+            (
+                f"POST /api/lint HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n"
+                f"Origin: http://127.0.0.1:{port}\r\nX-NeuroEdge-UI-Key: {studio.key}\r\n"
+                f"Content-Length: {value}\r\n\r\n"
+            ).encode(),
         )
         assert b" 400 " in reply.split(b"\r\n", 1)[0], (value, reply[:60])
+
+
+def test_the_studio_refuses_an_action_without_the_runs_key(studio):
+    # DP-A-02: every POST, /api/… included, needs this run's key (another process has no key).
+    request = urllib.request.Request(
+        studio.url.rstrip("/") + "/api/lint", data=b"{}", method="POST"
+    )
+    request.add_header("Content-Type", "application/json")
+    request.add_header("Origin", page_headers(studio)["Origin"])
+    with pytest.raises(urllib.error.HTTPError) as refused:
+        urllib.request.urlopen(request, timeout=5)
+    assert refused.value.code == 403
+    assert studio.session.events.of_type("ui_auth_refused") == [
+        {"reason": "no_key", "path": "/api/lint"}
+    ]
 
 
 def test_an_origin_without_a_scheme_is_refused(studio):

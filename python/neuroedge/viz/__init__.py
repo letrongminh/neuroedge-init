@@ -51,6 +51,23 @@ def board_info(board_id: str | None) -> dict[str, Any]:
     return info
 
 
+# The run's key for a live page (DP-A-02, docs/spec/deployment_profiles.md): the URL carries, after
+# `#` (never sent by a browser), a one-time pairing code; the page trades it once for the key at
+# `POST /pair`, keeps the key for the tab and takes the code out of the address bar.
+UI_KEY_JS = (
+    "const NE_UI_KEY = (function () { var kept = '';"
+    " try { kept = sessionStorage.getItem('ne-ui-key') || ''; } catch (e) {}"
+    " var m = /[#&]c=([^&]+)/.exec(location.hash); if (!m) return Promise.resolve(kept);"
+    " try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}"
+    " return fetch('/pair', {method: 'POST', headers: {'Content-Type': 'application/json'},"
+    " body: JSON.stringify({code: decodeURIComponent(m[1])})})"
+    ".then(function (r) { return r.ok ? r.json() : {}; })"
+    ".then(function (j) { var k = j.key || kept;"
+    " try { sessionStorage.setItem('ne-ui-key', k); } catch (e) {} return k; })"
+    ".catch(function () { return kept; }); })();\n"
+)
+
+
 def page(
     *,
     title: str,
@@ -60,12 +77,17 @@ def page(
     live: bool = False,
 ) -> str:
     boot = "const data = JSON.parse(document.getElementById('ne-data').textContent);\n" + (
-        "const view = NE.mount(document.getElementById('ne'), {meta: data.meta, board: data.board,"
+        # The run's key (DP-A-02): read once from after `#`, sent with every POST.
+        UI_KEY_JS
+        + "const view = NE.mount(document.getElementById('ne'), {meta: data.meta, board: data.board,"
         " events: data.events, live: true, onCommand: function (text) {"
-        " fetch('/command', {method: 'POST', headers: {'Content-Type': 'text/plain; charset=utf-8'},"
-        " body: text}); }, onConfirm: function (id, yes) {"
-        " fetch('/confirm', {method: 'POST', headers: {'Content-Type': 'application/json'},"
-        " body: JSON.stringify({id: id, answer: yes ? 'yes' : 'no'})}); }});\n"
+        " NE_UI_KEY.then(function (key) {"
+        " fetch('/command', {method: 'POST', headers: {'Content-Type': 'text/plain; charset=utf-8',"
+        " 'X-NeuroEdge-UI-Key': key}, body: text}); }); }, onConfirm: function (id, yes) {"
+        " NE_UI_KEY.then(function (key) {"
+        " fetch('/confirm', {method: 'POST', headers: {'Content-Type': 'application/json',"
+        " 'X-NeuroEdge-UI-Key': key},"
+        " body: JSON.stringify({id: id, answer: yes ? 'yes' : 'no'})}); }); }});\n"
         "const stream = new EventSource('/events');\n"
         "stream.onmessage = function (m) { const s = JSON.parse(m.data);"
         " view.update(s.events, s.now_ms); };\n"

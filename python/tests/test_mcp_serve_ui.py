@@ -34,6 +34,8 @@ from neuroedge.sim import SimSession
 from neuroedge.sim.ui import SessionServer
 from neuroedge.trace import validate_trace
 
+from .ui_support import page_headers
+
 PYTHON_DIR = Path(__file__).resolve().parents[1]
 TIMEOUT = 10.0
 
@@ -93,12 +95,16 @@ def get_json(url: str) -> dict:
         return json.loads(response.read())
 
 
-def post(url: str, text: str, headers: dict | None = None) -> dict:
+def post(server: SessionServer, text: str, headers: dict | None = None) -> dict:
     request = urllib.request.Request(
-        url + "command",
+        server.url + "command",
         data=text.encode("utf-8"),
         method="POST",
-        headers={"Content-Type": "text/plain; charset=utf-8", **(headers or {})},
+        headers={
+            "Content-Type": "text/plain; charset=utf-8",
+            **page_headers(server),
+            **(headers or {}),
+        },
     )
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
         return json.loads(response.read())
@@ -192,7 +198,7 @@ def test_page_commands_and_mcp_calls_interleave_without_corrupting_the_session(s
     def page_side():
         try:
             for i in range(rounds):
-                reply = post(server.url, "bật đèn" if i % 2 == 0 else "tắt đèn")
+                reply = post(server, "bật đèn" if i % 2 == 0 else "tắt đèn")
                 # .get: a reply without a verdict must fail with the reply shown, not a bare
                 # KeyError (CI flake on PR #94 printed only KeyError('verdict')).
                 assert reply.get("verdict") == "ALLOW", reply
@@ -246,7 +252,7 @@ def test_the_page_names_the_caller_of_each_verdict(served):
 def test_another_origin_still_cannot_send_commands(served):
     session, server = served
     with pytest.raises(urllib.error.HTTPError) as refused:
-        post(server.url, "bật đèn", headers={"Origin": "http://evil.example"})
+        post(server, "bật đèn", headers={"Origin": "http://evil.example"})
     assert refused.value.code == 403
     assert not session.hal.pin("porch_light").commands
 
@@ -362,7 +368,10 @@ def test_a_taken_port_moves_the_page_and_keeps_serving_mcp(home, tmp_path):
     assert [c["source"] for c in of_type(state["events"], "tool_call")] == ["mcp"]
     stderr = errlog_path.read_text(encoding="utf-8")
     assert f"warning: sim UI port {port} is taken" in stderr
-    assert f"sim UI at {url} (same session)" in stderr
+    # The printed URL carries a one-time pairing code after `#`, never the key (DP-A-02): stderr is
+    # where Claude Desktop keeps its log, which another process on the machine can read.
+    assert re.search(re.escape(f"sim UI at {url}#c=") + r"[\w-]{22} \(same session\)", stderr)
+    assert "#k=" not in stderr
 
 
 # --- the way out of `mcp serve`: trace written, hal.close() called (TSK-N2-03, TSK-N2-04) -----------

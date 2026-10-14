@@ -141,7 +141,7 @@ Blueprint Hub (I2e, §6.4) serves as the distribution channel; reopening milesto
 
 ### 3.3 Self-Hosted Provider Layer — Dropped (Q-77)
 
-LiteLLM in core and NeuroEdge brain (Q-76, §6.10) handle LLM calls.
+The NeuroEdge brain (NeuroClaw, Q-76, Q-83, §6.10) handles LLM calls; LiteLLM in core remains only on the legacy System 2 path, off by default (DP-A-08).
 
 ### 3.4 Boundary: Core ↔ Commercial Services
 
@@ -394,7 +394,7 @@ and any monetization platforms arrive strictly after this gate ([`16`](16-ecosys
 
 ---
 
-### 6.10 Optional Cloud Brain, Multi-Node Mesh, and Verification Steps (`planned · Q-73, Q-74, Q-76`)
+### 6.10 Two Deployment Profiles, Optional Cloud Brain, Multi-Node Mesh, and Verification Steps (`planned · Q-73, Q-74, Q-76, Q-83`)
 
 [`Q-74`](../../../roadmap/neuroedge-prd.md#15-decision-log) leverages the exact boundary of §6.1 to move the **LLM worker** (chat, suggestions, mission
 contract compilation) to the **optional NeuroEdge Cloud**; the **trusted runtime always stays at home**. No code yet; phase 2 of Q-74 only
@@ -420,19 +420,24 @@ opens after the demand gate (§6.9) if metrics justify it.
 - **User-declared verification steps** ([`Q-73`](../../../roadmap/neuroedge-prd.md#15-decision-log), FR-CH-06, awaiting RFC TSK-I2d-20): read code, voice,
   face, keypad, fingerprint on phone… via verifier plugins; each carries a risk label. LLMs, MCP
   clients, and automated sources never answer verification steps.
-- **NeuroEdge Brain: NeuroClaw, three run modes** ([`Q-76`](../../../roadmap/neuroedge-prd.md#15-decision-log),
+- **NeuroEdge Brain: NeuroClaw, two deployment profiles** ([`Q-83`](../../../roadmap/neuroedge-prd.md#15-decision-log), [`Q-76`](../../../roadmap/neuroedge-prd.md#15-decision-log),
   [`Q-78`](../../../roadmap/neuroedge-prd.md#15-decision-log), [`Q-79`](../../../roadmap/neuroedge-prd.md#15-decision-log),
   [`Q-80`](../../../roadmap/neuroedge-prd.md#15-decision-log)). The brain is **NeuroClaw**, dedicated repository
   [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw) (MIT, hard fork of PicoClaw v0.3.1, with releases).
   It acts as the home's LLM worker: chat channels, LLMs with fallback and call budgets, file-based memory, schedules and heartbeats, MCP
   client; shell, hardware buses, skill installs enabled or disabled by users, each active feature carrying a risk label (Q-80). Home
-  devices are accessed exclusively through the box's MCP toolset; the box holds gates, approvals, and traces. Three run modes:
-  - **Self-hosted** — NeuroClaw (Go) on cheap Linux boards, servers, or the runtime Pi itself (under a separate user without
+  devices are accessed exclusively through the box's tools; the box holds gates, approvals, and traces. One contract (the tool
+  list and `tool-result.v1`), two transports; requirements and test cases in
+  [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md):
+  - **Profile A — Full**, in two forms:
+  - *Self-hosted* — NeuroClaw (Go) on cheap Linux boards, servers, or the runtime Pi itself (under a separate user without
     hardware privileges, TSK-I2d-24). Speaks MCP over HTTP with TLS 1.3, mTLS, and tokens to `neuroedge mcp serve --http`.
-  - **NeuroEdge Cloud** (conditional, I2f) — same NeuroClaw, isolated instance per user, communicating with the box over the box's
+  - *NeuroEdge Cloud* (conditional, I2f) — same NeuroClaw, isolated instance per user, communicating with the box over the box's
     outbound connection.
-  - **Single chip** — **NeuroClaw-ESP**, ESP-IDF component inside `esp32/` of that repo, co-located on a single ESP32-S3 with gates; tool
-    calls pass through `ne_gate`, labeled `risk=single_chip` (`threat_model.md` §2l, TSK-I2f-10 → I2f-13).
+  - **Profile B — One chip** — **NeuroClaw-ESP**, ESP-IDF component inside `esp32/` of that repo, built into one ESP32-S3 image
+    with the gate by `neuroedge build --target esp32s3 --brain neuroclaw`; tool calls pass through `nc_gate` into the box's
+    `ne_brain_bridge` and `ne_gate` (function calls, no MCP or TLS between them: they share memory), labeled `risk=single_chip`
+    (`threat_model.md` §2l, TSK-I2f-10 → I2f-17). *Profile B+* — real isolation on one board — is under evaluation (TSK-I2f-17).
 
   Other workers (upstream PicoClaw, Claude Desktop, OpenClaw) plug into the same MCP toolset; workers unable to present certificates
   use demo mTLS bridges. Capabilities per run mode, risk labels, and feature gap vs. zclaw, MimiClaw:
@@ -445,8 +450,8 @@ opens after the demand gate (§6.9) if metrics justify it.
   - **Networked MCP channel** — TLS 1.3, mTLS, certificate-bound tokens (`neuroedge mcp serve --http`,
     [`tool_calling.md`](../../spec/tool_calling.md) §8.1); on the NeuroClaw side, the
     `tls` block for the MCP server in `config.json` (`docs/guides/neuroedge.md` in that repo).
-  - **Single-chip firmware** — `targets/esp32s3/` embeds the `neuroclaw` component pinned to a fixed release; pinning strategy and
-    invocation paths for `nc_gate` → `ne_gate` decided in TSK-I2f-11, TSK-I2f-12.
+  - **Single-chip firmware** — `targets/esp32s3/` embeds the `neuroclaw` component pinned by version and SHA-256 (DP-B-01);
+    `nc_gate` is implemented on the box side by `ne_brain_bridge` (DP-B-02 → DP-B-08, TSK-I2f-12).
 
   Modifying any of these three points requires updating both repos in tandem; the rest of each repository evolves independently.
 
@@ -456,24 +461,26 @@ opens after the demand gate (§6.9) if metrics justify it.
  approval:    📱 approve button ── passkey signature on phone ───────────────────────────────► box verifies signature locally
 ```
 
-- **Third run mode: Standalone ESP32-S3 ([`Q-79`](../../../roadmap/neuroedge-prd.md#15-decision-log), risk-labeled).** Brain
+- **Profile B in detail ([`Q-79`](../../../roadmap/neuroedge-prd.md#15-decision-log), [`Q-83`](../../../roadmap/neuroedge-prd.md#15-decision-log), risk-labeled).** Brain
   (Telegram client, LLM loop) and gates co-exist on a single multi-dollar chip, no Linux board, no cloud. Microcontrollers lack
   process isolation, so §6.1 boundaries between untrusted brain and gates **do not exist** here; instead: all LLM
   tool calls pass through a typed queue into `ne_gate`, with zero direct LLM → GPIO paths; irreversible actions require on-board
   buttons or Telegram callbacks from the verified owner ID (chip talks directly to Telegram API, without relays); chip carries label
   `risk=single_chip`. Phase 1 already running on QEMU: boot guard and safe mode, secrets in isolated NVS partition (encrypted
   under `sdkconfig.secure`), serial console, stack guard ([`04`](04-component-device-c4l3.md) §3). The chip's
-  brain, NeuroClaw-ESP (Telegram, LLM loop, memory, scheduler), runs on QEMU with mock gates; firmware embedding,
-  real Wi-Fi, `ne_gate` call paths, and initial Wi-Fi provisioning await DevKitC hardware (TSK-I2f-11 → I2f-13).
+  brain, NeuroClaw-ESP (Telegram, LLM loop, memory, scheduler), runs on QEMU with mock gates. Joining them into one image is
+  specified in `docs/spec/deployment_profiles.md` §3.3: the bridge and its host-C tests (TSK-I2f-12), one build command,
+  merged partitions and secrets (TSK-I2f-14), QEMU budgets (TSK-I2f-15), run-time traces (TSK-I2f-16); real Wi-Fi and
+  provisioning await DevKitC hardware (TSK-I2f-11, TSK-I2f-13).
 
 ```
- single-chip: 📱 Telegram ──TLS──► ESP32-S3 [ brain ─tool call queue─► ne_gate ] ──► pins
+ single-chip: 📱 Telegram ──TLS──► ESP32-S3 [ brain ─nc_gate─► ne_brain_bridge ─► ne_gate ] ──► pins
               approving irreversible actions: on-board button, or callback from owner ID
 ```
 
 - **Approvals never route through the brain** (FR-CH-08): irreversible actions are approved via passkey signatures on phone
   or locally within the home network; the cloud's shared channel gateway forwards messages but cannot forge approvals.
-- **Follow-up tasks:** easy-install box TSK-I2e-12, TSK-I2e-13; verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, passkey approvals, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); standalone ESP32-S3 (Q-79): TSK-I2f-10 → I2f-12.
+- **Follow-up tasks:** easy-install box TSK-I2e-12, TSK-I2e-13; verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, passkey approvals, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); Profile B (Q-79, Q-83): TSK-I2f-10 → I2f-17; Profile A contract and legacy System 2: TSK-I2d-26, TSK-I2d-27.
 
 ## 7. Sources
 

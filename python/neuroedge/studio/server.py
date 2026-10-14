@@ -190,8 +190,7 @@ class _StudioHandler(_Handler):
         if not path.startswith("/api/"):
             super().do_POST()
             return
-        if not self._same_origin():
-            self._send(HTTPStatus.FORBIDDEN, b"cross-origin request refused", "text/plain")
+        if self._refuse_post():
             return
         length = self._body_length()
         if length is None:
@@ -217,7 +216,8 @@ def serve(
     """Serve until Ctrl-C. `on_start` runs once the server listens (the microphone, S2)."""
     server = StudioServer(session, agent_path=agent_path, port=port).start()
     console.print(
-        f"[bold green]✓[/bold green] studio at [link]{server.url}[/link] — Ctrl-C to stop"
+        f"[bold green]✓[/bold green] studio at [link]{server.open_url}[/link] — Ctrl-C to stop",
+        soft_wrap=True,  # one line: the key after `#` stays part of the URL
     )
     try:
         if on_start is not None:
@@ -225,7 +225,7 @@ def serve(
         if open_browser:
             import webbrowser
 
-            webbrowser.open(server.url)
+            webbrowser.open(server.open_url)
         while True:
             time.sleep(0.5)
     except KeyboardInterrupt:
