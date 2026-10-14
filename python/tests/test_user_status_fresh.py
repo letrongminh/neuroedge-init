@@ -1,4 +1,4 @@
-"""docs/user/trang-thai.md phải khớp bản sinh từ neuroedge-roadmap.md §0."""
+"""docs/user/trang-thai.md must match what is generated from neuroedge-roadmap.md §0."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def test_user_status_is_fresh() -> None:
         text=True,
     )
     assert result.returncode == 0, (
-        "docs/user/trang-thai.md đã cũ so với neuroedge-roadmap.md §0.\n"
-        "Chạy: python3 scripts/gen_user_status.py\n"
+        "docs/user/trang-thai.md is stale against neuroedge-roadmap.md §0.\n"
+        "Run: python3 scripts/gen_user_status.py\n"
         f"{result.stdout}{result.stderr}"
     )

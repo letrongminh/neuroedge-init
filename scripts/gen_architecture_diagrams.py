@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Sinh các poster kiến trúc (docs/architecture/assets/) từ một mô tả duy nhất.
+"""Generate the architecture posters (docs/architecture/assets/) from a single description.
 
-Mỗi poster là một hàm dưới đây. Từ đó sinh ra **cả hai** tệp:
+Each poster is a function below. From it the script generates **both** files:
 
-* ``assets/excalidraw/<id>.excalidraw`` — mở và sửa được bằng Excalidraw;
-* ``assets/svg/<id>.svg`` — ảnh mà tài liệu nhúng.
+* ``assets/excalidraw/<id>.excalidraw`` — openable and editable in Excalidraw;
+* ``assets/svg/<id>.svg`` — the image the documents embed.
 
-Sửa poster = sửa hàm ở đây rồi chạy lại script; **đừng sửa tay** hai tệp sinh ra
-(sửa tay trong Excalidraw thì chép thay đổi về đây). ``lint`` từ chối hộp chồng
-nhau, chữ tràn hộp, mũi tên trỏ tới hộp không có.
+To change a poster, edit the function here and rerun the script; **never hand-edit** the two
+generated files (if you edit in Excalidraw, copy the change back here). ``lint`` rejects
+overlapping boxes, text overflowing its box, and arrows pointing at a box that does not exist.
 
-    python3 scripts/gen_architecture_diagrams.py           # ghi tệp
-    python3 scripts/gen_architecture_diagrams.py --check   # không ghi; thoát 1 nếu lệch
+    python3 scripts/gen_architecture_diagrams.py           # write the files
+    python3 scripts/gen_architecture_diagrams.py --check   # write nothing; exit 1 if stale
 
-CI chạy --check (python/tests/test_architecture_diagrams.py). Nhãn trong hình là
-tiếng Anh (docs/architecture/README.md).
+CI runs --check (python/tests/test_architecture_diagrams.py). Labels inside the figures are
+English (docs/architecture/README.md).
 """
 
 from __future__ import annotations
@@ -559,14 +559,6 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
         if m:
             inc, forecast, progress, glyph = m.groups()
             forecast = forecast.strip().replace("✅ ", "")
-            for vi, en in (
-                ("khi ước lượng lại phạm vi MVP (TSK-I2a-01)", "on MVP re-estimate"),
-                ("nhu cầu camera", "camera demand"),
-                ("cổng 8 tuần", "8-week gate"),
-                ("nhánh", "branch"),
-                ("sau ", "after "),
-            ):
-                forecast = forecast.replace(vi, en)
             rows.append((inc, forecast, progress.replace(" ", ""), glyph))
     got = [r[0] for r in rows]
     if got != list(INCREMENTS):
@@ -574,8 +566,8 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
     return rows
 
 
-# English names of the eight user-facing release milestones (roadmap §0.5, "Mốc phát hành theo người
-# dùng"). Which increments belong to which milestone is read from that table, never repeated here.
+# English names of the eight user-facing release milestones (roadmap §0.5, "User-facing release
+# milestones"). Which increments belong to which milestone is read from that table, never repeated here.
 MILESTONES = {
     1: "Try it on a laptop", 2: "Real devices on a Raspberry Pi", 3: "The gate on a $5 chip",
     4: "Build and run by chat, share a Blueprint", 5: "Public launch: first outside users",
@@ -587,7 +579,7 @@ def _milestones() -> list[tuple[int, list[str]]]:
     import re
 
     lines = ROADMAP.read_text(encoding="utf-8").splitlines()
-    start = next(n for n, line in enumerate(lines) if line.startswith("#### Mốc phát hành theo người dùng"))
+    start = next(n for n, line in enumerate(lines) if line.startswith("#### User-facing release milestones"))
     out = []
     for line in lines[start + 1 :]:
         if line.startswith(("#", "---")):
@@ -817,7 +809,7 @@ def outputs() -> dict[Path, str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="không ghi; thoát 1 nếu tệp đã cũ")
+    parser.add_argument("--check", action="store_true", help="write nothing; exit 1 if a file is stale")
     args = parser.parse_args()
     files = outputs()
     stale = [p for p, text in files.items() if not p.is_file() or p.read_text(encoding="utf-8") != text]
@@ -828,7 +820,7 @@ def main() -> int:
     for p in stale:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(files[p], encoding="utf-8")
-        print(f"Đã ghi {p.relative_to(ROOT)}")
+        print(f"Wrote {p.relative_to(ROOT)}")
     return 0
 
 

@@ -3,7 +3,7 @@ RFC-0015 §3d — the machine-readable catalogue of `NE…` codes, and who is he
 
 `schemas/error-codes.v1.json` is the one place that says which codes exist, their classes, parents
 and status. Three other places are *checked* against it, never trusted to agree: `errors.py` (and
-the subclasses that share a code), the PRD's Phụ lục B (which keeps the wording), and the firmware
+the subclasses that share a code), the PRD's Appendix B (which keeps the wording), and the firmware
 sources under `targets/`. `schemas/error.v1.json` is the shape of one serialised error.
 """
 
@@ -166,7 +166,7 @@ def test_a_reserved_code_has_no_class():
 
 def _prd_error_table() -> dict[str, str]:
     text = PRD.read_text(encoding="utf-8")
-    appendix = text[text.index("## Phụ lục B") : text.index("## Phụ lục C")]
+    appendix = text[text.index("## Appendix B") : text.index("## Appendix C")]
     return dict(re.findall(r"^\| `(\w+)` \| (NE\d{4}) \|", appendix, flags=re.MULTILINE))
 
 
@@ -177,7 +177,7 @@ def test_the_prd_error_table_and_the_catalog_agree_on_class_and_code():
 
 def test_the_prd_names_every_alias_of_a_code_in_that_codes_row():
     text = PRD.read_text(encoding="utf-8")
-    appendix = text[text.index("## Phụ lục B") : text.index("## Phụ lục C")]
+    appendix = text[text.index("## Appendix B") : text.index("## Appendix C")]
     rows = {m.group(1): m.group(0) for m in re.finditer(r"^\| `(\w+)` \|.*$", appendix, re.M)}
     for entry in CATALOG["codes"]:
         for alias in entry.get("aliases", []):

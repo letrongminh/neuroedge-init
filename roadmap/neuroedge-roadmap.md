@@ -51,15 +51,15 @@ All codes and symbols used in this document (`I0`–`I18`, `TSK-*`, `A1`–`C8`,
 
 ### 0.1 Executive Status Bar
 
-| Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
+| Indicator | Current status | Notes & Links |
 |:---|:---|:---|
-| **Pha đang thực thi** | 🟡 **Phase MVP (§0.5)**, sequence per Q-72 — I2d then I2e (fish tank NeuroEdge Blueprint traversing all three loops on simulation) before the 8-week demand gate; remainder of I1, I2a, I2c interleaved; partner trial (Q-70) in parallel; voice (I4, I5) and Studio paused, not cut | Increments and forecast dates: §0.2 |
-| **Increment đang mở** | 🟡 **I2d — Missions and operator agents** (Q-72) — tasks begin once Step 0 (documentation sync per Q-72) is done | I1 has TSK-I1-02 remaining (reactivated for the 8-week gate) and Studio (paused) · I0 completed 42 / 42 · details §0.2 |
-| **Cột mốc tiếp theo** | **8-week demand gate (Q-72, B6–B8)** — ≥ 3 external users independently install Blueprint and get it running, ≥ 1 user runs continuously for 2 weeks on G2 or G3, ≥ 1 maker wants to sell (PRD §11.2) | Dates: assumptions in §0.2 · branching by outcome: §5.6 · direct hand-off wheel, not on PyPI (Q-39) |
-| **Lần cập nhật cuối** | **2026-10-14** | Session 2026-10-14: NeuroClaw v0.2.0 → v0.2.2 full platform release; NeuroClaw documentation matches code, in English and nine translations; NeuroClaw Go has `get_diagnostics`, hourly and daily LLM call budget, `session` and `heartbeat run` commands; NeuroClaw-ESP has Anthropic, Tavily, `get_diagnostics`, LLM call limits, serial admin console, builds for four chips (TSK-I2f-11); opened TSK-I2f-13 for initial Wi-Fi setup on standalone chip. Session 2026-10-13: Q-79 — standalone ESP32-S3 serves as both brain and gate, with risk labels; stage 1 complete on QEMU (TSK-I2f-10: boot guard, NVS for secrets, serial console, stack guard; ported from zclaw, MimiClaw). NeuroClaw-ESP narrows the gap with NeuroClaw Go: `message`, `send_file`, fallback LLM URLs (TSK-I2f-11). Q-80 — NeuroClaw removes hard lock, has full PicoClaw capabilities, risk labels instead of prohibitions; demo keeps brain scoped via configuration. Q-78 — brain is NeuroClaw (hard fork of PicoClaw, `letrongminh/neuroclaw`, MIT); demo chat controls light and door via NeuroEdge Cloud runs all six scenarios via Telegram (OrbStack as cloud; `mcp serve --http --ui`); VPS and video deferred (`TODOS.md` #69). Session 2026-10-12: Q-77 removed voice, Lab, opening target list, and all post-Beta increments from roadmap (§6). Q-76 added NeuroEdge brain (TSK-I2d-22 → I2d-24) and single-instance-per-user cloud (TSK-I2f-07 → I2f-09); §3.11 maximum porting by task. Q-75 added 4 I3a tasks (Pi ↔ ESP32 link, commodity ESP32-S3 board, Arduino) and TSK-I2e-14 (multi-chip project scaffolding). Session 2026-10-11: synchronized roadmap per Q-72 — added I2d (35 tasks, including 2 Q-73 tasks) and I2e (15 tasks, including 2 easy-install box tasks from Q-74); conditional I2f (Q-74); voice (I4, I5), Studio, N4, N5b, V1a, TSK-I2c-13, I2c-17 paused; dates for I3 → I8 reset after 8-week gate (R5). Details: `CHANGELOG.md` |
-| **Trạng thái CI Lõi** | ✅ **PASS 4910/4910 · SKIP 0** | `python/tests/` 128 test suites; `tests_linux/` 119/119 on kernel; `ui-golden` 66 images; `ota-rollback` phases a–g; `firmware-qemu` added stack guard and six boots via serial console (Q-79); security scanners |
-| **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 and RPi 5 have not arrived (TSK-S1-10 → I3; TSK-I2-01) · camera board selected is M5Stack CoreS3 but not yet ordered (Q-61, TSK-I3a-01). Not blocking I2d, I2e: simulation first, physical hardware purchased later (Q-72) |
-| **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Each item includes activation trigger · demand gate reinstated by Q-72 (reversing Q-56); open business questions (`TODOS.md` #19) reviewed at 8-week gate |
+| **Current phase** | 🟡 **Phase MVP (§0.5)**, sequence per Q-72 — I2d then I2e (fish tank NeuroEdge Blueprint traversing all three loops on simulation) before the 8-week demand gate; remainder of I1, I2a, I2c interleaved; partner trial (Q-70) in parallel; voice (I4, I5) and Studio paused, not cut | Increments and forecast dates: §0.2 |
+| **Open increment** | 🟡 **I2d — Missions and operator agents** (Q-72) — tasks begin once Step 0 (documentation sync per Q-72) is done | I1 has TSK-I1-02 remaining (reactivated for the 8-week gate) and Studio (paused) · I0 completed 42 / 42 · details §0.2 |
+| **Next milestone** | **8-week demand gate (Q-72, B6–B8)** — ≥ 3 external users independently install Blueprint and get it running, ≥ 1 user runs continuously for 2 weeks on G2 or G3, ≥ 1 maker wants to sell (PRD §11.2) | Dates: assumptions in §0.2 · branching by outcome: §5.6 · direct hand-off wheel, not on PyPI (Q-39) |
+| **Last updated** | **2026-10-14** | Session 2026-10-14: NeuroClaw v0.2.0 → v0.2.2 full platform release; NeuroClaw documentation matches code, in English and nine translations; NeuroClaw Go has `get_diagnostics`, hourly and daily LLM call budget, `session` and `heartbeat run` commands; NeuroClaw-ESP has Anthropic, Tavily, `get_diagnostics`, LLM call limits, serial admin console, builds for four chips (TSK-I2f-11); opened TSK-I2f-13 for initial Wi-Fi setup on standalone chip. Session 2026-10-13: Q-79 — standalone ESP32-S3 serves as both brain and gate, with risk labels; stage 1 complete on QEMU (TSK-I2f-10: boot guard, NVS for secrets, serial console, stack guard; ported from zclaw, MimiClaw). NeuroClaw-ESP narrows the gap with NeuroClaw Go: `message`, `send_file`, fallback LLM URLs (TSK-I2f-11). Q-80 — NeuroClaw removes hard lock, has full PicoClaw capabilities, risk labels instead of prohibitions; demo keeps brain scoped via configuration. Q-78 — brain is NeuroClaw (hard fork of PicoClaw, `letrongminh/neuroclaw`, MIT); demo chat controls light and door via NeuroEdge Cloud runs all six scenarios via Telegram (OrbStack as cloud; `mcp serve --http --ui`); VPS and video deferred (`TODOS.md` #69). Session 2026-10-12: Q-77 removed voice, Lab, opening target list, and all post-Beta increments from roadmap (§6). Q-76 added NeuroEdge brain (TSK-I2d-22 → I2d-24) and single-instance-per-user cloud (TSK-I2f-07 → I2f-09); §3.11 maximum porting by task. Q-75 added 4 I3a tasks (Pi ↔ ESP32 link, commodity ESP32-S3 board, Arduino) and TSK-I2e-14 (multi-chip project scaffolding). Session 2026-10-11: synchronized roadmap per Q-72 — added I2d (35 tasks, including 2 Q-73 tasks) and I2e (15 tasks, including 2 easy-install box tasks from Q-74); conditional I2f (Q-74); voice (I4, I5), Studio, N4, N5b, V1a, TSK-I2c-13, I2c-17 paused; dates for I3 → I8 reset after 8-week gate (R5). Details: `CHANGELOG.md` |
+| **Core CI status** | ✅ **PASS 4910/4910 · SKIP 0** | `python/tests/` 128 test suites; `tests_linux/` 119/119 on kernel; `ui-golden` 66 images; `ota-rollback` phases a–g; `firmware-qemu` added stack guard and six boots via serial console (Q-79); security scanners |
+| **Non-technical blockers** | 🟡 **2 blocking items** | 🔴 Box-3 and RPi 5 have not arrived (TSK-S1-10 → I3; TSK-I2-01) · camera board selected is M5Stack CoreS3 but not yet ordered (Q-61, TSK-I3a-01). Not blocking I2d, I2e: simulation first, physical hardware purchased later (Q-72) |
+| **Deliberate deferrals** | 📋 [`TODOS.md`](../TODOS.md) | Each item includes activation trigger · demand gate reinstated by Q-72 (reversing Q-56); open business questions (`TODOS.md` #19) reviewed at 8-week gate |
 
 ---
 
@@ -67,22 +67,22 @@ All codes and symbols used in this document (`I0`–`I18`, `TSK-*`, `A1`–`C8`,
 
 Each row is an increment: a user-visible capability, ending with a release card and a measurement signal (Q-39). **Forecast** is the sole date of the increment; it changes only within the same PR containing evidence that causes it to change, cascading to all dependent increments (§2.4, R5). **Dependencies** point only to lower-numbered increments. Prior to I6, all releases are internal; the sole exceptions are direct hand-off wheels, not on any index — for a partner team (Q-70) and for NeuroEdge Blueprint testers in I2e (Q-72).
 
-| Mốc | Increment | Dự báo | Năng lực | Tiến độ | Trạng thái | Phụ thuộc | Phát hành |
+| Milestone | Increment | Forecast | Capability | Progress | Status | Dependencies | Release |
 |:---:|:---|:---:|:---|:---:|:---|:---|:---|
-| **Internal 0.x** | **I0 — Contract core on `sim`** | ✅ 2026-09-24 | Typed and versioned gates (lint, resolve, inheritance, arguments, `confirms`), `sim` + web UI, Action CI, MCP, System 2 via LiteLLM, `linux` replay on gpio-sim; C walker, token ledger, and UART trace on QEMU | **42 / 42** | ✅ Xong | — | historical |
-|  | **I1 — Internal preview on `sim`** | 2026-11-15 | External developer installs from internal wheel and runs gated agent in under 10 minutes, no hardware required | **4 / 6** | 🟡 Đang làm — TSK-I1-02 deferred (internal development) | I0 | tag `v0.1.0` (internal) |
+| **Internal 0.x** | **I0 — Contract core on `sim`** | ✅ 2026-09-24 | Typed and versioned gates (lint, resolve, inheritance, arguments, `confirms`), `sim` + web UI, Action CI, MCP, System 2 via LiteLLM, `linux` replay on gpio-sim; C walker, token ledger, and UART trace on QEMU | **42 / 42** | ✅ Done | — | historical |
+|  | **I1 — Internal preview on `sim`** | 2026-11-15 | External developer installs from internal wheel and runs gated agent in under 10 minutes, no hardware required | **4 / 6** | 🟡 In progress — TSK-I1-02 deferred (internal development) | I0 | tag `v0.1.0` (internal) |
 |  | **I2 — `linux` at parity with `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; sensors and display on `linux`; nightly on RPi 5 | **3 / 4** | 🟡 Interactive session, sensors, display complete on gpio-sim + i2c-stub; nightly RPi 5 remaining | I1 | tag `v0.2.0` (internal) |
 |  | **I2a — Extended primitives on `sim` and `linux`** | 2026-12-06 | Four packages: sensors (`digital.in`, read-only I2C, `analog.in`, numeric threshold comparison gate), fine control (PWM), vision (`vision.in`), motion (`motion.*`); six RFCs; `sim-rpi5` | **22 / 27** | 🟡 Six RFCs approved; numeric criteria and `NETR` v2; `board.v1` declares all extended primitives, `sim-rpi5`; safety envelope, `digital.in`, read-only I2C, `analog.in`, vision (virtual camera, V4L2, models, traces, sample gates) complete on `sim` and on kernel (`linux-hal` job, CI run 37153005998: gpio-sim, `i2c-stub`, `vivid`; `verify --targets sim,linux` replays sensor and vision corpus); PWM and `motion.*` complete on `sim`, `enable` line green on gpio-sim. **Remaining:** `verify` has not replayed `fan-pwm` and `rover` agents (I2a criterion 3); camera dropped mid-session on kernel (criterion 5); physical PWM channels and real actuators; vision inference golden; `esp32s3` cell of coverage matrix (TSK-I3a-01) | I2 | tag `v0.2.1` (internal) |
 |  | **I2b — Starter kits and rapid assembly** | 2026-12-20 | Five hardware kits (BOM, wiring diagram, locked gate), starter gate library, `neuroedge add` | **4 / 4** | 🟡 Five kits, gate library, `neuroedge add` complete (criteria 1, 3, 4); remaining TTFV measurement with humans (criterion 2) and building kits on physical hardware | I2a | tag `v0.2.2` (internal) |
 |  | **I2c — Open platform** | 2026-12-27 | Third parties connect NeuroEdge to new products in a few commands without modifying core: standalone core (`neuroedge.guard`), Extension SDK with six extension point kinds and conformance test suite, `proxy mcp`/`proxy http`, remote actuators, community index; open target list (RFC-0002) (Q-67) | **11 / 20** | 🟡 Q-67, design, corpus licensing complete; RFC-0002, RFC-0016 → RFC-0018 signed (Q-68); `neuroedge.guard` (TSK-I2c-07), `proxy mcp` + `guard init --mcp` (TSK-I2c-14), `proxy http` (TSK-I2c-15), remote actuators + Home Assistant plugin (TSK-I2c-16), partner trial documentation package (TSK-I2c-19) and half (a) of RFC-0017 complete; partner trial proceeds from here (Q-70); target list opening and two paused tasks dropped per Q-77 (§6) | I2b | tag `v0.2.3` (internal) · wheel for one partner team — private trial, not waiting for boards (Q-70) |
-|  | **I2d — Missions and operator agents** | 2026-11-11 | Assign missions to devices via voice: mission contracts compile down to gate and envelope, conflicting requests rejected before approval; operator agent runs 24/7 on home machine (trusted runtime + untrusted LLM worker, BYOK), deterministic detectors before LLM, LLM cost ceiling; NeuroEdge brain (PicoClaw-style worker, Q-76) communicates with runtime via MCP; reports and requests approval via Telegram using approval records; data egress only to declared destinations; segmented traces; conditional safety (symmetric safe_state); G1, G2 simulation; Lab loop ① for missions (Q-72) | **0 / 39** | 🟡 Mở — Step 0 (documentation sync per Q-72) in progress, tasks begin once complete; five planned RFCs and RFC for `TODOS.md` #58 awaiting tech lead signature | I2c (completed portion: `neuroedge.guard`, half (a) of RFC-0017) | tag `v0.2.4` (internal) |
-|  | **I2e — Minimal NeuroEdge Blueprint** | 2026-11-25 | Maker packages working device into NeuroEdge Blueprint (`blueprint pack`); others install with single command from URL + package-wide digest (`blueprint install`), runs on simulation; minimal Hub is static index; fish tank kit with affiliate BOM; multi-chip project scaffolding (Q-75); community channels; measure 8-week demand gate (Q-72) | **0 / 15** | ⏳ Chưa bắt đầu | I2d | tag `v0.2.5` (internal) · direct hand-off wheel for external testers, no index (like Q-70); PyPI remains at I6 (Q-39) |
-|  | **I2f — NeuroEdge Cloud and ESP32 home box** | sau cổng 8 tuần (nhánh) | Conditional (Q-74 step 2): home watch agent needs only chat — NeuroEdge brain operates on NeuroEdge Cloud, isolated single instance per user (Q-76) coordinating multiple devices, multiple homes, multiple users; gate, reflexes, approval checks always reside on home box (Pi, Home Assistant add-on, or ESP32-S3 for single task); standalone ESP32-S3 serves as both brain and gate, with risk labels (Q-79) | **1 / 13** | ⏸ Chờ demand gate outcome 2026-12-06 (Q-74); exception Q-79: TSK-I2f-10 complete, I2f-11 → I2f-13 awaiting boards | I2e | optional service + ESP32 box firmware |
-|  | **I3 — Gate on real Box-3** | sau I2e | Gate runs on chip, controls real pins; user loads agent independently; `verify` three tier-1 targets for verdict domain | **6 / 16** | 🟡 Boardless portion complete (including firmware generated for agent on QEMU, LVGL interface with golden images); awaiting boards | I1 | tag `v0.3.0` + firmware (internal) |
-|  | **I3a — Extended primitives on `esp32s3`** | sau I2e | Four packages on chip: Box-3 and M5Stack CoreS3 with camera (Q-53, Q-61); minimal Pi ↔ ESP32 link with heartbeat, commodity ESP32-S3 board, and Arduino library (Q-75) | **0 / 11** | ⏳ Chưa bắt đầu | I2a, I3 | tag `v0.3.1` + firmware (internal) |
-| **Public** | **I6 — Public launch** | sau I2e | Public repo, `pip install neuroedge` from PyPI, schemas at public URL, video demo of four packages and Blueprint on `sim`, `linux`, and `esp32s3`; network MCP with authentication, frozen integrator contract, public Python surface (Q-58, Q-63) | **7 / 11** | 🟡 Secret scanning, SBOM, public Python API, network MCP with authentication, integrator contracts in `schemas/` (RFC-0015) complete; RFC-0014 approved (Q-65); awaiting I3a | I2b, I2c, I3a | PyPI `v0.6.0` — first external release |
-| **v1.0 = MVP** | **I7 — v1.0** | sau I2e | MVP launch (Q-52): signed A/B OTA, device security, 24-hour on-chip stability; meets PRD §11.1 criteria | **4 / 12** | 🟡 Action pinning, attestation complete; signed A/B OTA + rollback complete on QEMU; awaiting I6 | I6 | `v1.0.0` |
-| **Beta** | **I8 — Developer Beta** | sau I2e | 50–100 external developers on `1.0.x` line; measure B1–B5, select branch | **0 / 1** | ⏳ Chưa bắt đầu | I7 | `1.0.x` (patches only) |
+|  | **I2d — Missions and operator agents** | 2026-11-11 | Assign missions to devices via voice: mission contracts compile down to gate and envelope, conflicting requests rejected before approval; operator agent runs 24/7 on home machine (trusted runtime + untrusted LLM worker, BYOK), deterministic detectors before LLM, LLM cost ceiling; NeuroEdge brain (PicoClaw-style worker, Q-76) communicates with runtime via MCP; reports and requests approval via Telegram using approval records; data egress only to declared destinations; segmented traces; conditional safety (symmetric safe_state); G1, G2 simulation; Lab loop ① for missions (Q-72) | **0 / 39** | 🟡 Open — Step 0 (documentation sync per Q-72) in progress, tasks begin once complete; five planned RFCs and RFC for `TODOS.md` #58 awaiting tech lead signature | I2c (completed portion: `neuroedge.guard`, half (a) of RFC-0017) | tag `v0.2.4` (internal) |
+|  | **I2e — Minimal NeuroEdge Blueprint** | 2026-11-25 | Maker packages working device into NeuroEdge Blueprint (`blueprint pack`); others install with single command from URL + package-wide digest (`blueprint install`), runs on simulation; minimal Hub is static index; fish tank kit with affiliate BOM; multi-chip project scaffolding (Q-75); community channels; measure 8-week demand gate (Q-72) | **0 / 15** | ⏳ Not started | I2d | tag `v0.2.5` (internal) · direct hand-off wheel for external testers, no index (like Q-70); PyPI remains at I6 (Q-39) |
+|  | **I2f — NeuroEdge Cloud and ESP32 home box** | after 8-week gate (branch) | Conditional (Q-74 step 2): home watch agent needs only chat — NeuroEdge brain operates on NeuroEdge Cloud, isolated single instance per user (Q-76) coordinating multiple devices, multiple homes, multiple users; gate, reflexes, approval checks always reside on home box (Pi, Home Assistant add-on, or ESP32-S3 for single task); standalone ESP32-S3 serves as both brain and gate, with risk labels (Q-79) | **1 / 13** | ⏸ Waiting for demand gate outcome 2026-12-06 (Q-74); exception Q-79: TSK-I2f-10 complete, I2f-11 → I2f-13 awaiting boards | I2e | optional service + ESP32 box firmware |
+|  | **I3 — Gate on real Box-3** | after I2e | Gate runs on chip, controls real pins; user loads agent independently; `verify` three tier-1 targets for verdict domain | **6 / 16** | 🟡 Boardless portion complete (including firmware generated for agent on QEMU, LVGL interface with golden images); awaiting boards | I1 | tag `v0.3.0` + firmware (internal) |
+|  | **I3a — Extended primitives on `esp32s3`** | after I2e | Four packages on chip: Box-3 and M5Stack CoreS3 with camera (Q-53, Q-61); minimal Pi ↔ ESP32 link with heartbeat, commodity ESP32-S3 board, and Arduino library (Q-75) | **0 / 11** | ⏳ Not started | I2a, I3 | tag `v0.3.1` + firmware (internal) |
+| **Public** | **I6 — Public launch** | after I2e | Public repo, `pip install neuroedge` from PyPI, schemas at public URL, video demo of four packages and Blueprint on `sim`, `linux`, and `esp32s3`; network MCP with authentication, frozen integrator contract, public Python surface (Q-58, Q-63) | **7 / 11** | 🟡 Secret scanning, SBOM, public Python API, network MCP with authentication, integrator contracts in `schemas/` (RFC-0015) complete; RFC-0014 approved (Q-65); awaiting I3a | I2b, I2c, I3a | PyPI `v0.6.0` — first external release |
+| **v1.0 = MVP** | **I7 — v1.0** | after I2e | MVP launch (Q-52): signed A/B OTA, device security, 24-hour on-chip stability; meets PRD §11.1 criteria | **4 / 12** | 🟡 Action pinning, attestation complete; signed A/B OTA + rollback complete on QEMU; awaiting I6 | I6 | `v1.0.0` |
+| **Beta** | **I8 — Developer Beta** | after I2e | 50–100 external developers on `1.0.x` line; measure B1–B5, select branch | **0 / 1** | ⏳ Not started | I7 | `1.0.x` (patches only) |
 
 **Forecast Assumptions (Q-39, Q-52, Q-72):** I2d only requires the completed portion of I2c (`neuroedge.guard`, half (a) of RFC-0017), so its forecast is earlier than I2c. I2d and I2e precede the 8-week demand gate measurement (date 2026-12-06, B6–B8, PRD §11.2; branching by outcome: §5.6). I3 → I8 are marked "sau I2e", with dates reset in the same PR containing the gate outcome (R5). Voice, Lab, and all post-Beta increments have been dropped per Q-77 (§6). Simulation first, physical hardware purchased later. One engineer + AI agent (Q-60, §1.1). If the MVP slips, dates shift, scope is not cut (Q-52).
 
@@ -113,11 +113,11 @@ Phases group increments by user capability; dates and dependencies reside solely
 | **MVP = v1.0** | Pick a kit, run on `sim` < 10 minutes, build physical devices on `linux` or `esp32s3`; all 4 extension packages; 24/7 mission via chat and Blueprints (Q-72, Q-77) | I0 → I7 (including I2a → I2e, I3a) | `v1.0.0` — meets PRD §11.1 criteria; slip shifts dates, no cuts (Q-52) |
 | **Beta and cloud** | External developers and makers use it for real; NeuroEdge Cloud subscription if metrics warrant (Q-74, Q-76) | I2f (conditional), I8 | `1.0.x` (§5.6) |
 
-#### User Release Milestones
+#### User-facing release milestones
 
 Phases are how the team plans; **release milestones** are how users perceive the product (eight milestones after Q-77). Each milestone is a user capability, concluding when all its increments are done. This table records no dates: a milestone's date is the latest forecast date among its increments in §0.2. The CPO Dashboard (`docs/business/cpo-dashboard.html`), poster E-09, and architecture chapter 15 §1 read from this table. Each increment belongs to exactly one milestone.
 
-| # | Mốc | Người dùng làm được gì | Vì sao quan trọng | Increment | Ai dùng được |
+| # | Milestone | What the user can do | Why it matters | Increment | Who can use it |
 |:---:|:---|:---|:---|:---|:---|
 | 1 | **Try on laptop** | Install a single package, run a gated agent on the simulator in under 10 minutes; no hardware, account, or API key needed | Product entry point: anyone can try without spending money on hardware | I0, I1 | Team and internal testers |
 | 2 | **Physical device on Raspberry Pi** | Wire a kit (light, door, fan, sensors, camera, motor) to Pi 5; same agent, same gate as on laptop; connect third-party products (Muse, Home Assistant, existing MCP servers) via plugins and proxies | First time an AI command touches physical hardware while passing through contracts — even commands from other ecosystems | I2, I2a, I2b, I2c | Team, internal testers, and one partner team (proxy portion, `neuroedge.guard`, `sim` — Q-70) |
@@ -300,7 +300,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Measurement signal** | Core CI (§0.1) |
 | **Roles** | V1, V2, V3 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S1-01** | Specification of 5 HAL primitives and cross-check | FR-HAL-01, FR-HAL-02, FR-HAL-03 | V1 | ✅ 2026-09-24 | [`schemas/board.v1.json`](../schemas/board.v1.json) |
 | **TSK-S1-02** | Gate schema v1 and on_block behavior | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1 | ✅ 2026-09-24 | [`schemas/gate.v1.json`](../schemas/gate.v1.json) |
@@ -345,16 +345,16 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-S3-27** | `neuroedge mcp serve --ui` | FR-CLI-12, FR-DX-04 | V3 | ✅ 2026-09-24 | `python/neuroedge/mcp_server.py` |
 | **TSK-S3-28** | System 2 as MCP host | FR-MDL-11, FR-MDL-12 | V1 | ✅ 2026-09-23 | `python/neuroedge/mcp_host.py` |
 
-- [x] **Tiêu chí 1:** JSON Schema of gate and trace has valid and invalid examples (`schemas/`).
-- [x] **Tiêu chí 2:** Three sample gates resolve correctly, including 2-level inheritance (`test_sample_gates.py`).
-- [x] **Tiêu chí 4:** Monorepo scaffold complete, `schemas/` valid draft 2020-12 (job `frozen-artifacts`).
-- [x] **Tiêu chí 5:** Three canonical traces resolve correctly (`fixtures/traces/`).
-- [x] **Tiêu chí 6:** Decision Q-11 decided, LiteLLM and licenses compliant.
-- [x] **Tiêu chí 2 (A2):** `verify --targets sim,linux` passes 100% (job `linux-hal`).
-- [x] **Tiêu chí 3 (A3):** No shortcut exists to activate GPIO bypassing gates (`test_actions.py`).
-- [x] **Tiêu chí 4 (A4):** 100% of degraded scenarios block actions (`test_fail_closed.py`).
-- [x] **Tiêu chí 5 (A5):** Gate inheritance test suite passes 100% (`test_gate_resolver.py`).
-- [x] **Tiêu chí 6 (A7):** 100% of recorded sessions pass `trace validate` (`test_recorder.py`).
+- [x] **Criterion 1:** JSON Schema of gate and trace has valid and invalid examples (`schemas/`).
+- [x] **Criterion 2:** Three sample gates resolve correctly, including 2-level inheritance (`test_sample_gates.py`).
+- [x] **Criterion 4:** Monorepo scaffold complete, `schemas/` valid draft 2020-12 (job `frozen-artifacts`).
+- [x] **Criterion 5:** Three canonical traces resolve correctly (`fixtures/traces/`).
+- [x] **Criterion 6:** Decision Q-11 decided, LiteLLM and licenses compliant.
+- [x] **Criterion 2 (A2):** `verify --targets sim,linux` passes 100% (job `linux-hal`).
+- [x] **Criterion 3 (A3):** No shortcut exists to activate GPIO bypassing gates (`test_actions.py`).
+- [x] **Criterion 4 (A4):** 100% of degraded scenarios block actions (`test_fail_closed.py`).
+- [x] **Criterion 5 (A5):** Gate inheritance test suite passes 100% (`test_gate_resolver.py`).
+- [x] **Criterion 6 (A7):** 100% of recorded sessions pass `trace validate` (`test_recorder.py`).
 
 ### 4.2 I1 — Internal preview on `sim`
 
@@ -365,22 +365,22 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Measurement signal** | Median TTFV across 3 external developers, measured on-site — not yet publicly released (Q-39) |
 | **Roles** | V3 (lead), V1 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S3-08** | Three runnable sample examples via scaffold and wheel-smoke | FR-DX-05, FR-DX-06 | V3 | ✅ 2026-09-25 | `fixtures/agents/` · `tests/test_factory_monitor.py` |
 | **TSK-S3-15** | Three canonical traces as pristine golden references | FR-CI-04, FR-TRC-05 | V1 | ✅ 2026-09-25 | `fixtures/traces/` · `tests/test_trace_vectors.py` |
 | **TSK-I1-01** | Hash user PII at source in traces | FR-TRC-06, FR-TRC-07, NFR-PRIV-03 | V1 | ✅ 2026-09-27 | `python/neuroedge/testing/recorder.py` |
-| **TSK-I1-02** | On-site TTFV test suite (3 external developers) | FR-DX-01 | V3 | ⏳ Kích hoạt lại theo Q-72 | `docs/reports/` |
+| **TSK-I1-02** | On-site TTFV test suite (3 external developers) | FR-DX-01 | V3 | ⏳ Reactivated per Q-72 | `docs/reports/` |
 | **TSK-I1-03** | Examples in `--help`, scaffold pre-generating `traces/` | FR-CLI-07, FR-TRC-09 | V3 | ✅ 2026-09-26 | `python/neuroedge/cli/examples.py` |
-| **TSK-I1-04** | NeuroEdge Studio local web app | FR-TGT-06, FR-DX-06 | V3 | ⏸ Tạm dừng theo Q-72 | `python/neuroedge/studio/` |
+| **TSK-I1-04** | NeuroEdge Studio local web app | FR-TGT-06, FR-DX-06 | V3 | ⏸ Paused per Q-72 | `python/neuroedge/studio/` |
 
-**Tiêu chí ra I1:**
+**Exit criteria I1:**
 
-- [ ] **Tiêu chí 1 (M1):** On-site TTFV across 3 external developers achieves median under 10 minutes.
-- [x] **Tiêu chí 2:** Third sample runs via `neuroedge new`, tested in `wheel-smoke`.
-- [x] **Tiêu chí 3:** Golden reference consists of three canonical traces in pristine state, no RFC needed.
-- [x] **Tiêu chí 4:** Traces default to hashing raw user text at the source.
-- [ ] **Tiêu chí 5:** Tag `v0.1.0` has internal GitHub Release; `wheel_smoke.sh` passes green on that wheel.
+- [ ] **Criterion 1 (M1):** On-site TTFV across 3 external developers achieves median under 10 minutes.
+- [x] **Criterion 2:** Third sample runs via `neuroedge new`, tested in `wheel-smoke`.
+- [x] **Criterion 3:** Golden reference consists of three canonical traces in pristine state, no RFC needed.
+- [x] **Criterion 4:** Traces default to hashing raw user text at the source.
+- [ ] **Criterion 5:** Tag `v0.1.0` has internal GitHub Release; `wheel_smoke.sh` passes green on that wheel.
 
 ### 4.3 I2 — `linux` at parity with `sim`
 
@@ -391,19 +391,19 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Measurement signal** | Interactive session on gpio-sim; nightly RPi 5 passes green |
 | **Roles** | V3 (TSK-S5-10), V1 (TSK-S5-09, TSK-I2-01) |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S5-09** | `sensor.read` and `display` on `linux` via sysfs | FR-TGT-02, FR-HAL-01 | V1 | ✅ 2026-09-26 | `python/neuroedge/hal/linux.py` |
 | **TSK-S5-10** | Interactive REPL session, `record`, `mcp serve` on `linux` | FR-CLI-02, FR-TGT-02 | V3 | ✅ 2026-09-25 | `python/neuroedge/hal/linux.py` |
-| **TSK-I2-01** | Nightly `linux` on physical RPi 5 hardware | FR-CI-06, FR-TGT-02 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` |
+| **TSK-I2-01** | Nightly `linux` on physical RPi 5 hardware | FR-CI-06, FR-TGT-02 | V1 | ⏳ Not started | `.github/workflows/nightly-hardware.yml` |
 | **TSK-W0-04** | Nightly dependency drift automated issue filing (Q-32) | — | V3 | ✅ 2026-09-26 | `.github/workflows/nightly-hardware.yml` |
 
-**Tiêu chí ra I2:**
+**Exit criteria I2:**
 
-- [x] **Tiêu chí 1:** `run`, `record`, `mcp serve --target linux` run on gpio-sim, identical exit code contract.
-- [ ] **Tiêu chí 2:** `sensor.read` and `display` on `linux` covered by tests; board profile declares only working HAL primitives.
-- [x] **Tiêu chí 3:** `neuroedge verify --targets sim,linux` passes 100%.
-- [ ] **Tiêu chí 4:** Nightly on RPi 5 runs `tests_linux/` and `verify --targets linux` on physical hardware.
+- [x] **Criterion 1:** `run`, `record`, `mcp serve --target linux` run on gpio-sim, identical exit code contract.
+- [ ] **Criterion 2:** `sensor.read` and `display` on `linux` covered by tests; board profile declares only working HAL primitives.
+- [x] **Criterion 3:** `neuroedge verify --targets sim,linux` passes 100%.
+- [ ] **Criterion 4:** Nightly on RPi 5 runs `tests_linux/` and `verify --targets linux` on physical hardware.
 
 ### 4.3.1 I2a — Extended primitives on `sim` and `linux`
 
@@ -415,7 +415,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Roles** | V1 (lead), V5 (vision), V2 (RFC-motion), tech lead |
 | **Design** | `docs/architecture/vi/15-target-architecture.md` §4.4 · `docs/architecture/vi/15-target-architecture.md` §4.3 · `docs/spec/lab_mcp.md` §7–§8 · RFC-0007, RFC-0009 → RFC-0013 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I2a-01** | Re-estimate MVP scope (Q-52) | — | team lead + tech lead | ✅ 2026-09-30 | `docs/reports/uoc-luong-mvp-2026-09-30.md` |
 | **TSK-N0-02** | Amend FR-HAL-01: optional extended primitives per board | FR-HAL-01, FR-CLI-12 | V2 | ✅ 2026-10-03 | `neuroedge-prd.md` |
@@ -428,13 +428,13 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-N3-03** | ADC spike on `ubuntu-latest` via hwmon `i2c-stub` | — | — | ✅ 2026-10-03 | `scripts/setup_i2c_stub.sh` |
 | **TSK-I2a-04** | `analog.in` (ADC) on `sim` and `linux` per RFC-0009 | FR-HAL-01 | V1 | ✅ 2026-10-04 | `python/neuroedge/hal/linux.py` |
 | **TSK-W1-01** | PWM and state feedback in `digital.out` (RFC-0010) | FR-HAL-01 | V1 + V2 | 🟡 Complete on sim and dummy linux; physical PWM channels, physical boards, C HAL remaining | `docs/rfc/0010-pwm-trong-digital-out.md` · `hal/pwm.py` |
-| **TSK-I2a-08** | Kernel spike with sufficient modules for `linux-hal` job (Q-69) | FR-CI-06, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `docs/reports/` |
+| **TSK-I2a-08** | Kernel spike with sufficient modules for `linux-hal` job (Q-69) | FR-CI-06, FR-HAL-01 | V1 | ⏳ Not started | `docs/reports/` |
 | **TSK-V1b-07** | RFC-0012: `vision.in` primitive | FR-HAL-01, FR-HAL-04 | V1 | ✅ 2026-10-01 | `docs/rfc/0012-nguyen-thuy-vision-in.md` |
 | **TSK-V1b-01** | Implement `vision.in` V4L2 for `linux` | FR-HAL-01 | V5 | ✅ 2026-10-04 | `python/neuroedge/hal/vision.py` |
 | **TSK-V1b-02** | Virtual camera in `sim` replaying image sequence | FR-TGT-01, FR-TGT-06 | V5 | ✅ 2026-10-04 | `python/neuroedge/sim/vision/` |
 | **TSK-V1b-03** | Vision model abstraction swappable via configuration | FR-MDL-04, FR-MDL-07 | V5 | ✅ 2026-10-04 | `python/neuroedge/perception/vision/` |
 | **TSK-V1b-04** | Action CI for frames: record, replay, assert verdicts | FR-CI-01→04 | V1 | ✅ 2026-10-04 | `python/neuroedge/testing/vision.py` |
-| **TSK-V1b-05** | Discrete NPU integration (Hailo-8, Coral) behind abstraction | FR-MDL-04 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/accel/` |
+| **TSK-V1b-05** | Discrete NPU integration (Hailo-8, Coral) behind abstraction | FR-MDL-04 | V5 | ⏳ Not started | `python/neuroedge/perception/vision/accel/` |
 | **TSK-V1b-06** | Three sample gates with vision facts, numeric threshold locked in gate | FR-GATE-03 | V1 + V5 | ✅ 2026-10-04 | `gates/vision/` |
 | **TSK-V1b-08** | Visual evidence in traces, `vision_ref` lint | FR-CI-02, NFR-PRIV-01, NFR-PRIV-03 | V1 | ✅ 2026-10-04 | `python/neuroedge/trace.py` |
 | **TSK-W1-03** | RFC-0011: `motion.*`, leased token with expiration, safe state | FR-HAL-01 | V1 + V2 | ✅ 2026-10-01 | `docs/rfc/0011-nguyen-thuy-motion.md` |
@@ -445,21 +445,21 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-N2-04** | Five-assertion safety regression contract | — | — | ✅ 2026-10-04 | `python/tests/test_safety_regressions.py` |
 | **TSK-N2-05** | Update header diagram in `mcp_server.py` with envelope stage | — | — | ✅ 2026-10-04 | `python/neuroedge/mcp_server.py` |
 
-- [x] **Tiêu chí N2.1:** Two concurrent commands on the same pin yield exactly one `envelope_refused`.
-- [x] **Tiêu chí N2.2:** SIGTERM mid-pulse on gpio-sim pulls line to 0; TSK-N2-03 unit issues `hal.close()`, code 143.
-- [x] **Tiêu chí N2.3:** All five assertions of the regression contract pass green.
+- [x] **Criterion N2.1:** Two concurrent commands on the same pin yield exactly one `envelope_refused`.
+- [x] **Criterion N2.2:** SIGTERM mid-pulse on gpio-sim pulls line to 0; TSK-N2-03 unit issues `hal.close()`, code 143.
+- [x] **Criterion N2.3:** All five assertions of the regression contract pass green.
 
-**Tiêu chí ra I2a:**
+**Exit criteria I2a:**
 
-- [x] **Tiêu chí 1:** Six RFCs (0007, 0009→0013) Approved; `schemas/` modifies only within scope of those RFCs.
-- [x] **Tiêu chí 2:** RFC-0007 changes 0 bytes of `schemas/gate.v1.json` — changes only via RFC-0009.
-- [x] **Tiêu chí 3:** Each package has sample agent running on `sim` and `linux`; `verify --targets sim,linux` passes 100%.
-- [x] **Tiêu chí 4:** Gate numeric comparison: valid corpus and counterexamples closed; C walker matches host engine.
-- [ ] **Tiêu chí 5:** Loss of data source mid-session blocks actions fail-closed; actuators return to safe state.
-- [x] **Tiêu chí 6:** Swap vision models via configuration; traces contain no raw frames; `replay` reproduces verdicts.
-- [x] **Tiêu chí 7:** Agent requesting extended primitive rejected at build time on board without declaration, stating all three components.
-- [x] **Tiêu chí 8:** ADC spike results recorded and ADC decision implemented.
-- [ ] **Tiêu chí 9:** Five core primitives and three canonical traces preserve verdict sequence; TTFV under 10 minutes.
+- [x] **Criterion 1:** Six RFCs (0007, 0009→0013) Approved; `schemas/` modifies only within scope of those RFCs.
+- [x] **Criterion 2:** RFC-0007 changes 0 bytes of `schemas/gate.v1.json` — changes only via RFC-0009.
+- [x] **Criterion 3:** Each package has sample agent running on `sim` and `linux`; `verify --targets sim,linux` passes 100%.
+- [x] **Criterion 4:** Gate numeric comparison: valid corpus and counterexamples closed; C walker matches host engine.
+- [ ] **Criterion 5:** Loss of data source mid-session blocks actions fail-closed; actuators return to safe state.
+- [x] **Criterion 6:** Swap vision models via configuration; traces contain no raw frames; `replay` reproduces verdicts.
+- [x] **Criterion 7:** Agent requesting extended primitive rejected at build time on board without declaration, stating all three components.
+- [x] **Criterion 8:** ADC spike results recorded and ADC decision implemented.
+- [ ] **Criterion 9:** Five core primitives and three canonical traces preserve verdict sequence; TTFV under 10 minutes.
 
 ### 4.3.2 I2b — Starter kits and rapid assembly
 
@@ -470,19 +470,19 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Measurement signal** | Exit criteria below; A12 measured at I7 |
 | **Roles** | V3 (lead), V1, V5 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I2b-01** | Three hardware kits from three existing templates | FR-DX-05, FR-DX-06 | V3 | ✅ 2026-10-04 | `python/neuroedge/templates/` · `fixtures/agents/` |
 | **TSK-I2b-02** | Two kits for new packages: gate camera and servo blinds | FR-DX-05 | V3 + V5 | ✅ 2026-10-04 | `python/neuroedge/templates/` · `fixtures/agents/` |
 | **TSK-I2b-03** | Starter gate library for inheritance: door, light, valve, buzzer, AC, camera, motor | FR-GATE-05 | V1 | ✅ 2026-10-04 | `gates/` · `digests.lock` |
 | **TSK-I2b-04** | Rapid assembly command `neuroedge add` for action, gate, sensor, device | FR-DX-01, FR-DX-08 | V3 | ✅ 2026-10-04 | `python/neuroedge/cli/main.py` |
 
-**Tiêu chí ra I2b:**
+**Exit criteria I2b:**
 
-- [x] **Tiêu chí 1:** Five kits run via `neuroedge new --template` on `sim`, tested in `wheel-smoke`.
-- [ ] **Tiêu chí 2:** TTFV on `sim` for all kits achieves under 10 minutes.
-- [x] **Tiêu chí 3:** `neuroedge add` generates action + gate + bidirectional test; rerunning does not overwrite existing files.
-- [x] **Tiêu chí 4:** Every parent gate in starter library carries counterexample cases against softening.
+- [x] **Criterion 1:** Five kits run via `neuroedge new --template` on `sim`, tested in `wheel-smoke`.
+- [ ] **Criterion 2:** TTFV on `sim` for all kits achieves under 10 minutes.
+- [x] **Criterion 3:** `neuroedge add` generates action + gate + bidirectional test; rerunning does not overwrite existing files.
+- [x] **Criterion 4:** Every parent gate in starter library carries counterexample cases against softening.
 
 ### 4.3.3 I2c — Open platform
 
@@ -494,48 +494,48 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Roles** | V1 (lead), V3; human for TSK-I2c-16 on real HA and TSK-I2c-17 |
 | **Design** | `docs/architecture/vi/16-ecosystem-landscape.md` §4 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I2c-01** | Open platform decision and design (Q-67) | FR-EXT-01→09 | V1 | ✅ 2026-10-04 | `docs/architecture/vi/16-ecosystem-landscape.md` §4 |
 | **TSK-I2c-02** | RFC-0016: decoupled safety core and Extension SDK | FR-EXT-01→05, FR-EXT-09 | V1 | ✅ 2026-10-04 | `docs/rfc/0016-loi-tach-duoc-va-extension-sdk.md` |
 | **TSK-I2c-03** | RFC-0017: namespaced call source `bridge:<id>` | FR-EXT-03 | V1 | ✅ 2026-10-04 | `docs/rfc/0017-nguon-goi-theo-khong-gian-ten.md` |
 | **TSK-I2c-04** | RFC-0018: remote actuators and safe-off levels | FR-EXT-07 | V1 | ✅ 2026-10-04 | `docs/rfc/0018-co-cau-chap-hanh-tu-xa.md` |
-| **TSK-I2c-05** | `--board <path>` external board profile | FR-EXT-05, FR-TGT-08 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/board.py` |
+| **TSK-I2c-05** | `--board <path>` external board profile | FR-EXT-05, FR-TGT-08 | V1 | ⏳ Not started | `python/neuroedge/hal/board.py` |
 | **TSK-I2c-06** | Licensing: conformance corpus relicensed to Apache-2.0 | FR-GOV-03 | V1 | ✅ 2026-10-04 | `LICENSING.md` |
 | **TSK-I2c-07** | `neuroedge.guard` API: standalone safety core | FR-EXT-01 | V1 | ✅ 2026-10-09 | `python/neuroedge/guard.py` |
-| **TSK-I2c-08** | Assets from path, package, git | FR-EXT-05 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/templates/` |
-| **TSK-I2c-09** | RFC-0014 code: facts from external processes via Unix socket | FR-MDL-04, FR-MDL-10, FR-EXT-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/` |
+| **TSK-I2c-08** | Assets from path, package, git | FR-EXT-05 | V1 | ⏳ Not started | `python/neuroedge/templates/` |
+| **TSK-I2c-09** | RFC-0014 code: facts from external processes via Unix socket | FR-MDL-04, FR-MDL-10, FR-EXT-02 | V1 | ⏳ Not started | `python/neuroedge/` |
 | **TSK-I2c-10** | RFC-0017 code: namespaced `source`, `tool-call.v1` | FR-EXT-03 | V1 | 🟡 Half a complete (`bridge:<id>`); half b `[mcp.clients]` remaining | `python/neuroedge/actions/tools.py` |
 | **TSK-I2c-11** | Plugin loader and `neuroedge.sdk` entry points | FR-EXT-02, FR-EXT-09, NFR-SEC-10 | V1 | 🟡 Minimal SDK and Actuator complete; remaining 5 kinds not started | `python/neuroedge/sdk/` |
 | **TSK-I2c-12** | Conformance test suite per plugin kind (`conformance`) | FR-EXT-03, FR-EXT-04 | V1 | 🟡 Actuator vector L0–L3 complete; remaining 5 kinds not started | `python/neuroedge/testing/conformance/` |
 | **TSK-I2c-14** | `neuroedge proxy mcp` shielding existing MCP servers | FR-EXT-06 | V1 | ✅ 2026-10-09 | `python/neuroedge/proxy_mcp.py` |
 | **TSK-I2c-15** | `neuroedge proxy http` in front of local HTTP APIs | FR-EXT-06 | V1 | ✅ 2026-10-09 | `python/neuroedge/proxy_http.py` |
 | **TSK-I2c-16** | First remote actuator — Home Assistant (RFC-0018) | FR-EXT-07 | V1 | ✅ 2026-10-09 | `python/neuroedge/hal/remote.py` |
-| **TSK-I2c-18** | Community index and `plugin search/install` | FR-EXT-08 | V3 | ⏳ Chưa bắt đầu | external repo index |
+| **TSK-I2c-18** | Community index and `plugin search/install` | FR-EXT-08 | V3 | ⏳ Not started | external repo index |
 | **TSK-I2c-19** | Package for partner trial (Q-70) | FR-DX-02, FR-DX-05, FR-EXT-01, FR-EXT-06 | V3 | ✅ 2026-10-09 | `docs/user/doi-tac/` · `scripts/partner_guides_check.sh` |
-| **TSK-S3-21** | Pin `extends` via digest `@<ver>#sha256:` | FR-GATE-05, FR-GATE-06 | V1 | ⏳ Chưa bắt đầu | Requires dedicated RFC |
+| **TSK-S3-21** | Pin `extends` via digest `@<ver>#sha256:` | FR-GATE-05, FR-GATE-06 | V1 | ⏳ Not started | Requires dedicated RFC |
 | **TSK-V1a-01** | Finalize and defend RFC-0002 through review | FR-TGT-08, FR-HAL-01 | V1 | ✅ 2026-10-04 | `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md` |
-| **TSK-P2-06** | Self-verification certification "NeuroEdge-gated" for third parties | FR-GOV-03 | V3 | ⏳ Chưa bắt đầu | `docs/spec/tool_calling.md` §9 |
+| **TSK-P2-06** | Self-verification certification "NeuroEdge-gated" for third parties | FR-GOV-03 | V3 | ⏳ Not started | `docs/spec/tool_calling.md` §9 |
 
-**Tiêu chí ra I2c:**
+**Exit criteria I2c:**
 
-- [x] **Tiêu chí 1:** RFC-0016, 0017, 0018 and RFC-0002 Approved.
-- [x] **Tiêu chí 2:** Programs without `agent.toml` can gate actions via `neuroedge.guard`, emitting valid traces.
-- [ ] **Tiêu chí 3:** For each of the six extension point kinds, out-of-repo packages pass `conformance` and run.
-- [x] **Tiêu chí 4:** `proxy mcp` shields existing MCP servers in ≤ 3 commands; `plugin doctor` warns against shortcuts.
-- [x] **Tiêu chí 5:** Remote HA actuator correctly enforces L1 safe-off; irreversible actions lacking safe-off are rejected.
-- [ ] **Tiêu chí 6:** External process facts pass with sufficient evidence per RFC-0014 §7.
-- [ ] **Tiêu chí 7** *(paused per Q-72)*: Target list opened per RFC-0002.
-- [ ] **Tiêu chí 8 (A13)** *(paused per Q-72)*: `neuroedge-muse` bridge written in separate repo passes conformance tests in ≤ 1 day.
-- [ ] **Tiêu chí 9:** `pytest` green, 0 skipped; `wheel_smoke.sh` installs and runs out-of-repo plugins from wheel.
+- [x] **Criterion 1:** RFC-0016, 0017, 0018 and RFC-0002 Approved.
+- [x] **Criterion 2:** Programs without `agent.toml` can gate actions via `neuroedge.guard`, emitting valid traces.
+- [ ] **Criterion 3:** For each of the six extension point kinds, out-of-repo packages pass `conformance` and run.
+- [x] **Criterion 4:** `proxy mcp` shields existing MCP servers in ≤ 3 commands; `plugin doctor` warns against shortcuts.
+- [x] **Criterion 5:** Remote HA actuator correctly enforces L1 safe-off; irreversible actions lacking safe-off are rejected.
+- [ ] **Criterion 6:** External process facts pass with sufficient evidence per RFC-0014 §7.
+- [ ] **Criterion 7** *(paused per Q-72)*: Target list opened per RFC-0002.
+- [ ] **Criterion 8 (A13)** *(paused per Q-72)*: `neuroedge-muse` bridge written in separate repo passes conformance tests in ≤ 1 day.
+- [ ] **Criterion 9:** `pytest` green, 0 skipped; `wheel_smoke.sh` installs and runs out-of-repo plugins from wheel.
 
 **Partner trial (Q-70):**
 
-- [x] **Đối tác 1:** Criteria 2, 4, 5 satisfied; `proxy http` complete.
-- [x] **Đối tác 2:** Wheel manually tested; 47 steps across three guides run cleanly on wheel.
-- [ ] **Đối tác 3:** Written trial agreement with partner.
-- [ ] **Đối tác 4:** Dedicated feedback channel and bug intake process.
-- [ ] **Đối tác 5:** Partner installs wheel and shields one MCP server / device API in ≤ 15 minutes.
+- [x] **Partner 1:** Criteria 2, 4, 5 satisfied; `proxy http` complete.
+- [x] **Partner 2:** Wheel manually tested; 47 steps across three guides run cleanly on wheel.
+- [ ] **Partner 3:** Written trial agreement with partner.
+- [ ] **Partner 4:** Dedicated feedback channel and bug intake process.
+- [ ] **Partner 5:** Partner installs wheel and shields one MCP server / device API in ≤ 15 minutes.
 
 ### 4.3.4 I2d — Missions and operator agents
 
@@ -547,7 +547,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Roles** | V1 (lead), V3, V7, V2, tech lead |
 | **Design** | Q-72 · PRD §4.5, §5.4–§5.6 · `docs/spec/lab_mcp.md` · Blueprint proposal |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I2d-01** | RFC mandatory comprehension check (`requires = [...]`) for `board.v1` | FR-ACE-03, FR-HAL-02 | V1 + tech lead | ⏳ Not started | `docs/rfc/` |
 | **TSK-I2d-02** | RFC conditional safety (symmetric `safe_state`) | FR-ACE-03, FR-BP-06, NFR-REL-02 | V1 + V2 + tech lead | ⏳ Awaiting TSK-I2d-01 | `docs/rfc/` |
@@ -589,21 +589,21 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-N6-03** | Debounce and frequency capping for triggers, preventing infinite retries | — | — | ⏳ Not started | `python/neuroedge/lab/` |
 | **TSK-N6-04** | Tool `lab_trigger_check`: evaluate draft trigger declarations | FR-DX-10 | — | ⏳ Not started | `python/neuroedge/lab/` |
 
-- [ ] **Tiêu chí N0.4:** `lab doctor` warns on gpio-sim when client user belongs to `gpio` group.
+- [ ] **Criterion N0.4:** `lab doctor` warns on gpio-sim when client user belongs to `gpio` group.
 
-**Tiêu chí ra I2d:**
+**Exit criteria I2d:**
 
-- [ ] **Tiêu chí 1:** Planned I2d RFCs Approved; `schemas/` modifies only within scope of those RFCs.
-- [ ] **Tiêu chí 2 (A15, A17):** 100% of conflicting contracts rejected; 100% of violating commands blocked.
-- [ ] **Tiêu chí 3 (A16, A19):** 30-day scenario on G1: reflexes and sample alerts run reliably; cost stays under cap.
-- [ ] **Tiêu chí 4 (A18):** Undeclared egress destinations blocked and logged 100%; zero image leaks when forbidden.
-- [ ] **Tiêu chí 5 (A20):** Approvals from wrong source, expired, stale nonce, or mismatched digest are 100% rejected.
-- [ ] **Tiêu chí 6 (A21):** `safe_state: on` lacking interlock is rejected; existing profiles preserve verdict sequence.
-- [ ] **Tiêu chí 7 (A22):** Replay reproduces 100% of verdicts from 30-day trace sequence.
-- [ ] **Tiêu chí 8:** Runtime runs continuously on G2; MCP client authors contracts via lab tools, human locks.
-- [ ] **Tiêu chí 9:** User-declared verification steps (reading code on `sim`) run end-to-end; LLM and MCP client responses to verification steps are 100% rejected (Q-73).
-- [ ] **Tiêu chí 10:** NeuroEdge brain communicates with runtime strictly via MCP; compromised worker (shell commands, prompt injection) cannot toggle any pins on G2 (Q-76).
-- [ ] **Tiêu chí 11:** `pytest` green, 0 skipped; `wheel_smoke.sh` passes; demo in `demo/`.
+- [ ] **Criterion 1:** Planned I2d RFCs Approved; `schemas/` modifies only within scope of those RFCs.
+- [ ] **Criterion 2 (A15, A17):** 100% of conflicting contracts rejected; 100% of violating commands blocked.
+- [ ] **Criterion 3 (A16, A19):** 30-day scenario on G1: reflexes and sample alerts run reliably; cost stays under cap.
+- [ ] **Criterion 4 (A18):** Undeclared egress destinations blocked and logged 100%; zero image leaks when forbidden.
+- [ ] **Criterion 5 (A20):** Approvals from wrong source, expired, stale nonce, or mismatched digest are 100% rejected.
+- [ ] **Criterion 6 (A21):** `safe_state: on` lacking interlock is rejected; existing profiles preserve verdict sequence.
+- [ ] **Criterion 7 (A22):** Replay reproduces 100% of verdicts from 30-day trace sequence.
+- [ ] **Criterion 8:** Runtime runs continuously on G2; MCP client authors contracts via lab tools, human locks.
+- [ ] **Criterion 9:** User-declared verification steps (reading code on `sim`) run end-to-end; LLM and MCP client responses to verification steps are 100% rejected (Q-73).
+- [ ] **Criterion 10:** NeuroEdge brain communicates with runtime strictly via MCP; compromised worker (shell commands, prompt injection) cannot toggle any pins on G2 (Q-76).
+- [ ] **Criterion 11:** `pytest` green, 0 skipped; `wheel_smoke.sh` passes; demo in `demo/`.
 
 ### 4.3.5 I2e — Minimal NeuroEdge Blueprint
 
@@ -615,7 +615,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Assignee** | V3 (lead), V1, V7; team lead; tech lead |
 | **Design** | Q-72 · PRD §7.4, §8.4 · architecture chapter 15 §6.4 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I2e-01** | RFC `blueprint.v1`: manifest, digest covering entire package | FR-BP-01, FR-BP-04, FR-BP-06, FR-BP-08 | V1 + tech lead | ⏳ Not started | `docs/rfc/` |
 | **TSK-I2e-02** | `neuroedge blueprint pack` packages project into Blueprint | FR-BP-02, FR-CLI-13 | V3 | ⏳ Awaiting TSK-I2e-01 | `python/neuroedge/blueprint/` |
@@ -633,15 +633,15 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-I2e-10** | Interviews for gate: ≥ 10 people (≥ 5 makers) | — | team lead | ⏳ Not started | `docs/business/` |
 | **TSK-I2e-11** | 8-week demand gate (B6, B7, B8), record branch point | — | team lead + product owner | ⏳ Not started | `roadmap/neuroedge-prd.md` §15 |
 
-**Tiêu chí ra I2e:**
+**Exit criteria I2e:**
 
-- [ ] **Tiêu chí 1:** RFC `blueprint.v1` Approved.
-- [ ] **Tiêu chí 2 (A14):** External user installs fish tank Blueprint on `sim` in under 10 minutes.
-- [ ] **Tiêu chí 3:** `blueprint pack` and `install` share verdict sequence; mismatched digest rejected.
-- [ ] **Tiêu chí 4:** Static index lists fish tank Blueprint; kit passes tests; affiliate BOM kept external.
-- [ ] **Tiêu chí 5:** 8-week gate measured, a Q-N records selected branch.
-- [ ] **Tiêu chí 6:** Testers set up home box via Home Assistant add-on or SD card, pair via QR, zero CLI commands (Q-74).
-- [ ] **Tiêu chí 7:** `pytest` green, 0 skipped; `wheel_smoke.sh` passes.
+- [ ] **Criterion 1:** RFC `blueprint.v1` Approved.
+- [ ] **Criterion 2 (A14):** External user installs fish tank Blueprint on `sim` in under 10 minutes.
+- [ ] **Criterion 3:** `blueprint pack` and `install` share verdict sequence; mismatched digest rejected.
+- [ ] **Criterion 4:** Static index lists fish tank Blueprint; kit passes tests; affiliate BOM kept external.
+- [ ] **Criterion 5:** 8-week gate measured, a Q-N records selected branch.
+- [ ] **Criterion 6:** Testers set up home box via Home Assistant add-on or SD card, pair via QR, zero CLI commands (Q-74).
+- [ ] **Criterion 7:** `pytest` green, 0 skipped; `wheel_smoke.sh` passes.
 
 ### 4.3.6 I2f — NeuroEdge Cloud and ESP32 home box
 
@@ -649,7 +649,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 
 **Exception Q-79 — Standalone ESP32-S3.** Four tasks TSK-I2f-10 → I2f-13 open immediately, without waiting for the demand gate: brain (Telegram client, LLM loop) and gate on a single chip, with risk labels; all LLM tool calls route through `ne_gate`. Stage 1 runs on QEMU; stages 2, 3 require DevKitC N16R8 board (TSK-I3a-08). Guide: [`docs/user/esp32-mot-chip.md`](../docs/user/esp32-mot-chip.md).
 
-| Mã Task | Mô tả | Yêu cầu | Người | Trạng thái | Bằng chứng |
+| Task code | Description | Requirement | Owner | Status | Evidence |
 |:---|:---|:---|:---|:---|:---|
 | **TSK-I2f-01** | RFC cloud ↔ box channel: signed rules, approval verified at node, command scope ceiling | FR-AGT-10, FR-AGT-11 | V1 + tech lead | ⏸ Awaiting demand gate (Q-74) | `docs/rfc/` |
 | **TSK-I2f-02** | Shared chat channel gateway and relay: chat ↔ instance, box ↔ instance, tier token caps (Q-76) | FR-AGT-10, NFR-COST-01 | V1 + V3 | ⏸ Awaiting TSK-I2f-01 | external service outside repo |
@@ -665,16 +665,16 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-I2f-12** | Standalone ESP32-S3, stage 3 (Q-79): tool calls from NeuroClaw-ESP route via `nc_gate` into `ne_gate` (walker, token ledger); irreversible actions run only after physical on-board button or owner Telegram button | FR-AGT-10, FR-CH-04 | V2 | ⏸ Awaiting TSK-I2f-11; facts source for on-chip gate not yet decided | `targets/esp32s3/` |
 | **TSK-I2f-13** | Standalone ESP32-S3 (Q-79): initial Wi-Fi and setup without re-flashing firmware — ESP-IDF `wifi_provisioning` (SoftAP or BLE, security1/security2 with PoP code printed on label or shown on serial console); accepts SSID, password, bot token, owner ID, LLM key then writes to `ne_config` (encrypted under `sdkconfig.secure`); hotspot turns off when complete; no open web port transmitting plaintext secrets | FR-CH-03, NFR-SEC-* | V2 | ⏳ Awaiting TSK-I2f-11 and DevKitC N16R8 board (TSK-I3a-08); serial console (TSK-I2f-10) remains fallback path. Implemented in NeuroEdge firmware, not in NeuroClaw-ESP. Box-3: `TODOS.md` #50 | `targets/esp32s3/` |
 
-**Tiêu chí ra I2f:**
+**Exit criteria I2f:**
 
-- [ ] **Tiêu chí 1:** RFC cloud ↔ box channel Approved; N4 and "server" corollary of Q-10 revised in same PR.
-- [ ] **Tiêu chí 2:** Cloud connection severed: reflexes, gate, and local alerts continue running on G1, G2.
-- [ ] **Tiêu chí 3:** Cloud sends unsigned rules or unverified approvals: box rejects 100%, writes trace.
-- [ ] **Tiêu chí 4:** Single chat room coordinates ≥ 2 emulated homes; commands exceeding scope ceiling blocked.
-- [ ] **Tiêu chí 5:** Cloud sends "Đồng ý" without passkey signature: box rejects 100%, writes trace (FR-CH-08).
-- [ ] **Tiêu chí 6:** Same brain implementation runs self-hosted on cheap Linux board and on NeuroEdge Cloud without code branching; two users' instances cannot read each other's memory (Q-76).
-- [ ] **Tiêu chí 7:** `pytest` green, 0 skipped; security review leaves zero high-severity issues.
-- [ ] **Tiêu chí 8 (Q-79):** On DevKitC board, standalone ESP32-S3 receives Telegram chat from owner, invokes tools via `ne_gate`; irreversible actions execute only after physical on-board button press or exact owner ID callback; messages from others discarded and logged.
+- [ ] **Criterion 1:** RFC cloud ↔ box channel Approved; N4 and "server" corollary of Q-10 revised in same PR.
+- [ ] **Criterion 2:** Cloud connection severed: reflexes, gate, and local alerts continue running on G1, G2.
+- [ ] **Criterion 3:** Cloud sends unsigned rules or unverified approvals: box rejects 100%, writes trace.
+- [ ] **Criterion 4:** Single chat room coordinates ≥ 2 emulated homes; commands exceeding scope ceiling blocked.
+- [ ] **Criterion 5:** Cloud sends "Đồng ý" without passkey signature: box rejects 100%, writes trace (FR-CH-08).
+- [ ] **Criterion 6:** Same brain implementation runs self-hosted on cheap Linux board and on NeuroEdge Cloud without code branching; two users' instances cannot read each other's memory (Q-76).
+- [ ] **Criterion 7:** `pytest` green, 0 skipped; security review leaves zero high-severity issues.
+- [ ] **Criterion 8 (Q-79):** On DevKitC board, standalone ESP32-S3 receives Telegram chat from owner, invokes tools via `ne_gate`; irreversible actions execute only after physical on-board button press or exact owner ID callback; messages from others discarded and logged.
 
 ### 4.4 I3 — Gate on real Box-3
 
@@ -685,7 +685,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Measurement signals** | `verify --targets sim,linux,esp32s3` on board |
 | **Assignee** | V2 (lead), V6, V1, V3 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S1-10** | Memory feasibility spike on ESP32-S3-Box-3 | NFR-RES-01, NFR-RES-02 | V2 | 🔴 Awaiting board | `targets/esp32s3/main/memory_probe.c` · `docs/reports/memory_spike_report.md` |
 | **TSK-S2-10** | On-chip voice plan conclusion based on spike | — | V2 + team lead | ⏳ Awaiting TSK-S1-10 measurements | `docs/reports/memory_spike_report.md` |
@@ -706,13 +706,13 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 
 *Code TSK-S4-06 was never issued; remaining codes are preserved.*
 
-**Tiêu chí ra I3:**
+**Exit criteria I3:**
 
-- [ ] 🔴 **Tiêu chí 1:** Memory spike report with real measurements verified against Q-3 thresholds (SRAM ≥ 120 KB, PSRAM ≥ 2 MB, flash ≤ 3.5 MB).
-- [ ] **Tiêu chí 2 (A2):** `verify --targets sim,linux,esp32s3` passes 100% on non-audio scenarios.
-- [x] **Tiêu chí 3:** Verdict divergence across targets raises `SafetyRegressionError` (NE4002).
-- [ ] **Tiêu chí 4:** Nightly runner runs automatically and publishes reports.
-- [ ] **Tiêu chí 5:** External developer independently builds and flashes their own agent to Box-3 following documentation.
+- [ ] 🔴 **Criterion 1:** Memory spike report with real measurements verified against Q-3 thresholds (SRAM ≥ 120 KB, PSRAM ≥ 2 MB, flash ≤ 3.5 MB).
+- [ ] **Criterion 2 (A2):** `verify --targets sim,linux,esp32s3` passes 100% on non-audio scenarios.
+- [x] **Criterion 3:** Verdict divergence across targets raises `SafetyRegressionError` (NE4002).
+- [ ] **Criterion 4:** Nightly runner runs automatically and publishes reports.
+- [ ] **Criterion 5:** External developer independently builds and flashes their own agent to Box-3 following documentation.
 
 ### 4.4.1 I3a — Extended primitives on `esp32s3`
 
@@ -723,7 +723,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Measurement signals** | Exit criteria below |
 | **Assignee** | V2 (lead), V6, V5 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I3a-01** | ESP32-S3 camera board as second reference board (Q-61) | FR-HAL-02, NFR-RES-02 | V2 | 🟡 M5Stack CoreS3 selected; awaiting purchase, profile, measurements | `boards/` · `docs/reports/` |
 | **TSK-I3a-02** | C HAL: `digital.in`, read-only I2C bus, `analog.in` on ESP-IDF | FR-HAL-01, FR-TGT-03 | V2 | ⏳ Not started | `targets/esp32s3/hal/` |
@@ -737,14 +737,14 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-I3a-08** | Commodity ESP32-S3 board (DevKitC, WROOM N16R8): profile, screenless firmware (Q-75) | FR-HAL-02, FR-TGT-03 | V2 | ⏳ Not started | `boards/` · `targets/esp32s3/` |
 | **TSK-I3a-09** | Arduino library (arduino-esp32) wrapping `NETR` walker, token ledger, comms-loss reflex (Q-75) | FR-TGT-03, FR-DX-09 | V2 | ⏳ Awaiting TSK-I3a-08 | `targets/arduino/` |
 
-**Tiêu chí ra I3a:**
+**Exit criteria I3a:**
 
-- [ ] **Tiêu chí 1:** `verify --targets sim,linux,esp32s3` passes 100% for sample agents of each package on Box-3 and camera board.
-- [ ] **Tiêu chí 2:** Firmware with full extended primitives and voice maintains free SRAM ≥ 120 KB (Q-3).
-- [ ] **Tiêu chí 3:** Power loss/reset during `motion.*` command on physical board returns mechanism to safe state.
-- [ ] **Tiêu chí 4:** Envelopes enforced in firmware; actions attached to envelopes rejected if missing.
-- [ ] **Tiêu chí 5:** Serial wire cut between host and ESP32 ⇒ all mechanisms return to `safe_state` within declared timeout, with trace; verified on two-process `sim` and on physical board (Q-75).
-- [ ] **Tiêu chí 6:** Commodity ESP32-S3 WROOM board runs locked gate and correctly rejects corpus, without requiring Box-3, from both ESP-IDF firmware and Arduino sketch (Q-75).
+- [ ] **Criterion 1:** `verify --targets sim,linux,esp32s3` passes 100% for sample agents of each package on Box-3 and camera board.
+- [ ] **Criterion 2:** Firmware with full extended primitives and voice maintains free SRAM ≥ 120 KB (Q-3).
+- [ ] **Criterion 3:** Power loss/reset during `motion.*` command on physical board returns mechanism to safe state.
+- [ ] **Criterion 4:** Envelopes enforced in firmware; actions attached to envelopes rejected if missing.
+- [ ] **Criterion 5:** Serial wire cut between host and ESP32 ⇒ all mechanisms return to `safe_state` within declared timeout, with trace; verified on two-process `sim` and on physical board (Q-75).
+- [ ] **Criterion 6:** Commodity ESP32-S3 WROOM board runs locked gate and correctly rejects corpus, without requiring Box-3, from both ESP-IDF firmware and Arduino sketch (Q-75).
 
 ### 4.7 I6 — Public launch
 
@@ -755,7 +755,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Measurement signals** | First installation from PyPI; first external user runs agent (B1 begins counting) |
 | **Assignee** | V3 (lead), team lead, V2, V1 |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S3-14** | PyPI release workflow, verifies `pip install` and run | FR-DX-02, FR-GOV-01 | V3 | 🟡 Workflow ready; go-live upon public launch | `.github/workflows/release-pypi.yml` |
 | **TSK-S3-09** | Anonymous CLI telemetry, opt-out capable | FR-TEL-01, FR-TEL-02 | V3 | ⏳ Not started | `python/neuroedge/cli/` |
@@ -769,18 +769,18 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-I6-06** | Public Python surface `docs/spec/python_api.md` | FR-DX-02, FR-GOV-03 | V1 | ✅ 2026-10-03 | `python/neuroedge/__init__.py` |
 | **TSK-I6-07** | External process facts RFC (RFC-0014) | FR-MDL-04, FR-MDL-10 | V1 | ✅ 2026-10-04 | `docs/rfc/0014-du-kien-tu-tien-trinh-ngoai.md` |
 
-**Tiêu chí ra I6:**
+**Exit criteria I6:**
 
-- [x] **Tiêu chí 1:** Gitleaks scans entire repo history with 0 findings.
-- [x] **Tiêu chí 2:** Public repository; README and CONTRIBUTING link to correct repo.
-- [ ] **Tiêu chí 3:** `pip install neuroedge` from PyPI executes `gate lint` and `trace validate`.
-- [ ] **Tiêu chí 4:** `schema.neuroedge.dev` serves all schemas in `schemas/`.
-- [ ] **Tiêu chí 5:** README includes video demo of four packages and Blueprint across three targets.
-- [ ] **Tiêu chí 6:** Opt-in telemetry active, first-run notice displayed; measures B1, B4, B5.
-- [ ] **Tiêu chí 7:** MCP client on external machine communicates via Streamable HTTP + OAuth 2.1 + mTLS.
-- [x] **Tiêu chí 8:** Gated Tool Profile, `board.v1` version, and error codes committed to `schemas/`.
-- [x] **Tiêu chí 9:** Public Python surface functional, external projects succeed importing only neuroedge.
-- [x] **Tiêu chí 10:** External process facts RFC approved.
+- [x] **Criterion 1:** Gitleaks scans entire repo history with 0 findings.
+- [x] **Criterion 2:** Public repository; README and CONTRIBUTING link to correct repo.
+- [ ] **Criterion 3:** `pip install neuroedge` from PyPI executes `gate lint` and `trace validate`.
+- [ ] **Criterion 4:** `schema.neuroedge.dev` serves all schemas in `schemas/`.
+- [ ] **Criterion 5:** README includes video demo of four packages and Blueprint across three targets.
+- [ ] **Criterion 6:** Opt-in telemetry active, first-run notice displayed; measures B1, B4, B5.
+- [ ] **Criterion 7:** MCP client on external machine communicates via Streamable HTTP + OAuth 2.1 + mTLS.
+- [x] **Criterion 8:** Gated Tool Profile, `board.v1` version, and error codes committed to `schemas/`.
+- [x] **Criterion 9:** Public Python surface functional, external projects succeed importing only neuroedge.
+- [x] **Criterion 10:** External process facts RFC approved.
 
 ### 4.8 I7 — v1.0
 
@@ -793,7 +793,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 
 OTA prototyped first on QEMU (Q-39). Real network download and Secure Boot require physical board.
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S6-01** | Device-level dual-partition A/B OTA | FR-OTA-01 | V2 | ✅ 2026-09-26 | `targets/esp32s3/components/ne_ota/` |
 | **TSK-S6-02** | Automatic rollback upon boot loop detection | FR-OTA-02 | V2 | ✅ 2026-09-26 | `targets/esp32s3/components/ne_ota/` |
@@ -808,7 +808,7 @@ OTA prototyped first on QEMU (Q-39). Real network download and Secure Boot requi
 | **TSK-I7-01** | MECE review of v1.0 FRs lacking tasks | FR-TGT-05, FR-TGT-07, FR-DX-07, FR-CLI-08 | V1 + V3 | ⏳ Not started | `neuroedge-prd.md` |
 | **TSK-I7-02** | Official measurement of A1 (10 users) and A9 (third party) | FR-DX-01, FR-GOV-01 | V3 | ⏳ Not started | `docs/reports/` |
 
-**Tiêu chí ra I7 — cổng phát hành v1.0:**
+**Exit criteria I7 — v1.0 release gate:**
 Satisfies all PRD §11.1 criteria (A11 dropped along with Lab per Q-77):
 
 - [ ] **A1** — Time-to-first-value
@@ -836,11 +836,11 @@ Satisfies all PRD §11.1 criteria (A11 dropped along with Lab per Q-77):
 | **Measurement signals** | B1–B5 (§5.5) |
 | **Assignee** | Whole team |
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I8-01** | B1–B5 report and branch recommendations (§5.6) | FR-TEL-01 | team lead | ⏳ Not started | a `Q-N` recording chosen branch |
 
-**Tiêu chí ra I8:** B1–B5 measured and recorded in §5.5; a `Q-N` records chosen branch per §5.6.
+**Exit criteria I8:** B1–B5 measured and recorded in §5.5; a `Q-N` records chosen branch per §5.6.
 
 ### 5.2 Operating principles
 
@@ -918,7 +918,7 @@ Q-77 (2026-10-12) removed everything from the roadmap that does not serve the cu
 
 One row per task is preserved so code and docs cross-references remain traceable; status reflects final state prior to Q-77.
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S2-07** | Canonical specification of conversational state machine | FR-PER-02, FR-PER-03 | V1 | ⏸ Removed from roadmap (Q-77) — completed 2026-09-25 | `docs/spec/voice_fsm.md` |
 | **TSK-S3-10** | Compliance test vector suite for voice FSM | FR-CI-07, FR-TGT-04 | V1 | ⏸ Removed from roadmap (Q-77) — completed 2026-09-25 | `fixtures/compliance/voice/` |
@@ -1026,7 +1026,7 @@ None remaining (Q-77): Track 4 and Track 5 moved to §6.
 
 ### 8.2 Deferred tasks not yet assigned to an increment
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S2-06** | Evaluate `allow_when` on CEL foundation and compile gate for device (§3.8, Q-9) | FR-GATE-03 | V1 | ⏸ Deferred — does not yet belong to any increment (`TODOS.md` #42) | Mapping format sufficient for wedge; CEL compiles down to same decision tree (Q-9) |
 

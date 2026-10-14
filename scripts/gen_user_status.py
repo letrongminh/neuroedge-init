@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Sinh docs/user/trang-thai.md từ neuroedge-roadmap.md §0.
+"""Generate docs/user/trang-thai.md from neuroedge-roadmap.md §0.
 
-Trạng thái dự án chỉ có một nơi (CONTRIBUTING.md §8.1): neuroedge-roadmap.md §0.
-Tệp sinh ra là bản sao máy đọc cho người dùng — không được sửa tay.
+Project status lives in one place (CONTRIBUTING.md §8.1): neuroedge-roadmap.md §0.
+The generated file is a machine-made copy for users; never edit it by hand.
 
-    python3 scripts/gen_user_status.py           # ghi tệp
-    python3 scripts/gen_user_status.py --check   # không ghi; thoát 1 nếu lệch
+    python3 scripts/gen_user_status.py           # write the file
+    python3 scripts/gen_user_status.py --check   # write nothing; exit 1 if stale
 
-Chạy --check ở CI (xem python/tests/test_user_status_fresh.py) để tài liệu
-không lệch khỏi nguồn. Ngày in ra lấy từ chính nguồn, không lấy đồng hồ máy —
-nhờ vậy kết quả tất định và --check không báo lệch mỗi ngày.
+Run --check in CI (see python/tests/test_user_status_fresh.py) so the document
+does not drift from its source. The printed date comes from the source, not the
+machine clock, so the output is deterministic and --check does not go stale daily.
 """
 
 from __future__ import annotations
@@ -24,15 +24,15 @@ SOURCE = ROOT / "roadmap" / "neuroedge-roadmap.md"
 TARGET = ROOT / "docs" / "user" / "trang-thai.md"
 
 STATUS_LABELS = (
-    "Pha đang thực thi",
-    "Increment đang mở",
-    "Cột mốc tiếp theo",
-    "Trạng thái CI Lõi",
-    "Chặn ngoài tầm kỹ thuật",
-    "Lần cập nhật cuối",
+    "Current phase",
+    "Open increment",
+    "Next milestone",
+    "Core CI status",
+    "Non-technical blockers",
+    "Last updated",
 )
 
-MATRIX_HEADER = "| Mốc | Increment |"
+MATRIX_HEADER = "| Milestone | Increment |"
 MATRIX_COLUMNS = (0, 1, 2, 4, 5, 7)
 
 LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
@@ -63,7 +63,7 @@ def parse_status_rows(lines: list[str]) -> dict[str, str]:
             rows[label] = strip_links(cells[1])
     missing = [label for label in STATUS_LABELS if label not in rows]
     if missing:
-        raise SystemExit(f"neuroedge-roadmap.md §0.1 thiếu dòng: {', '.join(missing)}")
+        raise SystemExit(f"neuroedge-roadmap.md §0.1 is missing rows: {', '.join(missing)}")
     return rows
 
 
@@ -76,7 +76,7 @@ def parse_matrix(lines: list[str]) -> list[list[str]]:
         cells = split_row(line)
         rows.append([strip_links(cells[i]) for i in MATRIX_COLUMNS])
     if not rows:
-        raise SystemExit("neuroedge-roadmap.md §0.2 không có dòng nào")
+        raise SystemExit("neuroedge-roadmap.md §0.2 has no rows")
     return rows
 
 
@@ -86,33 +86,33 @@ def render() -> str:
     matrix = parse_matrix(section(lines, "### 0.2", "### 0.3"))
 
     out = [
-        "<!-- SINH TỰ ĐỘNG từ neuroedge-roadmap.md §0 — đừng sửa tay.",
-        "     Chạy lại: python3 scripts/gen_user_status.py (kiểm tra: --check) -->",
+        "<!-- GENERATED from neuroedge-roadmap.md §0 — do not edit by hand.",
+        "     Regenerate: python3 scripts/gen_user_status.py (check: --check) -->",
         "",
-        "# Trạng thái dự án",
+        "# Project status",
         "",
-        "> Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —",
-        f"> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: {status['Lần cập nhật cuối']}.",
+        "> Generated from [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —",
+        f"> the single source of truth for progress. Source last updated: {status['Last updated']}.",
         "",
-        "## Điều hành",
+        "## Executive status",
         "",
-        "| Chỉ số | Trạng thái hiện hành |",
+        "| Indicator | Current status |",
         "|:---|:---|",
     ]
     for label in STATUS_LABELS:
         out.append(f"| {label} | {status[label]} |")
     out += [
         "",
-        "## Increment",
+        "## Increments",
         "",
-        "| Mốc | Increment | Dự báo | Tiến độ | Trạng thái | Phát hành |",
+        "| Milestone | Increment | Forecast | Progress | Status | Release |",
         "|:---:|:---|:---|:---:|:---|:---|",
     ]
     for milestone, increment, forecast, progress, state, release in matrix:
         out.append(f"| {milestone} | {increment} | {forecast} | {progress} | {state} | {release} |")
     out += [
         "",
-        "Năng lực, phụ thuộc và giả định của các ngày dự báo: "
+        "Capabilities, dependencies and assumptions behind the forecast dates: "
         "[`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.",
         "",
     ]
@@ -121,7 +121,9 @@ def render() -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="không ghi; thoát 1 nếu tệp đã cũ")
+    parser.add_argument(
+        "--check", action="store_true", help="write nothing; exit 1 if the file is stale"
+    )
     args = parser.parse_args()
 
     content = render()
@@ -129,17 +131,17 @@ def main() -> int:
         current = TARGET.read_text(encoding="utf-8") if TARGET.exists() else ""
         if current != content:
             print(
-                f"{TARGET.relative_to(ROOT)} đã cũ so với {SOURCE.name} §0.\n"
-                "Chạy: python3 scripts/gen_user_status.py",
+                f"{TARGET.relative_to(ROOT)} is stale against {SOURCE.name} §0.\n"
+                "Run: python3 scripts/gen_user_status.py",
                 file=sys.stderr,
             )
             return 1
-        print(f"{TARGET.relative_to(ROOT)} khớp nguồn")
+        print(f"{TARGET.relative_to(ROOT)} matches its source")
         return 0
 
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(content, encoding="utf-8")
-    print(f"Đã ghi {TARGET.relative_to(ROOT)}")
+    print(f"Wrote {TARGET.relative_to(ROOT)}")
     return 0
 
 

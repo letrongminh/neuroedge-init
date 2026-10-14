@@ -98,7 +98,7 @@ trigger milestone mentioning it (`CONTRIBUTING.md` §8.2 step 5).
 | 54 | **External audio stream bridge** (Home Assistant Wyoming, Pipecat, LiveKit): audio frames and barge-in signals travel across an interface instead of WAV files or local devices | `VoiceSession` today reads local mic/speaker/WAV; TSK-S5-06 is a streaming cloud client rather than an external process interface. Setting up WebRTC servers is prohibited (Q-63) | An OSS voice project needs to attach audio frames to NeuroEdge safety gates, after I5 |
 | 55 | **NeuroEdge controlling devices managed by other OSS** (Home Assistant entities, ESPHome, Matter) as targets or external channels. Target list currently closed: `sim`, `linux`, `esp32s3` (`schemas/board.v1.json`) | Remote devices cannot guarantee "fail-safe shutoff" or "pin never triggered" (Q-62); rushing breaks safety guarantees. Ties into Zenoh untrusted channels (Q-36) | **Design scheduled (Q-67):** RFC-0018 (TSK-I2c-04), first adapter Home Assistant (TSK-I2c-16); Matter, ESPHome community-authored as remote actuator plugins. Delete row when TSK-I2c-16 is done |
 
-## Nguồn
+## Sources
 
 | Items | Source |
 |:---|:---|

@@ -1,9 +1,9 @@
 """
-Luật chống lệch của roadmap (`roadmap/neuroedge-roadmap.md` §2.4, Q-39).
+Anti-drift rules of the roadmap (`roadmap/neuroedge-roadmap.md` §2.4, Q-39).
 
-Roadmap là nơi duy nhất ghi trạng thái task, tiêu chí ra, dự báo, phụ thuộc và thẻ phát
-hành; ghi chú thiết kế không có chúng. Các test dưới đây giữ cho điều đó còn đúng sau mỗi
-PR — thứ mà review bằng mắt đã không giữ được khi kế hoạch nằm ở bốn tệp.
+The roadmap is the only place that records task status, exit criteria, forecasts, dependencies
+and release cards; design notes carry none of them. The tests below keep that true after every
+PR — something eyeballed review could not do while the plan lived in four files.
 """
 
 from __future__ import annotations
@@ -40,7 +40,9 @@ def glyphs(text: str) -> int:
 def matrix() -> list[list[str]]:
     """The increment rows of §0.2: (milestone, **Ix — name**, forecast, …)."""
     start = next(i for i, line in enumerate(LINES) if line.startswith("### 0.2"))
-    header = next(i for i in range(start, len(LINES)) if LINES[i].startswith("| Mốc | Increment |"))
+    header = next(
+        i for i in range(start, len(LINES)) if LINES[i].startswith("| Milestone | Increment |")
+    )
     rows = []
     for line in LINES[header + 2 :]:
         if not line.startswith("|"):
@@ -90,11 +92,11 @@ def test_design_notes_carry_no_tasks_criteria_or_cut_ladders(note: str) -> None:
         line
         for line in text.splitlines()
         if TASK_ROW.match(line)
-        or line.startswith("| Mã Task")
-        or re.match(r"- \[[ x]\] \*\*Tiêu chí", line)
-        or re.match(r"#+ .*Thang cắt phạm vi", line)
+        or line.startswith("| Task code")
+        or re.match(r"- \[[ x]\] \*\*Criterion", line)
+        or re.match(r"#+ .*Scope-cut ladder", line)
     ]
-    assert not offenders, f"{note} còn dữ liệu kế hoạch (R1): {offenders[:3]}"
+    assert not offenders, f"{note} still carries plan data (R1): {offenders[:3]}"
 
 
 # --- R2, R3, R4: increment IDs, dependencies, forecasts ------------------------------------
@@ -107,21 +109,25 @@ def test_increment_ids_are_unique_and_ascending() -> None:
     headings = [
         m.group(1) for line in LINES if (m := re.match(r"### [\d.]+ (I\d+[a-z]?) — ", line))
     ]
-    assert headings == ids, "mỗi increment ở §0.2 cần đúng một mục `### x.y Ix —`, cùng thứ tự"
+    assert headings == ids, (
+        "every increment in §0.2 needs exactly one `### x.y Ix —` section, in the same order"
+    )
 
 
 def test_dependencies_point_only_to_earlier_increments() -> None:
     for inc, row in INCREMENTS:
         for dep in re.findall(r"\bI\d+[a-z]?\b", row[6]):
-            assert key(dep) < key(inc), f"{inc} phụ thuộc {dep} — phụ thuộc trỏ tới sau (R3)"
+            assert key(dep) < key(inc), (
+                f"{inc} depends on {dep} — a dependency pointing forward (R3)"
+            )
 
 
 def test_every_increment_has_exactly_one_forecast() -> None:
     for inc, row in INCREMENTS:
         forecast = row[2]
         found = DATE.findall(forecast)
-        conditional = forecast.startswith(("sau ", "khi "))
-        assert len(found) == 1 or (conditional and not found), f"{inc}: dự báo {forecast!r} (R4)"
+        conditional = forecast.startswith(("after ", "when "))
+        assert len(found) == 1 or (conditional and not found), f"{inc}: forecast {forecast!r} (R4)"
 
 
 # --- R8, R9, R10: tasks ---------------------------------------------------------------------
@@ -130,9 +136,9 @@ def test_every_increment_has_exactly_one_forecast() -> None:
 def test_every_task_code_has_exactly_one_row() -> None:
     codes = [row[0].strip("*") for row in ALL_TASKS]
     dupes = sorted({c for c in codes if codes.count(c) > 1})
-    assert not dupes, f"mã có nhiều hơn một dòng task (R8): {dupes}"
+    assert not dupes, f"codes with more than one task row (R8): {dupes}"
     assert None not in TASKS or all("⏸" in row[4] for row in TASKS[None]), (
-        "task ngoài increment chỉ được là task hoãn (§8.2)"
+        "a task outside an increment may only be a deferred task (§8.2)"
     )
 
 
@@ -156,14 +162,14 @@ def test_every_cited_task_code_exists_in_the_roadmap() -> None:
         for code in CODE.findall(path.read_text(encoding="utf-8", errors="replace")):
             if code not in known:
                 missing.setdefault(code, set()).add(str(path.relative_to(ROOT)))
-    assert not missing, f"mã task được dẫn nhưng không có dòng trong roadmap (R8): {missing}"
+    assert not missing, f"task codes cited but absent from the roadmap (R8): {missing}"
 
 
 def test_every_status_cell_has_exactly_one_glyph() -> None:
     for row in ALL_TASKS:
-        assert glyphs(row[4]) == 1, f"{row[0]}: ô trạng thái {row[4][:60]!r} (R9)"
+        assert glyphs(row[4]) == 1, f"{row[0]}: status cell {row[4][:60]!r} (R9)"
     for inc, row in INCREMENTS:
-        assert glyphs(row[5]) == 1, f"{inc}: ô trạng thái §0.2 {row[5]!r} (R9)"
+        assert glyphs(row[5]) == 1, f"{inc}: §0.2 status cell {row[5]!r} (R9)"
 
 
 def test_matrix_progress_matches_the_task_tables() -> None:
@@ -171,7 +177,7 @@ def test_matrix_progress_matches_the_task_tables() -> None:
         rows = TASKS.get(inc, [])
         done = sum("✅" in r[4] for r in rows)
         assert row[4] == f"**{done} / {len(rows)}**", (
-            f"{inc}: §0.2 ghi {row[4]}, bảng task là {done}/{len(rows)} (R10)"
+            f"{inc}: §0.2 says {row[4]}, the task table says {done}/{len(rows)} (R10)"
         )
 
 
@@ -214,13 +220,13 @@ REPO = repo_text()
 def test_no_numbered_week_or_month_labels() -> None:
     """R6: time is measured by increments; a duration counts from when an increment opens."""
     hits = [f"{path}: {m.group(0)}" for path, text in REPO for m in TIME_LABEL.finditer(text)]
-    assert not hits, f"nhãn tuần/tháng đánh số (R6): {hits[:10]}"
+    assert not hits, f"numbered week/month labels (R6): {hits[:10]}"
 
 
 def test_no_line_number_references_into_markdown() -> None:
     """R11: a `file.md:NNN` reference goes stale at the next edit; cite a section or a code."""
     hits = [f"{path}: {m.group(0)}" for path, text in REPO for m in MD_LINE_REF.finditer(text)]
-    assert not hits, f"tham chiếu số dòng (R11): {hits[:10]}"
+    assert not hits, f"line-number references (R11): {hits[:10]}"
 
 
 def test_roadmap_section_references_resolve() -> None:
@@ -233,4 +239,4 @@ def test_roadmap_section_references_resolve() -> None:
         for m in ROADMAP_REF.finditer(text)
         if m.group(1) not in headings
     ]
-    assert not broken, f"dẫn tới mục roadmap không tồn tại (R11): {broken[:10]}"
+    assert not broken, f"references to roadmap sections that do not exist (R11): {broken[:10]}"

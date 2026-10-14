@@ -650,7 +650,7 @@ def test_the_script_allows_exactly_what_q11_names(licences, root):
         for line in (root / "roadmap" / "neuroedge-prd.md").read_text(encoding="utf-8").splitlines()
         if line.startswith("| **Q-11** |")
     )
-    policy = q11[q11.index("Chính sách phụ thuộc bắc cầu") :]
+    policy = q11[q11.index("Transitive dependency policy") :]
     for family in (
         "MIT",
         "BSD",
