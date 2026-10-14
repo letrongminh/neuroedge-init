@@ -19,6 +19,13 @@ from neuroedge.templates import TEMPLATES
 
 from .ui_support import page_headers
 
+
+@pytest.fixture(autouse=True)
+def legacy_system_two(monkeypatch):
+    """These tests cover the box's own System 2, legacy since Q-83 (DP-A-08)."""
+    monkeypatch.setenv("NEUROEDGE_LEGACY_SYSTEM_TWO", "1")
+
+
 ROOT = Path(__file__).resolve().parents[2]
 AGENTS = ROOT / "fixtures" / "agents"
 VILLA = AGENTS / "villa-concierge" / "agent.toml"

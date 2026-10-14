@@ -39,6 +39,8 @@ from pathlib import Path
 KEY_ENV = "NEUROEDGE_SMOKE_KEY"
 KEY = "sk-smoke-not-a-real-key-6f1d2c"
 REPO = Path(__file__).resolve().parents[1]
+# The box's own System 2 is legacy (Q-83, DP-A-08); this script tests that path on purpose.
+os.environ["NEUROEDGE_LEGACY_SYSTEM_TWO"] = "1"
 
 
 def fail(message: str) -> None:

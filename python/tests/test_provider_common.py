@@ -31,6 +31,13 @@ from neuroedge.models.providers.common import KEY_LIKE, is_loopback
 from neuroedge.perception.providers import AudioClip, OpenAITranscriber, parse_speech
 from neuroedge.perception.providers.fake import tone
 
+
+@pytest.fixture(autouse=True)
+def legacy_system_two(monkeypatch):
+    """These tests cover the box's own System 2, legacy since Q-83 (DP-A-08)."""
+    monkeypatch.setenv("NEUROEDGE_LEGACY_SYSTEM_TWO", "1")
+
+
 KEY = "sk-test-DO-NOT-LEAK-0123456789abcdef"
 ENV = "NEUROEDGE_TEST_COMMON_KEY"
 

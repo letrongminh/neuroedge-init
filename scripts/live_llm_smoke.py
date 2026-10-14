@@ -24,6 +24,8 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+# The box's own System 2 is legacy (Q-83, DP-A-08); this script tests that path on purpose.
+os.environ["NEUROEDGE_LEGACY_SYSTEM_TWO"] = "1"
 
 
 async def main(model: str, key_env: str) -> int:

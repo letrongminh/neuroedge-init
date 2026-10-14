@@ -35,6 +35,13 @@ from neuroedge.models.providers import (
 from neuroedge.sim import SimSession
 from neuroedge.trace import validate_trace
 
+
+@pytest.fixture(autouse=True)
+def legacy_system_two(monkeypatch):
+    """These tests cover the box's own System 2, legacy since Q-83 (DP-A-08)."""
+    monkeypatch.setenv("NEUROEDGE_LEGACY_SYSTEM_TWO", "1")
+
+
 KEY = "sk-test-DO-NOT-LEAK-0123456789abcdef"
 ENV = "NEUROEDGE_TEST_LLM_KEY"
 SYSTEM_TWO = f"""

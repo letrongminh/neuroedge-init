@@ -18,11 +18,11 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager, nullcontext
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from ..engine.gate import ActionContractEngine, GateResult
-from ..engine.verdict import GateVerdict
+from ..engine.verdict import GateVerdict, Reason
 from ..errors import EnvelopeRefusedError, ToolCallError
 from ..hal import digital, ensure_envelope
 from ..hal.motion_core import lease_ms_of
@@ -255,7 +255,13 @@ class Conversation:
                     result.fallback_action, visited + (spec.name,), frame
                 )
             pending = None
-            if result.on_block_action == "ask" and result.confirms and not confirmed:
+            asks = result.on_block_action == "ask" and bool(result.confirms) and not confirmed
+            if asks and self.confirmations.full():
+                # DP-COM-09: no fifth question; the caller is told the budget is spent.
+                self.confirmations.withhold(spec.name, result.gate)
+                result = replace(result, reason=Reason.BUDGET_EXCEEDED)
+                asks = False
+            if asks:
                 # RFC-0006: the gate asked a question a person may answer. Nothing
                 # runs now; `confirm()` evaluates the gate again if they say yes.
                 tree = self.engine.tree(spec.gate)

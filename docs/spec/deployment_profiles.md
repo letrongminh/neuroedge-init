@@ -262,7 +262,8 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-COM-06-1 | DP-COM-06 | integration | Start box and brain with a risky option on → the label is printed once at start and listed by `status` | planned — TSK-I2d-25 |
 | TC-COM-07-1 | DP-COM-07 | demo | Blank Debian 12 VM and a blank DevKitC → one command each reaches a working chat-to-light demo | planned — TSK-I2d-25 |
 | TC-COM-08-1 | DP-COM-08 | unit (Go) | NeuroClaw reads a result with `status: "MAYBE"` and one with contract `tool-result.v2` → REJECTED, no retry as allowed | planned — TSK-I2d-26 |
-| TC-COM-09-1 | DP-COM-09 | integration | Five calls that ask, none answered → four questions pending, the fifth is BLOCK `budget_exceeded` with no question (Profile A) | planned — TSK-I2d-12 |
+| TC-COM-08-2 | DP-COM-08 | integration | `tools/list` over MCP → every tool carries `_meta["dev.neuroedge/contract"] = "tool-result.v1"`, the name of `schemas/tool-result.v1.json` | implemented — python/tests/test_contracts.py::test_every_listed_tool_names_the_result_contract_it_answers_in |
+| TC-COM-09-1 | DP-COM-09 | integration | Five calls that ask, none answered → four questions pending, the fifth is BLOCK `budget_exceeded` with no question (Profile A) | implemented — python/tests/test_tool_confirm.py::test_a_fifth_question_while_four_wait_is_a_block_and_no_question |
 | TC-COM-09-2 | DP-COM-09 | host C | Same on the bridge's pending table (Profile B) | planned — TSK-I2f-12 |
 | TC-A-01-1 | DP-A-01 | integration | No token, bad token, wrong scope, other device's token → 401/403, nothing dispatched, traced | implemented — python/tests/test_mcp_http.py::test_a_request_without_a_valid_token_is_refused_and_nothing_is_dispatched |
 | TC-A-01-2 | DP-A-01 | integration | Client without a trusted certificate → TLS handshake fails before HTTP | implemented — python/tests/test_mcp_http.py::test_a_client_without_a_trusted_certificate_never_reaches_http |
@@ -285,7 +286,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-A-06-1 | DP-A-06 | integration | Approval record with bad signature, reused nonce, expired, other gate digest → refused; valid → accepted as `chat:<id>` | planned — TSK-I2d-11 |
 | TC-A-06-2 | DP-A-06 | integration | Brain's bot token configured as approval bot → box refuses to start | planned — TSK-I2d-12 |
 | TC-A-07-1 | DP-A-07 | CI (Go) | NeuroClaw integration job starts the pinned box on `sim`, calls light / door / night cases → every result validates, `fallback` and `escalated_to` handled | planned — TSK-I2d-26 |
-| TC-A-08-1 | DP-A-08 | unit | Without the flag: `run` answers with grammar, System 1 and the offline answer; no LiteLLM import; with the flag: the old path works | planned — TSK-I2d-27 |
+| TC-A-08-1 | DP-A-08 | unit | Without the flag: `run` answers with grammar, System 1 and the offline answer; no LiteLLM import; with the flag: the old path works | implemented — python/tests/test_legacy_system_two.py::test_without_the_flag_the_box_answers_with_grammar_and_the_offline_line |
 | TC-A-09-1 | DP-A-09 | demo | Blank VM → `neuroedge install --profile full` → services up, brain user isolated (TC-A-03-2 passes), chat turns on the light | planned — TSK-I2d-25 |
 | TC-A-10-1 | DP-A-10 | linux | Box under systemd → URL file mode 0600 owned by the box user; journal has no `#c=`; `neuroedge ui-link` prints a new code and the old one stops working | planned — TSK-I2d-25 |
 | TC-A-11-1 | DP-A-11 | integration | Rotate the brain certificate → new one works without restart; revoked thumbprint → handshake refused | planned — TSK-I2d-25 |
