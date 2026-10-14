@@ -13,9 +13,10 @@
 # with CRLF: every helper reads through `_ota_text`, which drops the CR, so a
 # pattern ending in `$` matches the marker and not the carriage return.
 
-# The log without carriage returns; a missing file reads as empty.
+# The log without carriage returns or terminal escapes (the console's `ESC[5n` probe can land
+# in front of a marker); a missing file reads as empty.
 _ota_text() {
-  [ -f "$1" ] && tr -d '\r' <"$1" || true
+  [ -f "$1" ] && tr -d '\r' <"$1" | LC_ALL=C sed $'s/\x1b\\[[0-9;?]*[A-Za-z]//g' || true
 }
 
 # First line number in file $1 whose line matches ERE $2; 0 when there is none.

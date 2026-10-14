@@ -44,6 +44,7 @@ import time
 from pathlib import Path
 
 TIMEOUT_S = 90.0
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")  # terminal escapes: never part of a marker
 STACK_FLOOR = 512  # bytes the console task must still have free after `config set`
 # Made up for the test: the shape of a BotFather token, no real bot.
 TOKEN = "7000000001:AAQemuOnlyNotARealTokenxxxxxxxxxxxx"
@@ -103,7 +104,8 @@ class Boot:
         except OSError:
             data = b""
         if data:
-            self.text += data.decode(errors="replace").replace("\r", "")
+            # Without CRs and terminal escapes: the console's `ESC[5n` probe can precede a marker.
+            self.text += ANSI.sub("", data.decode(errors="replace").replace("\r", ""))
             self.log.write_text(self.text)
         elif self.proc.poll() is not None:
             raise Fail(f"QEMU exited (log: {self.log})")
