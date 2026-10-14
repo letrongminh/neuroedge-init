@@ -114,7 +114,7 @@ is rejected, and for `[system_one]`, `http://` to other machines is rejected in 
 The five core primitives form a closed set for v1.x (FR-HAL-01); new primitives enter only via RFC, and four board-optional extension packs (FR-HAL-08, Q-53) enter v1.0 in I2a and I3a: RFC-0007 (`digital.in`, read-only I2C, `analog.in`), RFC-0009 (`numeric` criteria), RFC-0010 (PWM), RFC-0011 (`motion.*`), RFC-0012 (`vision.in`), RFC-0013 (board options). Today there are exactly three tier-1 profiles (Q-53 adds `sim-rpi5` and an ESP32-S3 board with camera): `sim-default` (exact replica of Box-3, never richer — Invariant 7), `linux-rpi5` (`aec = false` until benchmark passes), `esp32s3-box-3`. Application code only uses pin **names**; GPIO numbers belong to HAL.
 
 **Symmetric `safe_state` (`planned · Q-72`, I2d, pending RFC for conditional safety).** Today `safe_state`
-only exists on `motion.*` channels (`stop` or `hold`, RFC-0011, `hal/board.py`). Under [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
+only exists on `motion.*` channels (`stop` or `hold`, RFC-0011, `hal/board.py`). Under [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log),
 all actuators will have a `safe_state` declared in `board.v1`, default `off`; duration, `max_continuous_ms`, lease,
 levels L0–L3 (RFC-0018), and Q-62 gate exemptions all refer to "returning to `safe_state`", while the direction of *leaving*
 `safe_state` is subject to gates and limits. A `safe_state` other than `off` may only be declared here — not in mission
@@ -200,7 +200,7 @@ The invariant "one session, one trace" is reinterpreted as "one session, one tra
 replayable"; missing segments are detected because the digest chain breaks. Appended sequentially, flushed on
 a timer (around 10 seconds, configurable) and immediately upon a block verdict or approval; a power outage loses
 at most the trailing normal events, and `replay` reports a truncated segment. Retention and size limits:
-[PRD §9](../../../roadmap/neuroedge-prd.md#9-yêu-cầu-phi-chức-năng) Modifying the canonical trace envelope
+[PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements) Modifying the canonical trace envelope
 is an RFC-level change (`CONTRIBUTING.md` §3).
 
 ## 8. UART Format
@@ -271,8 +271,8 @@ Blocking due to timeout or lost fact source is **not an error**: it is a `BLOCK`
 
 ## 12. Planned Contracts Under Q-72 (`planned · Q-72`)
 
-There are no schemas or code yet in this section. Target designs follow [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định);
-each contract is a **planned RFC** (unnumbered, listed in [PRD §15](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)),
+There are no schemas or code yet in this section. Target designs follow [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log);
+each contract is a **planned RFC** (unnumbered, listed in [PRD §15](../../../roadmap/neuroedge-prd.md#15-decision-log)),
 because introducing a new schema to `schemas/` or modifying `trace.v1`, `board.v1` requires an RFC (`CONTRIBUTING.md` §3).
 
 ### 12.1 Mission Contract — `mission.v1` (I2d)
@@ -309,7 +309,7 @@ webhook — includes fields allowed to be sent to it, including images to the LL
 The runtime decides what the LLM worker *sees* and only transmits to declared destinations; sending to
 undeclared destinations is blocked and traced. Content rules (e.g. "images do not leave the home") are
 optional user flags in the contract, not defaults. Network-level enforcement:
-[PRD §9](../../../roadmap/neuroedge-prd.md#9-yêu-cầu-phi-chức-năng)
+[PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements)
 
 ### 12.4 Chat Events and Approval Records (I2d)
 

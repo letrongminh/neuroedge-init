@@ -26,7 +26,7 @@ that token can open the specific hardware pins for that action. Every fact, verd
 is recorded into a replayable **trace** ([trace](../../user/thuat-ngu.md)). The same gate runs on the simulator (`sim`), on
 Linux (`linux`), and on the ESP32-S3 chip (`esp32s3`).
 
-**Direction decided, no code yet (`planned · Q-72`).** [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) places the above core into three loops: ① **build** —
+**Direction decided, no code yet (`planned · Q-72`).** [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) places the above core into three loops: ① **build** —
 existing user MCP clients write contracts via NeuroEdge Lab (Q-71); ② **run** — an *operator agent*
 runs continuously on the home machine, executing **mission contracts** and reporting or asking for approval via chat channels
 (I2d); ③ **share, sell** — a **NeuroEdge Blueprint** packages kit, firmware, template contracts, detectors,
@@ -56,7 +56,7 @@ when wired normally-on by default, e.g., normally-closed relays, declared as har
 follow "when unsure, block"; only movement **toward** `safe_state` is always permitted; movement **away from** `safe_state` is subject to
 gates and limits. Existing profiles (`off`; `motion.*` `stop`/`hold`) retain their behavior. Promise 5: owners
 can also approve via paired chat channels using an **approval record** containing a one-time code, expiration, and digest of the exact
-change; LLMs and chat groups can never approve ([`00`](00-overview.md) §9.4). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+change; LLMs and chat groups can never approve ([`00`](00-overview.md) §9.4). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
 
 The product grows across eight user-facing release milestones (roadmap §0.5); the architecture of each milestone and how
 each milestone re-proves the six promises is in roadmap §0.5.
@@ -234,7 +234,7 @@ When two characteristics conflict, the higher-ranking characteristic wins. Each 
 
 | # | Characteristic | Meaning | Key tactic | Chapter |
 |:---:|:---|:---|:---|:---|
-| 1 | **Safe by default** | All errors lead to block | `budget.fail` defaults to `closed`; `fail: open` does not inherit; full token ledger rejects instead of evicting old tokens | [`05`](05-code-gate-hal-c4l4.md), [PRD §9](../../../roadmap/neuroedge-prd.md#9-yêu-cầu-phi-chức-năng) |
+| 1 | **Safe by default** | All errors lead to block | `budget.fail` defaults to `closed`; `fail: open` does not inherit; full token ledger rejects instead of evicting old tokens | [`05`](05-code-gate-hal-c4l4.md), [PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements) |
 | 2 | **Deterministic and replayable** | Same facts ⇒ same verdict, everywhere | Gate resolution is a pure function; decision tree never reads clock; replay recalculates from recorded facts | [`05`](05-code-gate-hal-c4l4.md), [`06`](06-runtime-flows.md) |
 | 3 | **Cross-environment equivalence** | Agents do not branch on target | Two implementations (Python, C) of the same specification, proven with shared truth tables and vectors | [`10`](10-target-equivalence.md) |
 | 4 | **Auditable** | Reviewers understand without reading code | Gates are human-readable YAML; `gate explain`; traces follow frozen schemas; errors always have three parts | [`07`](07-data-contracts.md) |
@@ -321,7 +321,7 @@ The table below is a capability snapshot, not a progress tracking table; task pr
 - **Not a cloud service.** Today NeuroEdge is a library, a CLI, and firmware; there are
   no servers operated by NeuroEdge. *Will change under Q-72 (`planned · Q-72`):* two optional exceptions,
   never on the safety path — relays only pass TLS by SNI without decrypting; Hub index is a
-  static git repository ([PRD §15](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
+  static git repository ([PRD §15](../../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
   LLMs), unlocked after demand gates if metrics require; rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
 - **Does not resell inference tokens** (`docs/architecture/vi/15-target-architecture.md` §3.4; PRD §1.4 N4). The provider abstraction layer is self-hosted in core; users operate and pay model providers directly.
 - **Does not implement SLAM or navigation** — only gates velocity commands via ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
@@ -349,7 +349,7 @@ Role-based reading roadmap is in [`README.md`](../README.md). Beginners start at
 
 Figure E-01 in §2 (read notes there). Details of the context follow below.
 
-Dashed-line boxes bearing labels I2d, I2e, or Q-72 represent target designs of [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (`planned · Q-72`), with no code yet:
+Dashed-line boxes bearing labels I2d, I2e, or Q-72 represent target designs of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) (`planned · Q-72`), with no code yet:
 **Operating agent** within system boundary (trusted 24/7 runtime + untrusted LLM worker, I2d),
 two user personas for NeuroEdge Blueprint (I2e), and three external systems — chat platforms (I2d), Blueprint Hub
 index (I2e), optional relay (Q-72).
@@ -456,7 +456,7 @@ Four boundary rules, each tested in `docs/spec/threat_model.md` §2b:
    not from LLM text. The reply must target the exact `id`. The runtime checks: sender is paired, not
    a group, nonce unused, unexpired per monotonic clock, digest matches; if all five pass, it enters the existing
    confirmation path with source `chat:<id>`; if any fails, it rejects and traces. LLMs never approve.
-   Pairing lifecycle (revocation, expiration, approval rate limits) deferred in `TODOS.md` #62. Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+   Pairing lifecycle (revocation, expiration, approval rate limits) deferred in `TODOS.md` #62. Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
 
 Explicitly out of scope: in-process attackers, and certified
 functional safety (`docs/spec/threat_model.md` §3, §3b). Therefore, the operator agent
@@ -480,7 +480,7 @@ Audio is never stored in traces.
 
 #### Data flows of the operator agent (`planned · Q-72`, I2d)
 
-Data flow rules of [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) aim to **prevent data leaks** (hacks, prompt injection, exfiltration), without restricting
+Data flow rules of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) aim to **prevent data leaks** (hacks, prompt injection, exfiltration), without restricting
 user-constructed flows: every destination declared by users in contracts or configurations receives data permitted
 by the user, including images sent to LLMs. Content rules (e.g. "images do not leave home") are user options enabled
 in contracts, not defaults.

@@ -3,7 +3,7 @@
 Schemas in `schemas/`, gate resolution semantics, the three canonical traces, gates locked
 in `digests.lock`, and the `NETR` binary layout are conformance measures and subjects of
 gate digital signatures, so they are not changed via a regular pull request. The exact list
-of what requires an RFC: [`CONTRIBUTING.md` §3](../../CONTRIBUTING.md#3-thay-đổi-cần-rfc).
+of what requires an RFC: [`CONTRIBUTING.md` §3](../../CONTRIBUTING.md#3-changes-requiring-an-rfc).
 
 ## Process
 

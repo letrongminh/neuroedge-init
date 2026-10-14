@@ -8,9 +8,9 @@ All notable changes to this project are documented here, in the spirit of
 >
 > | What you need | Section to read |
 > |:---|:---|
-> | Know what has changed | [§1 Version Log](#1-nhật-ký-phiên-bản) |
-> | Run the system immediately | [§2 Operating Guide](#2-cách-vận-hành) |
-> | Take over to continue building | [§3 Product Context Handoff](#3-bàn-giao-ngữ-cảnh-sản-phẩm) |
+> | Know what has changed | [§1 Version Log](#1-version-log) |
+> | Run the system immediately | [§2 Operating Guide](#2-operating-guide) |
+> | Take over to continue building | [§3 Product Context Handoff](#3-product-context-handoff) |
 >
 > **The source of truth for progress** remains [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md)
 > §0 (tracking table and handoff card). This file recounts *what was built and how it runs*;
@@ -208,7 +208,7 @@ All errors have exactly three parts (FR-DX-04): **where** (`where`) · **why** (
   fix: narrow allow_when.risk_level to a subset of the base condition (base clause: {'lte': 'low'}), …
 ```
 
-List of `NE…` codes, error taxonomy, and occurrence contexts can be found in PRD [Appendix B](roadmap/neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
+List of `NE…` codes, error taxonomy, and occurrence contexts can be found in PRD [Appendix B](roadmap/neuroedge-prd.md#appendix-b--standard-error-code-catalog).
 
 ### 2.5 CI
 

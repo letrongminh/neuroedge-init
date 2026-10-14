@@ -307,7 +307,7 @@ sequenceDiagram
 
 ## 11. Planned Flows Under Q-72 (`planned · Q-72`)
 
-There is no code yet for any flow in this section. They document the target design of [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)
+There is no code yet for any flow in this section. They document the target design of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)
 for increment I2d (missions and operator agents) and I2e (minimal NeuroEdge Blueprint); progress is in
 roadmap §0.2. Sections requiring an RFC are noted as "pending RFC".
 

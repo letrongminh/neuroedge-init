@@ -9,7 +9,7 @@ This document explains how to submit changes, which changes require special proc
 ## 1. Environment Setup
 
 Commands for environment setup, reproducible builds, and quick artifact verification: `CHANGELOG.md`
-[§2.1–§2.2](CHANGELOG.md#2-cách-vận-hành). Before making any changes, `pytest -q` must be green:
+[§2.1–§2.2](CHANGELOG.md#2-operating-guide). Before making any changes, `pytest -q` must be green:
 0 failed, 0 skipped.
 
 ## 2. Standard Contribution Cycle
@@ -51,7 +51,7 @@ raise GateSchemaError(
 Do not use `raise ValueError("bad gate")`. Test
 `test_invalid_fixture_diagnostic_has_all_three_parts` verifies this across the
 entire negative corpus. Error codes (`NE…`) are allocated in PRD
-[Appendix B](roadmap/neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
+[Appendix B](roadmap/neuroedge-prd.md#appendix-b--standard-error-code-catalog).
 
 ### Do Not Print Results You Have Not Computed
 
@@ -137,7 +137,7 @@ In-situ attribution template:
 ```
 
 Which licenses are admitted into distribution artifacts: policy **Q-11**
-([PRD §15](roadmap/neuroedge-prd.md#15-sổ-quyết-định)); no strong copyleft is
+([PRD §15](roadmap/neuroedge-prd.md#15-decision-log)); no strong copyleft is
 invariant `CHANGELOG.md` §3.3 #9. Hawkbit approved conditionally under Q-11 (publish modifications if modified); EMQX not used.
 
 ## 5. Tests Must Not Skip Silently

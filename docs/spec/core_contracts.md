@@ -312,7 +312,7 @@ The automated testing flow turns safety commitments into executable automated te
 
 ### 1.8 Command-Line Interface (CLI Surface)
 
-Canonical command surface — command groups, exit code contract, acceptance criteria: **[PRD §7.2](../../roadmap/neuroedge-prd.md#72-giao-diện-dòng-lệnh-fr-cli)** (FR-CLI). Concrete commands and expected outputs: [`CHANGELOG.md`](../../CHANGELOG.md) §2. This section addresses design choices only.
+Canonical command surface — command groups, exit code contract, acceptance criteria: **[PRD §7.2](../../roadmap/neuroedge-prd.md#72-command-line-interface-fr-cli)** (FR-CLI). Concrete commands and expected outputs: [`CHANGELOG.md`](../../CHANGELOG.md) §2. This section addresses design choices only.
 
 **CLI implementation basis:** built on **Typer** for command definitions, **Rich** for display and structured error reporting. Project template in `neuroedge new` is a **pure Python generator** in package — avoiding Copier because it pulls in `jinja2-ansible-filters` GPL3 (TSK-S3-07).
 
@@ -340,7 +340,7 @@ $ neuroedge build --target esp32s3 --board villa-panel
 
 ### 1.10 First 10 Minutes Experience (Time-to-First-Value)
 
-Canonical journey, minute-by-minute and governing requirements: **[PRD §2.3, Journey 1](../../roadmap/neuroedge-prd.md#hành-trình-1--mười-phút-đầu-tiên-u1)**. Accompanying design constraint: during the first 10 minutes, users buy no hardware, create no accounts, enter no credit cards.
+Canonical journey, minute-by-minute and governing requirements: **[PRD §2.3, Journey 1](../../roadmap/neuroedge-prd.md#journey-1--the-first-ten-minutes-u1)**. Accompanying design constraint: during the first 10 minutes, users buy no hardware, create no accounts, enter no credit cards.
 
 ---
 

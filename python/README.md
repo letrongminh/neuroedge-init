@@ -12,8 +12,8 @@ Everything else has one home in the repository root, and this page only points t
 
 | You need | Read |
 |:---|:---|
-| Set up, run the tests, every command and its expected output | [`CHANGELOG.md` §2](../CHANGELOG.md#2-cách-vận-hành) |
-| What lives where (this package included) | [`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-cấu-trúc-kho) |
+| Set up, run the tests, every command and its expected output | [`CHANGELOG.md` §2](../CHANGELOG.md#2-operating-guide) |
+| What lives where (this package included) | [`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-repository-structure) |
 | How to contribute, and what needs an RFC | [`CONTRIBUTING.md`](../CONTRIBUTING.md) |
 | Architecture, requirements, plan | [`core_contracts.md`](../docs/spec/core_contracts.md) · [`neuroedge-prd.md`](../roadmap/neuroedge-prd.md) · [`neuroedge-roadmap.md`](../roadmap/neuroedge-roadmap.md) |
 

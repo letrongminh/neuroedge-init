@@ -19,25 +19,25 @@
 
 ## Table of Contents
 
-0. [Execution & handoff dashboard](#0-bảng-theo-dõi-tiến-độ--nhật-ký-bàn-giao-live-execution--handoff-dashboard)
-1. [Resource assumptions](#1-giả-định-nguồn-lực)
-2. [Critical path, dependencies and anti-drift rules](#2-đường-găng-phụ-thuộc-và-luật-chống-lệch)
-3. [Open source reuse strategy](#3-chiến-lược-tái-sử-dụng-mã-nguồn-mở)
-4. [Increments to v1.0 = MVP (I0–I7)](#4-increment-tới-v10--mvp-i0i7)
-5. [Developer Beta and branch points (I8)](#5-developer-beta-và-điểm-rẽ-i8)
-6. [Removed from roadmap (Q-77)](#6-đã-bỏ-khỏi-roadmap-q-77)
-7. [Post-Beta extension directions](#7-hướng-mở-rộng-sau-beta)
-8. [Outside roadmap](#8-ngoài-roadmap)
-9. [Scope-cut ladder](#9-thang-cắt-phạm-vi)
-10. [Decision schedule](#10-lịch-chốt-quyết-định)
-11. [Operating cadence](#11-nhịp-vận-hành)
-12. [Early indicators and intervention thresholds](#12-chỉ-báo-sớm-và-ngưỡng-can-thiệp)
+0. [Execution & handoff dashboard](#0-live-execution--handoff-dashboard)
+1. [Resource assumptions](#1-resource-assumptions)
+2. [Critical path, dependencies and anti-drift rules](#2-critical-path-dependencies-and-anti-drift-rules)
+3. [Open source reuse strategy](#3-open-source-reuse-strategy)
+4. [Increments to v1.0 = MVP (I0–I7)](#4-increments-to-v10--mvp-i0i7)
+5. [Developer Beta and branch points (I8)](#5-developer-beta-and-branch-points-i8)
+6. [Removed from roadmap (Q-77)](#6-removed-from-roadmap-q-77)
+7. [Post-Beta extension directions](#7-post-beta-extension-directions)
+8. [Outside roadmap](#8-outside-roadmap)
+9. [Scope-cut ladder](#9-scope-cut-ladder)
+10. [Decision schedule](#10-decision-schedule)
+11. [Operating cadence](#11-operating-cadence)
+12. [Early indicators and intervention thresholds](#12-early-indicators-and-intervention-thresholds)
 
 **Appendices**
 
-- [B — Procurement and infrastructure bill of materials](#phụ-lục-b--danh-mục-mua-sắm-và-hạ-tầng)
-- [C — Source repository layout](#phụ-lục-c--bố-cục-kho-mã-nguồn)
-- [D — Wire protocol](#phụ-lục-d--giao-thức-truyền-dẫn)
+- [B — Procurement and infrastructure bill of materials](#appendix-b--procurement-and-infrastructure-bill-of-materials)
+- [C — Source repository layout](#appendix-c--source-repository-layout)
+- [D — Wire protocol](#appendix-d--wire-protocol)
 
 ---
 
@@ -99,7 +99,7 @@ NOTE: Hardware commands via c.do() and gate. Untrusted LLM worker. Fail-closed.
 
 ### 0.4 Handoff Protocol
 
-When completing a task: follow [`CONTRIBUTING.md` §8](../CONTRIBUTING.md#8-hoàn-thành-một-task--cập-nhật-tài-liệu-tiến-độ-changelog).
+When completing a task: follow [`CONTRIBUTING.md` §8](../CONTRIBUTING.md#8-completing-a-task--updating-documentation-progress-changelog).
 
 ---
 
@@ -215,7 +215,7 @@ The boundary between core assets (100% in-house) and commodities (maximum reuse)
 
 ### 3.2 Decision test
 
-Does depending on it force a violation of P-1, P-2 ([PRD §1.5](neuroedge-prd.md#15-năm-nguyên-tắc-thiết-kế-bất-biến)), or the three architectural decisions (`sim` is a first-class target, gates are versioned artifacts, traces are first-class citizens)? Yes → interoperate or reference only. No → reuse.
+Does depending on it force a violation of P-1, P-2 ([PRD §1.5](neuroedge-prd.md#15-five-invariant-design-principles)), or the three architectural decisions (`sim` is a first-class target, gates are versioned artifacts, traces are first-class citizens)? Yes → interoperate or reference only. No → reuse.
 
 ### 3.3 License discipline
 
@@ -1147,7 +1147,7 @@ I2d, I2e run on G1, G2 simulation (Q-72); physical hardware purchased later per 
 
 ## Appendix C — Source repository layout
 
-Detailed structure: [`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-cấu-trúc-kho). Four mandatory conventions:
+Detailed structure: [`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-repository-structure). Four mandatory conventions:
 1. `schemas/` is the single source of truth; Python and C generate or validate against it.
 2. `fixtures/traces/` shared across all targets, serving as foundation for `neuroedge verify`.
 3. `targets/` contains only HAL implementations, zero business logic or safety policies.
@@ -1157,7 +1157,7 @@ Detailed structure: [`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-cấu-trúc-kho
 
 ## Appendix D — Wire protocol
 
-Standard transmission channels and audio formats for `record`, `replay`, and voice streaming: [PRD Appendix D.2](neuroedge-prd.md#d2-giao-thức-truyền-dẫn--định-dạng-vết-ghi-wire-protocol).
+Standard transmission channels and audio formats for `record`, `replay`, and voice streaming: [PRD Appendix D.2](neuroedge-prd.md#d2-wire-protocols-and-trace-format).
 
 ---
 *End of document*

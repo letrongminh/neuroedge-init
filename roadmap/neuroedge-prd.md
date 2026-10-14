@@ -18,28 +18,28 @@
 
 ## Table of Contents
 
-1. [Product Goals](#1-mục-tiêu-sản-phẩm)
-2. [Users and Context of Use](#2-người-dùng-và-bối-cảnh-sử-dụng)
-3. [Release Scope](#3-phạm-vi-phát-hành)
-4. [Functional Requirements — Execution Core](#4-yêu-cầu-chức-năng--lõi-thực-thi)
-5. [Functional Requirements — Action Safety](#5-yêu-cầu-chức-năng--an-toàn-hành-động)
-6. [Functional Requirements — Action CI Testing](#6-yêu-cầu-chức-năng--kiểm-thử-action-ci)
-7. [Functional Requirements — Developer Experience](#7-yêu-cầu-chức-năng--trải-nghiệm-lập-trình-viên)
-8. [Functional Requirements — Commercial Service Layer](#8-yêu-cầu-chức-năng--tầng-dịch-vụ-thương-mại)
-9. [Non-Functional Requirements](#9-yêu-cầu-phi-chức-năng)
-10. [Data Interface Specifications](#10-đặc-tả-giao-diện-dữ-liệu)
-11. [Release Acceptance Criteria](#11-tiêu-chí-nghiệm-thu-phát-hành)
-12. [Metrics and Measurement Requirements](#12-hệ-chỉ-số-và-yêu-cầu-đo-đạc)
-13. [Dependencies, Risks, and Assumptions](#13-phụ-thuộc-rủi-ro-và-giả-định)
-14. [Out of Scope](#14-ngoài-phạm-vi)
-15. [Decision Log](#15-sổ-quyết-định)
+1. [Product Goals](#1-product-goals)
+2. [Users and Context of Use](#2-users-and-context-of-use)
+3. [Release Scope](#3-release-scope)
+4. [Functional Requirements — Execution Core](#4-functional-requirements--execution-core)
+5. [Functional Requirements — Action Safety](#5-functional-requirements--action-safety)
+6. [Functional Requirements — Action CI Testing](#6-functional-requirements--action-ci-testing)
+7. [Functional Requirements — Developer Experience](#7-functional-requirements--developer-experience)
+8. [Functional Requirements — Commercial Service Layer](#8-functional-requirements--commercial-service-layer)
+9. [Non-Functional Requirements](#9-non-functional-requirements)
+10. [Data Interface Specifications](#10-data-interface-specifications)
+11. [Release Acceptance Criteria](#11-release-acceptance-criteria)
+12. [Metrics and Measurement Requirements](#12-metrics-and-measurement-requirements)
+13. [Dependencies, Risks, and Assumptions](#13-dependencies-risks-and-assumptions)
+14. [Out of Scope](#14-out-of-scope)
+15. [Decision Log](#15-decision-log)
 
 **Appendices**
 
-- [A — Requirements Traceability Matrix](#phụ-lục-a--ma-trận-truy-vết-yêu-cầu)
-- [B — Standard Error Code Catalog](#phụ-lục-b--danh-mục-mã-lỗi-chuẩn)
-- [C — Identification and Versioning Conventions](#phụ-lục-c--quy-ước-định-danh-và-phiên-bản)
-- [D — Monorepo Structure and Transport Protocols](#phụ-lục-d--cấu-trúc-monorepo-và-giao-thức-truyền-dẫn)
+- [A — Requirements Traceability Matrix](#appendix-a--requirements-traceability-matrix)
+- [B — Standard Error Code Catalog](#appendix-b--standard-error-code-catalog)
+- [C — Identification and Versioning Conventions](#appendix-c--identification-and-versioning-conventions)
+- [D — Monorepo Structure and Transport Protocols](#appendix-d--monorepo-structure-and-wire-protocols)
 
 ---
 
@@ -1307,7 +1307,7 @@ Every error code **MUST** state all three components: where it went wrong, why, 
 
 ### D.1 Standard Monorepo Layout
 
-Repository layout and the procedure for changing each directory: **[`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-cấu-trúc-kho)** — the only home.
+Repository layout and the procedure for changing each directory: **[`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-repository-structure)** — the only home.
 
 ### D.2 Wire Protocols and Trace Format
 

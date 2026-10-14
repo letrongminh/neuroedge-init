@@ -58,7 +58,7 @@ The following packages are planned in future architecture but have no code in th
 - `perception/vision/` and `sim/vision/` (I2a, TSK-V1b-*): vision pipeline and vision simulation; vision serves as an L2 input, entering gates as facts declared by makers (Q-54) — see [`15`](15-target-architecture.md) §4.4.
 - `services/fleet/` and `services/registry/` (I9–I10, TSK-K2, TSK-K3): server-side services for Fleet OS (staged OTA orchestration, MQTT broker, telemetry) and Gate Registry (OCI registry via ORAS/Harbor, metering) — see [`15`](15-target-architecture.md) §3.1, §3.2.
 
-The operator agent and NeuroEdge Blueprint of [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) add five packages (`planned · Q-72`; no code yet, package names are proposed):
+The operator agent and NeuroEdge Blueprint of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) add five packages (`planned · Q-72`; no code yet, package names are proposed):
 
 | Package | Increment | Responsibility | Allowed dependencies (planned) |
 |:---|:---:|:---|:---|

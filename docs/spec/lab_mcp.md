@@ -28,25 +28,25 @@
 
 ## Table of contents
 
-1. [Positioning, architecture, and principles](#1-định-vị-kiến-trúc-và-nguyên-tắc)
-2. [Boundary with safety tier](#2-ranh-giới-với-tầng-an-toàn)
-3. [Resource assumptions](#3-giả-định-nguồn-lực)
-4. [Critical path and dependencies](#4-đường-găng-và-phụ-thuộc)
-5. [Block N0 — Governance](#5-khối-n0--quản-trị)
-6. [Block N1 — Gated lab actions](#6-khối-n1--lab-action-có-gate)
-7. [Block N2 — Physical safety envelopes](#7-khối-n2--phong-bì-an-toàn-vật-lý)
-8. [Block N3 — Read-only I2C bus](#8-khối-n3--bus-i2c-chỉ-đọc)
-9. [Block N4 — Workbench notebook](#9-khối-n4--sổ-bàn-làm-việc)
-10. [Block N5 — Draft contracts via MCP](#10-khối-n5--hợp-đồng-nháp-qua-mcp)
-11. [Block N5b — Lab Monitor](#11-khối-n5b--lab-monitor)
-12. [Block N6 — Event-based triggers](#12-khối-n6--trigger-theo-sự-kiện)
-13. [Block N7 — NeuroEdge Lab on ESP32-S3](#13-khối-n7--neuroedge-lab-trên-esp32-s3)
-14. [Demand gate and milestones](#14-cổng-nhu-cầu-và-cột-mốc)
-15. [Risks and mitigations](#15-rủi-ro-và-giảm-thiểu)
-16. [Scope cuts](#16-cắt-phạm-vi)
+1. [Positioning, architecture, and principles](#1-positioning-architecture-and-principles)
+2. [Boundary with safety tier](#2-boundary-with-safety-tier)
+3. [Resource assumptions](#3-resource-assumptions)
+4. [Critical path and dependencies](#4-critical-path-and-dependencies)
+5. [Block N0 — Governance](#5-block-n0--governance)
+6. [Block N1 — Gated lab actions](#6-block-n1--gated-lab-actions)
+7. [Block N2 — Physical safety envelopes](#7-block-n2--physical-safety-envelopes)
+8. [Block N3 — Read-only I2C bus](#8-block-n3--read-only-i2c-bus)
+9. [Block N4 — Workbench notebook](#9-block-n4--workbench-notebook)
+10. [Block N5 — Draft contracts via MCP](#10-block-n5--draft-contracts-via-mcp)
+11. [Block N5b — Lab Monitor](#11-block-n5b--lab-monitor)
+12. [Block N6 — Event-based triggers](#12-block-n6--event-based-triggers)
+13. [Block N7 — NeuroEdge Lab on ESP32-S3](#13-block-n7--neuroedge-lab-on-esp32-s3)
+14. [Demand gate and milestones](#14-demand-gate-and-milestones)
+15. [Risks and mitigations](#15-risks-and-mitigations)
+16. [Scope cuts](#16-scope-cuts)
 
 **Appendices**
-- [A — Selective reuse from ESP-Claw](#phụ-lục-a--tái-dùng-có-chọn-lọc-từ-esp-claw)
+- [A — Selective reuse from ESP-Claw](#appendix-a--selective-reuse-from-esp-claw)
 
 ---
 

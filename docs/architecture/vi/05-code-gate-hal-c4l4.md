@@ -206,7 +206,7 @@ A `safe_state` differing from `off` can only be declared in `board.v1`, not in c
 when hardware guarantees it: `safe_state: on` is implemented via normally-on wiring (normally-closed relays) declared as
 hardware interlocks, not by software actively driving it on. No external bypasses around gates are added. Existing profiles
 (`off`; `motion.*` `stop`/`hold`) retain their behavior. `TODOS.md` #58 must be fixed first (older `board.v1`
-parsers silently dropped unknown keys, including safety keys). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+parsers silently dropped unknown keys, including safety keys). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
 
 ```mermaid
 stateDiagram-v2
