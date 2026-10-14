@@ -17,10 +17,14 @@ the page is `neuroedge.viz.page(live=True)`, the same renderer as
 
 Every POST must come from this page: an `Origin` of this server, and the header
 `X-NeuroEdge-UI-Key` with the key made for this run (DP-A-02,
-`docs/spec/deployment_profiles.md`). The key is only ever in the URL printed on the
-terminal, after `#`, which a browser never sends: another process on the same
-machine — a brain with a shell, a script — can read the page but cannot answer the
-device's question as the person at home. A refused POST is traced as `ui_auth_refused`.
+`docs/spec/deployment_profiles.md`). The key itself is never printed: the terminal URL
+carries, after `#`, a one-time pairing code that the page trades once for the key
+(`POST /pair`). Opening the URL puts it on the browser's command line and Claude
+Desktop keeps stderr in a log, so another process on the machine — a brain with a shell,
+a script — may see the URL later; by then the code is spent or expired. A refused POST
+is traced as `ui_auth_refused`.
+
+    POST /pair     {"code": "..."} — the one-time code from the URL, for the key; Origin only
 
 Turns run one at a time under a lock: the session, like a device, handles one
 utterance after another. `neuroedge mcp serve --ui` (TSK-S3-27) serves this
@@ -54,6 +58,8 @@ def _json(value: Any) -> str:
 MAX_BODY = 4096
 KEY_HEADER = "X-NeuroEdge-UI-Key"
 MAX_REFUSALS_TRACED = 10_000  # as `mcp_auth_refused`: a flood cannot fill the trace
+MAX_TRACED_PATH = 64  # a refused request names its path, cut: the request line is the caller's
+PAIRING_TTL_S = 600.0  # the printed code works once, within ten minutes
 
 
 def _parse_value(text: str) -> Any:
@@ -86,6 +92,8 @@ class SessionServer:
         self.httpd.daemon_threads = True
         self._thread: threading.Thread | None = None
         self.key = secrets.token_urlsafe(32)
+        self._code: str | None = secrets.token_urlsafe(16)
+        self._code_deadline = time.monotonic() + PAIRING_TTL_S
         self.refusals = 0
 
     @property
@@ -95,15 +103,29 @@ class SessionServer:
 
     @property
     def open_url(self) -> str:
-        """The URL a person opens: the page reads the key from after `#`, the server never sees it."""
-        return f"{self.url}#k={self.key}"
+        """
+        The URL a person opens. After `#` (never sent by a browser) it carries the one-time
+        pairing code, not the key: the URL lands in the browser's command line and in logs.
+        """
+        return f"{self.url}#c={self._code or 'spent'}"
+
+    def pair(self, code: str) -> str | None:
+        """Trade the printed code for the key, once, within PAIRING_TTL_S; else None (and why)."""
+        with self.lock:
+            if self._code is None or time.monotonic() > self._code_deadline:
+                self._code = None
+                return None
+            if not hmac.compare_digest(code.encode(), self._code.encode()):
+                return None
+            self._code = None  # spent: whoever reads the URL later gets nothing
+            return self.key
 
     def refuse(self, reason: str, path: str) -> None:
         """Trace one refused POST (`ui_auth_refused`): the reason and path, never a key."""
         self.refusals += 1
         if self.refusals > MAX_REFUSALS_TRACED:
             return
-        data: dict[str, Any] = {"reason": reason, "path": path}
+        data: dict[str, Any] = {"reason": reason, "path": path[:MAX_TRACED_PATH]}
         if self.refusals == MAX_REFUSALS_TRACED:
             data["last_recorded"] = True  # the trace stops here; the count goes on
         with self.lock:
@@ -339,7 +361,32 @@ class _Handler(BaseHTTPRequestHandler):
         self._send(HTTPStatus.FORBIDDEN, b"unknown host", "text/plain")
         return True
 
+    def _pair(self) -> None:
+        """`POST /pair`: same host and Origin as any POST, but no key yet — the code is the proof."""
+        reason = self._post_refusal()
+        if reason not in (None, "no_key", "wrong_key"):
+            self.server_state.refuse(reason, "/pair")
+            self._send(HTTPStatus.FORBIDDEN, f"request refused: {reason}".encode(), "text/plain")
+            return
+        length = self._body_length()
+        if length is None or length > MAX_BODY:
+            self._send(HTTPStatus.BAD_REQUEST, b"bad Content-Length", "text/plain")
+            return
+        try:
+            code = str(json.loads(self.rfile.read(length) or b"{}")["code"])
+        except (ValueError, KeyError, TypeError):
+            code = ""
+        key = self.server_state.pair(code)
+        if key is None:
+            self.server_state.refuse("bad_code", "/pair")
+            self._send(HTTPStatus.FORBIDDEN, b"request refused: bad_code", "text/plain")
+            return
+        self._send(HTTPStatus.OK, _json({"ok": True, "key": key}).encode(), "application/json")
+
     def do_POST(self) -> None:  # noqa: N802 - http.server API
+        if self.path == "/pair":
+            self._pair()
+            return
         if self._refuse_post():
             return
         if self.path not in ("/command", "/confirm"):

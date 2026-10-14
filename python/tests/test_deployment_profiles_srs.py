@@ -45,6 +45,10 @@ def cases() -> list[tuple[str, list[str], str]]:
 def test_the_specification_has_requirements_and_cases() -> None:
     assert len(requirements()) >= 30
     assert len(cases()) >= len(requirements())
+    # A row the parser cannot read would silently drop out: every table row is a parsed row.
+    section = text().split("## 3. Specific requirements", 1)[1].split("## 4. Interfaces", 1)[0]
+    assert len(re.findall(r"^\| DP-", section, re.M)) == len(requirements())
+    assert len(re.findall(r"^\| TC-", text(), re.M)) == len(cases())
     assert len(set(requirements())) == len(requirements()), "a requirement ID is used twice"
     names = [tc for tc, _, _ in cases()]
     assert len(set(names)) == len(names), "a test case ID is used twice"
@@ -68,7 +72,10 @@ def test_an_implemented_test_case_names_a_test_that_exists(tc: str) -> None:
     assert found, (tc, status)
     path, function = found.groups()
     source = (REPO_ROOT / path).read_text(encoding="utf-8")
-    assert re.search(rf"^def {function}\(", source, re.M), (tc, path, function)
+    found = re.search(rf"((?:^@.*\n)*)^def {function}\(", source, re.M)
+    assert found, (tc, path, function)
+    # A top-level test (collected) that is not skipped or expected to fail.
+    assert not re.search(r"skip|xfail", found.group(1)), (tc, "decorated as skipped or xfail")
 
 
 def test_a_planned_test_case_names_a_roadmap_task() -> None:
@@ -88,3 +95,39 @@ def test_every_decision_and_task_the_specification_cites_exists() -> None:
         assert q in decisions, q
     for task in sorted(set(re.findall(r"\bTSK-[A-Za-z0-9]+-\d+\b", srs))):
         assert f"**{task}**" in roadmap, task
+
+
+CITING = [
+    REPO_ROOT / "roadmap" / "neuroedge-roadmap.md",
+    REPO_ROOT / "roadmap" / "neuroedge-prd.md",
+    REPO_ROOT / "CHANGELOG.md",
+    REPO_ROOT / "docs" / "spec" / "threat_model.md",
+    REPO_ROOT / "docs" / "spec" / "tool_calling.md",
+    REPO_ROOT / "docs" / "spec" / "studio.md",
+    REPO_ROOT / "docs" / "user" / "thuat-ngu.md",
+    REPO_ROOT / "docs" / "business" / "kien-truc-tong-the.html",
+    *sorted((REPO_ROOT / "docs" / "architecture" / "vi").glob("*.md")),
+]
+
+
+def test_every_requirement_cited_elsewhere_exists() -> None:
+    known = set(requirements())
+    for path in CITING:
+        for req in set(re.findall(r"\bDP-[A-Z]+-\d{2}\b", path.read_text(encoding="utf-8"))):
+            assert req in known, (path.name, req)
+
+
+def test_the_refusal_reasons_agree_in_the_spec_the_trace_catalogue_and_the_code() -> None:
+    from neuroedge.sim import ui
+
+    source = Path(ui.__file__).read_text(encoding="utf-8")
+    in_code = set(re.findall(r'return "(\w+)"', source)) | set(
+        re.findall(r'refuse\("(\w+)"', source)
+    )
+    srs = text().split("### 4.4", 1)[1].split("## 5.", 1)[0]
+    in_srs = set(re.findall(r"`(\w+)`", srs.split("Refusal reasons:", 1)[1].split(".", 1)[0]))
+    catalogue = (REPO_ROOT / "docs" / "spec" / "tool_calling.md").read_text(encoding="utf-8")
+    row = next(line for line in catalogue.splitlines() if line.startswith("| `ui_auth_refused` |"))
+    in_catalogue = set(re.findall(r"`(\w+)`", row.split("`reason`:", 1)[1].split(".", 1)[0]))
+    assert in_code == in_srs == in_catalogue, (in_code, in_srs, in_catalogue)
+    assert {"no_origin", "no_key", "wrong_key", "bad_code"} <= in_code

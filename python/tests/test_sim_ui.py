@@ -114,12 +114,13 @@ def test_the_event_stream_pushes_the_session(server):
     assert any(e["type"] == "actuator_command" for e in pushed["events"])
 
 
-def test_the_key_is_never_in_the_page_or_the_state(server):
-    # DP-A-02: the key lives only after `#` in the printed URL; anyone can GET the page.
+def test_the_key_is_never_in_the_page_the_state_or_the_printed_url(server):
+    # DP-A-02: anyone can GET the page, and the printed URL ends up in argv and logs.
     post(server, "mở cửa phòng 101")
     for path in ("/", "/state"):
         assert server.key not in get(server, path)[2]
-    assert server.open_url == f"{server.url}#k={server.key}"
+    assert server.key not in server.open_url
+    assert server.open_url.startswith(f"{server.url}#c=")
     assert len(server.key) >= 43  # 32 random bytes
     with urllib.request.urlopen(server.url + "events", timeout=5) as stream:
         assert server.key not in stream.readline().decode("utf-8")
@@ -134,3 +135,51 @@ def test_each_run_has_its_own_key(root):
     finally:
         a.stop()
         b.stop()
+
+
+def pair(server, code, origin=True):
+    headers = {"Content-Type": "application/json"}
+    if origin:
+        headers["Origin"] = page_headers(server)["Origin"]
+    request = urllib.request.Request(
+        server.url + "pair",
+        data=json.dumps({"code": code}).encode(),
+        method="POST",
+        headers=headers,
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            return response.status, json.loads(response.read())
+    except urllib.error.HTTPError as error:
+        return error.code, None
+
+
+def refusals(server):
+    return json.loads(get(server, "/state")[2])["events"]
+
+
+def test_the_printed_code_pairs_once_and_then_is_spent(server):
+    # Whoever reads the URL after the page opened it (ps, a log) holds a spent code.
+    code = server.open_url.split("#c=", 1)[1]
+    assert pair(server, code) == (200, {"ok": True, "key": server.key})
+    assert pair(server, code) == (403, None)
+    assert server.open_url.endswith("#c=spent")
+    refused = [e["data"] for e in refusals(server) if e["type"] == "ui_auth_refused"]
+    assert refused == [{"reason": "bad_code", "path": "/pair"}]
+
+
+def test_a_wrong_or_late_code_does_not_pair(server, monkeypatch):
+    code = server.open_url.split("#c=", 1)[1]
+    assert pair(server, "x" * 22) == (403, None)
+    assert pair(server, code, origin=False) == (403, None)  # curl: no Origin
+    monkeypatch.setattr(server, "_code_deadline", 0.0)  # ten minutes have passed
+    assert pair(server, code) == (403, None)
+
+
+def test_a_refused_path_is_traced_cut_short(server):
+    # The request line is the caller's: a flood of long paths must not grow the trace.
+    request = urllib.request.Request(server.url + "command/" + "a" * 5000, data=b"x", method="POST")
+    with pytest.raises(urllib.error.HTTPError):
+        urllib.request.urlopen(request, timeout=5)
+    refused = [e["data"] for e in refusals(server) if e["type"] == "ui_auth_refused"]
+    assert len(refused[0]["path"]) == 64

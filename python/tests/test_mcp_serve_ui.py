@@ -368,8 +368,10 @@ def test_a_taken_port_moves_the_page_and_keeps_serving_mcp(home, tmp_path):
     assert [c["source"] for c in of_type(state["events"], "tool_call")] == ["mcp"]
     stderr = errlog_path.read_text(encoding="utf-8")
     assert f"warning: sim UI port {port} is taken" in stderr
-    # The printed URL carries the run's key after `#` (DP-A-02): the page reads it, the server never.
-    assert re.search(re.escape(f"sim UI at {url}#k=") + r"[\w-]{43} \(same session\)", stderr)
+    # The printed URL carries a one-time pairing code after `#`, never the key (DP-A-02): stderr is
+    # where Claude Desktop keeps its log, which another process on the machine can read.
+    assert re.search(re.escape(f"sim UI at {url}#c=") + r"[\w-]{22} \(same session\)", stderr)
+    assert "#k=" not in stderr
 
 
 # --- the way out of `mcp serve`: trace written, hal.close() called (TSK-N2-03, TSK-N2-04) -----------

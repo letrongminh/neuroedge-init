@@ -50,10 +50,10 @@ bash demo/i2f-chat-den-cua/chay-hop.sh
 
 First time, the script generates keys at `~/neuroedge-demo-khoa` (`tao-khoa.py`: CA, box and brain certificates,
 30-day token bound to certificate). Then it runs `neuroedge mcp serve --http --ui --target sim` on the Tailscale
-IP, port 8443. Notice on stderr: `sim UI at http://127.0.0.1:8765/#k=… (same session; `ask`
-is answered here)` and `listening on <ip>:8443/mcp`. Open that exact URL, with its `#k=…`: this is the "home screen".
-The key after `#` is made for this run and only this terminal shows it, so no other process on the machine can
-press "approve" for you (DP-A-02).
+IP, port 8443. Notice on stderr: `sim UI at http://127.0.0.1:8765/#c=… (same session; `ask`
+is answered here)` and `listening on <ip>:8443/mcp`. Open that exact URL, with its `#c=…`: this is the "home screen".
+The code after `#` works once, within ten minutes: the page trades it for this run's key, so no other process on
+the machine can press "approve" for you (DP-A-02). Open it before anything else does.
 The box only listens on the Tailscale IP, not on home Wi-Fi or the Internet. When the token expires, run
 `tao-khoa.py --out ~/neuroedge-demo-khoa --renew-token`.
 
