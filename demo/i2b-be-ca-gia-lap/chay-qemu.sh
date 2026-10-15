@@ -5,11 +5,13 @@
 #   bash demo/i2b-be-ca-gia-lap/chay-qemu.sh              # build, run the checked story, replay it
 #   bash demo/i2b-be-ca-gia-lap/chay-qemu.sh --console    # then the chip's console, for you to type
 #
-# Docker with espressif/idf:v5.4 (amd64; Apple Silicon runs it emulated, slowly). Builds take minutes
+# Docker with espressif/idf:v5.4 (amd64 or arm64, native on Apple Silicon). Builds take minutes
 # and fetch the pinned NeuroClaw-ESP: the CI job is the quicker way to show the result.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-docker run --rm -it --platform linux/amd64 -v "$ROOT":/work -w /work espressif/idf:v5.4 bash -c '
+OUT="$ROOT/fixtures/agents/aquarium/build/qemu"   # kept (git-ignored): the next build is incremental
+mkdir -p "$OUT"
+docker run --rm $([ -t 0 ] && echo -it) -v "$ROOT":/work -v "$OUT":/tmp/aquarium -w /work espressif/idf:v5.4 bash -c '
 set -euo pipefail
 git config --global --add safe.directory "*"
 python3 -m venv /opt/neuroedge >/dev/null
@@ -20,16 +22,19 @@ OUT=/tmp/aquarium
 . "$IDF_PATH/export.sh" >/dev/null
 P="$OUT/esp32s3"
 D="sdkconfig.defaults;sdkconfig.qemu"
-idf.py -C "$P" -B "$P/build" -D SDKCONFIG="$P/build/sdkconfig" -D SDKCONFIG_DEFAULTS="$D" set-target esp32s3 >/dev/null
+[ -f "$P/build/sdkconfig" ] ||   # set-target wipes the build: only the first time
+  idf.py -C "$P" -B "$P/build" -D SDKCONFIG="$P/build/sdkconfig" -D SDKCONFIG_DEFAULTS="$D" set-target esp32s3 >/dev/null
 idf.py -C "$P" -B "$P/build" -D SDKCONFIG="$P/build/sdkconfig" -D SDKCONFIG_DEFAULTS="$D" build >/dev/null
 python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa >/dev/null
 . "$IDF_PATH/export.sh" >/dev/null
 python3 scripts/qemu_aquarium.py "$P/build"
-rm -rf /tmp/aquarium-traces
-"$NE" record --target esp32s3 --port "$P/build/aquarium-test/boot-1.log" --follow --out /tmp/aquarium-traces/
-for t in /tmp/aquarium-traces/*.json; do "$NE" replay "$t" --agent fixtures/agents/aquarium/agent.toml | tail -1; done
+rm -rf "$OUT/traces"
+"$NE" record --target esp32s3 --port "$P/build/aquarium-test/boot-1.log" --follow --out "$OUT/traces/"
+for t in $(grep -l "\"action_requested\"" "$OUT"/traces/*.json); do   # the buttons, not the boot self-test
+  "$NE" replay "$t" --agent fixtures/agents/aquarium/agent.toml | tail -1
+done
 if [ "${1:-}" = "--console" ]; then
-  echo "--- the chip: try  fact water_hot true  then  button heater_on  (Ctrl-A X to leave)"
+  echo "--- the chip: try  fact water_hot true  then  button tank_heater_on  (Ctrl-A X to leave)"
   qemu-system-xtensa -nographic -machine esp32s3 \
     -drive "file=$P/build/aquarium-test/flash.bin,if=mtd,format=raw"
 fi

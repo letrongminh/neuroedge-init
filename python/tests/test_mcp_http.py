@@ -980,6 +980,22 @@ def test_a_token_lives_at_most_seven_days_and_renews_without_a_restart(serve, tm
     ]
 
 
+def test_renew_signs_with_the_key_name_the_box_knows(serve, tmp_path):
+    """A key directory whose JWKS names the issuer key otherwise (the chat demo's of 2026-10-13,
+    `kid` "demo"): a renewed token carries that name, and the running box accepts it."""
+    from neuroedge import pairing
+
+    keys = paired(tmp_path)
+    jwks = json.loads((keys / "jwks.json").read_text())
+    jwks["keys"][0]["kid"] = "demo"
+    (keys / "jwks.json").write_text(json.dumps(jwks))
+    running = serve_paired(serve, keys)
+    pairing.renew(keys)
+    token = (keys / "nao.token").read_text().strip()
+    assert jwt.get_unverified_header(token)["kid"] == "demo"
+    assert call_as(running, keys, keys / "nao.pem", keys / "nao.key", token) != 401
+
+
 def test_a_brain_certificate_rotates_without_a_restart_and_a_revoked_one_is_cut_off(
     serve, tmp_path
 ):

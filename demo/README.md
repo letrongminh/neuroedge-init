@@ -10,7 +10,7 @@ The `demo/` directory collects demo scenarios and prepared commands for each mil
 | I1 — terminal | [`i1-sim/`](i1-sim/) | ready | local macOS/Linux, no hardware needed | `6a69626` (2026-09-29) |
 | I3 (boardless portion) + OTA of I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | ready | Docker `espressif/idf:v5.4` (Mac Apple Silicon or Linux) | `6a69626` (2026-09-29) |
 | I4 (voice on laptop) | [`i4-thoai-laptop/`](i4-thoai-laptop/) | ready — provider path tested live; microphone: tested on presenter machine | local macOS, headphones, `OPENROUTER_API_KEY` | branch `voice/integration` (2026-09-29) |
-| I2d — **the fish tank on simulation and emulation** (TSK-I2d-28) | [`i2b-be-ca-gia-lap/`](i2b-be-ca-gia-lap/) | D1 (`sim`) re-run; D2 (`linux`), D3/D5 (QEMU) checked on CI; D4 (chat) not re-run with this agent | laptop; Linux VM or CI log; Docker `espressif/idf:v5.4` or CI log | branch `feat/aquarium-demos` (2026-10-15) |
+| I2d — **the fish tank on simulation and emulation** (TSK-I2d-28) | [`i2b-be-ca-gia-lap/`](i2b-be-ca-gia-lap/) | D1 (`sim`) and D4 (chat, `agent -m`) re-run on a Mac; D2 (`linux`) on CI only (no gpio-sim in OrbStack's kernel); D3/D5 (QEMU) re-run on a Mac in Docker (87 s) and on CI | laptop; Linux VM or CI log; Docker `espressif/idf:v5.4` or CI log | branch `feat/aquarium-demos` (2026-10-15) |
 | I2d/I2f — **chat controlling light and door via NeuroEdge Cloud** (Q-76) | [`i2f-chat-den-cua/`](i2f-chat-den-cua/) | ran all six screens via Telegram (OrbStack as cloud); no video yet, not yet run on real VPS | laptop as box + OrbStack VM or VPS, Telegram bot, OpenRouter key | branch `feat/demo-chat-den-cua` (2026-10-13) |
 
 ## Why run locally instead of Docker

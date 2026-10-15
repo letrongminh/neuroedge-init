@@ -1,7 +1,8 @@
 # Demo script — the fish tank on simulation and emulation
 
-> **Last re-run:** D1 on 2026-10-15, macOS, branch `feat/aquarium-demos` (the run below). D2 and
-> D3/D5 run on CI: jobs `linux-hal` (`python/tests_linux/test_kit_aquarium.py`) and `aquarium-qemu`
+> **Last re-run:** D1, D3/D5 and D4 on 2026-10-15, macOS (Apple Silicon; QEMU in Docker
+> `espressif/idf:v5.4` arm64, 87 s with `chay-qemu.sh`), branch `feat/aquarium-demos`. D2 runs on CI only (OrbStack's kernel
+> has no gpio-sim). CI: jobs `linux-hal` (`python/tests_linux/test_kit_aquarium.py`) and `aquarium-qemu`
 > (`scripts/qemu_aquarium.py`); show their logs, or run `chay-qemu.sh` ahead of the session.
 > **Duration:** 10–12 minutes for all five; each scene stands alone.
 > **Agent:** [`fixtures/agents/aquarium`](../../fixtures/agents/aquarium/agent.toml): a heater, an
@@ -109,7 +110,7 @@ neuroedge> answer to the pending question (confirmed)
 temperature comes from the kernel's LM75 driver, the chip a Pi would read. We write the
 temperature into the chip's register and the gate sees it through the driver."
 
-### Type (a Linux VM with the modules; on macOS show the CI log instead)
+### Type (a Linux VM whose kernel has `gpio-sim`, `i2c-stub` and `lm75`; OrbStack's has none of them, so on a Mac show the CI log instead)
 ```bash
 bash scripts/setup_gpio_sim.sh && bash scripts/setup_i2c_stub.sh   # as CI does; export the NEUROEDGE_* lines they print
 cd python && python -m pytest -q tests_linux/test_kit_aquarium.py
@@ -174,22 +175,35 @@ question is waiting, and only the person at home, on the box's page, can answer.
 
 ### Type
 ```bash
+python/.venv/bin/python demo/i2f-chat-den-cua/tao-khoa.py --out ~/neuroedge-demo-khoa --renew-token
+                                                        # tokens live 7 days now (DP-A-04): renew first
 NEUROEDGE_DEMO_AGENT=fixtures/agents/aquarium/agent.toml \
   bash demo/i2f-chat-den-cua/chay-hop.sh --local       # the box; open the printed #c=… link
-bash demo/i2f-chat-den-cua/chay-nao.sh                  # the brain (NeuroClaw), Telegram
+bash demo/i2f-chat-den-cua/chay-nao.sh localhost:8443   # the brain (NeuroClaw), on Telegram
+bash demo/i2f-chat-den-cua/chay-nao.sh localhost:8443 agent -m "…"   # or one sentence, no Telegram
 ```
-Then, in Telegram: "bể đang 25 độ, bật sưởi giúp tôi" · on the page, `:sensor temperature 31` ·
-"tắt máy sục khí đi" · on the page, `:sensor temperature 24` · "tắt máy sục khí đi", then
-**Đồng ý** on the page.
+Then: "Bể cá đang 25 độ. Bật máy sưởi giúp tôi." · on the page, `:sensor temperature 31` ·
+"Tắt máy sục khí của bể cá đi." · on the page, `:sensor temperature 24` · "Nước đã nguội rồi, tắt
+máy sục khí giúp tôi.", then **Đồng ý** on the page.
 
-### See
-- The brain reports the heater on; at 31 °C it reports the air pump cannot be turned off; at
-  24 °C it reports it is waiting for the owner, and the page shows the question.
+### See (re-run 2026-10-15 on this laptop, `agent -m`, OpenRouter model of the demo config)
+```text
+🦞 ✅ **Máy sưởi đã bật thành công!**
+🦞 ❌ **Không thể tắt máy sục khí lúc này.**
+Hệ thống từ chối vì lý do an toàn:
+- **Nước quá nóng**: … Khi nước nóng, việc tắt sục khí sẽ làm cá thiếu oxy, gây nguy hiểm.
+🦞 ⏳ **Đang chờ xác nhận từ chủ nhà...**
+… chỉ **chủ nhà mới có thể xác nhận trực tiếp tại trang điều khiển NeuroEdge tại nhà**.
+Tôi không thể xác nhận thay bạn được, ngay cả khi bạn nói "có" ở đây.
+```
+The box's trace of that run (`neuroedge replay` → `✓ decisions match the recording`):
+`tank_heater_on` ALLOW · `tank_aerator_off` BLOCK at 31 °C, no question opened · at 24 °C BLOCK,
+`tool_confirm_requested confirm_1` · `tool_confirmed source=ui` → ALLOW, `door_lock` off.
 
 ### Highlights
 - The brain never answers the question (Q-26); the page needs the per-run key (DP-A-02).
-- Not re-run with the aquarium yet: the brain's words vary with the model. The box's side is the
-  same as D1 and tested (`test_a_brain_over_mcp_is_told_a_question_waits_and_cannot_answer_it`).
+- The brain's words vary with the model; the decisions do not. At 31 °C it said "29°C", the
+  threshold in the gate's message, not the reading: the brain never sees the probe.
 
 ---
 

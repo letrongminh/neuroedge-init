@@ -150,6 +150,17 @@ def _days(days: int) -> int:
     return days
 
 
+def _kid(out: Path) -> str:
+    """The `kid` the box knows the signing key by: the one in `jwks.json`. A key directory made
+    before `pair init` (the chat demo's `tao-khoa.py` of 2026-10-13) names it otherwise."""
+    try:
+        keys = json.loads((out / "jwks.json").read_text())["keys"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return "pair"
+    kids = [entry.get("kid") for entry in keys if isinstance(entry, dict)]
+    return kids[0] if len(kids) == 1 and isinstance(kids[0], str) else "pair"
+
+
 def mint(out: Path, days: int = MAX_TOKEN_DAYS) -> str:
     """A token for the brain, bound to `nao.pem`, signed with `issuer.key`, `days` long."""
     import jwt
@@ -168,7 +179,7 @@ def mint(out: Path, days: int = MAX_TOKEN_DAYS) -> str:
         "scope": SCOPE,
         "cnf": {"x5t#S256": thumbprint((out / "nao.pem").read_bytes())},
     }
-    token = jwt.encode(claims, key, algorithm="ES256", headers={"kid": "pair"})
+    token = jwt.encode(claims, key, algorithm="ES256", headers={"kid": _kid(out)})
     _write_private(out / "nao.token", (token + "\n").encode("ascii"))
     return token
 
