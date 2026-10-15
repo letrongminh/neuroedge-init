@@ -27,13 +27,14 @@ In scope, in three phases (Q-84):
 |:---|:---|:---|:---|:---|
 | **A** | A virtual board derived from the agent, on `sim` only, labelled `risk=virtual_board` | VP-VB-* | TSK-I2d-29 | decided |
 | **B** | A catalogue of universal part kinds, `[sim.parts]` in agent.toml, `neuroedge add part` | VP-PT-* | TSK-I2d-30 | decided |
+| **A+** | A per-board pin map in agent.toml, so an agent keeps its pin names from `sim` to a real board (the Zephyr overlay pattern) | VP-PM-* | TSK-I2d-32 | decided; its PR needs the lead engineer's approval (VP-PM-06) |
 | **C** | A drag-and-drop canvas on the sim page that writes `[sim.parts]` | VP-CV-* | TSK-I2d-31 | deferred: reopens with data after the 2026-12-06 demand gate (Q-77, Q-84) |
 
 Out of scope: gate semantics and their authoring (`core_contracts.md`; a gate is never drawn,
 VP-CV-03), the `board.v1` and `trace.v1` schemas (unchanged, VP-NF-01), electrical simulation
 (SPICE, timing of real buses), running firmware in a browser simulator (Wokwi: the engine is a
-closed service; QEMU already runs the chip, `scripts/qemu_aquarium.py`), remote actuators
-(RFC-0018), and mapping a virtual pin name to a real board's pin (VP-OQ-01).
+closed service; QEMU already runs the chip, `scripts/qemu_aquarium.py`), and remote actuators
+(RFC-0018).
 
 ### 1.3 Definitions
 
@@ -45,6 +46,7 @@ closed service; QEMU already runs the chip, `scripts/qemu_aquarium.py`), remote 
 | **Kind** | An entry of the parts catalogue: which primitive the part is, its icon, unit, range and envelope preset. A kind adds no primitive; it names an existing one. |
 | **Envelope preset** | The safety envelope (RFC-0007 §3d: `window_s`, `max_on_ms_per_window`, `min_interval_ms`, `max_continuous_ms`) a kind gives an output pin on the virtual board. |
 | **Graduation** | Building the same agent for `linux` or `esp32s3`: checked against the real board profile, never against the virtual board. |
+| **Pin map** | `[targets.<board-id>.pins]` in agent.toml: the agent's pin name → that board's pin name. The agent's code, gates, commands and traces keep the agent's name; the board's pin, envelope and enable pin do the work. |
 
 ### 1.4 References
 
@@ -127,6 +129,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | VP-VB-05 | A session on `sim-virtual` shall print `risk=virtual_board` at start, list the pins, sensors and channels the virtual board added, write `"risks": ["virtual_board"]` and `"virtual_board_digest"` into the trace metadata (extra keys `trace.v1` already allows), and show the label in the page header. | Transparency instead of prohibition. | Q-73 | T |
 | VP-VB-06 | `virtual_board_digest` shall be the SHA-256 of the virtual board's canonical JSON (sorted keys, no whitespace). `replay` and `verify` of a trace recorded on `sim-virtual` shall rebuild the board from the agent and refuse, naming both digests, when it differs; when equal, they shall reach the recorded verdicts. | A recording proves something only about the board it ran on. | Q-72, Q-84 | T |
 | VP-VB-07 | `load_board_by_id("sim-virtual")` without an agent, `available_boards()` and `boards/` shall not contain or produce the virtual board; asking for it without an agent shall fail naming VP-VB-01. | No dummy board in the profile set. | RFC-0013 §3a | T |
+| VP-VB-09 | `neuroedge new` shall keep `sim-default` as the board of a new project and write no `[sim] board`; `neuroedge new <name> --board sim-virtual` shall write `[sim] board = "sim-virtual"` and print `risk=virtual_board`. | A new project builds for Box-3 as it runs on `sim` (FR-DX-03); the free board is one explicit choice, as `west build -b native_sim` is in Zephyr. | Q-84 | T |
 | VP-VB-08 | Building the virtual board from the same agent shall give the same canonical JSON on every run and machine. | The digest of VP-VB-06 is stable. | Q-84 | T |
 
 ### 3.2 Phase B — Parts catalogue (VP-PT)
@@ -140,9 +143,21 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | VP-PT-05 | A sensor part with a `range` shall refuse, from `:sensor` and from the page, a value outside it, with a message naming the range; "Mất tín hiệu" (no reading) stays allowed. A reading the session already holds is never changed by the range. | A typo cannot pass for a reading; a lost probe is still testable. | Q-84 | T |
 | VP-PT-06 | The page shall show a part's `label` (else the kind's default word), its kind's icon, unit and range; `[ui.labels]` shall keep working and win over a part's label for the same name. | People's words on every card; agents written before B unchanged. | Q-84 | T |
 | VP-PT-07 | `neuroedge add part <kind> <name> [--pin/--sensor/--channel] [--label]` shall write the part and its `[requires]` entry and, for output kinds, run `add action` (or `add sensor` for sensor kinds) so the part arrives with an action, a fail-closed gate and a two-way test; it shall refuse an unknown kind by listing the catalogue, and change nothing when any step fails. `neuroedge add part --list` prints the catalogue. | The command phase C's "drop a part" will call. | FR-DX-08, Q-84 | T |
+| VP-PT-09 | `neuroedge add part` with a pin, sensor or channel the project's board lacks shall change nothing and fail naming the board and the two ways on: `--board sim-virtual`, or a `[targets.<board>.pins]` entry (VP-PM-01). It shall never switch the board itself. | Nobody ends up on the virtual board without knowing. | Q-84 | T |
 | VP-PT-08 | The aquarium sample shall declare its heater, air pump, light and water probe as parts on its existing pins (its `[ui.labels]` replaced), and keep passing `test_aquarium.py`, `tests_linux/test_kit_aquarium.py` and the `aquarium-qemu` job unchanged. | The first use case proves B without breaking graduation. | TSK-I2d-28 | T |
 
-### 3.3 Phase C — Parts canvas (VP-CV), deferred
+### 3.3 Phase A+ — Pin map (VP-PM)
+
+| ID | Requirement | Rationale | Source | Verification |
+|:---|:---|:---|:---|:---|
+| VP-PM-01 | `[targets.<board-id>.pins]` shall map an agent pin name to a pin of that board, for `digital.out` and `digital.in` only. It applies when, and only when, that board is the build or session board. Each mapped-to pin shall exist on the board with the same primitive; two agent names on one board pin, and an agent name mapped onto a board pin the agent also uses by its own name, shall fail at load naming both. An unknown board id shall fail. | Zephyr overlays, ESPHome board packages and PlatformIO environments all keep code on logical names and put the board's pins in a per-board file; the board profile is NeuroEdge's devicetree, the map its overlay. | Q-84 | T |
+| VP-PM-02 | With a map, the board pin's envelope, enable pin and backend shall apply, never the virtual board's or a part's preset; the verdict token is issued for the agent's name and drives the mapped board pin only. | The real relay's limits govern the real relay. | RFC-0007, Q-84 | T |
+| VP-PM-03 | Actions, gates, `[requires]`, `[sim.parts]`, commands and every trace event shall use the agent's name on every target; the trace metadata shall carry `"pin_map": {agent name: board pin}` (an extra key `trace.v1` allows). On `esp32s3` the generated pin table (`ne_agent_pin_op`) and the bridge's NE1 records shall do the same. | One recording reads the same on `sim`, `linux` and the chip; the map is visible evidence. | Q-72, Q-84 | T |
+| VP-PM-04 | `build`, `run` and `mcp serve` shall print the map in force (`pins: heater → gate_relay, air_pump → door_lock`). An agent without a map, or a board the map does not name, shall behave exactly as before. | A wrong map is seen before it drives a pin; no map, no change. | Q-73 | T |
+| VP-PM-05 | A map for a `sim` board (`sim-default`, `sim-rpi5`) shall be accepted, so the mapping is tried on `sim` with the target board's pin set before hardware; a map for `sim-virtual` shall fail (the virtual board already has the agent's names). | Graduation is rehearsed on `sim`. | Q-84 | T |
+| VP-PM-06 | The pull request implementing VP-PM-01 → VP-PM-05 shall be approved by the lead engineer and update `threat_model.md` with the misrouting risk (an action's name mapped to the wrong device) and its mitigations (VP-PM-01, VP-PM-04). | A map decides which real device an allowed action moves; no RFC is required by CONTRIBUTING §3, so the review is required here. | Q-84 | I |
+
+### 3.4 Phase C — Parts canvas (VP-CV), deferred
 
 | ID | Requirement | Rationale | Source | Verification |
 |:---|:---|:---|:---|:---|
@@ -152,12 +167,12 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | VP-CV-04 | After a write, the session shall restart on the new agent as a new trace session; a pending `ask` shall expire, and nothing of the old session shall carry over. | One recording, one board. | VP-VB-06 | T |
 | VP-CV-05 | The canvas shall draw parts with Wokwi Elements (`@wokwi/elements`, MIT, pinned version, its licence notice kept), vendored into the package and inlined into the page only when the canvas is on, never fetched; a kind with no element (§4.2) shall use the page's own icon. Elements are drawings only: every state they show comes from the session. | FR-DX-02: `sim` runs offline; least drawing effort (Q-84). | FR-DX-02, Q-84 | T |
 
-### 3.4 Non-functional requirements (VP-NF)
+### 3.5 Non-functional requirements (VP-NF)
 
 | ID | Requirement | Rationale | Source | Verification |
 |:---|:---|:---|:---|:---|
 | VP-NF-01 | Phases A, B and C shall change no row of `CONTRIBUTING.md` §3: `schemas/*.json`, `engine/gate_resolver.py`, `engine/constraints.py`, `fixtures/traces/*.json`, `digests.lock`, NETR. | Outside the RFC list by construction. | CONTRIBUTING §3 | T |
-| VP-NF-02 | Every agent and canonical trace that runs on `sim-default` or `sim-rpi5` today shall give the same verdicts and pin commands after A and B. | Opt-in means nothing else moves. | Q-84 | T |
+| VP-NF-02 | Every agent and canonical trace that runs on `sim-default` or `sim-rpi5` today shall give the same verdicts and pin commands after A, A+ and B. | Opt-in means nothing else moves. | Q-84 | T |
 
 ---
 
@@ -253,6 +268,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-VB-05-1 | VP-VB-05 | integration | `run` on `sim-virtual` → start-up line lists the additions; trace metadata carries `risks` and the digest and validates against `trace.v1`; page header shows the label | planned — TSK-I2d-29 |
 | TC-VB-06-1 | VP-VB-06 | integration | Record on `sim-virtual`, replay → same verdicts; add a pin to the agent, replay → refused naming both digests | planned — TSK-I2d-29 |
 | TC-VB-07-1 | VP-VB-07 | unit | `available_boards()` and `boards/` → no `sim-virtual`; `load_board_by_id("sim-virtual")` → error naming VP-VB-01 | planned — TSK-I2d-29 |
+| TC-VB-09-1 | VP-VB-09 | integration | `neuroedge new x` → no `[sim] board`, `neuroedge build --target esp32s3` passes; `neuroedge new y --board sim-virtual` → `[sim] board = "sim-virtual"`, `risk=virtual_board` printed | planned — TSK-I2d-29 |
 | TC-VB-08-1 | VP-VB-08 | unit | Build the virtual board twice, with `[requires]` keys in another order → identical canonical JSON and digest | planned — TSK-I2d-29 |
 | TC-PT-01-1 | VP-PT-01 | unit | Corpus of `[sim.parts]` tables: valid ones load; unknown key, unknown kind, no target, two targets, wrong primitive → each fails naming the part | planned — TSK-I2d-30 |
 | TC-PT-02-1 | VP-PT-02 | unit | Every kind of `parts.toml` names one primitive `SimHAL` implements; every kind of §4.2 is in the file and nothing else | planned — TSK-I2d-30 |
@@ -262,7 +278,14 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-PT-06-1 | VP-PT-06 | unit | `[ui.labels]` keeps only non-empty strings and is read by the page | implemented — python/tests/test_sim_ui.py::test_labels_are_words_for_people_and_anything_else_is_left_out |
 | TC-PT-06-2 | VP-PT-06 | integration | Page of an agent with parts → each card has the part's label, icon, unit; a `[ui.labels]` entry wins | planned — TSK-I2d-30 |
 | TC-PT-07-1 | VP-PT-07 | integration | `add part heater` in a fresh `neuroedge new` project → part, `[requires]`, action, gate, test written; `neuroedge test` passes; an unknown kind or a failing step leaves every file unchanged | planned — TSK-I2d-30 |
+| TC-PT-09-1 | VP-PT-09 | integration | `add part pump p --pin air_pump` on `sim-default` → every file unchanged, message names `sim-default`, `--board sim-virtual` and `[targets.sim-default.pins]` | planned — TSK-I2d-30 |
 | TC-PT-08-1 | VP-PT-08 | integration | The aquarium with parts → `test_aquarium.py` passes unchanged; its agent.toml has no `[ui.labels]` | planned — TSK-I2d-30 |
+| TC-PM-01-1 | VP-PM-01 | unit | Corpus of maps: valid; unknown board; missing board pin; wrong primitive; two names on one pin; a name onto a pin used directly → each fails naming both | planned — TSK-I2d-32 |
+| TC-PM-02-1 | VP-PM-02 | integration | Agent pin `heater` mapped to `gate_relay` on `sim-default` → held on turns off at `gate_relay`'s 60 s; a part preset of 30 s is not applied | planned — TSK-I2d-32 |
+| TC-PM-03-1 | VP-PM-03 | integration | The same mapped agent on `sim-default`, the bridge host harness and gpio-sim → identical event pin names (the agent's), metadata `pin_map` present, trace valid against `trace.v1`, replay matches | planned — TSK-I2d-32 |
+| TC-PM-04-1 | VP-PM-04, VP-NF-02 | integration | `build`/`run` with a map print it; every sample agent without a map → byte-identical build output and trace pins to before | planned — TSK-I2d-32 |
+| TC-PM-05-1 | VP-PM-05 | unit | A map for `sim-default` accepted and applied; a map for `sim-virtual` → fails | planned — TSK-I2d-32 |
+| TC-PM-06-1 | VP-PM-06 | inspection | The PR of TSK-I2d-32 carries the lead engineer's approval and a `threat_model.md` entry naming VP-PM-01, VP-PM-04 | planned — TSK-I2d-32 |
 | TC-CV-01-1 | VP-CV-01, VP-CV-05 | browser | Drop a `pump` on the canvas, wire it to `air_pump` → proposed diff shows the part and `[requires]`; page has no external URL | planned — TSK-I2d-31 |
 | TC-CV-02-1 | VP-CV-02 | integration | `POST /parts` without the key, with an invalid part, from `mcp serve` → refused, file byte-identical; valid → file written atomically | planned — TSK-I2d-31 |
 | TC-CV-03-1 | VP-CV-03 | inspection | The page's script has no control that writes a gate file; new gates come from `add part` only | planned — TSK-I2d-31 |
@@ -276,6 +299,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | Decision / source | Requirements |
 |:---|:---|
 | Q-84 (this work) | all |
+| Zephyr devicetree overlays, ESPHome board packages, PlatformIO environments (prior art) | VP-PM-01 |
 | Q-73 (risk labels, not prohibitions) | VP-VB-05 |
 | Q-77 (Lab removed; reopen with data) | VP-CV-* deferred |
 | RFC-0007 §3d (envelope per output) | VP-VB-03, VP-PT-04 |
@@ -284,10 +308,10 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | FR-DX-02 (offline sim) | VP-CV-05 |
 | FR-DX-08 (`neuroedge add`) | VP-PT-07 |
 
-## 7. Open questions
+## 7. Questions raised by this specification
 
 | ID | Question | Default until decided |
 |:---|:---|:---|
-| VP-OQ-01 | Graduation: should agent.toml map a virtual pin name to a real board pin (`[targets.esp32s3.pins] heater = "gate_relay"`)? It touches `build` on every target. | No mapping: the agent renames its pins, or a board profile with those pins is added once the hardware exists. |
-| VP-OQ-02 | Should `neuroedge new` write `[sim] board = "sim-virtual"`? It makes every new project carry `risk=virtual_board`. | No: opt-in. |
+| VP-OQ-01 | Graduation: how does an agent with its own pin names build for a real board? | **Decided (owner, 2026-10-15): a per-board pin map**, VP-PM-01 → VP-PM-06, task TSK-I2d-32. |
+| VP-OQ-02 | Should `neuroedge new` start on `sim-virtual`? | **Decided (owner, 2026-10-15): no**; `--board sim-virtual` on request, and `add part` points to it (VP-VB-09, VP-PT-09). |
 | VP-OQ-03 | Phase C visuals: Wokwi Elements or the page's own SVG? | **Decided (owner, 2026-10-15): Wokwi Elements**, VP-CV-05. `@wokwi/elements` 1.9.2: 446 KB minified, 95 KB gzipped, 55 elements, `lit` inside; 11 of the 17 kinds have one; appliances (heater, pump, fan, lock), pH and the generic sensor keep the page's icons. Kept out of `trace view` and the live page when the canvas is off. |
