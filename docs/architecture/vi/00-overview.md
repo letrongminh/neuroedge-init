@@ -322,7 +322,8 @@ The table below is a capability snapshot, not a progress tracking table; task pr
 | MCP | `done` | `done` | not applicable |
 | Traces, replay, verify | `done` | `done` | `done` (UART, QEMU) |
 | Signed OTA updates | not applicable | not applicable | `partial` — on QEMU |
-| Profile B: brain and gate in one image | not applicable | not applicable | `planned` (TSK-I2f-12, TSK-I2f-14) |
+| Profile A: box and brain apart, one-command install | `done` (`install --profile full --target sim`) | `done` on CI (`install-full`, brain isolation on a real Linux user) | not applicable |
+| Profile B: brain and gate in one image | not applicable | not applicable | `partial` — on QEMU (TSK-I2f-14, I2f-16); on a board with TSK-I2f-13 |
 
 ## 7. Boundaries — what NeuroEdge is not
 

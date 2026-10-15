@@ -243,7 +243,8 @@ def test_the_page_names_the_caller_of_each_verdict(served):
     _, server = served
     with urllib.request.urlopen(server.url, timeout=TIMEOUT) as response:
         body = response.read().decode("utf-8")
-    assert '"tool_call " + g.call.name + " · " + g.call.source' in body
+    assert "SOURCE[g.call.source] || g.call.source" in body
+    assert 'mcp: "Brain / client MCP"' in body
     # Trace text is only ever textContent; the one innerHTML is the constant SVG icons.
     assert set(re.findall(r"innerHTML\s*=\s*(\w+)", body)) == {"markup"}
     assert not re.search(r"<(script|link|img)[^>]+(src|href)=", body)

@@ -10,7 +10,8 @@ and where it is defined — read the full definition there; this file does not d
 | **FR-xxx-nn** | Functional requirement, e.g. `FR-GATE-03` (`GATE` group, number 03) | `neuroedge-prd.md` §4–§8 |
 | **NFR-xxx-nn** | Non-functional requirement (performance, security, durability…) | `neuroedge-prd.md` §9 |
 | **DP-xxx-nn** | Deployment-profile requirement, e.g. `DP-A-02` (Profile A), `DP-B-05` (Profile B), `DP-COM-01` (both) | `docs/spec/deployment_profiles.md` §3 |
-| **TC-xxx-nn-n** | Test case verifying a `DP-` requirement; `implemented` names a test, `planned` names a task | `docs/spec/deployment_profiles.md` §5 |
+| **VP-xxx-nn** | Virtual-parts requirement, e.g. `VP-VB-02` (virtual board), `VP-PT-04` (parts), `VP-CV-02` (canvas) | `docs/spec/virtual_parts.md` §3 |
+| **TC-xxx-nn-n** | Test case verifying a `DP-` or `VP-` requirement; `implemented` names a test, `planned` names a task | `docs/spec/deployment_profiles.md` §5 · `docs/spec/virtual_parts.md` §5 |
 | **P0 · P1 · P2** | Priority: P0 required for release · P1 can slip to patch · P2 if resources remain | this file |
 | **A1–A22 · B1–B8 · C1–C8** | **Release acceptance** criteria: A = v1.0 (I7; A14–A22 are aquarium criteria of Q-72, measurable after I2d, I2e) · B = Developer Beta (I8; B6–B8 are 8-week demand gate of Q-72) · C = v1.1 (I9–I10) (e.g. C8: `SystemOne` latency < 100 ms). Target values B1–B5: roadmap §5.5 | `neuroedge-prd.md` §11 |
 | **M1–M9** | Product objectives (M7–M9 added per Q-72: utterance to device, operator agent with cost ceiling, NeuroEdge Blueprint; M1 = unknown developer runs gated agent without hardware, median TTFV < 10 minutes across 10 people). Only carries this meaning — next milestone on roadmap is **I1**, where early M1 measurement happens with 3 people; A1 measured fully at I7 | `neuroedge-prd.md` §1.3 |

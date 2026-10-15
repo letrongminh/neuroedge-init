@@ -292,7 +292,7 @@ sequenceDiagram
     R->>R: sessions to trace.v1, validate, compare with goldens
 ```
 
-### 8.1 One command on Profile B: brain and gate in one image (planned · Q-83)
+### 8.1 One command on Profile B: brain and gate in one image (on QEMU · Q-83)
 
 ```mermaid
 sequenceDiagram

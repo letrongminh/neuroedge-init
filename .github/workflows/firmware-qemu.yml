@@ -64,6 +64,7 @@ on:
       - "targets/esp32s3/brain/**"
       - "scripts/check_brain_image.py"
       - "scripts/qemu_brain.py"
+      - "scripts/qemu_aquarium.py"
       - ".github/workflows/firmware-qemu.yml"
   push:
     branches: [main]
@@ -96,6 +97,7 @@ on:
       - "targets/esp32s3/brain/**"
       - "scripts/check_brain_image.py"
       - "scripts/qemu_brain.py"
+      - "scripts/qemu_aquarium.py"
       - ".github/workflows/firmware-qemu.yml"
   schedule:
     - cron: "30 18 * * *"   # 01:30 UTC+7, after nightly-hardware
@@ -526,6 +528,75 @@ jobs:
             ${{ env.PROJECT }}/build/ota-test/logs/
             ${{ env.PROJECT }}/components/neuroclaw/NEUROEDGE_PIN
             brain-traces/
+
+  aquarium-qemu:
+    name: The fish tank on one chip (demo D3, D5) — gate and brain on QEMU, decisions replay on the host
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container: espressif/idf:v5.4
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install neuroedge from this checkout (its own venv, not the ESP-IDF one)
+        run: |
+          python3 -m venv /opt/neuroedge
+          /opt/neuroedge/bin/python -m pip install --upgrade pip
+          /opt/neuroedge/bin/python -m pip install ./python
+          echo "NE=/opt/neuroedge/bin/neuroedge" >> "$GITHUB_ENV"
+
+      - name: neuroedge build --brain neuroclaw of fixtures/agents/aquarium
+        run: |
+          cd fixtures/agents/aquarium
+          "$NE" build --target esp32s3 --board esp32s3-box-3 --brain neuroclaw --out "$GITHUB_WORKSPACE/aquarium"
+          echo "PROJECT=$GITHUB_WORKSPACE/aquarium/esp32s3" >> "$GITHUB_ENV"
+
+      - name: Build the image for QEMU
+        working-directory: ${{ env.PROJECT }}
+        run: |
+          git config --global --add safe.directory '*'
+          . "$IDF_PATH/export.sh"
+          idf.py -B build -D SDKCONFIG=build/sdkconfig -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu" set-target esp32s3
+          idf.py -B build -D SDKCONFIG=build/sdkconfig -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu" build
+
+      - name: Install Espressif QEMU
+        run: python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa
+
+      - name: Warm water, no reading, the board's button answering (scripts/qemu_aquarium.py)
+        run: |
+          . "$IDF_PATH/export.sh"
+          python3 scripts/qemu_aquarium.py "$PROJECT/build"
+
+      - name: The tank's decisions on the chip replay on the host
+        run: |
+          log="$PROJECT/build/aquarium-test/boot-1.log"
+          "$NE" record --target esp32s3 --port "$log" --follow --out aquarium-traces/
+          /opt/neuroedge/bin/python - <<'PY'
+          import json, pathlib, subprocess, sys
+          agent = "fixtures/agents/aquarium/agent.toml"
+          runtime = [
+              p for p in sorted(pathlib.Path("aquarium-traces").glob("*.json"))
+              if any(e["type"] == "action_requested" for e in json.loads(p.read_text())["events"])
+          ]
+          assert len(runtime) == 9, f"{len(runtime)} run-time sessions, 9 buttons pressed"
+          for trace in runtime:
+              done = subprocess.run(["/opt/neuroedge/bin/neuroedge", "replay", str(trace), "--agent", agent])
+              if done.returncode:
+                  sys.exit(f"{trace} does not replay to the same decisions")
+          print(f"  ok  {len(runtime)} run-time sessions replay to the same verdicts and pins")
+          PY
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: aquarium-qemu
+          path: |
+            ${{ env.PROJECT }}/build/aquarium-test/
+            aquarium-traces/
 
   uart-trace:
     name: The UART trace validates, and verify --targets esp32s3 passes (TSK-S4-09)
