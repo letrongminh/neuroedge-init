@@ -237,13 +237,20 @@ def fresh_actions():
     The scaffold defines `operate_hardware` at a new path: free that one name. The
     rest stays — `verify` replays sample agents whose modules are already imported.
     """
+    import sys
+
     from neuroedge.actions import spec
 
-    saved = dict(spec.REGISTRY)
+    saved, modules = dict(spec.REGISTRY), set(sys.modules)
     spec.REGISTRY.pop("operate_hardware", None)
     yield
     spec.REGISTRY.clear()
     spec.REGISTRY.update(saved)
+    # An agent first imported here registered its actions in the registry just restored; its
+    # module must go too, or the next load finds it imported and registers nothing.
+    for module in set(sys.modules) - modules:
+        if module.startswith("neuroedge_agent_"):
+            del sys.modules[module]
 
 
 def test_the_examples_run_in_a_new_project(tmp_path, monkeypatch, fresh_actions):
