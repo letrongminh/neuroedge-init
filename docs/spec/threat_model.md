@@ -327,6 +327,8 @@ This is a risk-labeled exception to §1: on microcontrollers lacking process sep
 
 **Residual risk, explicitly stated:** the build cannot know what is wired to a real pin. A map to an existing pin of the right primitive that the installer wired to a different device than the author believes passes every check; the printed line at every start and the trace's `pin_map` are what a reviewer reads. A trace recorded on the chip (`neuroedge record --port`) does not carry `pin_map` — the firmware has no map, only the agent's names — so the map of a chip recording is read from agent.toml. Tools that start without the CLI (library use of `SimSession`) print nothing; they still record `pin_map`.
 
+**On `esp32s3`, not yet bound:** the chip has no GPIO table until TSK-S4-01 (`main/brain.c` prints `NE_PIN … unmapped`, or the line name on QEMU). Its generated pin table already carries the agent's names; when TSK-S4-01 lands it must take each mapped name's GPIO from the board pin the map names, never from the agent's name, and a chip recording must carry `pin_map` (today it does not, so a chip trace replays under the agent's current map).
+
 ## 3. Out of scope: same-process impersonator
 
 Tokens are `(nonce, digest)` in memory. Code running **in the same process** can read the ledger and mint its own tokens. Block 1a **does not** defend against this — that is malicious code possessing runtime-equivalent privileges, not mistakes.
