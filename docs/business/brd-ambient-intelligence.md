@@ -1,227 +1,264 @@
 # TÀI LIỆU YÊU CẦU KINH DOANH (BRD)
-## Phân hệ Trí tuệ Ngữ cảnh & Quản gia Tĩnh lặng (NeuroClaw Ambient Brain)
+## Quản gia tĩnh lặng: NeuroClaw (bộ não) + NeuroEdge (hộp giữ luật), một sản phẩm
 
-> **Định vị sản phẩm:** *"The Physical AI that really does things, safely by design."*  
-> **Phiên bản:** 1.0.0 · **Ngày ban hành:** 15 tháng 10, 2026  
-> **Trạng thái:** Dự thảo phê duyệt kỹ thuật & chiến lược kinh doanh  
-> **Tài liệu liên quan:** `docs/business/proposal-blueprint-2026-10-11.md`, `roadmap/neuroedge-prd.md`, `docs/architecture/vi/00-overview.md`
-
----
-
-## Mục lục
-
-1. [Tóm tắt điều hành & Tuyên ngôn sản phẩm](#1-tóm-tắt-điều-hành--tuyên-ngôn-sản-phẩm)
-2. [Bối cảnh thị trường & Nỗi đau khách hàng](#2-bối-cảnh-thị-trường--nỗi-đau-khách-hàng)
-3. [Mục tiêu kinh doanh & Chỉ số đo lường (KPIs)](#3-mục-tiêu-kinh-doanh--chỉ-số-đo-lường-kpis)
-4. [Chân dung khách hàng mục tiêu](#4-chân-dung-khách-hàng-mục-tiêu)
-5. [Phạm vi sản phẩm (Scope)](#5-phạm-vi-sản-phẩm-scope)
-6. [Yêu cầu chức năng then chốt (Functional Requirements)](#6-yêu-cầu-chức-năng-then-chốt-functional-requirements)
-7. [Yêu cầu phi chức năng (Non-Functional Requirements)](#7-yêu-cầu-phi-chức-năng-non-functional-requirements)
-8. [Phân định ranh giới: Bộ não NeuroClaw vs Hộp NeuroEdge](#8-phân-định-ranh-giới-bộ-não-neuroclaw-vs-hộp-neuroedge)
-9. [Mô hình kinh doanh & Dòng tiền](#9-mô-hình-kinh-doanh--dòng-tiền)
-10. [Lộ trình phát hành theo giai đoạn (Roadmap)](#10-lộ-trình-phát-hành-theo-giai-đoạn-roadmap)
-11. [Rủi ro kinh doanh & Phương án giảm thiểu](#11-rủi-ro-kinh-doanh--phương-án-giảm-thiểu)
+> **Định vị (Q-82):** *"The Physical AI that really does things, safely by design."*
+> **Phiên bản:** 1.1.0 · **Ngày:** 15 tháng 10, 2026
+> **Trạng thái:** **Đã duyệt** (chủ sản phẩm, 15/10/2026) — quyết định **Q-85** trong PRD §15. Các yêu
+> cầu chảy vào SRS (§12); phần hoãn mở lại chỉ với `Q-N` mới.
+> **Tài liệu liên quan:** `roadmap/neuroedge-prd.md` (Q-45, Q-72, Q-73, Q-74, Q-77, Q-82, Q-83),
+> `docs/spec/deployment_profiles.md`, `docs/business/cong-nhu-cau-2026-10-25/`,
+> `docs/business/proposal-blueprint-2026-10-11.md`.
 
 ---
 
-## 1. Tóm tắt điều hành & Tuyên ngôn sản phẩm
+## 0. Thay đổi so với bản 1.0
 
-### 1.1 Tuyên ngôn sứ mệnh
-Hầu hết các giải pháp AI hiện nay đều bị đóng khung trên màn hình kính (chat, tạo ảnh, tạo văn bản), trong khi các hệ thống nhà thông minh / IoT truyền thống lại cứng nhắc và thiếu tri thức ngữ cảnh. Khi đưa AI vào điều khiển vật lý, hai thảm họa thường trực xảy ra: **hoặc AI quá ngô nghê gây hỏng hóc, hoặc AI quá phiền toái vì liên tục hỏi xin phép khiến người dùng mệt mỏi**.
+Bản 1.0 (vào repo cùng commit `c0b5b9e`) được rà lại ngày 15/10/2026 và nghiên cứu thị trường bổ sung
+(Phụ lục B). Thay đổi:
 
-**NeuroClaw Ambient Brain** ra đời để trở thành **"Bộ não Quản gia Thường trực" (Resident Edge Brain)** — thấu hiểu ngữ cảnh không gian - thời gian lớn, tự động điều phối thế giới vật lý êm đềm theo nguyên lý **Công nghệ tĩnh lặng (Calm Technology)**, và bảo đảm an toàn tuyệt đối thông qua **Hộp giữ luật NeuroEdge**.
-
-### 1.2 Tuyên ngôn định vị
-> **"The Physical AI that really does things, safely by design."**  
-> *(Physical AI làm được việc thật — an toàn từ thiết kế.)*
+1. **Quyết định hỏi người thuộc về hộp, không thuộc về bộ não.** Bộ lọc rủi ro 3 cấp của bản 1.0 nằm
+   trong NeuroClaw; NeuroClaw là phần không tin cậy, nên cấp rủi ro giờ khai báo trong gate của từng
+   hành động (BR-3), bộ não chỉ soạn lời.
+2. **Gia đình là khách hàng đích của trải nghiệm; maker ra mắt trước** (chủ sản phẩm, 15/10/2026).
+   BRD mô tả điều gia đình nhận được; thứ tự ra mắt giữ đúng Q-72: maker làm Blueprint trước, gia đình
+   dùng qua sản phẩm của maker. Người dùng kính thông minh dời sang Phụ lục A (Q-77 đã bỏ voice; bộ công
+   cụ của Meta còn ở dạng developer preview).
+3. **KPI gắn với cổng nhu cầu 8 tuần** (Q-72) và các NFR đã có. Bỏ "≥ 90% thao tác im lặng" (đo cấu
+   hình, và thưởng cho việc nới luật) và "giữ chân 90 ngày" (không đo kịp trước cổng).
+4. **Chi phí:** theo NFR-COST-01 (kịch bản bể cá 30 ngày < 2 USD), không phải 3 USD/tháng.
+5. **Mô hình kinh doanh là giả thuyết**, mở theo đúng điều kiện đã chốt (Q-72, Q-74), không ghi giá.
+6. **Lộ trình theo roadmap:** I2d (2026-11-11), I2e (2026-11-25), cổng nhu cầu (2026-12-06).
+7. **Thêm:** đối thủ (§2.2), bằng chứng và mức tin cậy cho từng nỗi đau (§2.1), rủi ro mới (§11),
+   các câu hỏi chờ duyệt (§12). Bỏ cách nói tuyệt đối ("an toàn tuyệt đối", "chặn đứng").
 
 ---
 
-## 2. Bối cảnh thị trường & Nỗi đau khách hàng
+## 1. Tóm tắt
 
-| Mã | Nỗi đau thị trường hiện hữu | Hệ quả tiêu cực | Lời giải của NeuroClaw Ambient Brain |
+AI hiện nay giỏi nói nhưng chưa được giao làm việc thật trong nhà, vì hai lỗi trái ngược: tự động hoá
+cứng nhắc, không hiểu ngữ cảnh; hoặc trợ lý LLM làm sai, hay hỏi xin phép đến mức người dùng tắt thông
+báo. Sản phẩm này tách hai việc:
+
+* **NeuroClaw (bộ não, không tin cậy):** hiểu ngữ cảnh, nhớ thói quen, nhận nhiệm vụ theo mục tiêu, nói
+  chuyện qua chat.
+* **NeuroEdge (hộp, tin cậy):** mọi lệnh ra thiết bị đi qua gate có điều kiện; việc nhạy cảm hỏi một
+  người thật; mọi quyết định có trace phát lại được; chạy tại nhà, kể cả trên một chip ESP32-S3.
+
+Khách hàng chính là **gia đình**: muốn nhà tự lo việc (bể cá, cây, không khí) mà không bị làm phiền,
+chỉ nói chuyện qua chat, không cấu hình. **Maker** là bên cung cấp: đóng gói thiết bị ngách cùng luật và
+bộ não thành NeuroEdge Blueprint để gia đình cài một lần. **Thứ tự ra mắt theo Q-72:** maker trước,
+gia đình đến qua Blueprint của maker.
+
+---
+
+## 2. Bối cảnh thị trường
+
+### 2.1 Nỗi đau và mức bằng chứng
+
+Mọi nỗi đau dưới đây là **giả thuyết của đội**; chưa có cuộc phỏng vấn nào xác nhận (premise P1,
+`cong-nhu-cau-2026-10-25/README.md`). Cột "Bằng chứng" ghi những gì nghiên cứu ngày 15/10 tìm được.
+
+| Mã | Nỗi đau | Bằng chứng hiện có | Mức tin cậy | Lời giải |
+|:---:|:---|:---|:---:|:---|
+| **P-1** | Mệt vì cảnh báo: hệ thống hỏi hoặc báo quá nhiều, người dùng tắt thông báo | Nielsen Norman Group: quá nhiều thông báo khiến người dùng bỏ qua hoặc tắt chúng (định tính). Không tìm được số đo riêng cho nhà thông minh. | Trung bình | Cấp rủi ro theo hành động, khai báo trong gate; ngân sách tin nhắn (NFR-COST-02) |
+| **P-2** | Mù ngữ cảnh: lệnh chỉ là từ khoá, không biết giờ, thời tiết, ai ở nhà | Alexa+ và Gemini for Home đang thêm ngữ cảnh (hiện diện, camera) — thị trường coi đây là vấn đề thật. | Trung bình | Ngữ cảnh nhiều cảm biến trong bộ não (BR-1); dữ kiện cho gate do hộp đọc |
+| **P-3** | Phải tự lên lịch, tự canh từng thiết bị | Bộ điều khiển bể cá phổ biến (Neptune Apex ~250–700 USD, Inkbird ~36 USD) vẫn dựa vào ngưỡng và lịch người dùng tự đặt; hiếm sản phẩm có "AI". | Trung bình | Hợp đồng nhiệm vụ theo mục tiêu (BR-4) |
+| **P-4** | Để LLM điều khiển thiết bị thì đáng sợ | Google Home MCP (09/2026) cho agent điều khiển nhà nhưng tự cấm mở khoá cửa và giới hạn tần suất; Spatial OS (08/2026) xây lớp an toàn tất định trên Home Assistant. Thị trường đã thấy vấn đề. | Cao | Gate có điều kiện, hỏi người, trace (lõi NeuroEdge) |
+| **P-5** | Maker khó biến thiết bị DIY thành sản phẩm bán được | Kênh tồn tại: Tindie (phí 5%), chương trình *Made for ESPHome*. Chưa có dữ liệu maker muốn trả tiền cho phần "quản gia". | Thấp | Blueprint đóng gói thiết bị + luật + bộ não (BR-5); kiểm bằng điều kiện ③ của cổng |
+
+### 2.2 Đối thủ và thay thế
+
+| Đối thủ / thay thế | Làm được gì | Khoảng trống NeuroEdge nhắm vào |
+|:---|:---|:---|
+| **Alexa+** (Amazon) | Routine theo nhiệt độ, hiện diện; cảnh báo chủ động; tổng hợp camera Ring | Đám mây, hệ sinh thái đóng; không cho maker đóng gói luật riêng; không có trace phát lại |
+| **Gemini for Home** (Google) | Tạo tự động hoá bằng lời; tự động hoá theo camera (I/O 2026); tính năng mạnh sau gói trả phí | Như trên; chỉ thiết bị trong hệ sinh thái Google |
+| **Google Home MCP** (09/2026, early access, Mỹ, gói trả phí) | Agent bên ngoài (Claude, OpenClaw) đọc trạng thái, gọi lệnh; cấm mở khoá cửa, giới hạn tần suất | Luật của nền tảng là danh sách cấm thô; không có điều kiện theo cảm biến, không có "hỏi người tại nhà", không chạy offline |
+| **Home Assistant + LLM** (Assist, Ollama) | LLM cục bộ hoặc đám mây điều khiển thiết bị được chọn (còn ghi "experimental"); cộng đồng lớn | Agent chỉ phản hồi rồi chờ, chưa có chế độ chủ động; không có gate có điều kiện. NeuroEdge nên **đi cùng** HA (RFC-0018, add-on I2e-12), không thay thế |
+| **Spatial OS** (beta, 08/2026, trên HA) | Hành động có kiểu, mô phỏng trước, duyệt từng lần, kiểm trạng thái sau, phòng thí nghiệm ảo | **Đối thủ trực tiếp nhất về luận điểm.** Khác biệt của NeuroEdge: luật chạy trên chip 5 USD, hỏi người chỉ khi luật yêu cầu (không phải mọi lần), Blueprint cho maker |
+| **Bộ điều khiển chuyên ngách** (Neptune Apex, Inkbird, AC Infinity) | Ngưỡng, lịch, cảnh báo; phần cứng hoàn chỉnh | Không hiểu mục tiêu, không chủ động đề xuất; maker không đóng gói lại được |
+| **DIY** (ESPHome, Blynk, Arduino) | Maker tự làm mọi thứ | Không có bộ não, không có luật an toàn kiểm chứng được; NeuroEdge dùng lại phần cứng ESP32 của họ |
+
+### 2.3 Tín hiệu thị trường
+
+* **Thị trường bộ điều khiển bể cá:** các báo cáo ước tính từ ~98 triệu USD đến ~0,4 tỷ USD năm 2025, tăng
+  7–8%/năm (độ tin cậy thấp: báo cáo thương mại, hai nguồn lệch nhau 4 lần). Đủ để là thị trường ngách
+  đầu tiên, không đủ để là luận điểm đầu tư.
+* **Chi phí LLM:** mô hình nhỏ thế hệ hiện tại khoảng 0,10 USD / 1 triệu token vào và 0,50 USD / 1 triệu
+  token ra (10/2026). Mục tiêu < 2 USD cho 30 ngày bể cá (NFR-COST-01) là khả thi nếu bộ phát hiện tất
+  định lọc trước và LLM chỉ được gọi khi có chuyện.
+* **Kênh của maker:** Tindie, *Made for ESPHome* (yêu cầu ESP32 và cấu hình công khai — khớp với kit
+  ESP32-S3 của NeuroEdge).
+
+---
+
+## 3. Mục tiêu và chỉ số
+
+### 3.1 Trước cổng nhu cầu (đến 2026-12-06)
+
+| Mã | Chỉ số | Ngưỡng | Nguồn đã chốt | Đo bằng |
+|:---:|:---|:---|:---|:---|
+| **K1** | Người ngoài đội tự cài một Blueprint và chạy được | ≥ 3 người | Q-72 điều kiện ① | Phiên đo A14 (TSK-I2e-09) |
+| **K2** | Chạy liên tục trên giả lập G2/G3 | ≥ 1 người, 2 tuần | Q-72 điều kiện ② | Trace phân đoạn |
+| **K3** | Maker muốn đóng gói và bán Blueprint của mình | ≥ 1 maker | Q-72 điều kiện ③ | Phỏng vấn `phong-van.md` §5b |
+| **K4** | Chi phí LLM kịch bản bể cá 30 ngày | < 2 USD | NFR-COST-01 | G1 tua nhanh |
+| **K5** | Tin nhắn không khẩn trong ngày nằm trong ngân sách; không hành động nào ra thiết bị mà không qua gate | 100% | NFR-COST-02, bất biến của hộp | Trace 30 ngày G1 |
+
+### 3.2 Sau cổng (chỉ đo khi cổng đạt)
+
+Tỷ lệ còn dùng sau 90 ngày, số lần hỏi người / ngày / hộ, số Blueprint bán, doanh thu mỗi Blueprint.
+Ngưỡng đặt sau khi có dữ liệu từ K1–K3.
+
+---
+
+## 4. Khách hàng mục tiêu
+
+| Phân khúc | Vai trò | Thứ tự ra mắt | Cần gì trước tiên |
+|:---|:---|:---|:---|
+| **Gia đình** có nhiều thiết bị thông minh, không có thời gian cấu hình kịch bản | **Khách hàng đích của trải nghiệm** (chủ sản phẩm, 15/10/2026): người hưởng "quản gia tĩnh lặng" | Thứ hai: đến qua Blueprint của maker | Cài không cần CLI: add-on Home Assistant, ảnh thẻ nhớ cho Pi, ghép đôi bằng QR (TSK-I2e-12, I2e-13, Q-74 bước 1, theo lịch roadmap); duyệt qua Telegram |
+| **Maker / micro-OEM ngách** (bể cá, ấp trứng, nhà nấm, sấy nông sản) | Bên làm và bán Blueprint cho gia đình | **Đầu tiên** (Q-72); điều kiện ③ của cổng đo nhóm này | Kit, `neuroedge add`, giả lập, `blueprint pack` |
+| Người dùng kính thông minh | — | Hoãn (Phụ lục A) | — |
+
+---
+
+## 5. Phạm vi
+
+| | Đến cổng nhu cầu | Sau cổng (nếu đạt) | Ngoài phạm vi |
+|:---|:---|:---|:---|
+| **NeuroClaw** | Hội thoại qua Telegram; nhận nhiệm vụ theo mục tiêu; ngữ cảnh từ cảm biến của hộp; trí nhớ ngắn hạn và tóm tắt ngày | Trí nhớ dài hạn có tìm kiếm; thời tiết, giá điện | Thiết bị đeo (Phụ lục A) |
+| **NeuroEdge** | Gate có điều kiện, hỏi người, trace; hợp đồng nhiệm vụ → envelope + watchdog; runtime 24/7; Blueprint pack/install | Hub có thu phí, Cloud | Bán lại token (N4) |
+
+Nguyên tắc không đổi: NeuroClaw không chạm chân GPIO và không tự cấp quyền; mọi lệnh vật lý qua gate.
+
+---
+
+## 6. Yêu cầu kinh doanh
+
+Mã `BR-n` để không trùng với `FR-*` của PRD. Cột cuối là nơi yêu cầu được đặc tả chi tiết.
+
+| Mã | Yêu cầu | Ai làm | Đặc tả ở đâu |
 |:---:|:---|:---|:---|
-| **P-1** | **Bẫy mệt mỏi vì cảnh báo (Alert Fatigue):** Hệ thống thông minh hỏi xin phép xác nhận cho mọi thao tác nhỏ nhặt. | Người dùng ức chế, tắt thông báo hoặc rút phích cắm thiết bị sau vài ngày sử dụng. | **Bộ lọc rủi ro 3 cấp độ:** 90% thao tác an toàn tự chạy ngầm; chỉ những việc nhạy cảm hoặc bất khả nghịch mới hỏi xác nhận. |
-| **P-2** | **"Mù ngữ cảnh" (Context Blindness):** Thiết bị chỉ bắt từ khóa trần trụi (ví dụ *"bật đèn"*), không hiểu đang là nửa đêm hay ban ngày. | Hành vi sai lệch nhịp sinh học, cản trở cuộc sống thay vì phục vụ con người. | **Bộ máy Ngữ cảnh 4 chiều:** Kết hợp dữ liệu cảm biến thời gian thực + lịch sử xu hướng 7 ngày + thói quen cá nhân + dữ liệu thời tiết/giá điện. |
-| **P-3** | **Quá tải vì lệnh vi mô (Micro-management):** Người dùng phải liên tục nhớ lịch bật/tắt thiết bị thủ công. | Biến con người thành "người hầu" của thiết bị tự động. | **Hợp đồng nhiệm vụ (Mission Contracts):** Người dùng giao mục tiêu kết quả (*"giữ bể cá khỏe"*), AI tự lập lịch và đề xuất điều chỉnh khi có suy giảm. |
-| **P-4** | **Chi phí token đắt đỏ & Độ trễ cao:** Nhồi hàng trăm ngàn token dữ liệu cảm biến liên tục vào LLM. | Chi phí API vượt quá giá trị mang lại; độ trễ 5–10s làm mất tính tức thời của thế giới vật lý. | **Kim tự tháp Trí nhớ 3 tầng (Hierarchical Memory):** Nén dữ liệu theo chu kỳ, chi phí API duy trì $\le \$0.10/\text{ngày}$. |
-| **P-5** | **Kích hoạt nhầm từ Thiết bị đeo (Accidental Actuation):** AI trên kính thông minh (Meta Glasses) nghe nhầm cuộc hội thoại rồi tự ý kích hoạt thiết bị. | Mở khóa cửa nhầm, bật thiết bị công suất cao gây nguy hiểm. | **Xác thực qua Gate an toàn của NeuroEdge:** Chặn đứng các lệnh kích hoạt nhầm bằng phong bì an toàn và cơ chế fail-closed. |
+| **BR-1** | **Ngữ cảnh nhiều cảm biến:** quyết định dựa trên nhiều cảm biến cùng lúc (cửa mở + gió lớn), nhịp sinh hoạt (dậy, đi làm, về, ngủ) từ hiện diện và lịch sử | NeuroClaw (suy luận); NeuroEdge (dữ kiện cho gate) | Repo NeuroClaw; FR-AGT-03 |
+| **BR-2** | **Trí nhớ nhiều tầng:** trạng thái tức thời (không tốn token), tóm tắt ngày, ký ức dài hạn cục bộ | NeuroClaw | Repo NeuroClaw (Q-83: trí nhớ thuộc bộ não) |
+| **BR-3** | **Tương tác tĩnh lặng:** mỗi hành động có một trong ba cách xử lý — làm im lặng, làm rồi báo, hỏi trước — **khai báo trong gate của hành động** và do hộp quyết định; NeuroClaw chỉ soạn lời báo. Một thông số vượt ngưỡng kéo dài chỉ báo một lần kèm xu hướng | NeuroEdge (quyết định); NeuroClaw (lời) | RFC-0006 (`ask`), NFR-COST-02; SRS nhiệm vụ (sắp viết) |
+| **BR-4** | **Nhiệm vụ theo mục tiêu:** giao việc bằng lời ("giữ bể cá ổn định"); hộp biên dịch thành giới hạn và watchdog; bộ não phát hiện suy giảm nhiều ngày và đề xuất, người duyệt một chạm | NeuroEdge (hợp đồng); NeuroClaw (đề xuất) | FR-MSN-01 → 14, TSK-I2d-04 → 06 |
+| **BR-5** | **Đóng gói cho maker:** một thiết bị + luật + cấu hình bộ não thành một Blueprint cài bằng một lệnh, có mã băm cả gói | NeuroEdge | FR-BP-01 → 07, TSK-I2e-01 → 03 |
 
 ---
 
-## 3. Mục tiêu kinh doanh & Chỉ số đo lường (KPIs)
+## 7. Yêu cầu phi chức năng
 
-### 3.1 Mục tiêu kinh doanh định lượng
-* **M1 — Trải nghiệm không ma sát (Frictionless Living):** Đạt tỷ lệ $\ge 90\%$ các hành động thường nhật được thực thi hoàn toàn trong im lặng (Silent Execution). Tỷ lệ người dùng phải hủy/hoàn tác lệnh $< 1\%$.
-* **M2 — Tối ưu hóa chi phí vận hành:** Giữ chi phí token suy luận trung bình ở mức $\le 3.00\,\text{USD/tháng/hộ gia đình}$ đối với người dùng chọn mô hình đám mây (BYOK).
-* **M3 — Giữ chân thiết bị (Device Retention Rate):** Tỷ lệ thiết bị duy trì hoạt động liên tục sau 90 ngày đạt $\ge 85\%$ (so với mức trung bình ngành IoT thông thường là $< 40\%$).
-* **M4 — Tỷ lệ đón đầu thiết bị đeo (Wearable Readiness):** Sẵn sàng tiếp nhận intent từ kính thông minh (Meta Glasses, Ray-Ban Meta qua Webhook/MCP) với độ trễ phản hồi âm thanh $< 1.5\,\text{giây}$.
-
----
-
-## 4. Chân dung khách hàng mục tiêu
-
-```text
-               ┌─────────────────────────────────────────────────────┐
-               │              CÁC PHÂN KHÚC KHÁCH HÀNG               │
-               └──────────────────────────┬──────────────────────────┘
-                                          │
-         ┌────────────────────────────────┼────────────────────────────────┐
-         ▼                                ▼                                ▼
-   [ The Busy Family ]          [ Maker / Micro-OEM ]          [ Wearable Tech Early Adopter ]
-   - Cần nhà tự vận hành         - Đóng gói giải pháp bán      - Đeo kính thông minh 24/7
-   - Ghét thông báo rác          - Cần AI chăm sóc khách hộ    - Điều khiển không gian bằng mắt/lời
-   - Ưu tiên sự tĩnh lặng        - Thu tiền từ Blueprint       - Cần chốt chặn chống mở nhầm
-```
-
-1. **The Busy Family (Gia đình bận rộn):**
-   * *Đặc điểm:* Sở hữu nhiều thiết bị thông minh nhưng không có thời gian cấu hình kịch bản tự động phức tạp.
-   * *Nhu cầu cốt lõi:* Cần ngôi nhà tự hiểu nhịp sinh hoạt, chăm sóc cây cảnh/bể cá/không khí mà không làm phiền họ.
-2. **Maker & Micro-OEM (Nhà sáng chế / Doanh nghiệp nhỏ):**
-   * *Đặc điểm:* Tạo ra các sản phẩm ngách (máy ấp trứng, bể cá thủy sinh, nhà nấm, sấy nông sản).
-   * *Nhu cầu cốt lõi:* Cần một bộ não thông minh tích hợp sẵn để đóng gói thành **Blueprint**, biến dự án phần cứng thành sản phẩm thương mại có AI đồng hành cùng khách hàng.
-3. **Wearable Tech Early Adopter (Người dùng thiết bị đeo thế hệ mới):**
-   * *Đặc điểm:* Đang sử dụng Ray-Ban Meta, kính thông minh AR hoặc vòng đeo tay cử chỉ.
-   * *Nhu cầu cốt lõi:* Muốn nhìn vào đồ vật trong nhà và ra lệnh tự nhiên, nhưng bắt buộc phải có cơ chế chống kích hoạt nhầm an toàn.
+| Mã | Hạng mục | Yêu cầu | Đã có trong PRD |
+|:---:|:---|:---|:---|
+| **BNFR-1** | Độ trễ | Quyết định của gate trên thiết bị tính bằng mili giây; câu trả lời bằng lời trong vài giây | NFR-PERF-* |
+| **BNFR-2** | Trần chi phí | Có trần token mỗi ngày; chạm trần thì về phản xạ tất định, không phát sinh chi phí ngoài dự kiến | FR-AGT-05, NFR-COST-01 |
+| **BNFR-3** | Cục bộ trước | Trí nhớ và nhật ký ở máy nhà; chạy được hoàn toàn offline với mô hình cục bộ (Ollama) | FR-AGT-02, N4 |
+| **BNFR-4** | Sẵn sàng | Bộ não và hộp chạy như dịch vụ hệ thống, tự khởi động lại | NFR-REL-06, TSK-I2d-16 |
 
 ---
 
-## 5. Phạm vi sản phẩm (Scope)
-
-### 5.1 Trong phạm vi (In-Scope — Trách nhiệm của NeuroClaw)
-* **Engine ngữ cảnh lớn:** Thu thập, liên kết và phân tích 4 luồng dữ liệu (Thời gian, Không gian, Con người, Ngoại cảnh).
-* **Cơ chế nén trí nhớ đa tầng:** Trạng thái tức thời $\rightarrow$ Tóm tắt nhật ký ngày $\rightarrow$ Ký ức dài hạn.
-* **Bộ lọc rủi ro 3 cấp độ:** Quyết định mức độ tương tác (Im lặng $\rightarrow$ Thông báo sau $\rightarrow$ Hỏi trước).
-* **Quản lý hợp đồng nhiệm vụ:** Cho phép giao việc dài hạn, theo dõi suy giảm cảm biến và chủ động đề xuất giải pháp.
-* **Giao diện tiếp nhận đa kênh:** Telegram Bot, Webhook/MCP Server tiếp nhận intent từ kính Meta/Wearables.
-
-### 5.2 Ngoài phạm vi (Out-of-Scope — Đã phân định cho Hộp NeuroEdge)
-* Không can thiệp trực tiếp vào thanh ghi hay chân GPIO thô (giao toàn bộ cho HAL của NeuroEdge).
-* Không tự quyết định cấp quyền vượt rào các giới hạn vật lý (mọi lệnh phải qua Gate của NeuroEdge).
-* Không xây dựng mạng xã hội hay giao diện đồ họa nặng nề (tối ưu hóa giao diện hội thoại và âm thanh tĩnh lặng).
-
----
-
-## 6. Yêu cầu chức năng then chốt (Functional Requirements)
-
-### FR-1: Bộ máy Nhận thức Ngữ cảnh Lớn 4 Chiều (Big Context Engine)
-* **FR-1.1 (Tương quan đa thiết bị):** Hệ thống phải có khả năng suy luận chéo giữa nhiều cảm biến khác nhau (ví dụ: phát hiện cửa mở kết hợp gió lớn ngoài trời để đưa ra quyết định thay vì xét từng cảm biến độc lập).
-* **FR-1.2 (Nhận thức nhịp sinh hoạt):** Phân biệt tự động các kịch bản sinh hoạt (Thức dậy, Đi làm, Về nhà, Tiếp khách, Đi ngủ) dựa trên cảm biến hiện diện và lịch sử thời gian.
-* **FR-1.3 (Dữ liệu ngoại cảnh mở):** Tích hợp thông tin dự báo thời tiết (nhiệt độ, độ ẩm, khả năng mưa) và biểu giá điện giờ cao điểm/thấp điểm vào ngữ cảnh ra quyết định.
-
-### FR-2: Kiến trúc Trí nhớ Đa tầng (Hierarchical Memory Architecture)
-* **FR-2.1 (Tầng 1 — Real-time State Cache):** Lưu trữ bảng trạng thái phần cứng tức thời trong bộ nhớ RAM cục bộ, truy xuất dưới $50\text{ms}$, không tiêu tốn token LLM.
-* **FR-2.2 (Tầng 2 — Rolling Daily Digest):** Cứ mỗi 6–24 tiếng, tự động chạy tác vụ nén toàn bộ log cảm biến thành một đoạn tóm tắt ngữ nghĩa (Semantic Digest), giảm dung lượng lưu trữ $> 95\%$.
-* **FR-2.3 (Tầng 3 — Semantic Long-term Memory):** Lưu trữ thói quen, sở thích cá nhân của gia chủ và các cam kết nhiệm vụ vào hệ thống Vector Store / Markdown cục bộ, phục vụ truy vấn RAG khi cần.
-
-```mermaid
-flowchart TD
-    RAW["Log cảm biến thô (Hàng ngàn sự kiện/ngày)"] -->|"Tự động nén mỗi 6-24h"| DIGEST["Tầng 2: Rolling Daily Digest (Tóm tắt ngữ nghĩa ngắn gọn)"]
-    STATE["Trạng thái tức thời (Sensor, Relay, Pinout)"] -->|"Truy xuất tức thì <50ms"| CACHE["Tầng 1: Real-time State Cache (RAM / SQLite)"]
-    PREF["Sở thích, Thói quen gia đình, Hợp đồng"] -->|"Vector Search / RAG"| LONGTERM["Tầng 3: Semantic Long-term Memory (Markdown / Chroma)"]
-    
-    CACHE --> CONTEXT_BUILDER["Bộ dựng Ngữ cảnh Thông minh"]
-    DIGEST --> CONTEXT_BUILDER
-    LONGTERM --> CONTEXT_BUILDER
-    CONTEXT_BUILDER -->|"Prompt tối ưu (< 2.000 tokens)"| LLM["Mô hình Suy luận (System 2 LLM)"]
-```
-
-### FR-3: Cơ chế Tĩnh lặng & Bộ lọc Rủi ro 3 cấp (Calm Technology Filter)
-* **FR-3.1 (Tự động phân loại rủi ro):** Mọi hành động do AI đề xuất phải đi qua bộ phân loại rủi ro trước khi thực thi:
-  1. **Cấp 1 — Rủi ro thấp (Silent Execution):** Tự động thực thi 100% trong im lặng (Bật đèn hành lang, điều chỉnh quạt gió, tưới cây theo lịch).
-  2. **Cấp 2 — Rủi ro vừa (Notify-on-Action):** Tự thực thi trước, sau đó gửi một tin nhắn tóm tắt nhẹ nhàng (Đóng rèm khi trời mưa, tạm hoãn sạc xe điện).
-  3. **Cấp 3 — Rủi ro cao / Bất khả nghịch (Explicit Confirmation):** Chặn lại và gửi yêu cầu phê duyệt nhanh (**ASK**) qua Telegram hoặc màn hình kính (Mở khóa cửa, cấp nhiệt công suất lớn, ngắt atomat).
-* **FR-3.2 (Chống dồn dập cảnh báo):** Khi một thông số vượt ngưỡng liên tục, hệ thống chỉ cảnh báo 1 lần kèm biểu đồ xu hướng, tuyệt đối không gửi tin nhắn liên tục gây phiền toái.
-
-### FR-4: Hợp đồng Nhiệm vụ & Đề xuất Chủ động (Mission Contracts)
-* **FR-4.1 (Giao việc theo mục tiêu):** Cho phép người dùng giao việc bằng ngôn ngữ tự nhiên theo mục tiêu (*"Duy trì môi trường hồ cá ổn định"*, *"Đảm bảo cây ban công không bị héo"*).
-* **FR-4.2 (Phát hiện suy giảm ngầm):** Phân tích xu hướng dữ liệu nhiều ngày; nếu phát hiện dấu hiệu suy giảm (ví dụ: oxy giảm dần 3 ngày, rơ-le nhiệt đóng ngắt bất thường), AI chủ động gửi tin nhắn phân tích nguyên nhân và đề xuất phương án xử lý để người dùng duyệt trong 1 chạm.
-
-### FR-5: Giao diện Tương tác Thiết bị đeo & Kính Meta (Wearable Integration)
-* **FR-5.1 (Webhook / MCP Endpoint):** Phơi cổng kết nối an toàn tiếp nhận Intent từ kính thông minh hoặc thiết bị đeo cá nhân.
-* **FR-5.2 (Phản hồi thì thầm - Whisper Output):** Định dạng câu trả lời ngắn gọn dưới 10 từ (dành riêng cho việc phát âm thanh qua tai nghe kính thông minh mà không làm gián đoạn cuộc trò chuyện của người dùng).
-
----
-
-## 7. Yêu cầu phi chức năng (Non-Functional Requirements)
-
-| Mã | Hạng mục | Yêu cầu kỹ thuật |
-|:---:|:---|:---|
-| **NFR-01** | **Thời gian phản hồi (Latency)** | Quyết định cấp 1 (Silent): $< 100\text{ms}$; Xử lý ngôn ngữ ngữ cảnh lớn: $< 2.0\text{s}$. |
-| **NFR-02** | **Trần ngân sách Token (Cost Ceiling)** | Tự động giới hạn số lượng token suy luận hàng ngày; khi chạm trần, tự động chuyển về các phản xạ kịch bản có sẵn, không làm phát sinh chi phí ngoài dự kiến. |
-| **NFR-03** | **Chủ quyền dữ liệu (Privacy & Local-first)** | Toàn bộ tệp trí nhớ, nhật ký thói quen phải được lưu trữ trên phần cứng của người dùng; hỗ trợ 100% chế độ Offline khi kết nối mô hình cục bộ qua Ollama. |
-| **NFR-04** | **Tính sẵn sàng (Availability)** | Tiến trình NeuroClaw chạy dưới dạng daemon hệ thống (Systemd/Docker), tự phục hồi khi crash trong vòng $< 3\text{giây}$. |
-
----
-
-## 8. Phân định ranh giới: Bộ não NeuroClaw vs Hộp NeuroEdge
+## 8. Ranh giới bộ não và hộp
 
 ```mermaid
 flowchart LR
-    subgraph Brain["🧠 BỘ NÃO NEUROCLAW (UNTRUSTED)"]
-        direction TB
-        B1["Hiểu ngữ cảnh 4 chiều"]
-        B2["Trí nhớ đa tầng & RAG"]
-        B3["Lọc rủi ro & Soạn thảo Action"]
-        B4["Giao tiếp Telegram / Kính Meta"]
+    subgraph Brain["🧠 NEUROCLAW (không tin cậy)"]
+        B1["Ngữ cảnh, trí nhớ"]
+        B2["Nhận nhiệm vụ, đề xuất"]
+        B3["Soạn lời báo / lời hỏi"]
     end
-
-    subgraph Bridge["GIAO THỨC MCP (mTLS)"]
-        REQ["Yêu cầu hành động (Tool Request)"]
+    subgraph Box["🛡️ NEUROEDGE (tin cậy)"]
+        G1["Gate có điều kiện"]
+        G2["Cấp rủi ro: im lặng / báo / hỏi người"]
+        G3["Envelope, watchdog, fail-closed"]
+        G4["Token, HAL, trace"]
     end
-
-    subgraph Box["🛡️ HỘP AN TOÀN NEUROEDGE (TRUSTED GATE)"]
-        direction TB
-        G1["Thẩm định chính sách Gate (YAML)"]
-        G2["Kiểm tra Phong bì vật lý (Duty-cycle)"]
-        G3["Cưỡng chế Fail-closed khi mất mạng"]
-        G4["Cấp Token & Điều khiển chân HAL"]
-    end
-
-    Brain -->|"Gửi Request"| Bridge
-    Bridge -->|"Kiểm duyệt nghiêm ngặt"| Box
+    Brain -->|"MCP mTLS (Profile A) · nc_gate (Profile B)"| Box
 ```
 
-* **Nguyên tắc phân công:** 
-  * **NeuroClaw** chịu trách nhiệm về **Sự thông minh và Mềm dẻo** (Lắng nghe, thấu hiểu ngữ cảnh, nhớ thói quen, không gây phiền toái).
-  * **NeuroEdge** chịu trách nhiệm về **Kỷ luật và An toàn tuyệt đối** (Chặn đứng ảo giác, bảo vệ linh kiện vật lý, kiểm soát rủi ro).
+NeuroClaw chịu trách nhiệm **hiểu và nói**; NeuroEdge chịu trách nhiệm **cho phép, hỏi, ghi lại**. Hai
+profile triển khai: `docs/spec/deployment_profiles.md` (Q-83).
 
 ---
 
-## 9. Mô hình kinh doanh & Dòng tiền
+## 9. Mô hình kinh doanh (giả thuyết)
 
-1. **Bán giải pháp đóng gói (Blueprint Hub):**
-   * Maker đóng gói bộ não NeuroClaw (đã cấu hình sẵn ngữ cảnh thông minh) cùng Hộp NeuroEdge thành **Blueprint** cho các ngách thị trường (bể cá, nông nghiệp, an ninh).
-   * Doanh thu đến từ: Phí bản quyền Blueprint và hoa hồng sàn giao dịch.
-2. **Dịch vụ Đám mây tiện ích (NeuroEdge Cloud Subscription):**
-   * Cung cấp instance NeuroClaw chạy sẵn trên đám mây cách ly (MicroVM) cho những người dùng không muốn tự bảo trì máy chủ tại nhà. Thu phí thuê bao $3 – $5/tháng.
-3. **Giấy phép Thương mại (PolyForm Commercial License):**
-   * Các doanh nghiệp, startup phần cứng nhúng NeuroClaw & NeuroEdge vào thiết bị thương mại phải trả phí bản quyền theo từng thiết bị kích hoạt.
+Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều kiện đã chốt:
 
----
-
-## 10. Lộ trình phát hành theo giai đoạn (Roadmap)
-
-```text
-  [ Giai đoạn 1: Q4/2026 ] ──► [ Giai đoạn 2: Q1/2027 ] ──► [ Giai đoạn 3: Q2/2027 ]
-  - State Cache thời gian thực  - Trí nhớ đa tầng (Digest)    - Tích hợp Kính Meta / Wearables
-  - Bộ lọc rủi ro 3 cấp         - Hợp đồng nhiệm vụ Mission    - Chợ giải pháp Blueprint Hub
-  - Bot Telegram tương tác      - Đề xuất chủ động xu hướng   - NeuroEdge Cloud Subscription
-```
-
-* **Giai đoạn 1 (Nền tảng Tĩnh lặng — 4 tuần):** Hoàn thiện State Cache và Bộ lọc rủi ro 3 cấp độ trên Telegram, chứng minh tỷ lệ không ma sát $\ge 90\%$.
-* **Giai đoạn 2 (Ngữ cảnh Lớn & Đề xuất sớm — 6 tuần):** Đưa vào vận hành Rolling Daily Digest, kết nối dữ liệu thời tiết và cơ chế Hợp đồng nhiệm vụ dài hạn.
-* **Giai đoạn 3 (Đón đầu Wearable & Thương mại hóa — 8 tuần):** Hoàn thiện Webhook cho thiết bị đeo/kính thông minh, mở chợ Blueprint Hub cho Maker.
+| Giả thuyết | Mở khi | Ràng buộc |
+|:---|:---|:---|
+| **H1 — Hoa hồng kit** (BOM có liên kết affiliate) | Đã trong kế hoạch | FR-BP-07, trang riêng ngoài kit |
+| **H2 — Hub Blueprint có thu phí** | Sau cổng, nếu điều kiện ③ đạt | Q-72; Hub tối thiểu (miễn phí, tĩnh) có trước (FR-BP-05) |
+| **H3 — NeuroEdge Cloud** (bộ não chạy sẵn cho người không muốn tự vận hành) | Q-74 bước 2, khi số liệu cổng cho phép | Không bán lại token (N4); khoá BYOK không rời hộp (NFR-SEC-13) |
+| **H4 — Giấy phép thương mại** cho doanh nghiệp nhúng vào sản phẩm | Sau cổng (chủ sản phẩm, 15/10/2026) | Loại giấy phép của lõi **đã chốt**: PolyForm Noncommercial (Q-45, Q-72); bán Blueprint hay thiết bị là dùng thương mại, cần giấy phép thương mại. Điều khoản và giá của giấy phép thương mại để sau cổng. NeuroClaw là fork của PicoClaw (MIT) — giữ thông báo bản quyền gốc |
 
 ---
 
-## 11. Rủi ro kinh doanh & Phương án giảm thiểu
+## 10. Lộ trình
 
-| # | Rủi ro tiềm ẩn | Mức độ | Phương án giảm thiểu chủ động |
+| Mốc | Ngày (roadmap) | Kết quả cho BRD này |
+|:---|:---|:---|
+| I2d — Nhiệm vụ, runtime 24/7 | 2026-11-11 | BR-3, BR-4; K4, K5 trên G1 |
+| I2e — Blueprint tối thiểu | 2026-11-25 | BR-5; K1; add-on HA và ảnh thẻ nhớ (TSK-I2e-12, I2e-13) theo lịch roadmap |
+| **Cổng nhu cầu 8 tuần** | **2026-12-06** | K1–K3 quyết định nhánh: tiếp tục, đổi hướng, hoặc dừng thương mại |
+| Sau cổng | Theo nhánh | BR-1 mở rộng (thời tiết, giá điện), BR-2 dài hạn, H2–H4, Phụ lục A |
+
+---
+
+## 11. Rủi ro
+
+| # | Rủi ro | Mức | Giảm thiểu |
 |:---:|:---|:---:|:---|
-| **1** | **AI suy luận sai kịch bản do dữ liệu cảm biến nhiễu.** | Cao | Toàn bộ quyết định tác động phần cứng bắt buộc phải qua Gate của NeuroEdge; cảm biến lỗi dẫn tới bất định $\rightarrow$ Gate lập tức kích hoạt fail-closed. |
-| **2** | **Chi phí token đám mây tăng cao bất thường.** | Trung bình | Tích hợp cơ chế Token Budget hàng ngày và bắt buộc nén dữ liệu qua Rolling Digest trước khi gửi lên LLM. |
-| **3** | **Người dùng lo ngại lộ dữ liệu sinh hoạt riêng tư.** | Cao | Cam kết kiến trúc Local-first: Dữ liệu trí nhớ lưu trên máy nhà; cung cấp tùy chọn chạy mô hình hoàn toàn Offline qua Ollama. |
+| 1 | **Nhu cầu chưa được chứng minh:** chưa phỏng vấn được maker nào | Cao | Cổng nhu cầu (K1–K3); phỏng vấn `phong-van.md` §5b trước khi viết thêm tính năng |
+| 2 | **Nền tảng lớn tự thêm lớp an toàn** (Google Home MCP đã cấm mở khoá, giới hạn tần suất); với phân khúc gia đình, đây là cạnh tranh trực tiếp với Alexa+ và Gemini for Home | Rất cao | Khác biệt ở điều mà nền tảng không làm: luật có điều kiện theo cảm biến, hỏi người tại nhà, trace phát lại, chạy offline trên chip, maker tự đóng gói |
+| 3 | **Đối thủ cùng luận điểm** (Spatial OS trên Home Assistant) | Trung bình | Đi cùng HA thay vì cạnh tranh (add-on, RFC-0018); tốc độ ra kit bể cá chạy được |
+| 4 | **Trùng tên "Blueprint"** với *Home Assistant Blueprints* (từ 12/2020, có Blueprint Exchange) | Trung bình | Quyết định đổi tên hoặc giữ (§12 câu 5) trước khi công bố Hub |
+| 5 | AI suy luận sai do cảm biến nhiễu | Cao | Mọi lệnh qua gate; cảm biến lỗi → không đọc được → gate chặn (fail-closed) |
+| 6 | Chi phí token tăng | Trung bình | Trần mỗi ngày (BNFR-2), bộ phát hiện tất định lọc trước |
+| 7 | Lo ngại riêng tư | Cao | Cục bộ trước, chạy offline được (BNFR-3) |
+| 8 | **Bộ não dựa trên dự án thượng nguồn còn sớm** (PicoClaw khuyến cáo chưa dùng production trước v1.0) | Trung bình | NeuroClaw là hard fork có CI riêng; hộp không tin bộ não nên lỗi bộ não không thành lỗi an toàn |
+| 9 | Nguồn lực: một người + AI | Cao | Phạm vi §5 cắt theo cổng; mọi thứ sau cổng chỉ mở với `Q-N` mới |
+| 10 | **Gia đình chưa cài được:** sản phẩm hôm nay cần CLI; add-on HA và ảnh thẻ nhớ chưa làm | Cao | Gia đình đến qua Blueprint của maker; TSK-I2e-12, I2e-13 theo lịch; Q-74 bước 2 nếu người thử kẹt ở cài đặt |
+| 11 | **Hai phân khúc kéo hai hướng:** gia đình cần cài đặt dễ, maker cần công cụ đóng gói | Trung bình | Một Blueprint chung (bể cá) phục vụ cả hai: maker đóng gói, gia đình cài |
 
 ---
-*Tài liệu này là cơ sở pháp lý và định hướng sản phẩm để đội ngũ kỹ thuật tiến hành xây dựng các bản đặc tả kiến trúc (Architecture Spec) và phân rã công việc (PRD/Task breakdown).*
+
+## 12. Quyết định của chủ sản phẩm (15/10/2026)
+
+| # | Câu hỏi | Trả lời |
+|:---:|:---|:---|
+| 1 | Phân khúc chính | **Gia đình là khách hàng đích của BRD; maker ra mắt trước theo Q-72** (§4). Không đổi roadmap hay cổng nhu cầu. |
+| 2 | Hoãn đến sau cổng | **Thiết bị đeo, Hub thu phí, NeuroEdge Cloud, điều khoản giấy phép thương mại** |
+| 3 | KPI trước cổng | **K1–K5** (§3.1) |
+| 4 | Tên "Blueprint" | **Giữ trong I2e, quyết trước khi công bố Hub**, dựa trên phản hồi của maker |
+
+Đã ghi thành Q-85 (PRD §15). BR-3 và BR-4 vào SRS nhiệm vụ; BR-5 vào SRS Blueprint; BR-1, BR-2 là việc
+của repo NeuroClaw.
+
+---
+
+## Phụ lục A — Thiết bị đeo (hoãn)
+
+Bản 1.0 đặt kính thông minh (Ray-Ban Meta) là phân khúc thứ ba và giai đoạn 3. Hoãn vì:
+
+* Q-77 đã bỏ voice khỏi roadmap; đưa lại cần `Q-N` mới có số liệu.
+* Bộ công cụ *Wearables Device Access Toolkit* của Meta ra developer preview 12/2025; cuối 2025 chỉ đối
+  tác được chọn mới phát hành công khai, phát hành rộng nhắm cho 2026; truy cập màn hình kính có từ
+  05/2026 (preview). Chưa xác nhận được đã mở phát hành rộng.
+* Giá trị an toàn vẫn đúng (lệnh nghe nhầm từ kính vẫn phải qua gate), nên khi mở lại, kính chỉ là một
+  kênh vào của NeuroClaw, không đổi gì ở hộp.
+
+## Phụ lục B — Nguồn (nghiên cứu ngày 15/10/2026)
+
+* Alexa+: [Amazon — Echo Show với Alexa+](https://www.aboutamazon.com/news/devices/getting-started-echo-show-8-11-alexa-plus-features)
+* Gemini for Home: [Google blog](https://blog.google/products-and-platforms/devices/google-nest/gemini-for-home-launch/), [TechInsights — I/O 2026](https://www.techinsights.com/blog/google-io-2026-gemini-home-takes-center-stage)
+* Google Home MCP: [9to5Google](https://9to5google.com/2026/09/16/google-home-mcp/), [xenospectrum — giới hạn an toàn](https://xenospectrum.com/en/google-home-mcp-ai-agents/)
+* Home Assistant + LLM: [AI in Home Assistant (2025-09)](https://www.home-assistant.io/blog/2025/09/11/ai-in-home-assistant), [Ollama integration](https://home-assistant.io/integrations/ollama)
+* Spatial OS: [Home Assistant Community, 18/08/2026](https://community.home-assistant.io/t/a-deterministic-safety-layer-for-home-assistant-looking-for-5-real-home-beta-testers/1021621)
+* Lớp an toàn cho LLM điều khiển thiết bị (học thuật): [Device Context Protocol](https://arxiv.org/html/2605.26159), [AegisMCP](https://arxiv.org/html/2510.19462)
+* Mệt vì thông báo: [Nielsen Norman Group](https://www.nngroup.com/articles/smart-home-notifications/)
+* Bộ điều khiển bể cá: [Intel Market Research](https://www.intelmarketresearch.com/aquarium-controllers-market-58890), [Marketintelo](https://marketintelo.com/report/aquarium-controller-market)
+* Giá LLM 10/2026: [benchlm.ai](https://benchlm.ai/llm-pricing), [developersdigest](https://www.developersdigest.tech/blog/frontier-model-api-pricing-june-2026)
+* Kênh maker: [Made for ESPHome](https://esphome.io/guides/made_for_esphome/), [Tindie](https://www.tindie.com/stores/Makerfabs/)
+* Trùng tên: [Home Assistant Blueprints](https://home-assistant.io/docs/blueprint/)
+* PicoClaw: [pkg.go.dev (MIT)](https://pkg.go.dev/github.com/sipeed/picoclaw@v0.2.4)
+* Meta wearables: [Auganix — developer preview](https://www.auganix.org/?p=17923), [Meta display access docs](https://wearables.developer.meta.com/docs/develop/dat/display-overview/)
+* Tỷ lệ bỏ dùng (chỉ có số cho thiết bị đeo): [Computerworld — Gartner](https://www.computerworld.com/article/1681349/smartwatch-user-dropout-rate-is-still-29-gartner-says.html), [Parks Associates](https://www.parksassociates.com/blogs/home-systems-and-controls/product-returns-and-the-smart-home7)
