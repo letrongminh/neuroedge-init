@@ -115,6 +115,7 @@ from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_gramm
 from ..plugins.actuators import remote_setup
 from ..trace import json_safe, validate_trace
 from .hal_build import announce_plugins, build_hal, release_hal
+from .parts import check_reading, sensor_ranges
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.
@@ -793,6 +794,8 @@ class SimSession:
         self.vision: Any = None
         # `sim-virtual` (docs/spec/virtual_parts.md): what it added and its digest, else None.
         self.virtual_board: Any = None
+        # `[sim.parts]` sensors with a range (VP-PT-05): a reading outside it is refused.
+        self.sensor_ranges: dict[str, Any] = {}
 
     @classmethod
     def load(
@@ -974,6 +977,7 @@ class SimSession:
             )
             session.vision = feed
             session.virtual_board = virtual
+            session.sensor_ranges = sensor_ranges(manifest)
             return session
         except BaseException:
             close = getattr(hal, "close", None)
@@ -1014,7 +1018,11 @@ class SimSession:
         return tuple(self.manifest.requires.get("digital.out", {}).get("pins", ()))
 
     def set_sensor(self, sensor: str, value: Any) -> None:
-        """Change a simulated reading (REPL `:sensor`, the UI) and record that it changed."""
+        """
+        Change a simulated reading (REPL `:sensor`, the UI) and record that it changed. A number
+        outside the range of the sensor's part is refused (VP-PT-05); no reading is allowed.
+        """
+        check_reading(self.sensor_ranges, sensor, value)
         self.hal.set_sensor(sensor, value)
         self.events.emit("sensor_set", reading_data(sensor, value))
 

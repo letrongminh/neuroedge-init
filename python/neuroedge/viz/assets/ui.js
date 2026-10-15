@@ -120,6 +120,17 @@
       return svg('<circle cx="32" cy="26" r="16" fill="' + (on ? "#f2cc60" : "none") + '" stroke="' + c + '" stroke-width="4"/>' +
         '<rect x="24" y="44" width="16" height="10" rx="2" fill="' + c + '"/>');
     }
+    // Sensor kinds (a `[sim.parts]` kind, VP-PT-06): only ever asked for by kind, never by a label.
+    if (name === "temperature") {
+      return svg('<rect x="28" y="8" width="8" height="34" rx="4" fill="none" stroke="' + c + '" stroke-width="4"/>' +
+        '<circle cx="32" cy="48" r="9" fill="' + c + '"/>');
+    }
+    if (name === "humidity" || name === "level") {
+      return svg('<path d="M32 8 C42 22 48 30 48 40 a16 16 0 0 1 -32 0 C16 30 22 22 32 8 Z" fill="none" stroke="' + c + '" stroke-width="4" stroke-linejoin="round"/>');
+    }
+    if (name === "ph") {
+      return svg('<text x="32" y="42" text-anchor="middle" font-size="28" font-weight="700" fill="' + c + '">pH</text>');
+    }
     if (/sưởi|nhiệt|heat/.test(name)) {
       return svg('<path d="M32 8 C40 20 46 26 46 38 a14 14 0 0 1 -28 0 C18 30 24 26 26 18 C30 26 32 26 32 8 Z" fill="'
         + (on ? "#f0883e" : "none") + '" stroke="' + c + '" stroke-width="4" stroke-linejoin="round"/>');
@@ -161,7 +172,18 @@
     for (const a of agent.actions || []) actions[a.name] = a;
     const sayFor = {};
     for (const c of agent.commands || []) if (!(c.tool in sayFor)) sayFor[c.tool] = c.say;
+    // Parts of agent.toml (`[sim.parts]`), by the pin, sensor or channel they are wired to; their
+    // words are already in `labels` (a `[ui.labels]` entry of the same name wins, VP-PT-06).
+    const partOf = {};
+    for (const p of agent.parts || []) if (p.target) partOf[p.target] = p;
     function label(name) { return labels[name] || name; }
+    // "0…14 pH": what a part's sensor reads in and how far a typed value may go.
+    function partHint(p) {
+      const bits = [];
+      if (p.range) bits.push(p.range[0] + "…" + p.range[1]);
+      if (p.unit) bits.push(unit(p.unit));
+      return bits.join(" ");
+    }
     function criterionText(gate, name) {
       if (labels[name]) return labels[name];
       const g = gates[gate];
@@ -174,6 +196,11 @@
     function send(text) { if (opts.onCommand) opts.onCommand(text); }
     // The agent's word for a pin decides its drawing; the pin's own name only when that says nothing.
     function pinIcon(pin, on) {
+      const part = partOf[pin];  // the kind of a declared part decides first
+      if (part) {
+        const byKind = icon(part.kind, on);
+        if (byKind.innerHTML !== icon("", on).innerHTML) return byKind;
+      }
       const plain = icon(pin, on);
       if (!labels[pin]) return plain;
       const named = icon(labels[pin].toLowerCase(), on);
@@ -362,18 +389,20 @@
       for (const name of sensorsFresh ? sensorNames : []) {
         const r = s.sensors[name];
         const shown = r ? String(r.value) + (r.unit && typeof r.value === "number" ? " " + unit(r.unit) : "") : "—";
+        const part = partOf[name];
         const row = el("div", { class: "sensor" }, [
-          el("span", { class: "s-name", text: label(name) }),
+          el("span", { class: "s-name" }, [part ? icon(part.kind, false) : null, document.createTextNode(label(name))]),
           el("span", { class: "s-value" + (r && typeof r.value !== "number" ? " bad" : ""), text: shown }),
         ]);
         sensors.appendChild(row);
+        if (part && partHint(part)) sensors.appendChild(el("div", { class: "part-hint", text: part.word + " · " + partHint(part) }));
         for (const fact in agent.sensor_facts || {}) {
           const rule = agent.sensor_facts[fact];
           if (rule.sensor !== name) continue;
           sensors.appendChild(el("div", { class: "derived", text: "→ dữ kiện “" + label(fact) + "” = có khi " + label(name) + " " + ruleText(rule.rule) + ". Gate đọc dữ kiện này." }));
         }
         if (opts.onCommand) {
-          const field = el("input", { type: "text", inputmode: "decimal", placeholder: "giá trị mới", "aria-label": "giá trị mới cho " + name });
+          const field = el("input", { type: "text", inputmode: "decimal", placeholder: part && part.range ? part.range[0] + "…" + part.range[1] : "giá trị mới", "aria-label": "giá trị mới cho " + name });
           const set = el("button", { type: "button", text: "Đặt" });
           const lost = el("button", { type: "button", class: "ghost", text: "Mất tín hiệu", title: "Giả lập cảm biến hỏng: gửi một giá trị không đọc được" });
           set.addEventListener("click", function () { if (field.value.trim()) send(":sensor " + name + " " + field.value.trim()); field.value = ""; });

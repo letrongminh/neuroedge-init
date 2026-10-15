@@ -2055,8 +2055,17 @@ def _is_servo(channel: str | None) -> bool:
 def _add(kind: str, name: str, agent: Path, **options: Any) -> None:
     from ..templates.add import add
 
+    _run_add(
+        kind,
+        name,
+        lambda: add(agent.parent, kind, name, check=_check_added, manifest=agent.name, **options),
+    )
+
+
+def _run_add(kind: str, name: str, run: Callable[[], Any]) -> None:
+    """Run one add and say what it wrote; a refusal prints its three parts and changes nothing."""
     try:
-        plan = add(agent.parent, kind, name, check=_check_added, manifest=agent.name, **options)
+        plan = run()
     except BuildFailed as failed:
         _fail_build(failed)
         return
@@ -2127,6 +2136,58 @@ def add_sensor(
         pin=pin,
         label=label,
         board=board,
+    )
+
+
+@add_app.command(name="part", epilog=epilog("add part"))
+def add_part_command(
+    kind: str = typer.Argument(None, help="Kind of part (neuroedge add part --list)"),
+    name: str = typer.Argument(None, help="Name of the part (and of its action, gate and test)"),
+    pin: str = typer.Option(None, "--pin", help="Output and input kinds: the pin it is wired to"),
+    sensor: str = typer.Option(None, "--sensor", help="Sensor kinds: the sensor it reads"),
+    channel: str = typer.Option(None, "--channel", help="knob, motor, servo: the channel"),
+    drives: str = typer.Option(
+        None,
+        "--drives",
+        help="Sensor and input kinds: the output pin an action decided by it drives",
+    ),
+    label: str = typer.Option(None, "--label", help="What the page calls the part"),
+    list_kinds: bool = typer.Option(False, "--list", help="Print the catalogue and stop"),
+    board: str = ADD_BOARD_OPTION,
+    agent: Path = AGENT_OPTION,
+):
+    """Add a part of the catalogue: its \\[sim.parts] entry, its \\[requires], and an action, a gate and a test."""
+    from ..sim.parts import listing
+    from ..templates.add_part import add_part
+
+    if list_kinds:
+        console.print(escape(listing()), highlight=False)
+        return
+    if kind is None or name is None:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge add part",
+                why="a kind and a name are needed: the kind says what the part is, the name is its own",
+                how="neuroedge add part heater heater --pin gate_relay (neuroedge add part --list shows the kinds)",
+            )
+        )
+        return
+    _run_add(
+        f"part {kind}",
+        name,
+        lambda: add_part(
+            agent.parent,
+            kind,
+            name,
+            pin=pin,
+            sensor=sensor,
+            channel=channel,
+            drives=drives,
+            label=label,
+            board=board,
+            check=_check_added,
+            manifest=agent.name,
+        ),
     )
 
 

@@ -1709,6 +1709,7 @@ def build(
     board that would fit: the user must know which board they flash (RFC-0013 §3e).
     """
     from ..hal.virtual_board import resolve_board, sim_board_of
+    from ..sim.parts import agent_parts
 
     manifest = load_agent_manifest(agent_toml)
     explicit_board = board_id is not None or (
@@ -1716,6 +1717,10 @@ def build(
     )
     board, virtual = resolve_board(board_id, target, manifest)
     problems: list[NeuroEdgeError] = []
+    try:  # `[sim.parts]` (VP-PT-01, VP-PT-03): checked on every target; parts only describe
+        agent_parts(manifest)
+    except AgentManifestError as error:
+        problems.append(error)
 
     if manifest.targets and target not in manifest.targets:
         problems.append(
