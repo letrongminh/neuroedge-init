@@ -606,7 +606,8 @@ laid out for someone testing an agent who did not write it; nothing in it is spe
 Names are the agent's own: `[ui.labels]` in agent.toml maps a pin, sensor or fact to the words the
 page shows (`gate_relay = "Máy sưởi"`); without it the page shows the identifier. Labels are words
 for people only: no gate, build or replay reads them, and they are not part of any schema or digest.
-`trace view` has no agent loaded, so it shows identifiers and no command controls.
+`trace view` has no agent loaded, so it shows identifiers and no command controls. Parts the
+board lacks, a catalogue of part kinds and a drag-and-drop canvas: `virtual_parts.md` (Q-84).
 
 ## 6. Three Devices Running the Same Sample Agent
 
