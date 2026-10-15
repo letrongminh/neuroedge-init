@@ -54,6 +54,7 @@ from pathlib import Path
 from typing import Any
 
 from ..errors import NeuroEdgeError
+from ..hal.parts import describe_parts
 from ..trace import json_safe
 from ..viz import board_info, page
 from .session import SimSession, level_word
@@ -147,8 +148,13 @@ def describe_agent(session: SimSession) -> dict[str, Any]:
         if rule.bands:
             parts.append("bands " + ", ".join(f"{k} ≥ {v}" for k, v in rule.bands.items()))
         rules[fact] = {"sensor": rule.sensor, "rule": " · ".join(parts)}
+    parts = describe_parts(session.manifest)
+    # VP-PT-06: a part's label (else its kind's word) names its pin or sensor; `[ui.labels]` wins.
+    labels = {part["target"]: part["label"] for part in parts if part["target"]}
+    labels.update(ui_labels(session.manifest.source))
     return {
-        "labels": ui_labels(session.manifest.source),
+        "labels": labels,
+        "parts": parts,
         "actions": actions,
         "commands": commands,
         "gates": gates,

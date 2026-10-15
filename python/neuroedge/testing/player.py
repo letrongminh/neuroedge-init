@@ -601,14 +601,42 @@ def _agent_for(trace: Mapping[str, Any], agent: str | Path | None) -> AgentManif
     )
 
 
-def make_hal(target: str, board_id: str | None, events: EventLog):
+def virtual_board_for(manifest: Any, metadata: Mapping[str, Any]) -> Any:
+    """
+    VP-VB-06: `sim-virtual` rebuilt from the agent, refused when its digest is not the one the
+    trace recorded — a recording proves something only about the board it ran on.
+    """
+    from ..hal.virtual_board import VirtualBoard
+
+    if manifest is None:
+        raise ReplayError(
+            where="trace metadata board_id 'sim-virtual'",
+            why="the virtual board is built from an agent, and this replay has none",
+            how="replay with --agent pointing at the agent.toml that recorded the trace",
+        )
+    virtual = VirtualBoard(manifest)
+    recorded = metadata.get("virtual_board_digest")
+    if recorded != virtual.digest:
+        raise ReplayError(
+            where=f"{manifest.source} -> sim-virtual",
+            why=(
+                f"the trace was recorded on a virtual board with digest {recorded!r}; the agent "
+                f"builds one with digest {virtual.digest!r} (its [requires] or [sim.parts] changed)"
+            ),
+            how="replay with the agent as it was when the trace was recorded, or record again",
+        )
+    return virtual.profile
+
+
+def make_hal(target: str, board_id: str | None, events: EventLog, board: Any = None):
     if target not in DEFAULT_BOARD:
         raise ReplayError(
             where=f"--target {target}",
             why=f"replay runs on a live HAL; {target!r} has none on this machine",
             how="replay on sim or linux; esp32s3 replay arrives with TSK-S4-04",
         )
-    board = load_board_by_id(board_id or DEFAULT_BOARD[target])
+    if board is None:
+        board = load_board_by_id(board_id or DEFAULT_BOARD[target])
     if target == "sim":
         from ..hal.sim import SimHAL
 
@@ -711,6 +739,34 @@ class TracePlayer:
             )
         return matches[0]
 
+    def _mapped_board(self, metadata: Mapping[str, Any], events: EventLog) -> Any:
+        """
+        VP-PM-03: the board with the agent's pin names when its agent.toml maps it, refused when
+        the map is not the one the trace recorded on this same board — a recording proves
+        something only about the wiring it ran on. None (the plain board) without a map on either side.
+        """
+        from ..hal.pin_map import apply_pin_map
+
+        board = apply_pin_map(
+            load_board_by_id(self.board_id or DEFAULT_BOARD[self.target]), self.manifest
+        )
+        recorded = metadata.get("pin_map") or {}
+        # Another board's trace says nothing about this board's wiring; the agent's names are the
+        # same in both.
+        if metadata.get("board_id") == board.id and recorded != board.pin_map:
+            raise ReplayError(
+                where=f"{self.manifest.source} -> [targets.{board.id}.pins]",
+                why=(
+                    f"the trace was recorded with the pin map {recorded or 'none'}; the agent "
+                    f"maps {board.pin_map or 'nothing'} on {board.id!r}"
+                ),
+                how="replay with the agent as it was when the trace was recorded, or record again",
+            )
+        if not board.pin_map:
+            return None
+        events.metadata["pin_map"] = dict(board.pin_map)
+        return board
+
     async def replay(self) -> ReplayResult:
         steps = recorded_steps(self.trace)
         guard = self.guard_config
@@ -752,7 +808,21 @@ class TracePlayer:
 
             hal = NoHal()
         else:
-            hal = make_hal(self.target, self.board_id, events)
+            metadata = self.trace.get("metadata", {})
+            virtual = None
+            if (
+                self.target == "sim"
+                and (self.board_id or metadata.get("board_id")) == "sim-virtual"
+            ):
+                virtual = virtual_board_for(self.manifest, metadata)
+                events.metadata.update(
+                    board_id="sim-virtual",
+                    risks=["virtual_board"],
+                    virtual_board_digest=metadata.get("virtual_board_digest"),
+                )
+            if virtual is None and self.manifest is not None and self.target in DEFAULT_BOARD:
+                virtual = self._mapped_board(metadata, events)
+            hal = make_hal(self.target, self.board_id, events, board=virtual)
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
         # Pins are bounded by the board's envelope on every target, on the recorded timeline.

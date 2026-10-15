@@ -51,12 +51,31 @@ water_hot = { sensor = "temperature", gte = 29 }
 owner_confirmed = false
 
 # What the live page (`run --ui`, `mcp serve --ui`) calls each thing: the boards' relay names mean
-# nothing to someone watching a fish tank. Words for people only; no gate reads them.
+# nothing to someone watching a fish tank, so each is declared as a part (its kind, the pin or sensor
+# it is wired to, the words for people). Parts only describe: they add no requirement, change no
+# envelope on `sim-default` and no gate reads them (docs/spec/virtual_parts.md VP-PT-08).
+[sim.parts.heater]
+kind  = "heater"
+pin   = "gate_relay"
+label = "Máy sưởi"
+
+[sim.parts.air_pump]
+kind  = "pump"
+pin   = "door_lock"
+label = "Máy sục khí"
+
+[sim.parts.tank_light]
+kind  = "light"
+pin   = "porch_light"
+label = "Đèn bể"
+
+[sim.parts.water_probe]
+kind   = "temperature"
+sensor = "temperature"
+label  = "Nhiệt độ nước"
+
+# The facts are not parts: their words stay here.
 [ui.labels]
-gate_relay      = "Máy sưởi"
-door_lock       = "Máy sục khí"
-porch_light     = "Đèn bể"
-temperature     = "Nhiệt độ nước"
 water_hot       = "Nước đang ấm (từ 29 °C)"
 owner_confirmed = "Chủ nhà đã xác nhận tại nhà"
 call_source     = "Ai yêu cầu"

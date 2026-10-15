@@ -1973,21 +1973,29 @@ def new(
         help="minimal (1 action, 1 gate, tests), villa-concierge, home-voice, factory-monitor, "
         "gate-camera or blinds",
     ),
+    board: str = typer.Option(
+        None,
+        "--board",
+        help="sim-virtual: run on the virtual board, which adds the pins and sensors the "
+        "agent needs (risk=virtual_board); default sim-default",
+    ),
 ):
     """Scaffold an agent project: agent.toml, commands.toml, a gate, an @action, tests."""
     from ..templates import scaffold
 
     try:
-        files = scaffold(name, template)
+        files = scaffold(name, template, board=board)
     except NeuroEdgeError as error:
         _fail(error)
         return
     console.print(f"[bold green]✓[/bold green] created {escape(name)}/ from template {template}")
     for path in files:
         console.print(f"  {escape(str(path))}")
+    if board is not None:
+        console.print("[yellow]risk=virtual_board[/yellow] (docs/spec/virtual_parts.md)")
     console.print(
         f"\nNext:\n  cd {escape(name)}\n"
-        "  neuroedge build --target sim --board sim-default\n"
+        f"  neuroedge build --target sim --board {board or 'sim-default'}\n"
         "  neuroedge run\n"
         "  neuroedge test"
     )
@@ -2047,8 +2055,17 @@ def _is_servo(channel: str | None) -> bool:
 def _add(kind: str, name: str, agent: Path, **options: Any) -> None:
     from ..templates.add import add
 
+    _run_add(
+        kind,
+        name,
+        lambda: add(agent.parent, kind, name, check=_check_added, manifest=agent.name, **options),
+    )
+
+
+def _run_add(kind: str, name: str, run: Callable[[], Any]) -> None:
+    """Run one add and say what it wrote; a refusal prints its three parts and changes nothing."""
     try:
-        plan = add(agent.parent, kind, name, check=_check_added, manifest=agent.name, **options)
+        plan = run()
     except BuildFailed as failed:
         _fail_build(failed)
         return
@@ -2120,6 +2137,81 @@ def add_sensor(
         label=label,
         board=board,
     )
+
+
+@add_app.command(name="part", epilog=epilog("add part"))
+def add_part_command(
+    kind: str = typer.Argument(None, help="Kind of part (neuroedge add part --list)"),
+    name: str = typer.Argument(None, help="Name of the part (and of its action, gate and test)"),
+    pin: str = typer.Option(None, "--pin", help="Output and input kinds: the pin it is wired to"),
+    sensor: str = typer.Option(None, "--sensor", help="Sensor kinds: the sensor it reads"),
+    channel: str = typer.Option(None, "--channel", help="knob, motor, servo: the channel"),
+    drives: str = typer.Option(
+        None,
+        "--drives",
+        help="Sensor and input kinds: the output pin an action decided by it drives",
+    ),
+    label: str = typer.Option(None, "--label", help="What the page calls the part"),
+    list_kinds: bool = typer.Option(False, "--list", help="Print the catalogue and stop"),
+    board: str = ADD_BOARD_OPTION,
+    agent: Path = AGENT_OPTION,
+):
+    """Add a part of the catalogue: its \\[sim.parts] entry, its \\[requires], and an action, a gate and a test."""
+    from ..hal.parts import listing
+    from ..templates.add_part import add_part
+
+    if list_kinds:
+        console.print(escape(listing()), highlight=False)
+        return
+    if kind is None or name is None:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge add part",
+                why="a kind and a name are needed: the kind says what the part is, the name is its own",
+                how="neuroedge add part heater heater --pin gate_relay (neuroedge add part --list shows the kinds)",
+            )
+        )
+        return
+    _run_add(
+        f"part {kind}",
+        name,
+        lambda: add_part(
+            agent.parent,
+            kind,
+            name,
+            pin=pin,
+            sensor=sensor,
+            channel=channel,
+            drives=drives,
+            label=label,
+            board=board,
+            check=_check_added,
+            manifest=agent.name,
+            **part_context(),
+        ),
+    )
+
+
+def part_context() -> dict[str, Any]:
+    """What `add part` needs from the HAL, handed to the template layer (which reads no board)."""
+    from ..hal.parts import catalogue
+    from ..hal.virtual_board import VIRTUAL_BOARD
+
+    def board_lacks(board_id: str, kind: Any, target: str | None) -> list[str] | None:
+        """None when the board has the target; else the names it offers for the kind's primitive."""
+        board = load_board_by_id(board_id)
+        if kind.primitive == "display":
+            return None if board.supports("display") else []
+        names = {
+            "digital.out": list(board.pins),
+            "digital.in": list(board.input_pins),
+            "sensor.read": list(board.sensors),
+            "analog.in": [channel["name"] for channel in board.analog_channels],
+            "motion": [channel["name"] for channel in board.motion_channels],
+        }[kind.primitive]
+        return None if target in names else names
+
+    return {"kinds": catalogue(), "board_lacks": board_lacks, "virtual_board": VIRTUAL_BOARD}
 
 
 @add_app.command(name="device", epilog=epilog("add device"))
@@ -2277,15 +2369,24 @@ def _start_session(
     if target == "linux":
         _exit_on_signals()  # before the lines are requested
     try:
-        return SimSession.load(
+        session = SimSession.load(
             agent or _default_agent(),
             target=target,
-            board_id=board,  # None: the target's reference board
+            board_id=board,  # None: `[sim] board`, else the target's reference board
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
             **({"clock": clock} if clock is not None else {}),
             **({"target_options": target_options} if target_options is not None else {}),
         )
+        if session.virtual_board is not None:  # VP-VB-05; stderr keeps MCP stdio clean
+            err_console.print(f"[yellow]{escape(session.virtual_board.startup_line())}[/yellow]")
+        if session.events.metadata.get("pin_map"):  # VP-PM-04
+            from ..hal.pin_map import startup_line
+
+            err_console.print(
+                f"[yellow]{escape(startup_line(session.events.metadata['pin_map']))}[/yellow]"
+            )
+        return session
     except BuildFailed as failed:
         _fail_build(failed)
     except NeuroEdgeError as error:

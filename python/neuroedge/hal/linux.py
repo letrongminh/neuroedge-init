@@ -422,7 +422,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         # The one timer of the remote actuators (RFC-0018 §3d), re-armed to the earliest due time.
         self._remote_timer: threading.Timer | None = None
         self._remote_timer_lock = threading.Lock()
-        names = {pin: (line_names or {}).get(pin, pin) for pin in gpio_pins}
+        names = {pin: self._line_name(pin) for pin in gpio_pins}
         self.lines: dict[str, tuple[str, int]] = {}
         for pin, name in names.items():
             location = self._find(chips, name)
@@ -510,6 +510,14 @@ class LinuxHAL(HardwareAbstractionLayer):
                 with contextlib.suppress(OSError):
                     self.close()
                 raise
+
+    def _line_name(self, pin: str) -> str:
+        """
+        The kernel's name of a pin's line: `line_names` for the pin or for the board pin it stands
+        for (an agent's `[targets.<board>.pins]` map, VP-PM-03), else the board pin's own name.
+        """
+        real = self.board.pin_map.get(pin, pin)
+        return self._line_names.get(pin, self._line_names.get(real, real))
 
     def _find(self, chips: list[str], name: str) -> tuple[str, int] | None:
         denied: tuple[str, OSError] | None = None
@@ -1018,7 +1026,7 @@ class LinuxHAL(HardwareAbstractionLayer):
             held = self._inputs.get(pin)
             if held is not None:
                 return held
-            name = self._line_names.get(pin, pin)
+            name = self._line_name(pin)
             location = self._find(self._chips, name)
             if location is None:
                 raise BoardCapabilityError(
@@ -1449,7 +1457,7 @@ class LinuxHAL(HardwareAbstractionLayer):
             # Found now, requested once the output lines are held: a missing input line is
             # refused before any pin is (RFC-0007 §3a, Q-16).
             self.board.require_input_pin(pin, called_from=where)
-            name = self._line_names.get(pin, pin)
+            name = self._line_name(pin)
             if not self.replay and self._find(self._chips, name) is None:
                 raise BoardCapabilityError(
                     where=f"{where} -> digital.in {pin!r}",

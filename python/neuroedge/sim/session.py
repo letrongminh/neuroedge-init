@@ -105,7 +105,8 @@ from ..errors import (
     PerceptionUnavailableError,
 )
 from ..hal.analog import analog_data
-from ..hal.board import REFERENCE_BOARD, load_board_by_id
+from ..hal.board import REFERENCE_BOARD
+from ..hal.parts import check_reading, sensor_ranges
 from ..hal.pwm import MEASURED
 from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
@@ -791,6 +792,10 @@ class SimSession:
         self._turns = 0
         # The camera and what reads it (`sim/vision/feed.py`), for an agent with `[vision]`.
         self.vision: Any = None
+        # `sim-virtual` (docs/spec/virtual_parts.md): what it added and its digest, else None.
+        self.virtual_board: Any = None
+        # `[sim.parts]` sensors with a range (VP-PT-05): a reading outside it is refused.
+        self.sensor_ranges: dict[str, Any] = {}
 
     @classmethod
     def load(
@@ -829,7 +834,11 @@ class SimSession:
                 why=f"an interactive session runs on {' or '.join(SESSION_TARGETS)}",
                 how="pass target='sim' or target='linux'",
             )
-        board_id = board_id or REFERENCE_BOARD[target]
+        from ..hal.virtual_board import resolve_board, sim_board_of
+
+        if board_id is None:  # VP-VB-01: `[sim] board` of agent.toml, else the reference board
+            declared = sim_board_of(load_agent_manifest(agent_toml)) if target == "sim" else None
+            board_id = declared or REFERENCE_BOARD[target]
         build(agent_toml, target=target, board_id=board_id, registry=registry)
         manifest = load_agent_manifest(agent_toml)
         grammar_path = manifest.root / "commands.toml"
@@ -864,7 +873,7 @@ class SimSession:
         actions = load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
         _check_bands(manifest, sensor_facts, gates)
-        board = load_board_by_id(board_id)
+        board, virtual = resolve_board(board_id, target, manifest)
         for criterion, rule in sensor_facts.items():
             # Here, not on the first turn: at run time a failed read is only "undecided".
             board.require_sensor(
@@ -890,6 +899,10 @@ class SimSession:
         if events is None:
             events = EventLog(clock)
         events.metadata.update(target=target, board_id=board_id, agent_version=manifest.label)
+        if virtual is not None:  # VP-VB-05, VP-VB-06
+            events.metadata.update(virtual.metadata())
+        if board.pin_map:  # VP-PM-03: the map in force is part of the recording
+            events.metadata["pin_map"] = dict(board.pin_map)
         announce_plugins(remote.records, events)
         rules_digest = sensor_facts_digest(sim_table)
         if rules_digest is not None:
@@ -965,6 +978,8 @@ class SimSession:
                 },
             )
             session.vision = feed
+            session.virtual_board = virtual
+            session.sensor_ranges = sensor_ranges(manifest)
             return session
         except BaseException:
             close = getattr(hal, "close", None)
@@ -1005,7 +1020,11 @@ class SimSession:
         return tuple(self.manifest.requires.get("digital.out", {}).get("pins", ()))
 
     def set_sensor(self, sensor: str, value: Any) -> None:
-        """Change a simulated reading (REPL `:sensor`, the UI) and record that it changed."""
+        """
+        Change a simulated reading (REPL `:sensor`, the UI) and record that it changed. A number
+        outside the range of the sensor's part is refused (VP-PT-05); no reading is allowed.
+        """
+        check_reading(self.sensor_ranges, sensor, value)
         self.hal.set_sensor(sensor, value)
         self.events.emit("sensor_set", reading_data(sensor, value))
 

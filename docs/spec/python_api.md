@@ -165,12 +165,13 @@ rules (§5, Q-64) as Python API; in `0.x`, MINOR acts as MAJOR.
 | **Exit codes** — table in `CHANGELOG.md` §2.3 (`0` pass, `1` fail, `2` not implemented), not duplicated here | Diagnostic text in `why`/`how` (`NE…` codes are promised, §1) |
 | Machine-readable output: `--json`, `--openai`, and command output files (separate versioned schemas — `schemas/`, PRD §10.3; not repeated here) | |
 
-**`add` command family (TSK-I2b-04, FR-DX-08).** Promises four subcommands `add action`, `add sensor`, `add device`,
-`add gate`, each taking a name as required argument; flags `--primitive`, `--pin`, `--channel`,
+**`add` command family (TSK-I2b-04, FR-DX-08).** Promises five subcommands `add action`, `add sensor`, `add device`,
+`add gate`, each taking a name as required argument, and `add part` (Q-84, `virtual_parts.md` VP-PT-07: optional
+kind and name arguments, `--list`, `--sensor`, `--drives`); flags `--primitive`, `--pin`, `--channel`,
 `--source`, `--label`, `--device`, `--register`, `--width`, `--fact`, `--board`, and `--agent` as captured in
 `test_cli_contract.py`. Behavioral contract: commands run only within projects containing `agent.toml`; **never overwrite**
 an existing file, `[gates]` key, action name, or command name (rejected with three-part error, exit code `1`, writes nothing);
-output is dry-run built on a copy before writing to project. Printed text is not promised.
+output is dry-run built on a copy before writing to project. Printed text is not promised. `new --board sim-virtual` (VP-VB-09) starts a project on the virtual board.
 
 **`guard`, `proxy`, `plugin` command family (TSK-I2c-14, FR-EXT-06).** Promises `guard init` (required flag `--mcp`, `--dir`, `--name`, `--env-from`, `--header-env`; never overwrites files),
 `proxy mcp` (`--config`, `--trace-out`, `--desktop-config`, `--write`, `--config-path`, `--name`; stdio only), `proxy http` (`--config`, `--trace-out`; loopback only — TSK-I2c-15, `extension_sdk.md` §5; `guard init` accepts `--http` and `--route` alongside `--mcp`, mutually exclusive; `--allow-lan-http` writes `allow_lan_http` key for pure HTTP devices on home network — `extension_sdk.md` §4.1a), and `plugin doctor` (`--config`, `--json`; exit code `1` on warnings). Syntax `guard.toml`/`[proxy.mcp]`
