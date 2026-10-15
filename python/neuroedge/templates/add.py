@@ -76,6 +76,22 @@ SENSORS: dict[str, dict[str, Any]] = {
         "block": "90",
         "bad": 'float("nan")',
     },
+    "level": {
+        "rule": {"gte": 20.0},
+        "words": "mực nước ≥ 20 %",
+        "initial": {"value": 50, "unit": "%"},
+        "allow": "50",
+        "block": "10",
+        "bad": 'float("nan")',
+    },
+    "ph": {
+        "rule": {"gte": 6.5},
+        "words": "độ pH ≥ 6,5",
+        "initial": {"value": 7, "unit": "pH"},
+        "allow": "7",
+        "block": "5",
+        "bad": 'float("nan")',
+    },
     "door_contact": {
         "rule": {"equals": True},
         "words": "cửa đang đóng",
@@ -372,13 +388,14 @@ def _recipe(  # noqa: C901 - one flat table of primitives, kept in one place
         else ""
     )
     if primitive == "sensor.read":
-        if source not in SENSORS:
+        # A part's kind (`add part`) gives its sensor the default rule of the kind's name.
+        spec = SENSORS.get(source) or SENSORS.get(str(options.get("like")))
+        if spec is None:
             raise _refuse(
                 where,
                 f"--source {source!r} is not a sensor with a safe default rule; those are {sorted(SENSORS)}",
                 "use one of them, or write the gate and [sim.sensor_facts] by hand",
             )
-        spec = SENSORS[source]
         fact = f"{source}_ok"
         context.update(
             sensor=source,

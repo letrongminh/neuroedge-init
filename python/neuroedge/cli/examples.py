@@ -187,6 +187,11 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "--pin gate_relay",
         "neuroedge add sensor watch-gate --primitive vision.in --label person --pin porch_light",
     ),
+    "add part": (
+        "neuroedge add part --list",
+        'neuroedge add part heater tank-heater --pin gate_relay --label "Máy sưởi"',
+        "neuroedge add part humidity air-humidity --sensor humidity --drives porch_light",
+    ),
     "add device": ("neuroedge add device read-supply --device i2c1/ina219 --register 0x02",),
     "add gate": ("neuroedge add gate night-lock --fact user_verified --fact door_closed",),
 }
