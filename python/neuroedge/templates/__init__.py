@@ -89,8 +89,28 @@ def _golden_files(sample: str) -> dict[Path, str]:
     }
 
 
-def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> list[Path]:
-    """Write a new agent project `parent/name` and return the files, relative to it."""
+VIRTUAL_BOARD_TABLE = """
+# The virtual board (docs/spec/virtual_parts.md, VP-VB-09): on `sim`, pins and sensors that
+# [requires] names and sim-default lacks are added, labelled risk=virtual_board. Building for
+# linux or esp32s3 still checks the real board.
+[sim]
+board = "sim-virtual"
+"""
+
+
+def scaffold(
+    name: str, template: str = "minimal", parent: str | Path = ".", board: str | None = None
+) -> list[Path]:
+    """
+    Write a new agent project `parent/name` and return the files, relative to it. `board`
+    "sim-virtual" makes the project run on the virtual board (VP-VB-09); None keeps sim-default.
+    """
+    if board not in (None, "sim-virtual"):
+        raise AgentManifestError(
+            where=f"neuroedge new --board {board}",
+            why="a new project runs on sim-default, or on the virtual board when asked",
+            how="drop --board, or pass --board sim-virtual",
+        )
     if not NAME.match(name):
         raise AgentManifestError(
             where=f"neuroedge new {name!r}",
@@ -120,7 +140,15 @@ def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> 
     }
     if template in SAMPLES:
         files = {**_sample_files(template, name), **_golden_files(template), **files}
-    for relative, text in _render(files, name).items():
+    rendered = _render(files, name)
+    if board is not None:
+        rendered[Path("agent.toml")] = (
+            rendered[Path("agent.toml")].rstrip("\n") + "\n" + VIRTUAL_BOARD_TABLE
+        )
+        for relative, text in rendered.items():  # the scaffold's own tests run where the agent does
+            if relative.suffix == ".py" and 'BOARD = "sim-default"' in text:
+                rendered[relative] = text.replace('BOARD = "sim-default"', f'BOARD = "{board}"', 1)
+    for relative, text in rendered.items():
         path = target / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")

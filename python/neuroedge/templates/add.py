@@ -593,8 +593,10 @@ def plan_add(
     if kind != "gate":
         edits.append(Edit(("sim", "facts"), "user_verified", True, keep=True))
     new_manifest = edit_manifest(manifest_text, [*edits, *recipe.edits], str(manifest_path))
-    requires = tomllib.loads(new_manifest).get("requires", {})
-    board = board or _board_for(requires)
+    parsed = tomllib.loads(new_manifest)
+    requires = parsed.get("requires", {})
+    declared = parsed.get("sim", {}).get("board")  # VP-VB-01: the project's own board
+    board = board or (declared if isinstance(declared, str) else None) or _board_for(requires)
 
     context = {
         "name": name,

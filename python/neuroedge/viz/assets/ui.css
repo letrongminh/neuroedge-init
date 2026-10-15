@@ -101,3 +101,5 @@ details.tech[open] summary { margin-bottom: 10px; }
 .hint.below { margin: 10px 0 6px; }
 .chat .line.ALLOW b, .chat .line.ALLOW { color: var(--allow); } .chat .line.BLOCK, .chat .line.BLOCK b { color: var(--block); }
 .chat .line.note { color: var(--dim); font-style: italic; }
+.chip.risk { background: #fff4e5; color: #9a5b00; border: 1px solid #f0c27a; }
+@media (prefers-color-scheme: dark) { .chip.risk { background: #3a2a10; color: #f5c46b; border-color: #7a5520; } }

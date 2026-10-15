@@ -1973,21 +1973,29 @@ def new(
         help="minimal (1 action, 1 gate, tests), villa-concierge, home-voice, factory-monitor, "
         "gate-camera or blinds",
     ),
+    board: str = typer.Option(
+        None,
+        "--board",
+        help="sim-virtual: run on the virtual board, which adds the pins and sensors the "
+        "agent needs (risk=virtual_board); default sim-default",
+    ),
 ):
     """Scaffold an agent project: agent.toml, commands.toml, a gate, an @action, tests."""
     from ..templates import scaffold
 
     try:
-        files = scaffold(name, template)
+        files = scaffold(name, template, board=board)
     except NeuroEdgeError as error:
         _fail(error)
         return
     console.print(f"[bold green]✓[/bold green] created {escape(name)}/ from template {template}")
     for path in files:
         console.print(f"  {escape(str(path))}")
+    if board is not None:
+        console.print("[yellow]risk=virtual_board[/yellow] (docs/spec/virtual_parts.md)")
     console.print(
         f"\nNext:\n  cd {escape(name)}\n"
-        "  neuroedge build --target sim --board sim-default\n"
+        f"  neuroedge build --target sim --board {board or 'sim-default'}\n"
         "  neuroedge run\n"
         "  neuroedge test"
     )
@@ -2277,15 +2285,18 @@ def _start_session(
     if target == "linux":
         _exit_on_signals()  # before the lines are requested
     try:
-        return SimSession.load(
+        session = SimSession.load(
             agent or _default_agent(),
             target=target,
-            board_id=board,  # None: the target's reference board
+            board_id=board,  # None: `[sim] board`, else the target's reference board
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
             **({"clock": clock} if clock is not None else {}),
             **({"target_options": target_options} if target_options is not None else {}),
         )
+        if session.virtual_board is not None:  # VP-VB-05; stderr keeps MCP stdio clean
+            err_console.print(f"[yellow]{escape(session.virtual_board.startup_line())}[/yellow]")
+        return session
     except BuildFailed as failed:
         _fail_build(failed)
     except NeuroEdgeError as error:

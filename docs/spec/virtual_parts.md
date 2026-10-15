@@ -261,15 +261,16 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 
 | TC | Verifies | Level | Procedure → expected | Status |
 |:---|:---|:---|:---|:---|
-| TC-VB-01-1 | VP-VB-01, VP-NF-02 | integration | An agent with and without `--board sim-virtual` / `[sim] board` → board id `sim-virtual` / `sim-default`; every canonical trace replays unchanged | planned — TSK-I2d-29 |
-| TC-VB-02-1 | VP-VB-02 | unit | Agent needing `heater`, `ph`, a `digital.in` pin → the three added, every reference capability kept, nothing else; `validate_board_document` passes | planned — TSK-I2d-29 |
-| TC-VB-03-1 | VP-VB-03 | unit | An added pin without a part → the default envelope; a held `on` turns itself off after 60 s | planned — TSK-I2d-29 |
-| TC-VB-04-1 | VP-VB-04 | unit | `sim-virtual` with `build`/`run`/`mcp serve`/`test` on `linux` and `esp32s3` → error naming board and target; `build --target esp32s3` of the same agent names the pins Box-3 lacks | planned — TSK-I2d-29 |
-| TC-VB-05-1 | VP-VB-05 | integration | `run` on `sim-virtual` → start-up line lists the additions; trace metadata carries `risks` and the digest and validates against `trace.v1`; page header shows the label | planned — TSK-I2d-29 |
-| TC-VB-06-1 | VP-VB-06 | integration | Record on `sim-virtual`, replay → same verdicts; add a pin to the agent, replay → refused naming both digests | planned — TSK-I2d-29 |
-| TC-VB-07-1 | VP-VB-07 | unit | `available_boards()` and `boards/` → no `sim-virtual`; `load_board_by_id("sim-virtual")` → error naming VP-VB-01 | planned — TSK-I2d-29 |
-| TC-VB-09-1 | VP-VB-09 | integration | `neuroedge new x` → no `[sim] board`, `neuroedge build --target esp32s3` passes; `neuroedge new y --board sim-virtual` → `[sim] board = "sim-virtual"`, `risk=virtual_board` printed | planned — TSK-I2d-29 |
-| TC-VB-08-1 | VP-VB-08 | unit | Build the virtual board twice, with `[requires]` keys in another order → identical canonical JSON and digest | planned — TSK-I2d-29 |
+| TC-VB-01-1 | VP-VB-01 | integration | An agent with and without `--board sim-virtual` / `[sim] board` → board id `sim-virtual` / `sim-default`; every canonical trace replays unchanged | implemented — python/tests/test_virtual_board.py::test_the_board_comes_from_the_flag_or_agent_toml_and_the_default_is_unchanged |
+| TC-VNF-02-1 | VP-NF-02 | integration | The three canonical traces replay on their default board to the recorded verdicts | implemented — python/tests/test_virtual_board.py::test_the_canonical_traces_replay_unchanged_on_their_default_board |
+| TC-VB-02-1 | VP-VB-02 | unit | Agent needing `heater`, `ph`, a `digital.in` pin → the three added, every reference capability kept, nothing else; `validate_board_document` passes | implemented — python/tests/test_virtual_board.py::test_exactly_what_the_agent_needs_is_added_and_nothing_is_removed |
+| TC-VB-03-1 | VP-VB-03 | unit | An added pin without a part → the default envelope; a held `on` turns itself off after 60 s | implemented — python/tests/test_virtual_board.py::test_an_added_pin_without_a_part_gets_the_default_envelope |
+| TC-VB-04-1 | VP-VB-04 | unit | `sim-virtual` with `build`/`run`/`mcp serve`/`test` on `linux` and `esp32s3` → error naming board and target; `build --target esp32s3` of the same agent names the pins Box-3 lacks | implemented — python/tests/test_virtual_board.py::test_the_virtual_board_is_refused_off_sim |
+| TC-VB-05-1 | VP-VB-05 | integration | `run` on `sim-virtual` → start-up line lists the additions; trace metadata carries `risks` and the digest and validates against `trace.v1`; page header shows the label | implemented — python/tests/test_virtual_board.py::test_a_session_on_the_virtual_board_is_labelled |
+| TC-VB-06-1 | VP-VB-06 | integration | Record on `sim-virtual`, replay → same verdicts; add a pin to the agent, replay → refused naming both digests | implemented — python/tests/test_virtual_board.py::test_a_recording_replays_on_the_same_board_and_is_refused_on_another |
+| TC-VB-07-1 | VP-VB-07 | unit | `available_boards()` and `boards/` → no `sim-virtual`; `load_board_by_id("sim-virtual")` → error naming VP-VB-01 | implemented — python/tests/test_virtual_board.py::test_the_virtual_board_is_never_a_profile |
+| TC-VB-09-1 | VP-VB-09 | integration | `neuroedge new x` → no `[sim] board`, `neuroedge build --target esp32s3` passes; `neuroedge new y --board sim-virtual` → `[sim] board = "sim-virtual"`, `risk=virtual_board` printed | implemented — python/tests/test_virtual_board.py::test_new_keeps_sim_default_and_takes_the_virtual_board_on_request |
+| TC-VB-08-1 | VP-VB-08 | unit | Build the virtual board twice, with `[requires]` keys in another order → identical canonical JSON and digest | implemented — python/tests/test_virtual_board.py::test_the_same_agent_gives_the_same_board_whatever_the_order |
 | TC-PT-01-1 | VP-PT-01 | unit | Corpus of `[sim.parts]` tables: valid ones load; unknown key, unknown kind, no target, two targets, wrong primitive → each fails naming the part | planned — TSK-I2d-30 |
 | TC-PT-02-1 | VP-PT-02 | unit | Every kind of `parts.toml` names one primitive `SimHAL` implements; every kind of §4.2 is in the file and nothing else | planned — TSK-I2d-30 |
 | TC-PT-03-1 | VP-PT-03 | unit | A part on a pin `[requires]` lacks → load fails naming both | planned — TSK-I2d-30 |
@@ -290,7 +291,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-CV-02-1 | VP-CV-02 | integration | `POST /parts` without the key, with an invalid part, from `mcp serve` → refused, file byte-identical; valid → file written atomically | planned — TSK-I2d-31 |
 | TC-CV-03-1 | VP-CV-03 | inspection | The page's script has no control that writes a gate file; new gates come from `add part` only | planned — TSK-I2d-31 |
 | TC-CV-04-1 | VP-CV-04 | integration | A write while an `ask` is pending → the question expires, a new session id starts on the new board digest | planned — TSK-I2d-31 |
-| TC-VNF-01-1 | VP-NF-01 | unit | The files of VP-NF-01 are unchanged by the phases' commits (`check_digests.py`, `git diff` of `schemas/` against the commit before TSK-I2d-29) | planned — TSK-I2d-29 |
+| TC-VNF-01-1 | VP-NF-01 | unit | The files of VP-NF-01 keep the SHA-256 they had before TSK-I2d-29 (main at `c41820b`); only an RFC updates the pinned table | implemented — python/tests/test_virtual_board.py::test_the_rfc_files_are_untouched_by_the_virtual_parts_phases |
 
 ---
 

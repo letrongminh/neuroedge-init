@@ -205,6 +205,10 @@
     const header = el("header", {}, [
       el("h1", { text: (meta.agent_version || "NeuroEdge session") }),
       el("span", { class: "chip", text: opts.live ? "Đang chạy · mô phỏng" : "Xem lại phiên đã ghi" }),
+      // VP-VB-05 (docs/spec/virtual_parts.md): the board was built from the agent, not a real one.
+      (meta.risks || []).indexOf("virtual_board") >= 0
+        ? el("span", { class: "chip risk", title: "risk=virtual_board — chân và cảm biến được tạo từ [requires] của agent; build cho chip thật vẫn kiểm bảng mạch thật",
+          text: "Bảng mạch ảo" }) : null,
       el("span", { class: "meta", text: [meta.target, meta.board_id, meta.session_id].filter(Boolean).join(" · ") }),
       help,
     ]);

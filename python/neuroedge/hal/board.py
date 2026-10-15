@@ -744,6 +744,14 @@ def load_board_by_id(board_id: str, root: Path | None = None) -> BoardProfile:
     """
     root = Path(root) if root is not None else boards_dir()
     candidate = root / f"{board_id}.toml"
+    if board_id == "sim-virtual" and not candidate.is_file():
+        raise BoardCapabilityError(
+            where=f"board id {board_id!r}",
+            why="the virtual board is built from an agent and is not a board profile file "
+            "(docs/spec/virtual_parts.md VP-VB-01, VP-VB-07)",
+            how="pass --board sim-virtual to a command that loads an agent, or set "
+            '[sim] board = "sim-virtual" in its agent.toml',
+        )
     if not candidate.is_file():
         available = sorted(p.stem for p in root.glob("*.toml")) if root.is_dir() else []
         raise BoardCapabilityError(
