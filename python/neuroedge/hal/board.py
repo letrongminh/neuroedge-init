@@ -150,6 +150,8 @@ class BoardProfile:
     name: str = ""
     capabilities: dict[str, Any] = field(default_factory=dict)
     source: str = "<memory>"
+    # agent pin name -> the board pin it stands for (`hal/pin_map.py`); empty without a map.
+    pin_map: dict[str, str] = field(default_factory=dict)
 
     # -- capability queries ------------------------------------------------
     def supports(self, primitive: str) -> bool:

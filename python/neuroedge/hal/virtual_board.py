@@ -240,9 +240,13 @@ def resolve_board(
     """
     The board a build or a session runs on: `board_id`, else `[sim] board` on `sim`, else the
     target's reference board. `sim-virtual` is built from the agent; off `sim` it is refused.
+    A real board comes with the agent's pin names when agent.toml maps it (VP-PM-01 → 03), so
+    every consumer — build, session, replay — sees the same mapped board.
     """
     from .board import load_board_by_id
+    from .pin_map import apply_pin_map, check_pin_maps
 
+    check_pin_maps(manifest)  # VP-PM-01: every map the agent declares, for any board
     chosen = board_id
     if chosen is None and target == "sim":
         chosen = sim_board_of(manifest)
@@ -253,4 +257,5 @@ def resolve_board(
             )
         virtual = VirtualBoard(manifest)
         return virtual.profile, virtual
-    return load_board_by_id(chosen or REFERENCE_BOARD.get(target, "esp32s3-box-3")), None
+    board = load_board_by_id(chosen or REFERENCE_BOARD.get(target, "esp32s3-box-3"))
+    return apply_pin_map(board, manifest), None

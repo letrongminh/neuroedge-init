@@ -1770,6 +1770,10 @@ def build(
     warnings = list(remote.checked.warnings)
     if virtual is not None:  # VP-VB-05: said at every build, never hidden
         warnings.insert(0, virtual.startup_line())
+    if board.pin_map:  # VP-PM-04: a wrong map is seen before it drives a pin
+        from ..hal.pin_map import startup_line
+
+        warnings.insert(0, startup_line(board.pin_map))
     capability_problems = check_capabilities(manifest, board, remote.names)
     problems += capability_problems
     if capability_problems and not explicit_board:

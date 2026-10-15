@@ -2296,6 +2296,12 @@ def _start_session(
         )
         if session.virtual_board is not None:  # VP-VB-05; stderr keeps MCP stdio clean
             err_console.print(f"[yellow]{escape(session.virtual_board.startup_line())}[/yellow]")
+        if session.events.metadata.get("pin_map"):  # VP-PM-04
+            from ..hal.pin_map import startup_line
+
+            err_console.print(
+                f"[yellow]{escape(startup_line(session.events.metadata['pin_map']))}[/yellow]"
+            )
         return session
     except BuildFailed as failed:
         _fail_build(failed)

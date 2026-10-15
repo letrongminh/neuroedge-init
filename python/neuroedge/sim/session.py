@@ -898,6 +898,8 @@ class SimSession:
         events.metadata.update(target=target, board_id=board_id, agent_version=manifest.label)
         if virtual is not None:  # VP-VB-05, VP-VB-06
             events.metadata.update(virtual.metadata())
+        if board.pin_map:  # VP-PM-03: the map in force is part of the recording
+            events.metadata["pin_map"] = dict(board.pin_map)
         announce_plugins(remote.records, events)
         rules_digest = sensor_facts_digest(sim_table)
         if rules_digest is not None:

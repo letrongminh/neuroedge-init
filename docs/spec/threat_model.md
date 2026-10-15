@@ -313,6 +313,20 @@ This is a risk-labeled exception to §1: on microcontrollers lacking process sep
 
 **Residual risk, explicitly stated:** anyone with physical access to boards lacking flash encryption can read tokens, keys, memory, and workspace conversations (LittleFS); enabling encryption leaves hardware attacks (glitching, side-channels) out of scope. An exploitable memory corruption flaw in brain code compromises the entire chip including gates — which is why single-chip deployments carry label `risk=single_chip` and the two deployment modes of Q-76 remain the primary paths. Secure Boot not yet implemented (TSK-S6-05): physical cable access allows firmware replacement. `web_fetch` cannot prevent DNS rebinding: HTTP clients resolve domain names a second time upon connecting, permitting DNS records modified between hops to slip through.
 
+## 2m. In scope: misrouted pin map (Q-84, VP-PM-*) — draft, awaiting the lead engineer's approval
+
+`[targets.<board-id>.pins]` in agent.toml lets an agent keep its own pin names on a real board (`docs/spec/virtual_parts.md` §3.3). The gate still decides on the agent's name, so a wrong map does not weaken any gate: it moves **another real device** than the one the action's name promises. `heater` mapped to the board's `door_lock` pin makes an allowed `heater_on` open a door, under the door's envelope, with a trace that says `heater`. The map is therefore a safety input, edited by the agent's author, and decides which real device an allowed action moves.
+
+| Shortcut | Blocked by | Code | Test |
+|:---|:---|:---|:---|
+| Map to a board, pin, or primitive that does not exist | Checked at load, for every board the agent names, not only the build board; unknown board id, pin missing on that board, wrong primitive, a pin the HAL owns (PWM channel, enable line) each fail naming both pins (VP-PM-01) | NE3001 / NE3002 | `test_each_wrong_map_fails_at_load_naming_both_pins` |
+| Two agent pins on one real line, or an agent name onto a pin the agent also uses by its own name | Refused at load, naming both (VP-PM-01) | NE3001 / NE3002 | `test_each_wrong_map_fails_at_load_naming_both_pins` |
+| A mapped pin driven under another pin's limits | The board pin's envelope, enable pin, and backend apply; never the virtual board's or a part's preset (VP-PM-02) | — | `test_the_mapped_pin_has_the_board_pins_envelope_and_a_token_drives_only_it` |
+| Wrong map goes unnoticed | `build`, `run`, and `mcp serve` print `pins: heater → gate_relay, ...` at every start (VP-PM-04); the map is in trace metadata (`pin_map`) and a replay on the same board refuses a different one (VP-PM-03) | — | `test_build_and_run_print_the_map_in_force`, `test_the_recording_carries_the_map_validates_and_replays` |
+| Virtual board hides the real wiring | A map for `sim-virtual` fails (VP-PM-05) | NE3001 / NE3002 | `test_a_map_for_a_sim_board_is_applied_and_one_for_the_virtual_board_fails` |
+
+**Residual risk, explicitly stated:** the build cannot know what is wired to a real pin. A map to an existing pin of the right primitive that the installer wired to a different device than the author believes passes every check; the printed line at every start and the trace's `pin_map` are what a reviewer reads. A trace recorded on the chip (`neuroedge record --port`) does not carry `pin_map` — the firmware has no map, only the agent's names — so the map of a chip recording is read from agent.toml. Tools that start without the CLI (library use of `SimSession`) print nothing; they still record `pin_map`.
+
 ## 3. Out of scope: same-process impersonator
 
 Tokens are `(nonce, digest)` in memory. Code running **in the same process** can read the ledger and mint its own tokens. Block 1a **does not** defend against this — that is malicious code possessing runtime-equivalent privileges, not mistakes.
