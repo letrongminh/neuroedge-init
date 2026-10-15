@@ -1,0 +1,27 @@
+# Heating water that is already warm cooks the fish. From 29 °C the heater stays off, whoever
+# asks, and nobody can confirm it on: water_hot is not in `confirms`. No reading at all leaves
+# water_hot undecided, and the gate fails closed.
+schema:  neuroedge.gate/v1
+name:    heater_on
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  water_hot:
+    type: bool
+    instructions: "Nước trong bể đang ấm (từ 29 °C), do cảm biến nhiệt trong nước báo"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  water_hot:   false
+
+on_block:
+  action:  deny
+  message: "Nước đang ấm (từ 29 °C) — không bật sưởi."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

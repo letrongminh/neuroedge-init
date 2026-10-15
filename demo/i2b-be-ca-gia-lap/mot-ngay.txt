@@ -1,0 +1,19 @@
+bật đèn bể
+bật sưởi
+bật sục khí
+:sensor temperature 29
+bật sưởi
+tắt sưởi
+:sensor temperature 31
+tắt sục khí
+:sensor temperature lỗi
+bật sưởi
+:sensor temperature 24
+bật sưởi
+tắt sục khí
+không
+tắt sục khí
+có
+bật sục khí
+tắt đèn bể
+exit

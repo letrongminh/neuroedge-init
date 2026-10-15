@@ -1,0 +1,51 @@
+# Sample agent: a fish tank on simulation and emulation (demo/i2b-be-ca-gia-lap/).
+#
+# Three relays and one water-temperature probe, the same on every target the demo runs on:
+# `sim` on a laptop, `linux` on gpio-sim and an LM75 on i2c-stub, `esp32s3` on QEMU. The
+# boards name their relays after other samples (as factory-monitor does): here
+#
+#   gate_relay  → the heater (sưởi)
+#   door_lock   → the air pump (sục khí)
+#   porch_light → the tank light (đèn bể)
+#
+# Two rules a fish keeper cares about:
+#   * the heater never comes on while the water is already warm (≥ 29 °C), or while the probe
+#     reports nothing at all (fail closed);
+#   * for fish the safe state of the air pump is ON: turning it off asks the owner, and while the
+#     water is warm (less oxygen in it) it is refused without asking.
+# Turning the heater off, the pump on and the light on or off is always allowed.
+#
+# No physics model, no mission contract, no Blueprint yet (TSK-I2d-15, I2d-05, I2e): the
+# temperature is what the presenter types (`:sensor temperature 31`) or what a demo script sets.
+[agent]
+name    = "aquarium"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["gate_relay", "door_lock", "porch_light"] }
+"sensor.read" = { sensors = ["temperature"] }
+
+[gates]
+heater_on   = "gates/heater_on@1.0.0.yaml"
+heater_off  = "gates/heater_off@1.0.0.yaml"
+aerator_on  = "gates/aerator_on@1.0.0.yaml"
+aerator_off = "gates/aerator_off@1.0.0.yaml"
+light       = "gates/light@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux", "esp32s3"]
+
+# `sim` starts at 25 °C, a tropical tank's normal. Change it with `:sensor temperature 31` in the
+# REPL or on the page. On `linux` the reading comes from the kernel (an lm75 through hwmon);
+# on `esp32s3` (QEMU) the console's `fact water_hot true|false` stands in for the probe.
+[sim.sensors]
+temperature = { value = 25, unit = "C" }
+
+# Warm water from 29 °C, the bound included. No reading, or one the rule cannot place, leaves
+# `water_hot` undecided: heater_on and aerator_off then refuse.
+[sim.sensor_facts]
+water_hot = { sensor = "temperature", gte = 29 }
+
+# `owner_confirmed` always starts false: only the owner's "có" at home makes it pass, for one call.
+[sim.facts]
+owner_confirmed = false
