@@ -38,14 +38,11 @@
 # With the brain in the image (Q-83 Profile B, NEUROEDGE_OTA_BRAIN=1 and
 # NEUROEDGE_OTA_PROJECT=<the project `neuroedge build --brain neuroclaw` wrote>)
 # every image is box and brain together — an update replaces both (DP-B-15) —
-# built with sdkconfig.anti_rollback, the eFuses kept in a file across boots:
+# on the same table with its factory slot; phase g is then the brain's downgrade
+# refusal by the high-water mark (DP-B-17, TC-B-17-1), and one more phase runs:
 #
 #   h  an image whose bridge self-check fails marks itself INVALID and the
-#      bootloader rolls back (NEUROEDGE_OTA_TEST_FAIL_BRAIN, TC-B-15-1);
-#   i  an image with security version 2 is installed and marked valid, which
-#      burns 2 into eFuse; a later app version with security version 1 is then
-#      REJECTED reason=security_version and the device keeps running
-#      (TC-B-17-1).
+#      bootloader rolls back (NEUROEDGE_OTA_TEST_FAIL_BRAIN, TC-B-15-1).
 #
 # Any missing marker, wrong order, marker that must not appear, unexpected
 # QEMU exit or timeout is exit 1. The QEMU UART logs and the HTTP server log
@@ -55,14 +52,10 @@ set -euo pipefail
 repo=$(cd "$(dirname "$0")/.." && pwd)
 project=$(cd "${NEUROEDGE_OTA_PROJECT:-$repo/targets/esp32s3}" && pwd)
 brain=${NEUROEDGE_OTA_BRAIN:-0}
-# The slot the first update lands in, and the other one. The box's table boots from `factory`,
-# so updates go ota_0, then ota_1, and roll back to ota_0. One image of box and brain has no
-# factory (anti-rollback, DP-B-17, engine/brain.py): it boots from ota_0 and the order swaps.
-if grep -q '^factory' "$project/partitions.csv"; then
-  first=ota_0 second=ota_1
-else
-  first=ota_1 second=ota_0
-fi
+# The slot the first update lands in, and the other one. Both tables (the box's, and the box
+# and brain's from engine/brain.py, DP-B-09) boot from `factory`, so updates go ota_0, then
+# ota_1, and roll back to ota_0.
+first=ota_0 second=ota_1
 work=${NEUROEDGE_OTA_WORK:-"$project/build/ota-test"}
 timeout_s=${NEUROEDGE_OTA_TIMEOUT:-240}
 port=8070
@@ -156,7 +149,6 @@ size_check() { # <name> <build> <image>
 defaults="sdkconfig.defaults;sdkconfig.qemu;sdkconfig.ota;sdkconfig.qemu_ota"
 if [ "$brain" = 1 ]; then
   [ -d "$project/components/neuroclaw" ] || fail "NEUROEDGE_OTA_BRAIN=1 needs a --brain project: $project"
-  defaults="$defaults;sdkconfig.anti_rollback"
 fi
 espsecure.py generate_signing_key --version 2 --scheme rsa3072 "$work/key-a.pem" >/dev/null
 espsecure.py generate_signing_key --version 2 --scheme rsa3072 "$work/key-b.pem" >/dev/null
@@ -185,11 +177,6 @@ if [ "$brain" = 1 ]; then
   printf 'CONFIG_NEUROEDGE_OTA_TEST_FAIL_BRAIN=y\n' >"$work/sdkconfig.fail-brain"
   build_variant c3 0.3.2 "$defaults" "$work/sdkconfig.fail-brain"
   sign_image "$work/key-a.pem" "$work/c3/$(app_bin "$work/c3")" "$images/c3.bin"
-  printf 'CONFIG_BOOTLOADER_APP_SECURE_VERSION=2\n' >"$work/sdkconfig.secver2"
-  build_variant s2 0.4.0 "$defaults" "$work/sdkconfig.secver2"
-  sign_image "$work/key-a.pem" "$work/s2/$(app_bin "$work/s2")" "$images/s2.bin"
-  build_variant s1 0.5.0 "$defaults"  # security version 1, the layer's
-  sign_image "$work/key-a.pem" "$work/s1/$(app_bin "$work/s1")" "$images/s1.bin"
 fi
 
 # The board OTA image (Wi-Fi linked, no QEMU layer) is the one that ships: check
@@ -218,20 +205,11 @@ kill -0 "$server_pid" 2>/dev/null || fail "the HTTP server did not start on 127.
 # The board does not restart the emulator: this is a QEMU workaround
 # (docs/spec/simulation_coverage.md §4).
 
-# The eFuses in a file of their own when the images use anti-rollback: a burnt security version
-# must survive the emulator's restarts as it survives a board's.
-efuse_args=()
-if [ "$brain" = 1 ]; then
-  head -c 1024 /dev/zero >"$work/efuse.bin"
-  efuse_args=(-drive "file=$work/efuse.bin,if=none,format=raw,id=efuse"
-    -global "driver=nvram.esp32s3.efuse,property=drive,value=efuse")
-fi
-
 start_qemu() { # <log> [extra qemu args ...]
   local log=$1
   shift
   qemu-system-xtensa -machine esp32s3 -display none -monitor none \
-    -drive "file=$flash,if=mtd,format=raw" "${efuse_args[@]}" \
+    -drive "file=$flash,if=mtd,format=raw" \
     -nic user,model=open_eth \
     -serial "file:$log" "$@" &
   qemu_pid=$!
@@ -457,25 +435,7 @@ if [ "$brain" = 1 ]; then
     '^NE_OTA SKIP reason=rolled_back version=0\.3\.2$'
   assert h ota_forbid "$logs/h.log" "^NE_OTA VALID partition=${second}"
 
-  # (i) anti-rollback: security version 2 is kept (and burnt into eFuse);
-  # a newer app version that carries security version 1 is refused before a
-  # byte is written, and the device stays on 0.4.0 (DP-B-17).
-  serve "$images/s2.bin"
-  qemu_once i 1 "^NE_OTA SWITCH partition=${second}\$" idle 0
-  qemu_once i 2 '^NE_OTA SKIP reason=same_version version=0\.4\.0$' idle
-  serve "$images/s1.bin"
-  qemu_once i 3 '^NE_OTA REJECTED reason=security_version$' idle 10
-  join_boots i
-  assert i ota_ordered "$logs/i.log" \
-    '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.4\.0$' \
-    "^NE_OTA SWITCH partition=${second}\$" \
-    '^NE_BRAIN SELFTEST PASS tools=[1-9][0-9]*$' \
-    "^NE_OTA VALID partition=${second}\$" \
-    '^NE_OTA SKIP reason=same_version version=0\.4\.0$' \
-    "^NE_OTA CHECK url=$URL\$" \
-    '^NE_OTA REJECTED reason=security_version$'
-  assert i ota_forbid "$logs/i.log" '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.5\.0$'
-  phases="$phases h i"
+  phases="$phases h"
 fi
 
 # --- evidence -----------------------------------------------------------------------------------

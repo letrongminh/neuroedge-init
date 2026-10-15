@@ -145,7 +145,7 @@ With the brain: build `fixtures/agents/chat-den-cua` with `--brain neuroclaw`, t
 sdkconfig layers, then `python3 scripts/qemu_brain.py <project>/build` (labels, one console, offline buttons, every setting,
 the brain starting; logs in `<project>/build/brain-test/`) and
 `NEUROEDGE_OTA_PROJECT=<project> NEUROEDGE_OTA_BRAIN=1 scripts/qemu_ota.sh` (the update path, the bridge self-check,
-anti-rollback).
+the downgrade refused).
 
 ## 7. Sources
 

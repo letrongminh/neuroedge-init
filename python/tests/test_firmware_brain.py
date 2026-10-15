@@ -127,17 +127,14 @@ def test_without_the_brain_the_project_is_the_box_alone(tmp_path):
 
 
 def test_the_brains_partition_table_holds_box_brain_and_signed_ota():
-    """TC-B-09-1: aligned, no overlap, two OTA slots >= the image and no factory (anti-rollback,
-    DP-B-17), ws >= 1 MB, nvs_keys encrypted."""
+    """TC-B-09-1: aligned, no overlap, OTA slots >= the image, ws >= 1 MB, nvs_keys encrypted."""
     base = (firmware_root() / "partitions.csv").read_text()
     table = brain.brain_partitions(base)
     assert brain.partition_problems(table) == []
     rows = {r[0]: r for r in brain._rows(table)}
     old = {r[0]: r for r in brain._rows(base)}
-    for name in ("ne_config", "nvs_keys", "nvs", "otadata"):
-        assert rows[name][3] == old[name][3], f"{name} moved"  # the owner's settings stay put
-    assert "factory" not in rows
-    assert rows["ota_0"][3] == old["factory"][3]  # the app is flashed where it always was
+    for name in ("factory", "ota_0", "ota_1", "ne_config", "nvs_keys", "nvs", "otadata"):
+        assert rows[name][3] == old[name][3], f"{name} moved"  # the box's offsets stay
     assert int(rows["ws"][4], 16) >= brain.WORKSPACE_MIN
 
 
@@ -146,28 +143,22 @@ def test_the_brains_partition_table_holds_box_brain_and_signed_ota():
     [
         (
             (
-                "ota_1,    app,  ota_1,   0x390000,0x380000,",
-                "ota_1,    app,  ota_1,   0x398000,0x380000,",
+                "ota_1,    app,  ota_1,   0x710000,0x380000,",
+                "ota_1,    app,  ota_1,   0x718000,0x380000,",
             ),
             "not aligned",
         ),
         (
             (
-                "ota_0,    app,  ota_0,   0x10000,0x380000,",
-                "ota_0,    app,  ota_0,   0x10000,0x300000,",
+                "ota_0,    app,  ota_0,   0x390000,0x380000,",
+                "ota_0,    app,  ota_0,   0x390000,0x300000,",
             ),
             "image budget",
         ),
         (("0xf96000,0x1000, encrypted", "0xf96000,0x1000,"), "nvs_keys must be encrypted"),
         (("ws,       data, littlefs", "ws,       data, spiffs"), "littlefs"),
         (("ne_config, data, nvs,    0xf90000", "ne_config, data, nvs,    0xf8f000"), "overlaps"),
-        (
-            (
-                "# No factory slot: anti-rollback (DP-B-17) boots only ota_0 / ota_1.",
-                "factory,  app,  factory, 0xf00000,0x10000,",
-            ),
-            "a factory partition",
-        ),
+        (("factory,  app,  factory", "# factory,  app,  factory"), "no factory partition"),
     ],
 )
 def test_a_table_that_breaks_a_rule_is_named(change, problem):

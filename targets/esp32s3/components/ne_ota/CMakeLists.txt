@@ -25,7 +25,6 @@ idf_component_register(
         esp_event
         esp_timer
         mbedtls
-        efuse
 )
 
 # The IDF headers are not strict-C99 clean (static assertions, compound

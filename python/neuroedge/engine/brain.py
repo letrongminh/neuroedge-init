@@ -236,50 +236,28 @@ def _rows(text: str) -> list[list[str]]:
 
 
 def brain_partitions(base: str) -> str:
-    """The box's table for one image of box and brain: two OTA slots and no `factory`
-    (ESP-IDF builds anti-rollback, DP-B-17, only so), `storage` grown into the slot that
-    frees, and `ws` (LittleFS, WORKSPACE_MIN) cut from its end. nvs, otadata, ne_config and
-    nvs_keys keep their offsets."""
-    rows = {row[0]: row for row in _rows(base)}
-    try:
-        slots = [int(rows[name][3], 16) for name in ("factory", "ota_0", "ota_1")]
-        storage_end = int(rows["storage"][3], 16) + int(rows["storage"][4], 16)
-    except (KeyError, IndexError, ValueError) as error:
-        raise NeuroEdgeError(
-            where="targets/esp32s3/partitions.csv",
-            why=f"no factory, ota_0, ota_1 and storage rows to lay the brain out from ({error})",
-            how="keep the box's table: factory, ota_0, ota_1, then storage",
-        ) from error
-    storage_start = slots[2]  # ota_1's old place; the factory slot went to ota_0
-    if storage_end - storage_start < 2 * WORKSPACE_MIN:
-        raise NeuroEdgeError(
-            where="targets/esp32s3/partitions.csv (storage)",
-            why="storage is too small to give the brain its workspace",
-            how=f"keep storage at least {2 * WORKSPACE_MIN:#x} bytes",
-        )
-    moved = {"ota_0": slots[0], "ota_1": slots[1]}
+    """The box's table with `ws` (LittleFS, WORKSPACE_MIN) cut from the end of `storage`."""
     out = []
     for line in base.splitlines():
         cells = [cell.strip() for cell in line.split(",")]
-        if not cells or len(cells) < 5:
-            out.append(line)
-        elif cells[0] == "factory":
-            out.append("# No factory slot: anti-rollback (DP-B-17) boots only ota_0 / ota_1.")
-        elif cells[0] in moved:
-            name = cells[0]
-            out.append(f"{name},    app,  {name},   {moved[name]:#x},{cells[4]},")
-        elif cells[0] == "storage":
-            size = storage_end - storage_start - WORKSPACE_MIN
-            out.append(f"storage,  data, spiffs,  {storage_start:#x},{size:#x},")
+        if cells and cells[0] == "storage" and len(cells) >= 5:
+            offset, size = int(cells[3], 16), int(cells[4], 16)
+            if size < 2 * WORKSPACE_MIN:
+                raise NeuroEdgeError(
+                    where="targets/esp32s3/partitions.csv (storage)",
+                    why="storage is too small to give the brain its workspace",
+                    how=f"keep storage at least {2 * WORKSPACE_MIN:#x} bytes",
+                )
+            out.append(f"storage,  data, spiffs,  {offset:#x},{size - WORKSPACE_MIN:#x},")
             out.append(
                 "# The brain's workspace (NeuroClaw-ESP: memory, notes, sessions, cron), "
                 "Profile B, DP-B-09"
             )
             out.append(
-                f"ws,       data, littlefs,{storage_end - WORKSPACE_MIN:#x},{WORKSPACE_MIN:#x},"
+                f"ws,       data, littlefs,{offset + size - WORKSPACE_MIN:#x},{WORKSPACE_MIN:#x},"
             )
-        else:
-            out.append(line)
+            continue
+        out.append(line)
     return "\n".join(out) + "\n"
 
 
@@ -304,11 +282,9 @@ def partition_problems(text: str) -> list[str]:
             problems.append(f"{after} overlaps {name}")
     if spans and spans[-1][1] > FLASH_SIZE:
         problems.append(f"{spans[-1][2]} ends past the {FLASH_SIZE:#x} bytes of flash")
-    for name in ("ota_0", "ota_1", "ne_config", "nvs_keys", "ws"):
+    for name in ("factory", "ota_0", "ota_1", "ne_config", "nvs_keys", "ws"):
         if name not in by_name:
             problems.append(f"no {name} partition")
-    if "factory" in by_name:
-        problems.append("a factory partition: anti-rollback (DP-B-17) builds only without one")
     ws = by_name.get("ws")
     if ws is not None and (ws[2] != "littlefs" or int(ws[4], 16) < WORKSPACE_MIN):
         problems.append(f"ws must be littlefs of at least {WORKSPACE_MIN:#x} bytes")
