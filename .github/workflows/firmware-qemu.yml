@@ -511,7 +511,7 @@ jobs:
           print(f"  ok  {len(runtime)} run-time sessions replay to the same verdicts and pins")
           PY
 
-      - name: OTA of box and brain together; bridge self-check; anti-rollback (TC-B-15-1, TC-B-17-1)
+      - name: OTA of box and brain together; bridge self-check; downgrade refused (TC-B-15-1, TC-B-17-1)
         run: |
           git config --global --add safe.directory '*'
           . "$IDF_PATH/export.sh"

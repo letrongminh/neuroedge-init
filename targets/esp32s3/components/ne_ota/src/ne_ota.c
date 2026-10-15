@@ -32,9 +32,6 @@
 #if CONFIG_NEUROEDGE_OTA
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
-#if CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK
-#include "esp_efuse.h"
-#endif
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -552,16 +549,6 @@ void ne_ota_run(void) {
         return;
     }
 
-#if CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK
-    /* DP-B-17: an image whose security version is below the one burnt in eFuse would reopen
-     * holes a later image closed. Refused before a byte is written (sdkconfig.anti_rollback). */
-    if (!esp_efuse_check_secure_version(remote.secure_version)) {
-        ESP_LOGE(TAG, "security version %lu is below the chip's", (unsigned long)remote.secure_version);
-        esp_https_ota_abort(handle);
-        reject("security_version");
-        return;
-    }
-#endif
     const ne_ota_decision decision = ne_ota_should_install(
         s_running_version, remote.version, s_rolled_back_version, s_high_water);
     if (decision != NE_OTA_INSTALL) {
@@ -596,10 +583,6 @@ void ne_ota_run(void) {
         esp_https_ota_abort(handle);
         if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
             refuse("signature", target);
-#if CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK
-        } else if (err == ESP_ERR_OTA_SMALL_SEC_VER) {
-            refuse("security_version", target);
-#endif
         } else {
             /* Bytes may already be in the slot; leave nothing bootable. */
             refuse("download", target);

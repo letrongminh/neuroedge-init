@@ -35,6 +35,7 @@ again for the next boot.
 
 from __future__ import annotations
 
+import codecs
 import re
 import shutil
 import socket
@@ -45,6 +46,7 @@ from pathlib import Path
 
 TIMEOUT_S = 90.0
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")  # terminal escapes: never part of a marker
+PARTIAL = re.compile(r"\x1b(\[[0-9;?]*)?\Z")  # an escape whose rest is still on the wire
 STACK_FLOOR = 512  # bytes the console task must still have free after `config set`
 # Made up for the test: the shape of a BotFather token, no real bot.
 TOKEN = "7000000001:AAQemuOnlyNotARealTokenxxxxxxxxxxxx"
@@ -63,6 +65,8 @@ class Boot:
         self.log = log
         self.text = ""
         self.pos = 0  # what expect() has consumed
+        self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+        self._carry = ""  # the start of an escape split across two reads
         self.proc = subprocess.Popen(
             [
                 "qemu-system-xtensa",
@@ -104,8 +108,13 @@ class Boot:
         except OSError:
             data = b""
         if data:
-            # Without CRs and terminal escapes: the console's `ESC[5n` probe can precede a marker.
-            self.text += ANSI.sub("", data.decode(errors="replace").replace("\r", ""))
+            # Without CRs and terminal escapes: the console's `ESC[5n` probe can precede a marker,
+            # and one read can end inside it, so an unfinished escape waits for the next read.
+            chunk = self._carry + self._decoder.decode(data).replace("\r", "")
+            partial = PARTIAL.search(chunk)
+            cut = partial.start() if partial else len(chunk)
+            self.text += ANSI.sub("", chunk[:cut])
+            self._carry = chunk[cut:]
             self.log.write_text(self.text)
         elif self.proc.poll() is not None:
             raise Fail(f"QEMU exited (log: {self.log})")

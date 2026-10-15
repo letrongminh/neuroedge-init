@@ -57,7 +57,6 @@ FIRMWARE_SOURCES = (
     "sdkconfig.ota",
     "sdkconfig.qemu_ota",
     "sdkconfig.secure",
-    "sdkconfig.anti_rollback",
     "main/CMakeLists.txt",
     "main/Kconfig.projbuild",
     "main/*.c",
