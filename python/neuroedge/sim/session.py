@@ -106,6 +106,7 @@ from ..errors import (
 )
 from ..hal.analog import analog_data
 from ..hal.board import REFERENCE_BOARD
+from ..hal.parts import check_reading, sensor_ranges
 from ..hal.pwm import MEASURED
 from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
@@ -115,7 +116,6 @@ from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_gramm
 from ..plugins.actuators import remote_setup
 from ..trace import json_safe, validate_trace
 from .hal_build import announce_plugins, build_hal, release_hal
-from .parts import check_reading, sensor_ranges
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.

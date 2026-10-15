@@ -94,6 +94,7 @@ def own_actions():
     from neuroedge.actions import REGISTRY
 
     saved, modules = dict(REGISTRY), set(sys.modules)
+    REGISTRY.pop("operate_hardware", None)  # `neuroedge new` defines it again at a new path
     yield
     REGISTRY.clear()
     REGISTRY.update(saved)

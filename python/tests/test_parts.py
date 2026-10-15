@@ -2,7 +2,7 @@
 The parts catalogue and `[sim.parts]` (docs/spec/virtual_parts.md §3.2, Q-84 phase B, TSK-I2d-30).
 
 A part says what a pin or a sensor of the agent is, in people's words: a kind of the catalogue
-(`neuroedge/sim/parts.toml`), the target it is wired to, an optional label. Parts describe and
+(`neuroedge/hal/parts.toml`), the target it is wired to, an optional label. Parts describe and
 never add a requirement; on `sim-virtual` they give an output pin its envelope. Each test names
 the test case of the specification it implements.
 """
@@ -21,14 +21,14 @@ import pytest
 from typer.testing import CliRunner
 
 import neuroedge
-from neuroedge.cli.main import app
+from neuroedge.cli.main import app, part_context
 from neuroedge.engine.compiler import build, load_agent_manifest
 from neuroedge.errors import AgentManifestError, BuildFailed, NeuroEdgeError
 from neuroedge.hal.board import ALL_PRIMITIVES, load_board_by_id
+from neuroedge.hal.parts import SIM_PRIMITIVES, agent_parts, catalogue, parse_parts, part_envelopes
 from neuroedge.hal.virtual_board import VirtualBoard
 from neuroedge.paths import repo_root
 from neuroedge.sim import SimSession
-from neuroedge.sim.parts import SIM_PRIMITIVES, agent_parts, catalogue, parse_parts, part_envelopes
 from neuroedge.sim.ui import SessionServer, describe_agent
 from neuroedge.templates.add_part import plan_part
 
@@ -48,6 +48,7 @@ def own_actions():
     from neuroedge.actions import REGISTRY
 
     saved, modules = dict(REGISTRY), set(sys.modules)
+    REGISTRY.pop("operate_hardware", None)  # `neuroedge new` defines it again at a new path
     yield
     REGISTRY.clear()
     REGISTRY.update(saved)
@@ -451,7 +452,7 @@ def test_a_pin_the_board_lacks_changes_nothing_and_names_the_two_ways_on(tmp_pat
     assert result.exit_code != 0
     assert snapshot(project) == before
     with pytest.raises(AgentManifestError) as refused:
-        plan_part(project, "pump", "p", pin="air_pump")
+        plan_part(project, "pump", "p", pin="air_pump", **part_context())
     text = f"{refused.value.why} {refused.value.how}"
     assert "sim-default" in text and "air_pump" in text
     assert "--board sim-virtual" in text and "[targets.sim-default.pins]" in text

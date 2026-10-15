@@ -1708,8 +1708,8 @@ def build(
     `board_id` None builds on the target's default board. It is never replaced by another
     board that would fit: the user must know which board they flash (RFC-0013 §3e).
     """
+    from ..hal.parts import agent_parts
     from ..hal.virtual_board import resolve_board, sim_board_of
-    from ..sim.parts import agent_parts
 
     manifest = load_agent_manifest(agent_toml)
     explicit_board = board_id is not None or (

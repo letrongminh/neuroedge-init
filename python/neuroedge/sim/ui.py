@@ -54,9 +54,9 @@ from pathlib import Path
 from typing import Any
 
 from ..errors import NeuroEdgeError
+from ..hal.parts import describe_parts
 from ..trace import json_safe
 from ..viz import board_info, page
-from .parts import describe_parts
 from .session import SimSession, level_word
 
 

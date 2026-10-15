@@ -15,14 +15,11 @@ from __future__ import annotations
 import keyword
 import shutil
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
 from ..errors import NeuroEdgeError
-from ..hal.board import BoardProfile, load_board_by_id
-from ..hal.virtual_board import VIRTUAL_BOARD
-from ..sim.parts import REQUIRES_KEY, Kind, catalogue
 from . import NAME
 from .add import (
     COPY_IGNORE,
@@ -40,21 +37,6 @@ from .add import (
 )
 
 
-def _board_lacks(board: BoardProfile, kind: Kind, target: str | None) -> list[str] | None:
-    """None when the board has the target; else the names it does offer for the kind's primitive."""
-    offered: dict[str, list[str]] = {
-        "digital.out": list(board.pins),
-        "digital.in": list(board.input_pins),
-        "sensor.read": list(board.sensors),
-        "analog.in": [channel["name"] for channel in board.analog_channels],
-        "motion": [channel["name"] for channel in board.motion_channels],
-    }
-    if kind.primitive == "display":
-        return None if board.supports("display") else []
-    names = offered[kind.primitive]
-    return None if target in names else names
-
-
 def plan_part(
     project: Path,
     part_kind: str,
@@ -67,10 +49,16 @@ def plan_part(
     label: str | None = None,
     board: str | None = None,
     manifest: str = "agent.toml",
+    kinds: Mapping[str, Any],
+    board_lacks: Callable[[str, Any, str | None], list[str] | None],
+    virtual_board: str,
 ) -> Plan:
-    """The files `add part` writes, planned in memory; raises `AgentManifestError` if it cannot."""
+    """
+    The files `add part` writes, planned in memory; raises `AgentManifestError` if it cannot.
+    The catalogue (`kinds`), what a board lacks and the virtual board's id come from the caller:
+    a template reads no board itself (the layers of docs/architecture/vi/03-component-host-c4l3.md).
+    """
     where = f"neuroedge add part {part_kind} {name}"
-    kinds = catalogue()
     kind = kinds.get(part_kind)
     if kind is None:
         raise _refuse(
@@ -133,8 +121,8 @@ def plan_part(
     declared = document.get("sim", {}).get("board")
     requires = {**document.get("requires", {}), kind.primitive: {}}
     chosen = board or (declared if isinstance(declared, str) else None) or _board_for(requires)
-    if chosen != VIRTUAL_BOARD:
-        offers = _board_lacks(load_board_by_id(chosen), kind, target)
+    if chosen != virtual_board:
+        offers = board_lacks(chosen, kind, target)
         if offers is not None:
             raise _refuse(
                 where,
@@ -143,7 +131,7 @@ def plan_part(
                 "either run on the virtual board, which adds what the agent declares and says "
                 f"risk=virtual_board: neuroedge add part {part_kind} {name} "
                 + (f"--{kind.target} {target} " if kind.target else "")
-                + f"--board {VIRTUAL_BOARD}; or keep the agent's name and map it to a pin of "
+                + f"--board {virtual_board}; or keep the agent's name and map it to a pin of "
                 f"{chosen} with a [targets.{chosen}.pins] entry in agent.toml (VP-PM-01)",
             )
 
@@ -179,9 +167,7 @@ def plan_part(
         )
     else:
         # Only the part: its `[requires]` entry and a start value. An action decided by it is --drives.
-        edits.insert(
-            0, Edit(("requires",), kind.primitive, {REQUIRES_KEY[kind.primitive]: [target]})
-        )
+        edits.insert(0, Edit(("requires",), kind.primitive, {kind.requires_key: [target]}))
         if kind.primitive == "sensor.read" and part_kind in SENSORS:
             edits.append(Edit(("sim", "sensors"), target, SENSORS[part_kind]["initial"], keep=True))
         elif kind.primitive == "digital.in":

@@ -204,11 +204,9 @@ def _has_parts(source: Mapping[str, Any]) -> bool:
 
 
 def envelope_presets(manifest: Any) -> dict[str, dict[str, int]]:
-    """Envelopes of `[sim.parts]` output pins (phase B); empty until the parts catalogue exists."""
-    try:
-        from ..sim.parts import part_envelopes
-    except ImportError:
-        return {}
+    """Envelopes of `[sim.parts]` output pins: each kind's preset, tightened by the part (VP-PT-04)."""
+    from .parts import part_envelopes
+
     return part_envelopes(manifest)
 
 

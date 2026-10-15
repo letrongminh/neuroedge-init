@@ -25,6 +25,10 @@ COMMANDS = {
     "add action": ("<name> --agent|-a= --board= --channel= --pin= --primitive="),
     "add device": ("<name> --agent|-a= --board= --device=! --register=! --width="),
     "add gate": "<name> --agent|-a= --fact=*",
+    # Q-84: a part of the catalogue (docs/spec/virtual_parts.md VP-PT-07)
+    "add part": (
+        "[kind] [name] --agent|-a= --board= --channel= --drives= --label= --list --pin= --sensor="
+    ),
     "add sensor": ("<name> --agent|-a= --board= --label= --pin= --primitive= --source="),
     "board list": "",
     "board show": "<board_id>",
@@ -54,7 +58,7 @@ COMMANDS = {
         "--target|-t= --tls-cert= --tls-key= --trace-out= --ui"
     ),
     "mcp tools": "--agent|-a= --external --json --openai",
-    "new": "<name> --template=",
+    "new": "<name> --board= --template=",
     "pair init": "--audience=! --cert-days= --host=* --issuer= --out|-o=! --token-days=",
     "pair renew": "--dir|-d=! --token-days=",
     "pair rotate": "--dir|-d=! --token-days=",

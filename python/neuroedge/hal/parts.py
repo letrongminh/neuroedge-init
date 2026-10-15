@@ -53,6 +53,11 @@ class Kind:
     envelope: Mapping[str, int] | None = None
     element: str | None = None
 
+    @property
+    def requires_key(self) -> str:
+        """The key of `[requires]` that lists this kind's targets (`pins`, `sensors`, `channels`)."""
+        return REQUIRES_KEY[self.primitive]
+
 
 @dataclass(frozen=True)
 class Part:

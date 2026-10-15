@@ -2157,7 +2157,7 @@ def add_part_command(
     agent: Path = AGENT_OPTION,
 ):
     """Add a part of the catalogue: its \\[sim.parts] entry, its \\[requires], and an action, a gate and a test."""
-    from ..sim.parts import listing
+    from ..hal.parts import listing
     from ..templates.add_part import add_part
 
     if list_kinds:
@@ -2187,8 +2187,31 @@ def add_part_command(
             board=board,
             check=_check_added,
             manifest=agent.name,
+            **part_context(),
         ),
     )
+
+
+def part_context() -> dict[str, Any]:
+    """What `add part` needs from the HAL, handed to the template layer (which reads no board)."""
+    from ..hal.parts import catalogue
+    from ..hal.virtual_board import VIRTUAL_BOARD
+
+    def board_lacks(board_id: str, kind: Any, target: str | None) -> list[str] | None:
+        """None when the board has the target; else the names it offers for the kind's primitive."""
+        board = load_board_by_id(board_id)
+        if kind.primitive == "display":
+            return None if board.supports("display") else []
+        names = {
+            "digital.out": list(board.pins),
+            "digital.in": list(board.input_pins),
+            "sensor.read": list(board.sensors),
+            "analog.in": [channel["name"] for channel in board.analog_channels],
+            "motion": [channel["name"] for channel in board.motion_channels],
+        }[kind.primitive]
+        return None if target in names else names
+
+    return {"kinds": catalogue(), "board_lacks": board_lacks, "virtual_board": VIRTUAL_BOARD}
 
 
 @add_app.command(name="device", epilog=epilog("add device"))

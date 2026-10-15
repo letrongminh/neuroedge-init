@@ -88,12 +88,12 @@ def make_agent(root: Path, extra: str = "", *, requires: str = HEATER, wire: boo
     )
     (root / "actions" / "tank.py").write_text(
         "from neuroedge import action, digital\n\n\n"
-        '@action(name="heater_on", requires="digital.out:heater", gate="switch")\n'
-        "def heater_on() -> None:\n"
+        '@action(name="pm_heater_on", requires="digital.out:heater", gate="switch")\n'
+        "def pm_heater_on() -> None:\n"
         '    """Turn the heater on."""\n'
         '    digital.out("heater").on()\n\n\n'
-        '@action(name="pump_on", requires="digital.out:air_pump", gate="switch")\n'
-        "def pump_on() -> None:\n"
+        '@action(name="pm_pump_on", requires="digital.out:air_pump", gate="switch")\n'
+        "def pm_pump_on() -> None:\n"
         '    """Turn the air pump on."""\n'
         '    digital.out("air_pump").on()\n',
         encoding="utf-8",
@@ -102,9 +102,9 @@ def make_agent(root: Path, extra: str = "", *, requires: str = HEATER, wire: boo
     (root / "commands.toml").write_text(
         "[grammar]\nversion = 1\nthreshold = 0.80\n\n"
         '[[command]]\nintent = "heat"\npatterns = ["bật sưởi"]\n'
-        'facts = { owner_ok = true }\ntool = "heater_on"\n\n'
+        'facts = { owner_ok = true }\ntool = "pm_heater_on"\n\n'
         '[[command]]\nintent = "pump"\npatterns = ["bật sục khí"]\n'
-        'facts = { owner_ok = true }\ntool = "pump_on"\n',
+        'facts = { owner_ok = true }\ntool = "pm_pump_on"\n',
         encoding="utf-8",
     )
     return root / "agent.toml"
@@ -254,7 +254,7 @@ def test_the_same_agent_says_the_same_pin_names_on_the_box_and_on_the_chip(tmp_p
     assert '"heater"' in table and '"air_pump"' in table
     assert "gate_relay" not in table and "door_lock" not in table
 
-    steps = ["fact owner_ok true", "call heater_on {}", "call pump_on {}"]
+    steps = ["fact owner_ok true", "call pm_heater_on {}", "call pm_pump_on {}"]
     chip = bridge.results(*steps)
     out = bridge.run("trace on", *steps)
     drives = [line.split("\t")[1] for line in out if line.startswith("drive\t")]
@@ -265,7 +265,7 @@ def test_the_same_agent_says_the_same_pin_names_on_the_box_and_on_the_chip(tmp_p
     session = SimSession.load(agent)
     box = [
         asyncio.run(session.call_tool(ToolCall(tool, {}, source="mcp"))).content()
-        for tool in ("heater_on", "pump_on")
+        for tool in ("pm_heater_on", "pm_pump_on")
     ]
     same_contract(box, chip)
     assert pins_of(session) == drives  # the same names, in the same order
