@@ -150,7 +150,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | VP-CV-02 | The page shall show the agent.toml diff before writing; the write shall go through `POST /parts` with the page's key (DP-A-02), be atomic (temporary file, rename), and leave the file unchanged when the result would fail VP-PT-01 or VP-PT-03. The canvas shall not be offered by `mcp serve` or on any target but `sim`. | The file stays the truth; only the person at the page can change it. | DP-A-02, Q-84 | T |
 | VP-CV-03 | The canvas shall create gates only through `neuroedge add part` (VP-PT-07) and shall offer no control that edits a gate's criteria, `allow_when` or `on_block`. | Safety rules stay files that are linted and reviewed. | CHANGELOG §3.3 #1 | T |
 | VP-CV-04 | After a write, the session shall restart on the new agent as a new trace session; a pending `ask` shall expire, and nothing of the old session shall carry over. | One recording, one board. | VP-VB-06 | T |
-| VP-CV-05 | The canvas shall stay inside the one offline page: SVG drawn by the page's own script; Wokwi Elements may be bundled (MIT notice kept), never fetched. | FR-DX-02: `sim` runs offline. | FR-DX-02 | T |
+| VP-CV-05 | The canvas shall draw parts with Wokwi Elements (`@wokwi/elements`, MIT, pinned version, its licence notice kept), vendored into the package and inlined into the page only when the canvas is on, never fetched; a kind with no element (§4.2) shall use the page's own icon. Elements are drawings only: every state they show comes from the session. | FR-DX-02: `sim` runs offline; least drawing effort (Q-84). | FR-DX-02, Q-84 | T |
 
 ### 3.4 Non-functional requirements (VP-NF)
 
@@ -195,25 +195,25 @@ sensor = "ph"
 
 ### 4.2 Catalogue, first version
 
-| Kind | Primitive | Target key | Default word | Unit, range | Envelope preset (`max_continuous_ms`, `min_interval_ms`) |
-|:---|:---|:---|:---|:---|:---|
-| `relay` | digital.out | `pin` | Relay | — | 60000, 2000 |
-| `light` | digital.out | `pin` | Đèn | — | 600000, 2000 |
-| `heater` | digital.out | `pin` | Máy sưởi | — | 60000, 2000 |
-| `pump` | digital.out | `pin` | Máy bơm | — | 60000, 2000 |
-| `fan` | digital.out | `pin` | Quạt | — | 600000, 2000 |
-| `lock` | digital.out | `pin` | Khoá | — | 60000, 1000 |
-| `button` | digital.in | `pin` | Nút bấm | — | — |
-| `contact` | digital.in | `pin` | Cảm biến cửa | — | — |
-| `temperature` | sensor.read | `sensor` | Nhiệt độ | °C, −40…125 | — |
-| `humidity` | sensor.read | `sensor` | Độ ẩm | %, 0…100 | — |
-| `level` | sensor.read | `sensor` | Mực nước | %, 0…100 | — |
-| `ph` | sensor.read | `sensor` | Độ pH | pH, 0…14 | — |
-| `sensor` | sensor.read | `sensor` | Cảm biến | from `unit`, `range` | — |
-| `knob` | analog.in | `channel` | Núm vặn | V, 0…2.5 (as `adc0`) | — |
-| `motor` | motion | `channel` | Động cơ | — | as `wheel_left` of `sim-rpi5` (10000, 2000) |
-| `servo` | motion | `channel` | Servo | deg, 0…90 | as `gripper` of `sim-rpi5` (3000, 1000) |
-| `display` | display | — | Màn hình | — | — |
+| Kind | Primitive | Target key | Default word | Unit, range | Envelope preset (`max_continuous_ms`, `min_interval_ms`) | Canvas element (VP-CV-05) |
+|:---|:---|:---|:---|:---|:---|:---|
+| `relay` | digital.out | `pin` | Relay | — | 60000, 2000 | `wokwi-ks2e-m-dc5` |
+| `light` | digital.out | `pin` | Đèn | — | 600000, 2000 | `wokwi-led` |
+| `heater` | digital.out | `pin` | Máy sưởi | — | 60000, 2000 | — (page icon) |
+| `pump` | digital.out | `pin` | Máy bơm | — | 60000, 2000 | — (page icon) |
+| `fan` | digital.out | `pin` | Quạt | — | 600000, 2000 | — (page icon) |
+| `lock` | digital.out | `pin` | Khoá | — | 60000, 1000 | — (page icon) |
+| `button` | digital.in | `pin` | Nút bấm | — | — | `wokwi-pushbutton` |
+| `contact` | digital.in | `pin` | Cảm biến cửa | — | — | `wokwi-slide-switch` |
+| `temperature` | sensor.read | `sensor` | Nhiệt độ | °C, −40…125 | — | `wokwi-ntc-temperature-sensor` |
+| `humidity` | sensor.read | `sensor` | Độ ẩm | %, 0…100 | — | `wokwi-dht22` |
+| `level` | sensor.read | `sensor` | Mực nước | %, 0…100 | — | `wokwi-hc-sr04` |
+| `ph` | sensor.read | `sensor` | Độ pH | pH, 0…14 | — | — (page icon) |
+| `sensor` | sensor.read | `sensor` | Cảm biến | from `unit`, `range` | — | — (page icon) |
+| `knob` | analog.in | `channel` | Núm vặn | V, 0…2.5 (as `adc0`) | — | `wokwi-potentiometer` |
+| `motor` | motion | `channel` | Động cơ | — | as `wheel_left` of `sim-rpi5` (10000, 2000) | `wokwi-stepper-motor` |
+| `servo` | motion | `channel` | Servo | deg, 0…90 | as `gripper` of `sim-rpi5` (3000, 1000) | `wokwi-servo` |
+| `display` | display | — | Màn hình | — | — | `wokwi-ili9341` |
 
 Every `digital.out` preset has `window_s` 3600 and `max_on_ms_per_window` 600000; no preset is looser than the
 reference board's loosest pin of the same use (`porch_light` for lights).
@@ -290,4 +290,4 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 |:---|:---|:---|
 | VP-OQ-01 | Graduation: should agent.toml map a virtual pin name to a real board pin (`[targets.esp32s3.pins] heater = "gate_relay"`)? It touches `build` on every target. | No mapping: the agent renames its pins, or a board profile with those pins is added once the hardware exists. |
 | VP-OQ-02 | Should `neuroedge new` write `[sim] board = "sim-virtual"`? It makes every new project carry `risk=virtual_board`. | No: opt-in. |
-| VP-OQ-03 | Phase C visuals: bundle Wokwi Elements (size against the page budget) or draw the 17 kinds in SVG? | Decided with TSK-I2d-31. |
+| VP-OQ-03 | Phase C visuals: Wokwi Elements or the page's own SVG? | **Decided (owner, 2026-10-15): Wokwi Elements**, VP-CV-05. `@wokwi/elements` 1.9.2: 446 KB minified, 95 KB gzipped, 55 elements, `lit` inside; 11 of the 17 kinds have one; appliances (heater, pump, fan, lock), pH and the generic sensor keep the page's icons. Kept out of `trace view` and the live page when the canvas is off. |
