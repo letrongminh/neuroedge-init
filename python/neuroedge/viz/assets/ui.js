@@ -38,6 +38,7 @@
         speech = { text: d.text, offset_ms: e.offset_ms };
       } else if (e.type === "text_input") {
         heard = d.text;
+        speech = null;  // a new turn: what the device said to the last one is not its answer
       } else if (e.type === "tool_call") {
         call = d; // the gate evaluation that follows answers this call: say who asked
       } else if (e.type === "tool_call_rejected") {
@@ -213,7 +214,7 @@
         const r = s.sensors[name];
         sensors.appendChild(el("div", { class: "sensor" }, [
           el("span", { text: name }),
-          el("span", { text: r ? String(r.value) + (r.unit ? " " + r.unit : "") : "—" }),
+          el("span", { text: r ? String(r.value) + (r.unit && typeof r.value === "number" ? " " + r.unit : "") : "—" }),
         ]));
       }
       const inputNames = new Set(Object.keys(s.inputs).concat((opts.board && opts.board.inputs) || []));
