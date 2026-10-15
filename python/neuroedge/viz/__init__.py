@@ -75,11 +75,13 @@ def page(
     events: list[dict[str, Any]],
     board: dict[str, Any],
     live: bool = False,
+    agent: dict[str, Any] | None = None,
 ) -> str:
     boot = "const data = JSON.parse(document.getElementById('ne-data').textContent);\n" + (
         # The run's key (DP-A-02): read once from after `#`, sent with every POST.
         UI_KEY_JS
         + "const view = NE.mount(document.getElementById('ne'), {meta: data.meta, board: data.board,"
+        " agent: data.agent,"
         " events: data.events, live: true, onCommand: function (text) {"
         " NE_UI_KEY.then(function (key) {"
         " fetch('/command', {method: 'POST', headers: {'Content-Type': 'text/plain; charset=utf-8',"
@@ -93,14 +95,14 @@ def page(
         " view.update(s.events, s.now_ms); };\n"
         if live
         else "NE.mount(document.getElementById('ne'), {meta: data.meta, board: data.board,"
-        " events: data.events, live: false});\n"
+        " agent: data.agent, events: data.events, live: false});\n"
     )
     return (
         '<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{html.escape(title)}</title>\n<style>\n{_asset('ui.css')}</style>\n</head>\n"
         '<body>\n<div id="ne"></div>\n'
-        f'<script type="application/json" id="ne-data">{_embed({"meta": meta, "board": board, "events": events})}</script>\n'
+        f'<script type="application/json" id="ne-data">{_embed({"meta": meta, "board": board, "events": events, "agent": agent or {}})}</script>\n'
         f"<script>\n{_asset('ui.js')}</script>\n<script>\n{boot}</script>\n</body>\n</html>\n"
     )
 

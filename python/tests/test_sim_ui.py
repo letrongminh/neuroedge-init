@@ -183,3 +183,51 @@ def test_a_refused_path_is_traced_cut_short(server):
         urllib.request.urlopen(request, timeout=5)
     refused = [e["data"] for e in refusals(server) if e["type"] == "ui_auth_refused"]
     assert len(refused[0]["path"]) == 64
+
+
+# --- the page explains any agent in its own words ([ui.labels], docs/spec/simulation_coverage.md §5.1)
+
+
+def test_labels_are_words_for_people_and_anything_else_is_left_out(tmp_path):
+    from neuroedge.sim.ui import ui_labels
+
+    manifest = tmp_path / "agent.toml"
+    manifest.write_text(
+        '[ui.labels]\ngate_relay = "Máy sưởi"\nblank = "  "\nnumber = 3\n', encoding="utf-8"
+    )
+    assert ui_labels(manifest) == {"gate_relay": "Máy sưởi"}
+    manifest.write_text("[ui]\nlabels = 1\n", encoding="utf-8")
+    assert ui_labels(manifest) == {}
+    manifest.write_text("not toml [", encoding="utf-8")
+    assert ui_labels(manifest) == {}
+    assert ui_labels(tmp_path / "missing.toml") == {}
+
+
+def test_the_page_carries_what_it_needs_to_explain_the_aquarium(root):
+    from neuroedge.sim.ui import describe_agent
+
+    session = SimSession.load(root / "fixtures" / "agents" / "aquarium" / "agent.toml")
+    agent = describe_agent(session)
+    assert agent["labels"]["gate_relay"] == "Máy sưởi"
+    heater = next(a for a in agent["actions"] if a["name"] == "tank_heater_on")
+    assert heater["pins"] == ["gate_relay"]
+    assert {"tool": "tank_heater_on", "say": "bật sưởi"} in agent["commands"]
+    assert agent["sensor_facts"]["water_hot"] == {"sensor": "temperature", "rule": "gte 29"}
+    asks = [g for g in agent["gates"].values() if g["on_block"].get("confirms")]
+    assert asks and all(g["criteria"] for g in agent["gates"].values())
+    assert agent["facts"]["owner_confirmed"] is False
+    assert agent["sensors"] == ["temperature"]  # not every sensor the board has
+    json.dumps(agent)  # embedded in the page as JSON
+
+
+def test_the_live_page_embeds_the_agent_and_a_trace_view_has_none(root):
+    from neuroedge.viz import render_trace_html
+
+    session = SimSession.load(root / "fixtures" / "agents" / "aquarium" / "agent.toml")
+    server = SessionServer(session, port=0).start()
+    try:
+        _, _, body = get(server, "/")
+    finally:
+        server.stop()
+    assert "Máy sưởi" in body and "agent: data.agent" in body
+    assert '"agent": {}' in render_trace_html({"metadata": {}, "events": []})

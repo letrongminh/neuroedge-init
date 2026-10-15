@@ -53,3 +53,12 @@ temperature = { value = 45, unit = "C" }
 [sim.sensor_facts]
 heat_level    = { sensor = "temperature", bands = { low = -40, normal = 25, high = 40, critical = 55 } }
 heat_critical = { sensor = "temperature", gte = 55 }
+
+# Words for the `--ui` page and `trace view`; gates never read them.
+[ui.labels]
+gate_relay    = "Quạt thông gió"
+porch_light   = "Còi báo động"
+temperature   = "Nhiệt độ xưởng"
+heat_level    = "Mức nóng"
+heat_critical = "Nóng nguy hiểm (từ 55 °C)"
+call_source   = "Ai yêu cầu"

@@ -87,6 +87,78 @@ def under_service_manager() -> bool:
     return bool(os.environ.get("INVOCATION_ID")) or os.environ.get("NEUROEDGE_SERVICE") == "1"
 
 
+def ui_labels(manifest_source: Path) -> dict[str, str]:
+    """`[ui.labels]` of agent.toml: what the page calls a pin, a sensor or a fact ("gate_relay" →
+    "Máy sưởi"). Words for people only; a gate never reads them. Anything not a string is left out."""
+    import tomllib
+
+    try:
+        table = tomllib.loads(manifest_source.read_text(encoding="utf-8")).get("ui", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    labels = table.get("labels", {}) if isinstance(table, dict) else {}
+    if not isinstance(labels, dict):
+        return {}
+    return {str(k): v for k, v in labels.items() if isinstance(v, str) and v.strip()}
+
+
+def describe_agent(session: SimSession) -> dict[str, Any]:
+    """What the page needs to explain a session in words: the agent's names for things, its
+    actions and the pins they drive, the commands it understands, and each gate's criteria with
+    the gate's own `instructions` (the page says why a call was blocked in those words)."""
+    actions = []
+    for name, spec in sorted(session.tools.specs.items()):
+        doc = (spec.fn.__doc__ or "").strip().splitlines()
+        actions.append(
+            {
+                "name": name,
+                "gate": spec.gate,
+                "pins": [r.name for r in spec.requires if r.primitive == "digital.out"],
+                "doc": doc[0] if doc else "",
+            }
+        )
+    commands = [
+        {"tool": c.action, "say": c.patterns[0]}
+        for c in session.grammar.commands
+        if c.action and c.patterns
+    ]
+    gates = {}
+    for registered in session.conversation.engine._gates.values():  # noqa: SLF001 - read-only view
+        gate = registered.gate
+        gates[registered.label] = {
+            "criteria": {
+                name: {
+                    "instructions": spec.get("instructions", ""),
+                    "needed": json_safe(gate.allow_when.get(name))
+                    if isinstance(gate.allow_when, dict)
+                    else None,
+                }
+                for name, spec in gate.evaluate.items()
+            },
+            "on_block": json_safe(dict(gate.on_block or {})),
+        }
+    rules = {}
+    for fact, rule in session.sensor_facts.items():
+        parts = [
+            f"{op} {getattr(rule, op)}"
+            for op in ("gte", "lte", "equals")
+            if getattr(rule, op) is not None
+        ]
+        if rule.bands:
+            parts.append("bands " + ", ".join(f"{k} ≥ {v}" for k, v in rule.bands.items()))
+        rules[fact] = {"sensor": rule.sensor, "rule": " · ".join(parts)}
+    return {
+        "labels": ui_labels(session.manifest.source),
+        "actions": actions,
+        "commands": commands,
+        "gates": gates,
+        "sensors": sorted(session.manifest.requires.get("sensor.read", {}).get("sensors", [])),
+        "facts": json_safe(dict(session.facts)),
+        "sensor_facts": rules,
+        "requires": sorted(session.manifest.requires),
+    }
+
+
 def _parse_value(text: str) -> Any:
     lowered = text.casefold()
     if lowered in ("true", "false"):
@@ -370,6 +442,7 @@ class _Handler(BaseHTTPRequestHandler):
                 events=snapshot["events"],
                 board=board_info(session.hal.board.id),
                 live=True,
+                agent=describe_agent(session),
             ).encode("utf-8")
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
         elif self.path == "/state":

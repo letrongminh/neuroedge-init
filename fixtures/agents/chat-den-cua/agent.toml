@@ -28,3 +28,11 @@ supported = ["sim", "linux", "esp32s3"]
 light_fault_free = true
 daytime          = true
 owner_confirmed  = false
+
+# Tên người đọc cho trang `run --ui` / `mcp serve --ui` / `trace view`. Chỉ là chữ: gate không đọc.
+[ui.labels]
+porch_light      = "Đèn hiên"
+door_lock        = "Khoá cửa"
+light_fault_free = "Đèn không báo lỗi"
+daytime          = "Đang là ban ngày"
+owner_confirmed  = "Chủ nhà đã xác nhận tại nhà"

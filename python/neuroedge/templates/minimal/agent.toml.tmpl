@@ -22,3 +22,9 @@ supported = ["sim", "linux", "esp32s3"]
 # with `:set user_verified false`. They are never inferred from typed text.
 [sim.facts]
 user_verified = true
+
+# Optional: what the `--ui` page and `neuroedge trace view` call a pin, a sensor
+# or a fact. Words for people only; a gate never reads them.
+[ui.labels]
+door_lock     = "Front door lock"
+user_verified = "The user is verified"

@@ -9,7 +9,9 @@
 # and fetch the pinned NeuroClaw-ESP: the CI job is the quicker way to show the result.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-OUT="$ROOT/fixtures/agents/aquarium/build/qemu"   # kept (git-ignored): the next build is incremental
+# Kept outside the repo (a build under fixtures/ would be copied by every test that copies the
+# samples): the next build is incremental.
+OUT="${XDG_CACHE_HOME:-$HOME/.cache}/neuroedge/aquarium-qemu"
 mkdir -p "$OUT"
 docker run --rm $([ -t 0 ] && echo -it) -v "$ROOT":/work -v "$OUT":/tmp/aquarium -w /work espressif/idf:v5.4 bash -c '
 set -euo pipefail

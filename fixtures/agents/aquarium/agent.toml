@@ -49,3 +49,14 @@ water_hot = { sensor = "temperature", gte = 29 }
 # `owner_confirmed` always starts false: only the owner's "có" at home makes it pass, for one call.
 [sim.facts]
 owner_confirmed = false
+
+# What the live page (`run --ui`, `mcp serve --ui`) calls each thing: the boards' relay names mean
+# nothing to someone watching a fish tank. Words for people only; no gate reads them.
+[ui.labels]
+gate_relay      = "Máy sưởi"
+door_lock       = "Máy sục khí"
+porch_light     = "Đèn bể"
+temperature     = "Nhiệt độ nước"
+water_hot       = "Nước đang ấm (từ 29 °C)"
+owner_confirmed = "Chủ nhà đã xác nhận tại nhà"
+call_source     = "Ai yêu cầu"

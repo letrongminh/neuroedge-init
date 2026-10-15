@@ -587,6 +587,27 @@ frame). No CDN dependencies: `sim` must operate offline (FR-DX-02).
 Wokwi Elements (MIT) can replace renderings for lights, servos, relays, `ili9341` screens if bundled
 (no CDN loading); door locks not provided out of box.
 
+### 5.1 One page, the same sections for every agent
+
+`run --ui`, `mcp serve --ui` and `trace view` render one page (`neuroedge/viz/assets/ui.js`). It is
+laid out for someone testing an agent who did not write it; nothing in it is specific to a sample:
+
+| Section | Shows | Comes from |
+|:---|:---|:---|
+| Header + "Trang này là gì?" | Agent, live or recorded, a four-step guide | trace metadata |
+| 1 · Thiết bị | One card per pin: name, pin code, ON/OFF, a button per command that drives it | `[requires]`, `@action` pins, `commands.toml` |
+| 2 · Cảm biến và dữ kiện | Readings with unit, the fact each derives (`water_hot: ≥ 29`), set / lose-signal controls (live); facts | `[sim.sensors]`, `[sim.sensor_facts]`, `[sim.facts]` |
+| Thiết bị hỏi xác nhận | The open question, why it was asked, time left, yes / no | RFC-0006 confirmation events |
+| 3 · Ra lệnh (live) | Free text plus one button per command pattern | `commands.toml` (first pattern) |
+| Hội thoại | Commands, MCP calls, verdict lines, sensor changes, what the assistant said | trace events |
+| 4 · Quyết định của gate | Per call: verdict word, action, who asked, each criterion ✓ / ✗ / ✓* (waived by a yes), outcome: pins moved, or why it blocked and whether a person could have unblocked it | `gate_evaluation_result`, the gate's `evaluate.*.instructions` and `on_block.confirms` |
+| Chi tiết kỹ thuật (collapsed) | The raw event stream | trace events |
+
+Names are the agent's own: `[ui.labels]` in agent.toml maps a pin, sensor or fact to the words the
+page shows (`gate_relay = "Máy sưởi"`); without it the page shows the identifier. Labels are words
+for people only: no gate, build or replay reads them, and they are not part of any schema or digest.
+`trace view` has no agent loaded, so it shows identifiers and no command controls.
+
 ## 6. Three Devices Running the Same Sample Agent
 
 FR-TGT-02 and FR-TGT-03 require **sample agents running on real hardware** on RPi 5 and Box-3. Sample agent
