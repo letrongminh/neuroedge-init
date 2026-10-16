@@ -1,3 +1,5 @@
+> **Historical record.** This is the proposal approved as a direction by Q-72 (2026-10-11). It is superseded by [`product-proposal.md`](product-proposal.md) (Q-90); read that for the current product. The text below is not maintained.
+
 > **Historical rationale, not maintained.** Format and install → `docs/spec/blueprint.md` (Q-86); missions → `docs/spec/missions.md` (Q-87); business → `brd-ambient-intelligence.md` (Q-85).
 
 # NeuroEdge — Draft Proposal: from an utterance to a physical AI product

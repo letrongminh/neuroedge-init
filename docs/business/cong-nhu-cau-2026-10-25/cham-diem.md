@@ -71,7 +71,7 @@ Mẫu nhỏ (≤ 5 cuộc/phân khúc), nên **đếm số cuộc đạt 2**, kh
 | `N2(x)` | Tổng `N2(x, s)` trên cả năm phân khúc, **đếm theo tổ chức** (hai người cùng tổ chức tính một) |
 | Tỷ lệ nhãn | Với `CEO-X4`: số cuộc mang nhãn A / C / E chia cho số cuộc có `P1 ≥ 1` |
 | Điểm phân khúc | `N2(P1, s) + N2(Cam kết, s)`; hoà thì so `N2(X5, s)`. Phân khúc Maker: `N2(M-SELL, s) + N2(Cam kết, s)` |
-| Đủ dữ liệu | Phân khúc có **≥ 3 cuộc** đã chấm; toàn cổng có **≥ 12 cuộc** |
+| Đủ dữ liệu | Phân khúc có **≥ 3 cuộc** đã chấm; toàn cổng có **≥ 12 cuộc** (ngưỡng của cổng Q-20 cũ; cổng Q-72 dùng §4.0) |
 
 Khảo sát (`survey.json`) **không** vào điểm. Chỉ dùng để: (a) ước lượng phân bố quy mô thiết bị theo
 phân khúc, (b) đối chiếu xem người phỏng vấn có lệch quá xa người trả lời khảo sát không, (c) tìm

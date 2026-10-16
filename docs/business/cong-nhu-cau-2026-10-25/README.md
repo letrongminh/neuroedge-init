@@ -9,7 +9,8 @@
 > Bộ phỏng vấn này là nguồn dữ liệu cho điều kiện ③: phần **Maker / Home Assistant / ESPHome**
 > ([`phong-van.md`](phong-van.md) §5b, mục tiêu ≥ 5 cuộc). Mục 1, 2 và 5 dưới đây là kế hoạch của cổng cũ
 > 2026-10-25 (Q-20); ngày và ngưỡng Go / Adjust / Stop của nó hết hiệu lực từ Q-56. Câu C1…C10 vẫn hỏi
-> được; kết quả kinh doanh ghi vào `TODOS.md` #19 trước I6.
+> được; kết quả kinh doanh ghi vào `TODOS.md` #19, rà tại cổng 8 tuần, chậm nhất trước I6 (cột kích hoạt của
+> #19 là nơi duy nhất).
 
 Bộ tài liệu chuẩn bị cho cổng nhu cầu thương mại của NeuroEdge. Soạn ngày 2026-09-24.
 
@@ -73,6 +74,9 @@ Kế hoạch dưới đây chính là câu trả lời cho nó: khoảng 40 gi�
 | **Industrial IoT** | Kỹ sư tự động hóa, trưởng bảo trì, người phụ trách an toàn | U2, U4 | Bơm, van, băng tải, rơ-le, còi báo | **5** | 20 |
 | **Maker / Home Assistant / ESPHome** (Q-72) | Maker tự dựng thiết bị bằng Home Assistant, ESPHome, ESP32, Raspberry Pi; ưu tiên người đã làm thiết bị cho người khác | U1 (người dùng đầu của Q-72) | Bể cá, tưới cây, cảm biến môi trường, rơ-le | **≥ 5** | 20 |
 | **Tổng** | | | | **≥ 25** | **100** |
+
+Bảng và các tổng này là kế hoạch của cổng Q-20 cũ. Số có hiệu lực cho cổng Q-72 là phỏng vấn thêm 10 người,
+trong đó ≥ 5 maker (PRD §11.2; `cham-diem.md` §4.0).
 
 Tỷ lệ chuyển đổi tiếp cận → cuộc có bản ghi là **giả định cần kiểm** (khoảng 25%); thiết kế GĐ1
 ghi mức 15–30 lượt tiếp cận cho 3 cuộc có bản ghi, nên con số 80 có thể thiếu. Theo dõi hằng

@@ -34,7 +34,7 @@ tiêu sản phẩm.
 | Mã | Người dùng | Vai trò với ứng dụng |
 |:---|:---|:---|
 | **P1** | Người trong gia đình | Chủ hộp: duyệt thay đổi, nhận cảnh báo. Thường là người con sống xa bố mẹ. |
-| **P2** | Người được chăm sóc | Bố mẹ ở nhà. Không dùng ứng dụng; có thể bấm một nút "Tôi ổn" trên loa hoặc nút bấm tại chỗ. |
+| **P2** | Người được chăm sóc | Bố mẹ ở nhà. Không dùng ứng dụng; có thể bấm một nút "Tôi ổn" tại chỗ (giọng nói đã bỏ, Q-77). |
 | **P3** | Người nhận leo thang | Người con thứ hai hoặc hàng xóm; chỉ nhận cảnh báo khẩn. |
 | **P4** | Maker | Đóng gói Blueprint; khai báo khoảng chỉnh được và luật mặc định. |
 
@@ -80,7 +80,8 @@ nào, để biết cảnh báo đã đến ai và bao lâu nữa đến người
 4. **Cho** nội dung cảnh báo, **khi** tôi đọc, **thì** câu chữ chỉ nói về thay đổi thói quen ("chưa thấy
    hoạt động"), không nói bệnh hay té ngã.
 
-Dẫn: BR-APP-07; MS-RT-07, FR-AGT-06 (mẫu cố định, không LLM); Q-72, R-19, Q-38.
+Dẫn: BR-APP-07; MS-RT-07, FR-AGT-06 (mẫu cố định, không LLM); Q-72, R-19, Q-38. Chuỗi leo thang và "Đã biết" chưa
+có đặc tả đã duyệt (MS-RT-07 không có xác nhận); thuộc sau cổng, xem `03-srs.md` AP-AL-02.
 
 ### US-APP-03 Hỏi AI về nhà, câu trả lời dựa trên số liệu thật
 
@@ -106,7 +107,7 @@ Là người trong gia đình, tôi muốn nói điều muốn đổi ("Giữ t�
 để quyết định mà không viết cấu hình.
 
 1. **Cho** tôi nhắn "Giữ tầm 26–28 thôi", **khi** bộ não soạn xong, **thì** tôi nhận một thẻ nêu thay đổi
-   bằng một câu ("Tắt sưởi khi đạt 29 → 28 °C") với nút Chỉnh và Duyệt.
+   bằng một câu ("Không bật sưởi khi nước từ 28 °C", hiện là 29 °C) với nút Chỉnh và Duyệt.
 2. **Cho** thẻ đề xuất, **khi** tôi chưa duyệt, **thì** không có gì thay đổi trên thiết bị hay luật.
 3. **Cho** tôi gõ "Có" hay "Đồng ý" vào khung chat, **khi** không có thẻ nào đang chờ trả lời, **thì**
    không có gì được duyệt.
@@ -123,32 +124,40 @@ maker cho phép, vùng nào không, để chỉnh mà không sợ.
 
 1. **Cho** thanh trượt ngưỡng máy sưởi từ 24 đến 34 °C, bước 0,5, **khi** tôi kéo trong khoảng 25–29,
    **thì** thanh ở vùng xanh, ghi "Trong khoảng maker cho phép", nút là "Duyệt".
-2. **Cho** thanh trượt đó, **khi** tôi kéo ra ngoài 25–29 nhưng chưa quá 32, **thì** thanh ở vùng vàng,
-   ghi "Ngoài khoảng maker, có nhãn rủi ro" và nút đổi thành "Duyệt, chấp nhận rủi ro".
-3. **Cho** thanh trượt đó, **khi** tôi kéo quá 32 °C, **thì** thanh ở vùng khóa, ghi "Vượt giới hạn phần
-   cứng" và tôi không áp dụng được.
+2. **Cho** thanh trượt đó, **khi** tôi kéo ra ngoài 25–29 nhưng còn trong thanh, **thì** thanh ở vùng vàng,
+   ghi "Ngoài khoảng maker, có nhãn rủi ro" và nút đổi thành "Duyệt, chấp nhận rủi ro" (chỉ khi AP-D-01 chọn có vùng vàng).
+3. **Cho** một con số mà `board.v1` đã khai giới hạn (ví dụ tần suất bật/tắt, `min_interval_ms`), **khi** tôi
+   kéo quá giới hạn đó, **thì** thanh ở vùng khóa, ghi "Vượt giới hạn phần cứng" và tôi không áp dụng được.
+   Giới hạn theo giá trị cảm biến (như 32 °C) chưa có trong `board.v1` (AP-D-13).
 4. **Cho** tôi không phân biệt được màu, **khi** nhìn thanh trượt, **thì** vùng vẫn đọc được qua chữ và
    biểu tượng.
 
-Dẫn: BR-APP-02, BR-APP-03; MS-CT-06, BL-IN-04 (vùng xanh); MS-CT-04, MS-CP-02, FR-ACE-03 (vùng khóa).
+Dẫn: BR-APP-02, BR-APP-03; BL-IN-04, TC-IN-04-1 (vùng xanh: ngoài khoảng đã khai bị hỏi lại hoặc từ chối),
+MS-CT-06 (tham số `ask` có kiểu và khoảng); MS-CT-04, MS-CP-02, FR-ACE-03 (vùng khóa theo `board.v1`).
 Vùng vàng còn chờ quyết định (`03-srs.md` AP-D-01).
 
-### US-APP-06 Duyệt bằng vân tay; AI không duyệt thay được
+### US-APP-06 Duyệt qua hộp; AI không duyệt thay được
 
 **Persona:** P1 · **Ưu tiên:** Must · **Màn hình:** MH-2, MH-8
 
-Là người trong gia đình, tôi muốn duyệt mọi thay đổi bằng chính tay mình (vân tay), và chắc chắn AI không
-duyệt thay được, để người duy nhất quyết định là tôi.
+Là người trong gia đình, tôi muốn duyệt mọi thay đổi bằng chính tay mình, qua hộp (trang cục bộ hoặc nút trên
+bot duyệt riêng của hộp), và chắc chắn AI không duyệt thay được, để người duy nhất quyết định là tôi.
 
-1. **Cho** một thẻ đề xuất, **khi** tôi bấm Duyệt và xác minh vân tay, **thì** thay đổi được khóa và có
-   hiệu lực, và nhật ký ghi người duyệt, kênh và giờ.
+1. **Cho** một thẻ đề xuất, **khi** tôi bấm Duyệt trên trang cục bộ hoặc nút của bot duyệt của hộp, **thì** hộp
+   kiểm bản ghi do chính nó ký (đúng chủ, đúng digest, chưa hết hạn, chưa dùng, còn trong trần duyệt từ xa);
+   thay đổi được khóa và có hiệu lực, và nhật ký ghi người duyệt, kênh và giờ.
 2. **Cho** bộ não hoặc một ứng dụng MCP gửi một bản ghi duyệt giả, **khi** hộp nhận, **thì** hộp từ chối
    và ghi vào trace.
-3. **Cho** chưa có vân tay (chưa có passkey), **khi** tôi cần duyệt, **thì** tôi duyệt tại trang cục bộ ở
-   nhà hoặc bằng bản ghi duyệt qua chat.
+3. **Cho** tôi chưa ghép chủ hộp, **khi** tôi cần ghép, **thì** hộp hiện một mã dùng một lần (8 ký tự, 10 phút)
+   chỉ trên máy nhà, và tôi gửi `/pair <mã>` cho bot duyệt từ cuộc chat riêng.
 4. **Cho** một thẻ đã hết hạn, **khi** tôi bấm Duyệt, **thì** hộp coi là không duyệt.
+5. **Cho** tôi đã duyệt từ xa tới trần mỗi giờ, **khi** tôi bấm Duyệt nữa, **thì** hộp từ chối và tôi phải
+   duyệt tại nhà.
+6. **Cho** tôi mất điện thoại, **khi** tôi chạy `neuroedge pair owner --revoke` trên hộp, **thì** tài khoản
+   chat đó không còn duyệt được.
 
-Dẫn: BR-APP-04; FR-CH-05, MS-CH-03, MS-CH-05, MS-AP-05; FR-CH-08 (passkey, dự kiến, TSK-I2f-08).
+Dẫn: BR-APP-04; FR-CH-05, MS-CH-03, MS-CH-05, MS-AP-05; DP-A-05, DP-A-06; RFC-0019, Q-89; FR-CH-08 (passkey,
+phương thức sau, TSK-I2f-08). Một lần chạm trong ứng dụng chưa có nguồn duyệt đã quyết (`03-srs.md` AP-D-12).
 
 ### US-APP-07 Xem "nếu áp dụng hôm qua" trước khi duyệt
 
@@ -194,13 +203,15 @@ hộp ghi nhận, để không phải viết cấu hình.
    hiện đã thấy mở lúc nào, đóng lúc nào.
 2. **Cho** thiết bị đấu dây, **khi** ở bước đấu dây, **thì** ứng dụng nói dạng "dây đỏ vào chân số 3" và
    chỉ ở bước này mới hiện số chân.
-3. **Cho** thiết bị không dây (ví dụ Zigbee), **khi** tôi chọn, **thì** ứng dụng nói rõ đường này chờ
-   RFC-0014 (dữ kiện từ tiến trình ngoài), chưa dùng được.
+3. **Cho** cảm biến không dây (ví dụ Zigbee), **khi** tôi chọn, **thì** ứng dụng nói rõ đường này chờ code của
+   RFC-0014 (đã duyệt, code hoãn sau v1.0), chưa dùng được; cơ cấu chấp hành từ xa qua Home Assistant
+   (RFC-0018) đã có.
 4. **Cho** kết thúc trình hướng dẫn, **khi** tôi bấm xong, **thì** thay đổi hiện thành một thẻ duyệt, chưa
    có hiệu lực cho đến khi tôi duyệt.
 
 Dẫn: BR-APP-02, BR-APP-06; danh mục `python/neuroedge/hal/parts.toml`, `neuroedge add part`,
-`python/neuroedge/hal/pin_map.py` (TSK-I2d-32).
+`python/neuroedge/hal/pin_map.py` (TSK-I2d-32). Trước cổng trình hướng dẫn chỉ ghi `[sim.parts]` trên `sim`;
+board thật là canvas giai đoạn C, hoãn (Q-84, TSK-I2d-31): xem `03-srs.md` AP-DV-06.
 
 ### US-APP-10 Gỡ thiết bị an toàn
 
@@ -229,8 +240,8 @@ hộp đã làm gì thay tôi.
    thường.
 2. **Cho** các bộ lọc Tất cả / Bị chặn / Cảnh báo / Đã duyệt, **khi** tôi chọn "Bị chặn", **thì** chỉ còn
    các mục bị chặn, mỗi mục nêu lý do và giá trị lúc đó.
-3. **Cho** một mục đã duyệt, **khi** tôi đọc, **thì** mục ghi ai duyệt, bằng cách nào (vân tay, chat, tại
-   nhà) và lúc nào.
+3. **Cho** một mục đã duyệt, **khi** tôi đọc, **thì** mục ghi ai duyệt, bằng cách nào (bot duyệt của hộp, trang cục bộ;
+   vân tay khi có) và lúc nào.
 4. **Cho** nút "Chạy lại hôm qua với luật hiện tại", **khi** tôi bấm, **thì** tôi nhận kết quả như
    US-APP-07, ở chế độ chỉ đọc.
 
@@ -248,7 +259,8 @@ cảnh báo đi đúng người.
 2. **Cho** một người chỉ có vai trò khẩn cấp, **khi** họ cố duyệt một thay đổi, **thì** hộp từ chối.
 3. **Cho** tôi đổi thứ tự hoặc vai trò, **khi** tôi lưu, **thì** thay đổi đi qua thẻ duyệt.
 
-Dẫn: BR-APP-07; FR-CH-07 (nhiều người dùng và vai trò, dự kiến, TSK-I2f-05).
+Dẫn: BR-APP-07; FR-CH-07 (nhiều người dùng và vai trò, dự kiến, TSK-I2f-05). Trước đó chỉ có một chủ hộp được
+ghép (Q-89).
 
 ### US-APP-13 Chọn kênh báo: Zalo, SMS qua 4G, gọi tự động, Telegram
 
@@ -279,24 +291,32 @@ sách, để biết mình đang ở đâu.
 3. **Cho** ngân sách đã hết, **khi** tôi mở Chat, **thì** tôi được báo hết ngân sách phân tích kỳ này;
    thiết bị và cảnh báo khẩn vẫn chạy.
 
-Dẫn: BR-APP-08; Q-73 (nhãn rủi ro), MS-CT-05, MS-RT-06, NFR-COST-01.
+Dẫn: BR-APP-08; Q-73 (nhãn rủi ro), MS-CT-05, MS-RT-06, NFR-COST-01. Nhãn do tài liệu đã duyệt định nghĩa
+(`risk=remote_approval` của RFC-0019, DP-COM-06); số tiền ngân sách do bộ não báo, hộp không thấy hóa đơn LLM
+(Q-87).
 
-### US-APP-15 Cài Blueprint từ thông báo, duyệt trên màn hình khóa
+### US-APP-15 Cài Blueprint, đọc tóm tắt trước khi duyệt
 
 **Persona:** P1 · **Ưu tiên:** Should · **Màn hình:** MH-8
 
-Là người trong gia đình, tôi muốn cài một Blueprint từ một thông báo và đọc ba câu nó sẽ làm trước khi
-duyệt, để cài mà không phải mở máy tính.
+Là người trong gia đình, tôi muốn cài một Blueprint và đọc ba câu nó sẽ làm trước khi duyệt, để cài mà không
+phải mở máy tính.
 
-1. **Cho** thông báo "Blueprint 'Bể cá tự chăm' muốn cài lên hộp", **khi** tôi mở, **thì** thẻ "Hộp bể cá
-   sẽ:" nêu ba câu thường (không bật sưởi khi nước từ 29 °C; luôn giữ sục khí, tắt thì hỏi bạn; báo khi
-   sưởi bật mà không ấm).
-2. **Cho** thẻ cài, **khi** tôi đọc, **thì** thẻ ghi gói đã qua Action CI và digest khớp.
+1. **Cho** tôi mở một Blueprint (tên trong chỉ mục hoặc địa chỉ, BL-IN-01) trong ứng dụng, **khi** hộp tạo tóm
+   tắt, **thì** thẻ "Hộp bể cá sẽ:" nêu ba câu thường (không bật sưởi khi nước từ 29 °C; luôn giữ sục khí, tắt
+   thì hỏi bạn; báo khi sưởi bật mà không ấm).
+2. **Cho** thẻ cài, **khi** tôi đọc, **thì** thẻ có đủ phần tóm tắt của BL-IN-03, mỗi bằng chứng ghi "unsigned"
+   (BL-EV-03), và cho biết digest được đối chiếu với đâu hoặc xin tôi xác nhận (BL-IN-02); thẻ không ghi
+   "đã qua Action CI".
 3. **Cho** tôi chưa duyệt, **khi** thẻ còn mở, **thì** không tệp nào của gói chạy.
 4. **Cho** nút Từ chối, **khi** tôi bấm, **thì** không có gì được cài.
+5. **Cho** tôi duyệt, **khi** hộp cài, **thì** gói được ghi vào một thư mục mới, không bao giờ vào thư mục có
+   sẵn không rỗng (BL-IN-06).
+6. **Cho** gói khai đích mạng, **khi** tôi định duyệt trên điện thoại, **thì** thẻ ghi phải duyệt tại nhà.
 
-Dẫn: BR-APP-02; BL-IN-02, BL-IN-03, BL-IN-05; TSK-I2e-03. Thông báo trên màn hình khóa còn chờ quyết định
-(`03-srs.md` AP-D-03).
+Dẫn: BR-APP-02; BL-IN-01 → BL-IN-03, BL-IN-05, BL-IN-06, BL-EV-03; FR-MSN-14; TSK-I2e-03. Không có cơ chế đã
+duyệt để một Blueprint tự yêu cầu được cài; thông báo trên màn hình khóa và đường vào của thẻ còn chờ quyết định
+(`03-srs.md` AP-D-03, AP-D-12).
 
 ### US-APP-16 Khai báo khoảng chỉnh được và luật mặc định cho Blueprint
 
@@ -320,14 +340,15 @@ Dẫn: BR-APP-03, BR-APP-09; MS-CT-06, BL-IN-04, MS-CP-02.
 Là người được chăm sóc, tôi muốn bấm một nút "Tôi ổn" khi hộp hỏi tại chỗ, để người nhà không bị báo vô
 ích và tôi không cần dùng điện thoại.
 
-1. **Cho** hộp hỏi tại chỗ trên loa hoặc nút bấm, **khi** tôi bấm "Tôi ổn" trong thời gian chờ, **thì**
+1. **Cho** hộp hỏi tại chỗ trên nút bấm, **khi** tôi bấm "Tôi ổn" trong thời gian chờ, **thì**
    cảnh báo dừng và việc bấm được ghi vào nhật ký.
 2. **Cho** tôi không bấm trong thời gian chờ, **khi** hết giờ, **thì** chuỗi leo thang chuyển sang bước
    báo người thân.
 3. **Cho** bộ não hay một ứng dụng MCP gửi tín hiệu "Tôi ổn", **khi** hộp nhận, **thì** hộp coi là không
    hợp lệ.
 
-Dẫn: BR-APP-07; MS-CH-07, FR-CH-05; Q-72, R-19.
+Dẫn: BR-APP-07; MS-CH-07, FR-CH-05; Q-72, R-19. Giọng nói đã bỏ (Q-77); bước xác minh cần TSK-I2d-20,
+TSK-I2d-21 (MS-CH-06, MS-CH-07).
 
 ### US-APP-18 Biết khi hộp mất liên lạc (relay canh hộp)
 
@@ -343,7 +364,7 @@ hỏng hay mất mạng thay vì tưởng nhà bình thường.
 3. **Cho** chưa có relay, **khi** tôi mở Cài đặt, **thì** mục này ghi chưa bật và nêu lý do (cần relay
    hoặc cloud, Q-74).
 
-Dẫn: BR-APP-07; FR-EGR-05 (relay tùy chọn), Q-74.
+Dẫn: BR-APP-07; FR-EGR-05 (relay tùy chọn), Q-74 (bước 2, sau cổng nhu cầu).
 
 ---
 
@@ -357,7 +378,7 @@ Dẫn: BR-APP-07; FR-EGR-05 (relay tùy chọn), Q-74.
 | **Hoạt động** | US-APP-11 |
 | **Cài đặt** | US-APP-12, US-APP-13, US-APP-14, US-APP-18 |
 | **Maker** | US-APP-16 |
-| **Ngoài tab (thông báo)** | US-APP-15 |
+| **Ngoài tab (thông báo, chưa quyết)** | US-APP-15 |
 
 Ghi chú: US-APP-05 và US-APP-06 xuất hiện ở nhiều chỗ vì thanh trượt và việc duyệt dùng chung một thẻ
 (`BR-APP-02`); bảng trên đặt theo màn hình chính. US-APP-17 chạy trên thiết bị cục bộ, không phải màn
