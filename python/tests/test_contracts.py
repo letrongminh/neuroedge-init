@@ -160,8 +160,9 @@ AGENTS = sorted((ROOT / "fixtures" / "agents").iterdir())
 
 
 def _tools(agent: Path) -> list[dict]:
-    """The agent's tools on the first reference board of `sim` that satisfies its `[requires]`."""
-    for board in REFERENCE_BOARDS["sim"]:
+    """The agent's tools on its own `[sim] board` (e.g. `sim-virtual`), else on the first reference
+    board of `sim` that satisfies its `[requires]`."""
+    for board in (None, *REFERENCE_BOARDS["sim"]):
         try:
             return SimSession.load(agent / "agent.toml", board_id=board).tools.mcp()
         except BuildFailed:

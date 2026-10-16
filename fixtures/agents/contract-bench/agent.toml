@@ -27,3 +27,21 @@ lamp  = "gates/lamp@1.0.0.yaml"
 lamp_ok  = true
 armed    = false
 guest_ok = true
+
+# What the live page calls each thing (docs/spec/virtual_parts.md §3.2): the board's pin names mean
+# nothing to a person watching, so each is declared as a part — its kind, what it is wired to, its words.
+# Parts only describe: no requirement, no envelope, no gate changes (VP-PT-08).
+[sim.parts.heat_siren]
+kind  = "relay"
+pin   = "gate_relay"
+label = "Rơ-le sưởi và còi"
+
+[sim.parts.guest_lock]
+kind  = "lock"
+pin   = "door_lock"
+label = "Khoá cửa khách"
+
+[sim.parts.porch_lamp]
+kind  = "light"
+pin   = "porch_light"
+label = "Đèn hiên"

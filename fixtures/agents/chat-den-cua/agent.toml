@@ -31,8 +31,19 @@ owner_confirmed  = false
 
 # Tên người đọc cho trang `run --ui` / `mcp serve --ui` / `trace view`. Chỉ là chữ: gate không đọc.
 [ui.labels]
-porch_light      = "Đèn hiên"
-door_lock        = "Khoá cửa"
 light_fault_free = "Đèn không báo lỗi"
 daytime          = "Đang là ban ngày"
 owner_confirmed  = "Chủ nhà đã xác nhận tại nhà"
+
+# What the live page calls each thing (docs/spec/virtual_parts.md §3.2): the board's pin names mean
+# nothing to a person watching, so each is declared as a part — its kind, what it is wired to, its words.
+# Parts only describe: no requirement, no envelope, no gate changes (VP-PT-08).
+[sim.parts.porch_lamp]
+kind  = "light"
+pin   = "porch_light"
+label = "Đèn hiên"
+
+[sim.parts.front_door]
+kind  = "lock"
+pin   = "door_lock"
+label = "Khoá cửa"

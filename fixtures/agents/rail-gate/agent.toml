@@ -48,3 +48,25 @@ adc0 = 1.8
 
 [sim.i2c."i2c1/ina219"]
 "0x02" = { value = 24000, width = 2 }
+
+# What the live page calls each thing (docs/spec/virtual_parts.md §3.2): the board's pin names mean
+# nothing to a person watching, so each is declared as a part — its kind, what it is wired to, its words.
+# Parts only describe: no requirement, no envelope, no gate changes (VP-PT-08).
+[sim.parts.gate_motor]
+kind  = "relay"
+pin   = "gate_relay"
+label = "Mô-tơ cổng"
+
+[sim.parts.limit]
+kind  = "contact"
+pin   = "limit_switch"
+label = "Công tắc hành trình"
+
+[sim.parts.supply]
+kind  = "knob"
+channel = "adc0"
+label = "Điện áp nguồn (cầu phân áp)"
+
+[sim.parts.screen]
+kind  = "display"
+label = "Màn hình"

@@ -33,3 +33,21 @@ motion = false
 
 [sim.sensor_facts]
 room_empty = { sensor = "motion", equals = false }
+
+# What the live page calls each thing (docs/spec/virtual_parts.md §3.2): the board's pin names mean
+# nothing to a person watching, so each is declared as a part — its kind, what it is wired to, its words.
+# Parts only describe: no requirement, no envelope, no gate changes (VP-PT-08).
+[sim.parts.front_door]
+kind  = "lock"
+pin   = "door_lock"
+label = "Khoá cửa"
+
+[sim.parts.porch_lamp]
+kind  = "light"
+pin   = "porch_light"
+label = "Đèn hiên"
+
+[sim.parts.presence]
+kind  = "sensor"
+sensor = "motion"
+label = "Cảm biến chuyển động"
