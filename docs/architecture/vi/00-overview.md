@@ -342,7 +342,7 @@ roadmap task — `test_architecture_progress.py` checks both.
 | Fish tank demos | Watch a fish tank agent run a day: heater, air pump, light, asking before the pump stops | `fixtures/agents/aquarium` demos D1–D5 | `sim`, `esp32s3` on QEMU | laptop ●, qemu ● | `done` | `python/tests/test_aquarium.py` |
 | Signed OTA, rollback | Update chip firmware signed, with automatic rollback | `neuroedge build --target esp32s3` OTA image | QEMU only | qemu ●, board ○ | `partial` | `python/tests/test_ota_markers.py`, `.github/workflows/firmware-qemu.yml` |
 | One-chip Profile B | Run brain and gate on one ESP32-S3, labelled as a risk | Profile B firmware | QEMU only; Wi-Fi setup on a board is TSK-I2f-13 | qemu ●, board ○ | `partial` | `python/tests/test_firmware_brain.py` |
-| 24/7 missions | Give a device a 24/7 mission in plain words; it reports and asks on chat | `mission.v1` contract | — | laptop ○ | `planned` | TSK-I2d-04 |
+| 24/7 missions | Give a device a 24/7 mission in plain words; it reports and asks on chat | `mission.v1` contract | — | laptop ○ | `planned` | TSK-I2d-04, `docs/spec/missions.md` |
 | Blueprints | Pack a working device as a Blueprint; others install it with one command | `neuroedge blueprint pack`, `blueprint install` | — (specification approved, Q-86) | laptop ○ | `planned` | TSK-I2e-02, `docs/spec/blueprint.md` |
 
 ### 6.2 By target
