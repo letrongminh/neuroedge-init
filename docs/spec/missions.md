@@ -34,7 +34,7 @@ In scope, by block (the roadmap tasks in brackets):
 3. **The 24/7 runtime** — one long-lived box process, its clocks, schedule, detectors, budgets,
    proactive messages and failure branches, supervising the NeuroClaw brain [I2d-07 → I2d-09].
 4. **Chat approvals** — the box's own approval bot, pairing and signed approval records for `ask` and
-   for amendments [I2d-11, I2d-12; RFC-0019 draft], and user-declared verification steps
+   for amendments [I2d-11, I2d-12; RFC-0019, Q-89], and user-declared verification steps
    [I2d-20, I2d-21].
 5. **Data and traces** — the box as the only exit for data, and segmented traces that replay a month
    [I2d-10, I2d-13, I2d-14].
@@ -68,7 +68,7 @@ PRD §4.5, §5.4 → §5.6, §11.1 (A15 → A22), §15 Q-26, Q-62, Q-71, Q-72, Q
 `docs/spec/core_contracts.md` Appendix B (gate inheritance, envelopes) · `docs/spec/lab_mcp.md`
 §12 (N6 trigger rules; the rest of that note is historical, Q-88) · `docs/spec/threat_model.md` · RFC-0004 (budget, `on_block` inheritance),
 RFC-0005 (argument constraints), RFC-0006 (`ask`/`confirms`), RFC-0007 and RFC-0010 (envelopes),
-RFC-0018 (remote actuators), RFC-0019 draft (approval records, PR #133) · `TODOS.md` #20, #48, #58,
+RFC-0018 (remote actuators), RFC-0019 (approval records, Q-89) · `TODOS.md` #20, #48, #58,
 #62 · `docs/spec/blueprint.md` (BL-FMT-05 reserves the contract section).
 
 ---
@@ -126,7 +126,7 @@ changes `hal/`, `engine/`, `schemas/board.v1.json` and the C walker (`targets/es
 ### 2.5 Assumptions and dependencies
 
 - Profile A install, pairing, MCP over mTLS and the brain's isolation exist (Q-83, done); the box's
-  approval bot and signed records are RFC-0019 (draft).
+  approval bot and signed records are RFC-0019 (approved, Q-89; code in TSK-I2d-12).
 - The fish tank agent (`fixtures/agents/aquarium`) is the reference agent; its `aerator_off` gate
   today asks the owner because the pump's safe state is *on* and `board.v1` cannot yet say so.
 - NeuroEdge Lab was removed by Q-77; the contract tools are built by TSK-I2d-23, the only MCP
