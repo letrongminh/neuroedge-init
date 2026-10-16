@@ -44,7 +44,7 @@
    "type": "text",
    "x": 32,
    "y": 52,
-   "width": 742.56,
+   "width": 946.4,
    "height": 18,
    "angle": 0,
    "strokeColor": "#475569",
@@ -65,8 +65,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.",
-   "originalText": "What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.",
+   "text": "What v1.0 and the Q-72 → Q-83 bands add on top of main; horizons 2 and 3 left the roadmap (Q-77). Chapter 15; dates: roadmap §0.2.",
+   "originalText": "What v1.0 and the Q-72 → Q-83 bands add on top of main; horizons 2 and 3 left the roadmap (Q-77). Chapter 15; dates: roadmap §0.2.",
    "fontSize": 13,
    "fontFamily": 2,
    "textAlign": "left",
@@ -276,7 +276,7 @@
    "x": 40,
    "y": 1070,
    "width": 1720,
-   "height": 200,
+   "height": 340,
    "angle": 0,
    "strokeColor": "#94a3b8",
    "backgroundColor": "#fcfcfd",
@@ -304,7 +304,7 @@
    "type": "text",
    "x": 54,
    "y": 1078,
-   "width": 709.28,
+   "width": 934.96,
    "height": 18,
    "angle": 0,
    "strokeColor": "#94a3b8",
@@ -325,8 +325,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Q-73 / Q-74 — open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10",
-   "originalText": "Q-73 / Q-74 — open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10",
+   "text": "Q-73 / Q-74 / Q-83 — deployment profiles, open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10",
+   "originalText": "Q-73 / Q-74 / Q-83 — deployment profiles, open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10",
    "fontSize": 13,
    "fontFamily": 2,
    "textAlign": "left",
@@ -436,7 +436,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-0-fw-voice"
+     "id": "edge-0-fw-link"
     }
    ],
    "updated": 1,
@@ -690,7 +690,7 @@
    "autoResize": true
   },
   {
-   "id": "box-voice",
+   "id": "box-link",
    "type": "rectangle",
    "x": 398,
    "y": 374,
@@ -709,18 +709,18 @@
    "roundness": {
     "type": 3
    },
-   "seed": 1350434515,
+   "seed": 3407720317,
    "version": 1,
-   "versionNonce": 1549167019,
+   "versionNonce": 801919406,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "box-voice-text"
+     "id": "box-link-text"
     },
     {
      "type": "arrow",
-     "id": "edge-0-fw-voice"
+     "id": "edge-0-fw-link"
     }
    ],
    "updated": 1,
@@ -728,7 +728,7 @@
    "locked": false
   },
   {
-   "id": "box-voice-text",
+   "id": "box-link-text",
    "type": "text",
    "x": 410,
    "y": 382,
@@ -745,9 +745,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 916326917,
+   "seed": 3416732593,
    "version": 1,
-   "versionNonce": 2027765707,
+   "versionNonce": 3590228196,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -759,7 +759,7 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "box-voice",
+   "containerId": "box-link",
    "lineHeight": 1.3,
    "autoResize": true
   },
@@ -834,7 +834,7 @@
    "autoResize": true
   },
   {
-   "id": "box-lab",
+   "id": "box-authoring",
    "type": "rectangle",
    "x": 1074,
    "y": 374,
@@ -853,14 +853,14 @@
    "roundness": {
     "type": 3
    },
-   "seed": 2081315242,
+   "seed": 3784398014,
    "version": 1,
-   "versionNonce": 875924839,
+   "versionNonce": 1876837923,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "box-lab-text"
+     "id": "box-authoring-text"
     }
    ],
    "updated": 1,
@@ -868,7 +868,7 @@
    "locked": false
   },
   {
-   "id": "box-lab-text",
+   "id": "box-authoring-text",
    "type": "text",
    "x": 1086,
    "y": 382,
@@ -885,21 +885,21 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 3519881532,
+   "seed": 4112244503,
    "version": 1,
-   "versionNonce": 1796682254,
+   "versionNonce": 3825718856,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Brain over MCP\nNeuroEdge brain or any MCP client\nstandard tools · I2d · Q-76\n○ planned",
-   "originalText": "Brain over MCP\nNeuroEdge brain or any MCP client\nstandard tools · I2d · Q-76\n○ planned",
+   "text": "Mission authoring over MCP\npropose_mission · mission_status\nany MCP client · TSK-I2d-23 · Q-88\n○ planned",
+   "originalText": "Mission authoring over MCP\npropose_mission · mission_status\nany MCP client · TSK-I2d-23 · Q-88\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "box-lab",
+   "containerId": "box-authoring",
    "lineHeight": 1.3,
    "autoResize": true
   },
@@ -1313,8 +1313,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Mission contracts\nmission.v1: devices, may/must, windows\ncompiled to tiers · RFC planned · I2d\n○ planned",
-   "originalText": "Mission contracts\nmission.v1: devices, may/must, windows\ncompiled to tiers · RFC planned · I2d\n○ planned",
+   "text": "Mission contracts\nYAML, locked by an approved digest\nskill tier on the box in v1 · Q-87\n○ planned",
+   "originalText": "Mission contracts\nYAML, locked by an approved digest\nskill tier on the box in v1 · Q-87\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1383,8 +1383,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Operating agent\nruntime 24/7 + untrusted LLM worker\ndetectors before LLM · llm_budget · I2d\n○ planned",
-   "originalText": "Operating agent\nruntime 24/7 + untrusted LLM worker\ndetectors before LLM · llm_budget · I2d\n○ planned",
+   "text": "Operating agent\nruntime 24/7 + NeuroClaw brain\ndetectors first · wake cap · Q-83, Q-87\n○ planned",
+   "originalText": "Operating agent\nruntime 24/7 + NeuroClaw brain\ndetectors first · wake cap · Q-83, Q-87\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1523,8 +1523,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "NeuroEdge Blueprint + Hub\npack / install · whole-package digest\nstatic index, evidence unsigned · I2e\n○ planned",
-   "originalText": "NeuroEdge Blueprint + Hub\npack / install · whole-package digest\nstatic index, evidence unsigned · I2e\n○ planned",
+   "text": "NeuroEdge Blueprint + Hub\nblueprint.toml · digest of manifest + files\nnothing runs before consent · I2e · Q-86\n○ planned",
+   "originalText": "NeuroEdge Blueprint + Hub\nblueprint.toml · digest of manifest + files\nnothing runs before consent · I2e · Q-86\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1663,8 +1663,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Symmetric safe_state\ndeclared in board.v1, default off · I2d\non only with an NC interlock · RFC planned\n○ planned",
-   "originalText": "Symmetric safe_state\ndeclared in board.v1, default off · I2d\non only with an NC interlock · RFC planned\n○ planned",
+   "text": "Symmetric safe_state\ndefault off · on needs an interlock\nsim: risk=simulated_interlock · Q-87\n○ planned",
+   "originalText": "Symmetric safe_state\ndefault off · on needs an interlock\nsim: risk=simulated_interlock · Q-87\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1884,9 +1884,79 @@
    "autoResize": true
   },
   {
-   "id": "box-verify",
+   "id": "box-profiles",
    "type": "rectangle",
    "x": 60,
+   "y": 1114,
+   "width": 326,
+   "height": 124,
+   "angle": 0,
+   "strokeColor": "#1d4ed8",
+   "backgroundColor": "#f8fafc",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": {
+    "type": 3
+   },
+   "seed": 3729113380,
+   "version": 1,
+   "versionNonce": 1608699684,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "box-profiles-text"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false
+  },
+  {
+   "id": "box-profiles-text",
+   "type": "text",
+   "x": 72,
+   "y": 1122,
+   "width": 302,
+   "height": 108,
+   "angle": 0,
+   "strokeColor": "#475569",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 658191678,
+   "version": 1,
+   "versionNonce": 2599474259,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "Deployment profiles A / B\nA: brain + box, MCP over mTLS\nB: one ESP32-S3 image · Q-83\n○ planned",
+   "originalText": "Deployment profiles A / B\nA: brain + box, MCP over mTLS\nB: one ESP32-S3 image · Q-83\n○ planned",
+   "fontSize": 12.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box-profiles",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
+   "id": "box-verify",
+   "type": "rectangle",
+   "x": 398,
    "y": 1114,
    "width": 326,
    "height": 124,
@@ -1920,7 +1990,7 @@
   {
    "id": "box-verify-text",
    "type": "text",
-   "x": 72,
+   "x": 410,
    "y": 1122,
    "width": 302,
    "height": 108,
@@ -1956,7 +2026,7 @@
   {
    "id": "box-ncloud",
    "type": "rectangle",
-   "x": 398,
+   "x": 736,
    "y": 1114,
    "width": 326,
    "height": 124,
@@ -1990,7 +2060,7 @@
   {
    "id": "box-ncloud-text",
    "type": "text",
-   "x": 410,
+   "x": 748,
    "y": 1122,
    "width": 302,
    "height": 108,
@@ -2013,8 +2083,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "NeuroEdge Cloud (optional)\nsame brain as self-host, one per user\nno hardware rights · I2f · Q-76\n○ planned",
-   "originalText": "NeuroEdge Cloud (optional)\nsame brain as self-host, one per user\nno hardware rights · I2f · Q-76\n○ planned",
+   "text": "NeuroEdge Cloud (optional)\nprofile A brain, one per user\nafter the demand gate · I2f · Q-85\n○ planned",
+   "originalText": "NeuroEdge Cloud (optional)\nprofile A brain, one per user\nafter the demand gate · I2f · Q-85\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -2026,7 +2096,7 @@
   {
    "id": "box-homebox",
    "type": "rectangle",
-   "x": 736,
+   "x": 1074,
    "y": 1114,
    "width": 326,
    "height": 124,
@@ -2060,7 +2130,7 @@
   {
    "id": "box-homebox-text",
    "type": "text",
-   "x": 748,
+   "x": 1086,
    "y": 1122,
    "width": 302,
    "height": 108,
@@ -2096,7 +2166,7 @@
   {
    "id": "box-network",
    "type": "rectangle",
-   "x": 1074,
+   "x": 1412,
    "y": 1114,
    "width": 326,
    "height": 124,
@@ -2130,7 +2200,7 @@
   {
    "id": "box-network-text",
    "type": "text",
-   "x": 1086,
+   "x": 1424,
    "y": 1122,
    "width": 302,
    "height": 108,
@@ -2166,8 +2236,8 @@
   {
    "id": "box-roles",
    "type": "rectangle",
-   "x": 1412,
-   "y": 1114,
+   "x": 60,
+   "y": 1254,
    "width": 326,
    "height": 124,
    "angle": 0,
@@ -2200,8 +2270,8 @@
   {
    "id": "box-roles-text",
    "type": "text",
-   "x": 1424,
-   "y": 1122,
+   "x": 72,
+   "y": 1262,
    "width": 302,
    "height": 108,
    "angle": 0,
@@ -2234,7 +2304,7 @@
    "autoResize": true
   },
   {
-   "id": "edge-0-fw-voice",
+   "id": "edge-0-fw-link",
    "type": "arrow",
    "x": 561.0,
    "y": 268,
@@ -2251,9 +2321,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 517712012,
+   "seed": 2822229905,
    "version": 1,
-   "versionNonce": 3217045611,
+   "versionNonce": 3505911791,
    "isDeleted": false,
    "boundElements": [
     {
@@ -2280,7 +2350,7 @@
     "gap": 1
    },
    "endBinding": {
-    "elementId": "box-voice",
+    "elementId": "box-link",
     "focus": 0,
     "gap": 1
    },
@@ -2320,7 +2390,7 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-0-fw-voice",
+   "containerId": "edge-0-fw-link",
    "lineHeight": 1.3,
    "autoResize": true
   }

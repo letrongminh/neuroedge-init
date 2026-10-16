@@ -641,7 +641,7 @@ def e10_horizons() -> Diagram:
     d = Diagram(
         "E-10-target-horizons",
         "E-10 · Target architecture by horizon",
-        "What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.",
+        "What v1.0 and the Q-72 → Q-83 bands add on top of main; horizons 2 and 3 left the roadmap (Q-77). Chapter 15; dates: roadmap §0.2.",
         1800,
         1360,
     )
@@ -656,9 +656,9 @@ def e10_horizons() -> Diagram:
         ]),
         ("h1", "Horizon 1 — v1.0 = MVP (I2a–I7) · chapter 15 §2", "device", [
             ("hal", "HAL + drivers + UI on chip", ("targets/esp32s3/hal/ · drivers/ · ne_ui", "TSK-S4-01, TSK-S4-03"), "device", "planned"),
-            ("voice", "Pi ↔ ESP32 link", ("heartbeat · safe_state on link loss", "generic ESP32-S3 + Arduino · I3a · Q-75"), "device", "planned"),
+            ("link", "Pi ↔ ESP32 link", ("heartbeat · safe_state on link loss", "generic ESP32-S3 + Arduino · I3a · Q-75"), "device", "planned"),
             ("ext", "Extension primitives", ("digital.in · I2C · analog.in · PWM", "vision.in · motion.* · I2a, I3a · Q-53"), "device", "planned"),
-            ("lab", "Brain over MCP", ("NeuroEdge brain or any MCP client", "standard tools · I2d · Q-76"), "component", "planned"),
+            ("authoring", "Mission authoring over MCP", ("propose_mission · mission_status", "any MCP client · TSK-I2d-23 · Q-88"), "component", "planned"),
             ("security", "Device security", ("Secure Boot · flash encryption", "mic switch · TSK-S6-05"), "device", "planned"),
             # I2c — the open platform (Q-67) sits in the MVP host lane, before I6
             ("sdk", "Standalone core + Extension SDK", ("neuroedge.guard · neuroedge.sdk", "six plug-in kinds · RFC-0016 · I2c"), "component", "planned"),
@@ -668,20 +668,21 @@ def e10_horizons() -> Diagram:
         ]),
         # Q-72 reorders the work: this band comes before the rest of Horizon 1 (roadmap §0.2)
         ("q72", "Q-72 band — run and share, moved ahead of the v1.0 work (I2d, I2e) · chapter 15 §6", "planned", [
-            ("mission", "Mission contracts", ("mission.v1: devices, may/must, windows", "compiled to tiers · RFC planned · I2d"), "component", "planned"),
-            ("agent", "Operating agent", ("runtime 24/7 + untrusted LLM worker", "detectors before LLM · llm_budget · I2d"), "container", "planned"),
+            ("mission", "Mission contracts", ("YAML, locked by an approved digest", "skill tier on the box in v1 · Q-87"), "component", "planned"),
+            ("agent", "Operating agent", ("runtime 24/7 + NeuroClaw brain", "detectors first · wake cap · Q-83, Q-87"), "container", "planned"),
             ("chat", "Chat + approval records", ("Telegram first · paired sender only", "id · nonce · expiry · digest · I2d"), "external", "planned"),
-            ("blueprint", "NeuroEdge Blueprint + Hub", ("pack / install · whole-package digest", "static index, evidence unsigned · I2e"), "component", "planned"),
+            ("blueprint", "NeuroEdge Blueprint + Hub", ("blueprint.toml · digest of manifest + files", "nothing runs before consent · I2e · Q-86"), "component", "planned"),
             ("emul", "Emulation first, G1–G4", ("sim physics · gpio-sim (G1, G2) · I2d", "Wokwi / QEMU (G3) · ESPHome host (G4)"), "test", "planned"),
-            ("safe", "Symmetric safe_state", ("declared in board.v1, default off · I2d", "on only with an NC interlock · RFC planned"), "gate", "planned"),
+            ("safe", "Symmetric safe_state", ("default off · on needs an interlock", "sim: risk=simulated_interlock · Q-87"), "gate", "planned"),
             ("egress", "Anti-leak data flow", ("only declared destinations", "worker network allowlisted · I2d"), "gate", "planned"),
             ("segments", "Trace segments", ("chain of replayable segments", "kept 30 days · RFC planned · I2d"), "store", "planned"),
             ("relay", "Relay (optional)", ("TLS pass-through by SNI", "never on the safety path · Q-72"), "external", "planned"),
         ]),
         # Q-73 (open verification, I2d) and Q-74 (optional cloud brain, conditional I2f) · chapter 15 §6.10
-        ("q74", "Q-73 / Q-74 — open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10", "planned", [
+        ("q74", "Q-73 / Q-74 / Q-83 — deployment profiles, open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10", "planned", [
+            ("profiles", "Deployment profiles A / B", ("A: brain + box, MCP over mTLS", "B: one ESP32-S3 image · Q-83"), "container", "planned"),
             ("verify", "User-declared verification", ("spoken code · face · phone biometrics", "risk label, never AI-answered · I2d"), "gate", "planned"),
-            ("ncloud", "NeuroEdge Cloud (optional)", ("same brain as self-host, one per user", "no hardware rights · I2f · Q-76"), "external", "planned"),
+            ("ncloud", "NeuroEdge Cloud (optional)", ("profile A brain, one per user", "after the demand gate · I2f · Q-85"), "external", "planned"),
             ("homebox", "Home box: Pi / HA add-on / ESP32", ("the spine stays at home", "easy install I2e · ESP32 I2f"), "device", "planned"),
             ("network", "Multi-node, multi-home network", ("signed rules per node, scope caps", "self-lock on anomaly · I2f"), "component", "planned"),
             ("roles", "People with roles", ("who commands, who approves", "time-boxed guests · I2f"), "person", "planned"),
@@ -689,7 +690,7 @@ def e10_horizons() -> Diagram:
     ]
     y, row_pitch, tops = 100, 140, {}
     for gid, label, kind, items in bands:
-        rows = (len(items) + 4) // 5  # five boxes to a row; Horizon 1 needs a second row
+        rows = (len(items) + 4) // 5  # five boxes to a row; Horizon 1, Q-72 and Q-73/Q-74 need a second row
         gh = 200 + (rows - 1) * row_pitch
         d.groups.append(Group(gid, 40, y, 1720, gh, label, kind))
         for n, (bid, title, lines, bkind, status) in enumerate(items):
@@ -697,8 +698,9 @@ def e10_horizons() -> Diagram:
             d.boxes.append(Box(bid, col[c], y + 44 + r * row_pitch, w, 124, title, lines, bkind, status))
         tops[gid] = y
         y += gh + 30
+    d.height = y + 40  # a band that gains a row grows the poster
     d.edges += [
-        Edge("fw", "voice", "same walker + ledger", label_at=(col[1] + w / 2, 312)),
+        Edge("fw", "link", "same walker + ledger", label_at=(col[1] + w / 2, 312)),
     ]
     return d
 
