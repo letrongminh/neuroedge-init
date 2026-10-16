@@ -624,18 +624,18 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 
 | Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-I2e-01** | RFC `blueprint.v1`: manifest, digest covering entire package | FR-BP-01, FR-BP-04, FR-BP-06, FR-BP-08 | V1 + tech lead | ⏳ Not started | `docs/rfc/` |
-| **TSK-I2e-02** | `neuroedge blueprint pack` packages project into Blueprint | FR-BP-02, FR-CLI-13 | V3 | ⏳ Awaiting TSK-I2e-01 | `python/neuroedge/blueprint/` |
-| **TSK-I2e-03** | `neuroedge blueprint install` checks digest, displays approval preview | FR-BP-03, FR-CLI-13, NFR-SEC-14 | V3 + V1 | ⏳ Awaiting TSK-I2e-01 | `python/neuroedge/blueprint/` |
-| **TSK-I2e-04** | Free static git/HTTPS Blueprint index | FR-BP-05 | V3 | ⏳ Not started | external index repository |
-| **TSK-I2e-05** | Fish tank kit: BOM, wiring diagram, sample contracts, traces | FR-DX-09 | V3 + V7 | ⏳ Not started | `python/neuroedge/templates/` |
-| **TSK-I2e-06** | BOM with affiliate links located on separate page outside kit | FR-BP-07 | team lead + V3 | ⏳ Not started | `docs/user/` |
-| **TSK-I2e-07** | Gate milestone metrics logged locally, transmitted only when enabled | FR-TEL-07 | V3 | ⏳ Not started | `python/neuroedge/` |
-| **TSK-I2e-08** | Wheel for external testers with blueprint install step | FR-DX-02 | V3 | ⏳ Not started | `scripts/wheel_smoke.sh` |
+| **TSK-I2e-01** | RFC `blueprint.v1`: manifest, digest covering entire package (`docs/spec/blueprint.md` BL-FMT-01 → 06, BL-EV-01) | FR-BP-01, FR-BP-04, FR-BP-06, FR-BP-08 | V1 + tech lead | ⏳ Not started | `docs/rfc/` |
+| **TSK-I2e-02** | `neuroedge blueprint pack` packages project into Blueprint (`docs/spec/blueprint.md` BL-PK-01 → 05, BL-SC-03) | FR-BP-02, FR-CLI-13 | V3 | ⏳ Awaiting TSK-I2e-01 | `python/neuroedge/blueprint/` |
+| **TSK-I2e-03** | `neuroedge blueprint install` checks digest, displays approval preview (`docs/spec/blueprint.md` BL-IN-01 → 06, BL-EV-03, BL-SC-01, BL-SC-02, BL-SC-04) | FR-BP-03, FR-CLI-13, NFR-SEC-14 | V3 + V1 | ⏳ Awaiting TSK-I2e-01 | `python/neuroedge/blueprint/` |
+| **TSK-I2e-04** | Free static git/HTTPS Blueprint index (`docs/spec/blueprint.md` BL-IX-01 → 03) | FR-BP-05 | V3 | ⏳ Not started | external index repository |
+| **TSK-I2e-05** | Fish tank kit: BOM, wiring diagram, sample contracts, traces (`docs/spec/blueprint.md` BL-KT-01, BL-KT-03, BL-EV-02) | FR-DX-09 | V3 + V7 | ⏳ Not started | `python/neuroedge/templates/` |
+| **TSK-I2e-06** | BOM with affiliate links located on separate page outside kit (`docs/spec/blueprint.md` BL-KT-02) | FR-BP-07 | team lead + V3 | ⏳ Not started | `docs/user/` |
+| **TSK-I2e-07** | Gate milestone metrics logged locally, transmitted only when enabled (`docs/spec/blueprint.md` BL-NF-02) | FR-TEL-07 | V3 | ⏳ Not started | `python/neuroedge/` |
+| **TSK-I2e-08** | Wheel for external testers with blueprint install step (`docs/spec/blueprint.md` BL-NF-01) | FR-DX-02 | V3 | ⏳ Not started | `scripts/wheel_smoke.sh` |
 | **TSK-I2e-12** | Home Assistant add-on running runtime, zero CLI commands (Q-74) | FR-DX-02, FR-AGT-01 | V3 | ⏳ Awaiting TSK-I2d-16 | external add-on repository |
 | **TSK-I2e-13** | SD card image for Pi, Telegram pairing via QR code (Q-74) | FR-DX-02, FR-CH-03 | V3 | ⏳ Awaiting TSK-I2d-12 | `scripts/` · `docs/user/` |
 | **TSK-I2e-14** | `neuroedge new --layout host+mcu`: project scaffold for Pi + ESP32 (Q-75) | FR-DX-01, FR-BP-02 | V3 | ⏳ Not started | `python/neuroedge/templates/` |
-| **TSK-I2e-09** | Blueprint installation measurement session (A14) with 3 external testers | FR-DX-01 | V3 + testers | ⏳ Not started | `docs/reports/` |
+| **TSK-I2e-09** | Blueprint installation measurement session (A14) with 3 external testers (`docs/spec/blueprint.md` BL-IN-07) | FR-DX-01 | V3 + testers | ⏳ Not started | `docs/reports/` |
 | **TSK-I6-04** | Community channels on HA/ESPHome forums, bug reporting flow | — | V3 + team lead | ⏳ Not started | forum posts, feedback channels |
 | **TSK-I2e-10** | Interviews for gate: ≥ 10 people (≥ 5 makers) | — | team lead | ⏳ Not started | `docs/business/` |
 | **TSK-I2e-11** | 8-week demand gate (B6, B7, B8), record branch point | — | team lead + product owner | ⏳ Not started | `roadmap/neuroedge-prd.md` §15 |
