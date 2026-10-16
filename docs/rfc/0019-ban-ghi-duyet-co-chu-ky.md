@@ -8,7 +8,7 @@
 | **Related PRD Requirements** | FR-CH-01 → FR-CH-04, FR-CH-08, FR-ACE-10, FR-TRC-13, NFR-SEC-12; Q-72, Q-73, Q-76, Q-83 (DP-A-06, DP-COM-04, DP-COM-09) |
 | **Author** | Trong-Minh Le (draft prepared with an AI assistant) |
 | **Date Opened** | 2026-10-14 |
-| **Status** | ⏳ Draft — the dedicated RFC PR is not open yet |
+| **Status** | ✅ Approved (2026-10-16) — lead engineer signed off on PR #133; decisions for open questions in §9 (Q-89) |
 | **Approver** | **Lead engineer — mandatory** (changes `schemas/tool-call.v1.json` and who may answer an `ask`). **Product owner** for the open questions of §9 (they include `TODOS.md` #62) |
 
 > **When an RFC is required:** `CONTRIBUTING.md` §3 — `schemas/tool-call.v1.json`; and
@@ -84,7 +84,8 @@ The bot's buttons carry only a short handle (`<cid>:<nonce prefix>`, Telegram `c
 2. the record's signature verifies with `approval.key`;
 3. `nonce` is unspent, `exp` not passed, `cid` still `pending`;
 4. `gd` equals the gate's current digest, and `act` the pending call (RFC-0006 rules);
-5. fewer than the hourly cap of remote approvals has been used (§9 Q2).
+5. fewer than the hourly cap of remote approvals has been used (§9 Q2: `[approvals] remote_per_hour`,
+   default 10, hard ceiling 30).
 
 Any failure is `tool_confirm_rejected` with a `reason` from a closed list: `bad_signature`,
 `nonce_reused`, `expired`, `gate_changed`, `not_owner`, `wrong_bot`, `over_cap`.
@@ -142,7 +143,7 @@ This RFC adds no `on_block` key; TSK-I2d-20 may add `confirms_via: [ui, chat]` l
 This RFC **adds a way to confirm**, so it can only make an `ask` easier to pass. Bounds:
 
 - No gate becomes laxer by itself: the gate still blocks, still asks; only who may answer widens,
-  and only for an owner the box paired locally (§9 Q1).
+  and only for an owner who proved presence with a code shown on the box (§9 Q1).
 - A compromised brain cannot answer: it holds neither `approval.key` nor the approval bot token,
   and the bot refuses to be the brain's (§3e).
 - A stolen phone or chat account can answer, within the cap and only for questions that are
@@ -173,17 +174,29 @@ This RFC **adds a way to confirm**, so it can only make an `ask` easier to pass.
 
 - [ ] `schemas/tool-call.v1.json` `$defs/source`; `tools.py` `SOURCES` check
 - [ ] `confirmation.py` `take_record()`; `docs/spec/tool_calling.md` §6, §7
-- [ ] `pairing.py`: `approval.key`; `neuroedge pair owner` (local pairing of the owner's chat id)
-- [ ] `channels/telegram.py` (aiogram, TSK-I2d-12), the start-up check of §3e
+- [ ] `pairing.py`: `approval.key`; `neuroedge pair owner` (one-time code shown locally, §9 Q1) and
+      `--revoke`; `[approvals] remote_per_hour` in `agent.toml` (§9 Q2)
+- [ ] `channels/telegram.py` (aiogram, TSK-I2d-12): `/pair <code>`, `/revoke` (§9 Q4), the start-up
+      check of §3e
 - [ ] `neuroedge-prd.md` Q-N for the answers of §9; roadmap TSK-I2d-11/12; `TODOS.md` #62 closed
 - [ ] The RFC's row in `docs/rfc/README.md`; an entry in `CHANGELOG.md` `[Unreleased]`
 
-## 9. Open Questions (product owner)
+## 9. Decisions on the Open Questions (product owner, 2026-10-16, Q-89)
 
-1. **Pairing the owner:** only from the local page or CLI on the home machine (`TODOS.md` #62),
-   or also by a one-time code sent to the bot?
-2. **Cap:** how many remote approvals per hour before a local approval is required (#62)? Draft
-   default: 10.
-3. **Which actions may be approved remotely at all:** every `ask`, or only gates that opt in
-   (`on_block.confirms_remote: true`, which would touch `gate.v1` and need its own RFC)?
-4. **Revocation:** `neuroedge pair owner --revoke` on the box only, or also from the bot?
+1. **Pairing the owner: a one-time code shown on the box, sent to the bot.** `neuroedge pair owner`
+   (CLI) or the local page shows a code: 8 characters from an unambiguous alphabet, single use,
+   valid 10 minutes, one pending code at a time. The owner sends `/pair <code>` to the approval bot
+   from a private chat; the box binds that Telegram user id as `aud`. The code is displayed only on
+   the home machine (FR-CH-03 unchanged): whoever reads it becomes the owner, so it is never sent
+   through the brain, logged, or written to a trace; a wrong code counts against the same limit as a
+   bad record, and five wrong codes void the pending code. Pairing replaces any previous owner and
+   is traced (`owner_paired`, chat id only).
+2. **Cap: configurable, default 10 per hour.** `agent.toml` `[approvals] remote_per_hour`, integer
+   1–30; a larger value is refused at load (exit 2). The window is a sliding hour on the monotonic
+   clock; once spent, `over_cap` until a local approval (`local_grammar` or `ui`) resets it.
+3. **Scope: every `ask`.** No `gate.v1` key is added; a remote answer is bounded by the cap, the
+   15-minute TTL and the `risk=remote_approval` label. A gate that must stay local-only waits for
+   TSK-I2d-20 (`confirms_via`, §3f).
+4. **Revocation: on the box and from the bot.** `neuroedge pair owner --revoke` locally, or `/revoke`
+   sent to the approval bot by the paired owner. The bot can only revoke, never grant; pending
+   records for that owner are voided at once. A hijacked account that revokes only denies service.

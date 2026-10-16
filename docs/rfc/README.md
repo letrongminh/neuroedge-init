@@ -38,6 +38,7 @@ Approvers: `CONTRIBUTING.md` §3.
 | [0016](0016-loi-tach-duoc-va-extension-sdk.md) | Standalone safety core and Extension SDK: extension points, trust model, compliance test suite — TSK-I2c-02 (Q-67) | *(not in `schemas/`)* — new APIs, `agent.toml` `[plugins]`, CLI | ✅ Approved |
 | [0017](0017-nguon-goi-theo-khong-gian-ten.md) | Namespaced call sources (`bridge:<id>`) and client identity — TSK-I2c-03 (Q-67) | `tool-call.v1` (`source`) · `docs/spec/tool_calling.md` | ✅ Approved · half (a) implemented (`bridge:<id>`); half (b) `[mcp.clients]` open (TSK-I2c-10) |
 | [0018](0018-co-cau-chap-hanh-tu-xa.md) | Remote actuators and auto-kill levels — TSK-I2c-04 (Q-67) | *(not in `schemas/`)* — `agent.toml` `[actuators]` block, HAL `_admit` channel, envelope, trace events (`trace.v1` unchanged) | ✅ Approved |
+| [0019](0019-ban-ghi-duyet-co-chu-ky.md) | Box-signed approval records and the box's own approval bot (`chat:<id>` source) — TSK-I2d-11 (Q-83, Q-89) | `tool-call.v1` (`source`) · RFC-0006 confirmation semantics · `trace.v1` event `data` (schema file unchanged) | ✅ Approved · code in TSK-I2d-12 |
 
 ## In flight and planned
 
@@ -45,7 +46,6 @@ Not in this directory yet; each is named in roadmap §0.2 (I2d row), roadmap §0
 
 | RFC | Subject | Where it is stated |
 |:---|:---|:---|
-| RFC-0019 (draft, PR #133) | Box-signed approval records and the box's own approval bot (`chat:<id>` source), TSK-I2d-11 | roadmap §0.3 and §8 (waiting for the lead engineer); `docs/spec/missions.md` MS-CH-02, MS-CH-03 |
 | Unnumbered, planned | `board.v1` must-understand list `requires = [...]` (TSK-I2d-01), then conditional safety `safe_state` (TSK-I2d-02, MS-SF-01 → 06) | roadmap §4.3.4; `docs/spec/missions.md` §3 |
 | Unnumbered, planned | `mission.v1` mission contract and `trace.v1` segments (TSK-I2d-04, MS-CT-01, MS-TS-01) | roadmap §4.3.4; `docs/spec/missions.md` §4.1 |
 | Unnumbered, planned | `NETR` reflex terms (Q-87(2), MS-CP-04): reflex tier on the chip waits for it | PRD §15 Q-87; `docs/spec/missions.md` MS-CP-04, MS-D-02 |
