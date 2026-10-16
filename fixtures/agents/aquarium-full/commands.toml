@@ -1,0 +1,55 @@
+# Fixed-command grammar of the full fish tank (Q-14, Q-15): what it understands with no network.
+# Every command is a physical action.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "reef_heater_on"
+patterns = ["bật sưởi", "bật máy sưởi", "turn on the heater"]
+tool     = "reef_heater_on"
+
+[[command]]
+intent   = "reef_heater_off"
+patterns = ["tắt sưởi", "tắt máy sưởi", "turn off the heater"]
+tool     = "reef_heater_off"
+
+[[command]]
+intent   = "reef_air_pump_on"
+patterns = ["bật sục khí", "bật máy sục khí", "turn on the air pump"]
+tool     = "reef_air_pump_on"
+
+[[command]]
+intent   = "reef_air_pump_off"
+patterns = ["tắt sục khí", "tắt máy sục khí", "turn off the air pump"]
+tool     = "reef_air_pump_off"
+
+[[command]]
+intent   = "reef_filter_on"
+patterns = ["bật lọc", "bật bơm lọc", "turn on the filter"]
+tool     = "reef_filter_on"
+
+[[command]]
+intent   = "reef_filter_off"
+patterns = ["tắt lọc", "tắt bơm lọc", "turn off the filter"]
+tool     = "reef_filter_off"
+
+[[command]]
+intent   = "reef_co2_on"
+patterns = ["bơm CO2", "mở van CO2", "turn on the CO2"]
+tool     = "reef_co2_on"
+
+[[command]]
+intent   = "reef_co2_off"
+patterns = ["tắt CO2", "đóng van CO2", "turn off the CO2"]
+tool     = "reef_co2_off"
+
+[[command]]
+intent   = "reef_light_on"
+patterns = ["bật đèn bể", "bật đèn", "turn on the tank light"]
+tool     = "reef_light_on"
+
+[[command]]
+intent   = "reef_light_off"
+patterns = ["tắt đèn bể", "tắt đèn", "turn off the tank light"]
+tool     = "reef_light_off"

@@ -1,0 +1,25 @@
+# Nước đã ấm (từ 29 °C) thì không bật sưởi, ai yêu cầu cũng vậy; không có số đo thì từ chối (fail closed).
+schema:  neuroedge.gate/v1
+name:    reef_heater_on
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  water_hot:
+    type: bool
+    instructions: "Nước trong bể đang ấm (từ 29 °C), do cảm biến nhiệt trong nước báo"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  water_hot: false
+
+on_block:
+  action:  deny
+  message: "Nước đang ấm (từ 29 °C) hoặc không có số đo nhiệt độ — không bật sưởi."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

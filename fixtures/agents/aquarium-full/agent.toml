@@ -1,0 +1,116 @@
+# Sample agent: the full fish tank on the virtual board (docs/spec/virtual_parts.md, Q-84).
+#
+# Unlike `aquarium` (which borrows `gate_relay`, `door_lock` and `porch_light` of sim-default), this
+# one names its own parts and runs on `sim-virtual`: five outputs and four sensors, none of which
+# the reference sim board has. `sim` only (VP-VB-04): the board is built from this file, labelled
+# `risk=virtual_board`, and refused on any other target.
+#
+# Rules a fish keeper cares about:
+#   * the heater never comes on while the water is warm (≥ 29 °C) or unmeasured;
+#   * the safe state of the air pump is ON: turning it off asks the owner, and while the oxygen is
+#     low (< 5 mg/L), the water warm or a probe silent it is refused without asking;
+#   * the filter pump never runs dry (water level < 30 %); turning it off asks the owner;
+#   * CO₂ is never added while the pH is already low (< 6.5) or the oxygen is low (< 5 mg/L);
+#   * heater off, air pump on, CO₂ off and the light are always allowed.
+# No reading from a probe is never a pass: every rule fails closed.
+#
+# No physics model: the readings are what the presenter types (`:sensor ph 6.2`) or sets on the page.
+[agent]
+name    = "aquarium-full"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["heater", "air_pump", "filter_pump", "co2_valve", "tank_light"] }
+"sensor.read" = { sensors = ["water_temp", "ph", "oxygen", "water_level"] }
+
+[gates]
+reef_heater_on   = "gates/reef_heater_on@1.0.0.yaml"
+reef_heater_off  = "gates/reef_heater_off@1.0.0.yaml"
+reef_air_pump_on  = "gates/reef_air_pump_on@1.0.0.yaml"
+reef_air_pump_off = "gates/reef_air_pump_off@1.0.0.yaml"
+reef_filter_on   = "gates/reef_filter_on@1.0.0.yaml"
+reef_filter_off  = "gates/reef_filter_off@1.0.0.yaml"
+reef_co2_on      = "gates/reef_co2_on@1.0.0.yaml"
+reef_co2_off     = "gates/reef_co2_off@1.0.0.yaml"
+reef_light       = "gates/reef_light@1.0.0.yaml"
+
+[targets]
+supported = ["sim"]
+
+[sim]
+board = "sim-virtual"
+
+# A healthy tropical tank. Each value is inside its part's range (VP-PT-05).
+[sim.sensors]
+water_temp  = { value = 25, unit = "C" }
+ph          = { value = 7.0, unit = "pH" }
+oxygen      = { value = 7.5, unit = "mg/L" }
+water_level = { value = 80, unit = "%" }
+
+# Each rule is a bound, included. No reading, or one the rule cannot place, leaves every fact of
+# that sensor undecided: the gates that read it then refuse.
+[sim.sensor_facts]
+water_hot = { sensor = "water_temp", gte = 29 }
+oxygen_ok = { sensor = "oxygen", gte = 5 }
+ph_ok     = { sensor = "ph", gte = 6.5 }
+water_ok  = { sensor = "water_level", gte = 30 }
+
+# `owner_confirmed` always starts false: only the owner's "có" at home makes it pass, for one call.
+[sim.facts]
+owner_confirmed = false
+
+[sim.parts.heater]
+kind  = "heater"
+pin   = "heater"
+label = "Máy sưởi"
+
+[sim.parts.air_pump]
+kind  = "pump"
+pin   = "air_pump"
+label = "Máy sục khí"
+
+[sim.parts.filter_pump]
+kind  = "pump"
+pin   = "filter_pump"
+label = "Bơm lọc"
+
+[sim.parts.co2_valve]
+kind  = "relay"
+pin   = "co2_valve"
+label = "Van CO₂"
+
+[sim.parts.tank_light]
+kind  = "light"
+pin   = "tank_light"
+label = "Đèn bể"
+
+[sim.parts.water_temp]
+kind   = "temperature"
+sensor = "water_temp"
+label  = "Nhiệt độ nước"
+
+[sim.parts.ph]
+kind   = "ph"
+sensor = "ph"
+label  = "Độ pH"
+
+[sim.parts.oxygen]
+kind   = "sensor"
+sensor = "oxygen"
+unit   = "mg/L"
+range  = [0, 20]
+label  = "Oxy hoà tan"
+
+[sim.parts.water_level]
+kind   = "level"
+sensor = "water_level"
+label  = "Mực nước"
+
+# The facts are not parts: their words stay here.
+[ui.labels]
+water_hot       = "Nước đang ấm (từ 29 °C)"
+oxygen_ok       = "Oxy đủ (từ 5 mg/L)"
+ph_ok           = "pH không quá thấp (từ 6.5)"
+water_ok        = "Mực nước đủ (từ 30 %)"
+owner_confirmed = "Chủ nhà đã xác nhận tại nhà"
+call_source     = "Ai yêu cầu"
