@@ -345,3 +345,14 @@ def test_a_map_for_a_sim_board_is_applied_and_one_for_the_virtual_board_fails(tm
         build(virtual, target="sim", board_id="sim-virtual")
     with pytest.raises(AgentManifestError, match="sim-virtual"):
         build(virtual, target="sim", board_id="sim-default")
+
+
+def test_the_pin_map_threat_entry_is_approved_and_names_its_mitigations():
+    """TC-PM-06-1 (VP-PM-06): the misrouting risk is in the threat model, approved, with its mitigations."""
+    model = (repo_root() / "docs" / "spec" / "threat_model.md").read_text(encoding="utf-8")
+    entry = model.split("## 2m.", 1)[1].split("\n## ", 1)[0]
+    heading = entry.splitlines()[0]
+    assert "approved by the lead engineer" in heading and "draft" not in heading
+    for mitigation in ("VP-PM-01", "VP-PM-04"):
+        assert mitigation in entry, mitigation
+    assert "Residual risk" in entry and "TSK-S4-01" in entry

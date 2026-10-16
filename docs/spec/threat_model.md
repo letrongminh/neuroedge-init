@@ -313,7 +313,7 @@ This is a risk-labeled exception to §1: on microcontrollers lacking process sep
 
 **Residual risk, explicitly stated:** anyone with physical access to boards lacking flash encryption can read tokens, keys, memory, and workspace conversations (LittleFS); enabling encryption leaves hardware attacks (glitching, side-channels) out of scope. An exploitable memory corruption flaw in brain code compromises the entire chip including gates — which is why single-chip deployments carry label `risk=single_chip` and the two deployment modes of Q-76 remain the primary paths. Secure Boot not yet implemented (TSK-S6-05): physical cable access allows firmware replacement. `web_fetch` cannot prevent DNS rebinding: HTTP clients resolve domain names a second time upon connecting, permitting DNS records modified between hops to slip through.
 
-## 2m. In scope: misrouted pin map (Q-84, VP-PM-*) — draft, awaiting the lead engineer's approval
+## 2m. In scope: misrouted pin map (Q-84, VP-PM-*) — approved by the lead engineer, 2026-10-16
 
 `[targets.<board-id>.pins]` in agent.toml lets an agent keep its own pin names on a real board (`docs/spec/virtual_parts.md` §3.3). The gate still decides on the agent's name, so a wrong map does not weaken any gate: it moves **another real device** than the one the action's name promises. `heater` mapped to the board's `door_lock` pin makes an allowed `heater_on` open a door, under the door's envelope, with a trace that says `heater`. The map is therefore a safety input, edited by the agent's author, and decides which real device an allowed action moves.
 
@@ -327,7 +327,7 @@ This is a risk-labeled exception to §1: on microcontrollers lacking process sep
 
 **Residual risk, explicitly stated:** the build cannot know what is wired to a real pin. A map to an existing pin of the right primitive that the installer wired to a different device than the author believes passes every check; the printed line at every start and the trace's `pin_map` are what a reviewer reads. A trace recorded on the chip (`neuroedge record --port`) does not carry `pin_map` — the firmware has no map, only the agent's names — so the map of a chip recording is read from agent.toml. Tools that start without the CLI (library use of `SimSession`) print nothing; they still record `pin_map`.
 
-**On `esp32s3`, not yet bound:** the chip has no GPIO table until TSK-S4-01 (`main/brain.c` prints `NE_PIN … unmapped`, or the line name on QEMU). Its generated pin table already carries the agent's names; when TSK-S4-01 lands it must take each mapped name's GPIO from the board pin the map names, never from the agent's name, and a chip recording must carry `pin_map` (today it does not, so a chip trace replays under the agent's current map).
+**On `esp32s3`, not yet bound (approved as a TSK-S4-01 obligation):** the chip has no GPIO table until TSK-S4-01 (`main/brain.c` prints `NE_PIN … unmapped`, or the line name on QEMU). Its generated pin table already carries the agent's names; when TSK-S4-01 lands it must take each mapped name's GPIO from the board pin the map names, never from the agent's name, and a chip recording must carry `pin_map` (today it does not, so a chip trace replays under the agent's current map).
 
 ## 3. Out of scope: same-process impersonator
 

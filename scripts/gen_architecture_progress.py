@@ -15,7 +15,9 @@ Keys:
   (`LAYERS` below; every increment sits on exactly one layer);
 - `journey` — the eight release milestones on a timeline, then as cards, then what is waiting
   on a person;
-- `inc-<ID>` — the bare progress of one increment, e.g. `11 / 20`, for use inside a sentence.
+- `inc-<ID>` — the bare progress of one increment, e.g. `11 / 20`, for use inside a sentence;
+- `today` — what a person can do today, from `docs/architecture/vi/00-overview.md` §6.1: works now,
+  works in part, next; each with the command to try it, where it runs and its evidence.
 
 Never edit a generated block by hand. The date comes from the roadmap's "Last updated", not the
 machine clock, so the output is deterministic and `--check` does not go stale daily.
@@ -37,6 +39,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"
 TARGET = ROOT / "docs" / "business" / "kien-truc-tong-the.html"
+OVERVIEW = ROOT / "docs" / "architecture" / "vi" / "00-overview.md"
 
 DATE = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
 LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
@@ -236,6 +239,76 @@ def milestones(lines: list[str], matrix: list[Increment]) -> list[Milestone]:
     return out
 
 
+@dataclass
+class Capability:
+    name: str
+    what: str
+    how: str
+    where: str
+    reach: dict[str, str]
+    status: str
+    evidence: list[str]
+
+
+CAPABILITY_STATES = ("done", "partial", "planned")
+TASK = re.compile(r"^TSK-[A-Za-z0-9]+-\d+$")
+# Where a capability runs, from the laptop to a real board (`00-overview.md` §6.1, *Reach*).
+PLACES = (
+    ("laptop", "Laptop", "sim · host"),
+    ("linux", "Linux on CI", "gpio-sim"),
+    ("qemu", "Chip emulator", "ESP32-S3 on QEMU"),
+    ("board", "Real board", "Pi 5 · ESP32-S3"),
+)
+MARKS = {"●": "done", "◐": "partial", "○": "planned"}
+
+
+def reach_of(cell: str, what: str) -> dict[str, str]:
+    """`laptop ●, qemu ○` → {"laptop": "done", "qemu": "planned"}."""
+    out = {}
+    for item in plain(cell).split(","):
+        m = re.fullmatch(r"\s*(\w+)\s+([●◐○])\s*", item)
+        if not m or m.group(1) not in {key for key, _, _ in PLACES} or m.group(1) in out:
+            raise SystemExit(f"00-overview.md §6.1: reach {item.strip()!r} of {what!r}")
+        out[m.group(1)] = MARKS[m.group(2)]
+    return out
+
+
+def capabilities(roadmap: str) -> list[Capability]:
+    """`00-overview.md` §6.1; every evidence names a file that exists or a roadmap task."""
+    lines = OVERVIEW.read_text(encoding="utf-8").splitlines()
+    part = between(lines, "### 6.1", "### 6.2")
+    start = next(i for i, line in enumerate(part) if line.startswith("| Name |"))
+    out = []
+    for line in part[start + 2 :]:
+        if not line.startswith("|"):
+            break
+        name, what, how, where, reach, status, evidence = split_row(line)
+        status = plain(status)
+        if status not in CAPABILITY_STATES:
+            raise SystemExit(f"00-overview.md §6.1: status {status!r} of {plain(what)!r}")
+        places = reach_of(reach, plain(what))
+        works = [state for state in places.values() if state == "done"]
+        if (status == "planned") == bool(works) or (
+            status == "done" and "partial" in places.values()
+        ):
+            raise SystemExit(f"00-overview.md §6.1: reach {plain(reach)!r} contradicts {status!r}")
+        refs = [plain(ref) for ref in evidence.split(",") if plain(ref)]
+        for ref in refs:
+            known = f"**{ref}**" in roadmap if TASK.match(ref) else (ROOT / ref).exists()
+            if not known:
+                raise SystemExit(
+                    f"00-overview.md §6.1: evidence {ref!r} of {plain(what)!r} not found"
+                )
+        if status == "planned" and not any(TASK.match(ref) for ref in refs):
+            raise SystemExit(f"00-overview.md §6.1: planned {plain(what)!r} names no roadmap task")
+        out.append(
+            Capability(plain(name), plain(what), plain(how), plain(where), places, status, refs)
+        )
+    if not out:
+        raise SystemExit("00-overview.md §6.1 has no capabilities")
+    return out
+
+
 # --- HTML --------------------------------------------------------------------------------------
 
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
@@ -364,6 +437,93 @@ def journey(status: dict[str, str], ms: list[Milestone], gate: str, today: str) 
     )
 
 
+CHIP = {"done": "ok", "partial": "part", "planned": "plan"}
+TODAY_GROUPS = (
+    ("done", "Works now"),
+    ("partial", "Works in part"),
+    ("planned", "Next"),
+)
+
+
+def reach_map(caps: list[Capability]) -> str:
+    """Capabilities × places, laptop to real board: how far each one reaches today."""
+    head = (
+        '<div class="rm-row rm-head"><span></span>'
+        + "".join(
+            f'<span class="rm-place"><b>{title}</b><small>{sub}</small></span>'
+            for _, title, sub in PLACES
+        )
+        + "</div>"
+    )
+    rows = []
+    for c in caps:
+        cells = "".join(
+            f'<span class="rm-cell"><i class="rm-dot {c.reach[key]}" '
+            f'title="{html.escape(f"{c.name} — {title}: {STATE_TEXT.get(c.reach[key], c.reach[key])}")}">'
+            "</i></span>"
+            if key in c.reach
+            else '<span class="rm-cell"><i class="rm-none"></i></span>'
+            for key, title, _ in PLACES
+        )
+        rows.append(
+            f'<div class="rm-row {c.status}"><span class="rm-name">{html.escape(c.name)}</span>'
+            f"{cells}</div>"
+        )
+    foot = (
+        '<div class="rm-row rm-foot"><span>works here</span>'
+        + "".join(
+            f'<span class="rm-count">{sum(c.reach.get(key) == "done" for c in caps)}</span>'
+            for key, _, _ in PLACES
+        )
+        + "</div>"
+    )
+    on_board = sum(c.reach.get("board") == "done" for c in caps)
+    waiting = sum(c.reach.get("board") in ("planned", "partial") for c in caps)
+    note = (
+        f"{on_board} capabilities run on a real board yet; {waiting} wait for one."
+        if on_board
+        else f"Nothing runs on a real board yet: {waiting} capabilities wait for one."
+    )
+    legend = (
+        '<div class="rm-legend"><span><i class="rm-dot done"></i>works</span>'
+        '<span><i class="rm-dot partial"></i>in part</span>'
+        '<span><i class="rm-dot planned"></i>planned</span>'
+        '<span><i class="rm-none"></i>does not apply</span></div>'
+    )
+    return (
+        f'<div class="fig rm" aria-label="Where each capability runs, laptop to real board">'
+        f"{legend}{head}{''.join(rows)}{foot}</div>"
+        f'<p class="cap rm-note">{html.escape(note)}</p>'
+    )
+
+
+def today_block(caps: list[Capability], updated: str) -> str:
+    counts = {key: sum(c.status == key for c in caps) for key, _ in TODAY_GROUPS}
+    summary = (
+        f'<p class="today-sum"><b>{counts["done"]}</b> things work now, <b>{counts["partial"]}</b> '
+        f"in part, <b>{counts['planned']}</b> next · as of {en_date(updated)}</p>"
+    )
+    groups = []
+    for key, title in TODAY_GROUPS:
+        cards = "".join(
+            f'<article class="ability {c.status}"><h3>{html.escape(c.what)}</h3>'
+            f'<div class="ab-try"><span class="k">Try</span><code>{html.escape(c.how)}</code></div>'
+            f'<div class="ab-where"><span class="k">Runs on</span>{html.escape(c.where)}</div>'
+            f'<div class="ab-ev"><span class="k">Evidence</span><span class="ab-refs">'
+            + "".join(f"<code>{html.escape(ref)}</code>" for ref in c.evidence)
+            + "</span></div></article>"
+            for c in caps
+            if c.status == key
+        )
+        if cards:
+            groups.append(
+                f'<div class="ab-group {key}"><h3 class="ab-h"><span class="chip {CHIP[key]}">'
+                f"{title}</span> {counts[key]}</h3>"
+                f'<div class="ab-grid">{cards}</div></div>'
+            )
+    return summary + reach_map(caps) + "".join(groups)
+
+
 def blocks() -> dict[str, str]:
     lines = ROADMAP.read_text(encoding="utf-8").splitlines()
     status = roadmap_status(lines)
@@ -380,6 +540,7 @@ def blocks() -> dict[str, str]:
     out = {
         "pulse": pulse(status, ms, gate, date.fromisoformat(updated)),
         "journey": journey(status, ms, gate, updated),
+        "today": today_block(capabilities("\n".join(lines)), updated),
     }
     out.update({f"layer-{n}": layer(n, by_id) for n in LAYERS})
     out.update({f"inc-{i}": f"{a} / {b}" for i, inc in by_id.items() for a, b in [inc.counts]})
@@ -398,7 +559,7 @@ def render(page: str) -> str:
         return m.group(1) + content[key] + m.group(4)
 
     out = BLOCK.sub(fill, page)
-    required = {"pulse", "journey", *(f"layer-{n}" for n in LAYERS)}
+    required = {"pulse", "journey", "today", *(f"layer-{n}" for n in LAYERS)}
     if required - seen:
         raise SystemExit(f"{TARGET.name} lost its generated blocks: {sorted(required - seen)}")
     return out
