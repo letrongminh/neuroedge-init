@@ -4,7 +4,7 @@
 frozen in `schemas/tool-call.v1.json` and `schemas/tool-result.v1.json` (RFC-0015, §1, §4, §9). Decisions:
 Q-24, Q-25, Q-26, Q-27, Q-58, Q-66 (`neuroedge-prd.md` §15).
 **Source code:** `python/neuroedge/actions/tools.py` (dispatch), `python/neuroedge/mcp_server.py`
-(MCP server), `python/neuroedge/mcp_http.py` (MCP server network port, §8.1), `python/neuroedge/mcp_host.py` (System 2 as MCP client),
+(MCP server), `python/neuroedge/mcp_http.py` (MCP server network port, §8.1), `python/neuroedge/mcp_host.py` (System 2 as MCP client; legacy, behind `NEUROEDGE_LEGACY_SYSTEM_TWO`, Q-83, DP-A-08),
 `python/neuroedge/sim/session.py` (grammar, System 2 loop).
 
 This document is the **sole** definition of tool calling in NeuroEdge. Other documents link
@@ -473,7 +473,7 @@ Compliance corpus licensing not yet under Apache-2.0: `TODOS.md` #57.
 
 ## 10. NeuroEdge as MCP Client (Q-27)
 
-System 2 acts as an **MCP host**: every tool it invokes routes through an MCP client
+System 2 acts as an **MCP host** (legacy: only with `NEUROEDGE_LEGACY_SYSTEM_TWO=1`, Q-83, DP-A-08): every tool it invokes routes through an MCP client
 (`ToolHost`, `python/neuroedge/mcp_host.py`), connecting to two server categories:
 
 ```text

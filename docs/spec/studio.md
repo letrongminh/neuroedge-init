@@ -1,6 +1,6 @@
 # `neuroedge studio` — local web application for all capabilities on a laptop
 
-**Trạng thái:** spec for TSK-I1-04 (Q-51). Approved layout: [`wireframe/studio-v1.html`](../../wireframe/studio-v1.html).
+**Trạng thái:** Paused (Q-72, TSK-I1-04); this contract still binds the existing code (`python/neuroedge/studio/`). Spec for TSK-I1-04 (Q-51). Approved layout: [`wireframe/studio-v1.html`](../../wireframe/studio-v1.html).
 This is the **contract** between the server (`python/neuroedge/studio/`) and the page (`python/neuroedge/studio/assets/`): routes,
 JSON shapes, safety rules. Code that changes the contract must update this file in the same PR.
 
@@ -11,7 +11,7 @@ neuroedge studio [--agent agent.toml] [--port 8765] [--no-browser] [--mic [--hal
 ```
 
 - Target `sim` only (the page displays the simulated device). Default agent is as in `run`.
-- `--mic`: laptop microphone listening session right from the start (TSK-I4-04, Q-50); the microphone button on the page only **mutes/unmutes** the microphone
+- `--mic`: laptop microphone listening session right from the start (frozen voice surface: TSK-I4-04 removed, Q-77; Q-50); the microphone button on the page only **mutes/unmutes** the microphone
   (replaces frames with silence), without opening/closing the device. Without `--mic`, the voice screen explains how to enable it.
 - Ctrl-C ⇒ exit code 0, closes microphone/speaker.
 
@@ -58,7 +58,7 @@ All successful responses have `"ok": true`.
 | `GET /api/device` | `{firmware: {built: bool, dir?, files?}, screens: [{name, langs: ["vi","en"]}], golden: {checked?: "66/66"}, qemu: {selftest?, trace_done?, log?} \| null, ota: {phases: [{phase, markers: [..], ok}]} \| null, hint}` | `api_device` |
 | `POST /api/device/build` | `{built, dir, files, checked}` — same as `build --target esp32s3 --board esp32s3-box-3` (generates ESP-IDF project, does not compile) | `api_device` |
 | `GET /api/device/golden/<lang>/<name>.png` | PNG image (`image/png`); `lang` ∈ `vi`,`en`; `name` must exist in `screens` | `api_device` |
-| `GET /api/voice` | `{enabled, running, muted, half_duplex, state, counters: {turns, barge_in, stt_unavailable, cancelled}, devices: {input, output}, error?}` (`error`: only present when voice session stopped due to device error, 3-part shape) | `voice` |
+| `GET /api/voice` (frozen voice surface, Q-77) | `{enabled, running, muted, half_duplex, state, counters: {turns, barge_in, stt_unavailable, cancelled}, devices: {input, output}, error?}` (`error`: only present when voice session stopped due to device error, 3-part shape) | `voice` |
 | `POST /api/voice/mute` body `{"muted": bool}` | same as `GET /api/voice` | `voice` |
 
 ## 5. Screens and data sources

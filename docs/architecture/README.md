@@ -39,7 +39,7 @@ Q-77 (2026-10-12) consolidated this suite from 17 down to 10 chapters: context i
 | [`06-runtime-flows.md`](vi/06-runtime-flows.md) | Runtime flows: keystroke turns, confirmation, MCP, models, replay, boot, OTA | Dynamic |
 | [`07-data-contracts.md`](vi/07-data-contracts.md) | All file formats and wire formats, versioning scheme | Data |
 | [`10-target-equivalence.md`](vi/10-target-equivalence.md) | Why the same gate yields the same verdict on `sim`, `linux`, `esp32s3`; §7 porting HAL to a new board | Cross-cutting · Guide |
-| [`15-target-architecture.md`](vi/15-target-architecture.md) | Target architecture: v1.0, range Q-72 → Q-83 (operator agent, Blueprint, brain, optional cloud, two deployment profiles), variation points, architecture debt | To-be |
+| [`15-target-architecture.md`](vi/15-target-architecture.md) | Target architecture: v1.0, range Q-72 → Q-88 (operator agent, Blueprint, brain, optional cloud, two deployment profiles, missions, Blueprint packaging), variation points, architecture debt | To-be |
 | [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Participating parties, shared assets, platforms, and commercial boundaries | System Landscape |
 
 ## Conventions

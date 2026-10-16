@@ -183,7 +183,7 @@ stateDiagram-v2
 ```
 
 No fallback can run for a model-decided criterion ⇒ `BLOCK` with `gate_unreachable`
-(Q-14, I4 exit criterion 3).
+(Q-14).
 
 ## 6. Voice
 
@@ -335,12 +335,12 @@ Each step is a requirement of [`docs/spec/deployment_profiles.md`](../../spec/de
 
 ## 10. Planned Flows
 
+On-chip voice and multi-node flows left the roadmap (Q-77): roadmap §6.
+
 | Flow | Increment | Target Architecture |
 |:---|:---|:---|
-| On-chip voice turn | I5 | [`15`](15-target-architecture.md) §2.2 |
 | Physical safety envelope rejection | I2a | [`15`](15-target-architecture.md) §4.2 |
 | Event-triggered call source (`call_source = "trigger"`, TSK-N6-*) | I2d (moved from I4a per Q-72) | [`15`](15-target-architecture.md) §4.2 |
-| Multi-node intents and loss of communication | I14 | [`15`](15-target-architecture.md) §4.3 |
 | Vision facts | I2a, I3a | [`15`](15-target-architecture.md) §4.4 |
 | Mission contract lifecycle, proactive alerts, commands and approval via chat (`planned · Q-72`) | I2d | §11 below; [`15`](15-target-architecture.md) |
 | Install a NeuroEdge Blueprint (`planned · Q-72`) | I2e | §11.5 below; [`15`](15-target-architecture.md) |

@@ -7,7 +7,7 @@
 | **Related PRD Requirements** | FR-TGT-08, FR-HAL-01, FR-HAL-04, FR-HAL-05 |
 | **Author** | V1 — Platform Core Engineer |
 | **Date Opened** | 2026-09-22 · scope narrowed 2026-09-23 after review (minutes: `docs/archive/rfc-0002-review-record.md` (deleted; `git show 7626b62:docs/archive/rfc-0002-review-record.md`)) |
-| **Status** | ✅ Approved (2026-10-04) — lead architect signed per Q-67 (decision 4); implemented in I2c (§10) |
+| **Status** | ✅ Approved · ⏸ implementation removed from roadmap (Q-77, TSK-V1a-02) |
 | **Approver** | **Lead Architect — mandatory.** RFC does not make gates more lax, but touches three test invariants protecting target equivalence (§5), and Block V1a Exit Criterion 1 requires lead architect sign-off (`docs/architecture/vi/15-target-architecture.md` §4.4) |
 | **Verification** | *(none yet — belongs to the second pull request, now in increment I2c (Q-67; previously I11 after Developer Beta per Q-40), see §8 and §10)* |
 

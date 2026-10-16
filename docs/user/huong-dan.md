@@ -103,7 +103,7 @@ Capabilities requiring additional libraries are split into extras, installed as 
 | `neuroedge[mcp]` | MCP server, Claude Desktop, external MCP servers for System 2 | §4.6, §4.4 |
 | `neuroedge[cloud]` | Real LLMs for System 2 (LiteLLM) | §4.4 |
 | `neuroedge[linux]` | Real GPIO pins on Linux (libgpiod) | §5.1 |
-| `neuroedge[audio]` | Real microphone and speaker on Linux (sounddevice) | §5.1 |
+| `neuroedge[audio]` | Real microphone and speaker on Linux (sounddevice) — voice was removed from the roadmap (Q-77, roadmap §6); the host code still ships | §5.1 |
 | `neuroedge[wake]` | Wake-word via openWakeWord (your model) | §4.5 |
 | `neuroedge[serial]` | Read traces over board serial port | §5.2 |
 
@@ -118,6 +118,8 @@ or `esp32s3` are noted explicitly. Each section covers: what it does · requirem
 the extra name (`neuroedge[mcp]`…); list of extras is in §3.
 
 ### 4.0 NeuroEdge Studio: all capabilities on one page
+
+> Studio is paused (Q-72, TSK-I1-04); the command still works.
 
 `neuroedge studio` launches a local web application (`127.0.0.1` only, no network required) with seven screens: live session (typing,
 and speaking via microphone with `--mic`), gates and quick scratchpad, traces and replay, verification (`verify`), ESP32-S3 device
@@ -287,6 +289,8 @@ Both merely propose action invocations; gates make decisions.
 
 ### 4.5 Voice: speaking to the agent
 
+> Voice was removed from the roadmap (Q-77, roadmap §6); the host code still ships.
+
 **Capabilities**
 
 - **Speaking via WAV file** (`run --voice-file cau-noi.wav`, or `record --voice-file …`): audio passes voice
@@ -295,7 +299,7 @@ Both merely propose action invocations; gates make decisions.
   on `sim` and `linux`.
 - **Speaking via laptop microphone, real-time** (`run --mic`, `sim` only, requires `neuroedge[audio]`): wear headphones to
   support barge-in; using external speakers requires `--half-duplex` (microphone muted while agent speaks, disabling barge-in). First run on
-  macOS requests terminal microphone permissions. Scenario: `demo/i4-thoai-laptop/`.
+  macOS requests terminal microphone permissions. The scenario folder was removed (Q-77, see git history).
 - **STT/TTS via all OpenAI audio compliant providers** — OpenAI, Groq, OpenRouter, faster-whisper, Kokoro… — configured
   via `base_url` in `[stt]` / `[tts]`; servers returning raw PCM (OpenRouter) declare `format = "pcm"` and `sample_rate_hz`. Built-in fake providers allow keyless testing (§6.6).
 - **Barge-in**: user speaks while speaker is active ⇒ speaker stops, and all commands not yet dispatched to pins are cancelled.
@@ -500,6 +504,8 @@ Fully quit Claude Desktop and restart, ask it to "bật quạt" (turn on the fan
 does not update, see §7.
 
 ### 6.6 Speaking to agent via WAV file — keyless
+
+> Voice was removed from the roadmap (Q-77, roadmap §6); the host code still ships.
 
 Create `home-voice` agent, then add two configurations to `agent.toml`:
 

@@ -34,7 +34,7 @@ Every step can be used even if you do not have hardware yet: stopping at any ste
 ### Step 0. Install
 
 ```bash
-pip install neuroedge            # or: cd python && pip install -e '.[dev]'
+cd python && pip install -e '.[dev]'    # from source; PyPI only from I6 (Q-39)
 neuroedge board list             # shows sim-default, sim-rpi5, linux-rpi5, esp32s3-box-3
 ```
 

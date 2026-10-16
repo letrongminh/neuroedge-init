@@ -24,7 +24,7 @@ the **box** (NeuroEdge, this repository); the contract between them; installatio
 the single-chip firmware image; the local page that answers the device's questions.
 Out of scope: gate semantics (`core_contracts.md`), the NETR layout (RFC-0003, RFC-0009), the
 `trace.v1` schema, NeuroClaw's own channels and providers (`docs/reference/capabilities.md` in
-that repository).
+the NeuroClaw repository `letrongminh/neuroclaw`, not in this one).
 
 ### 1.3 Definitions
 

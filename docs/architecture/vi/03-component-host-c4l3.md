@@ -52,27 +52,25 @@ Four rules, each a deliberate architectural choice:
 
 ### 2.1 Planned packages
 
-The following packages are planned in future architecture but have no code in the repository today:
+Packages in this section have no code in the repository today, or were removed from the plan:
 
-- `lab/` (I4a, NeuroEdge Lab — Q-71): lab mode MCP tools — actuator tools (gated `@action`) and authoring tools (board view, workbench ledger, draft submission and grading, replay) — along with `neuroedge lab check` shared with Action CI; contains no LLM loops. Complies with Invariant B-1 — physical actuation occurs strictly via `dispatch()` and gates, never calling HAL directly, enforced by AST and import scanning tests (`docs/spec/lab_mcp.md` §1.4 "Seven principles"; TSK-N1-07, `tests/test_lab_boundary.py`) — see [`15`](15-target-architecture.md) §4.2.
-- `perception/vision/` and `sim/vision/` (I2a, TSK-V1b-*): vision pipeline and vision simulation; vision serves as an L2 input, entering gates as facts declared by makers (Q-54) — see [`15`](15-target-architecture.md) §4.4.
-- `services/fleet/` and `services/registry/` (I9–I10, TSK-K2, TSK-K3): server-side services for Fleet OS (staged OTA orchestration, MQTT broker, telemetry) and Gate Registry (OCI registry via ORAS/Harbor, metering) — see [`15`](15-target-architecture.md) §3.1, §3.2.
+- Removed from the roadmap (Q-77, Q-88): `lab/` (NeuroEdge Lab), `services/fleet/` and `services/registry/` (Fleet OS, Gate Registry) — see roadmap §6. `perception/vision/` and `sim/vision/` (TSK-V1b-*) already exist and are described in §3.5 and §3.6.
 
 The operator agent and NeuroEdge Blueprint of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) add five packages (`planned · Q-72`; no code yet, package names are proposed):
 
 | Package | Increment | Responsibility | Allowed dependencies (planned) |
 |:---|:---:|:---|:---|
-| `mission/` | I2d | Mission contracts (`mission.v1`, pending RFC): load, conflict check, compiler lowering clauses across tiers (only devices with `ne_gate` have reflex tier; Home Assistant devices terminate at host and approval explicitly states so), deterministic approval summary ≤ 5 lines from structured diff | `engine`, `hal` (reads `board.v1`, including `safe_state`), tier 0 |
+| `mission/` | I2d | Mission contracts per `docs/spec/missions.md` (Q-87; `mission.v1`, pending RFC): load, conflict check, compiler lowering clauses across tiers (only devices with `ne_gate` have reflex tier; Home Assistant devices terminate at host and approval explicitly states so), deterministic approval summary ≤ 5 lines from structured diff | `engine`, `hal` (reads `board.v1`, including `safe_state`), tier 0 |
 | `agent/` | I2d | 24/7 runtime core: scheduler, deterministic detectors, `llm_budget`, message budget, LLM worker supervisor; wall-clock facts carry `unsynced` status | `mission`, `actions`, `engine`, tier 0 |
 | `channels/` | I2d | Chat channel adapters (Telegram first) and approval record check `{id, nonce, expiration, digest}`; inbound commands become `ToolCall` | **only** `actions` (enters `dispatch()` and confirmation path), `egress`, tier 0 — **never imports `hal`** |
-| `blueprint/` | I2e | `blueprint pack`/`install`: downloads by URL, verifies full bundle digest, then runs `gate lint` on all gates in bundle | `engine`, `mission`, tier 0 |
+| `blueprint/` | I2e | Per `docs/spec/blueprint.md` (Q-86): `blueprint pack`/`install`: downloads by URL, verifies full bundle digest, then runs `gate lint` on all gates in bundle | `engine`, `mission`, tier 0 |
 | `egress/` | I2d | Data egress: sends only to declared destinations, blocks and traces undeclared destinations | tier 0 |
 
 Layer rules for this group strictly follow rules 2 and 3 above: `channels/` and the LLM worker only touch devices via
 `dispatch()` → gate; no package other than `actions` both calls `evaluate()` and touches pins. The LLM worker is a
 separate process, not a package in core ([`02`](02-container-c4l2.md) §3).
 
-When `lab/` enters the repository, it requires an entry in `ALLOWED` (and `LAZY` if lazy imports are used) in [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). The five Q-72 packages follow the same rule: each adds an `ALLOWED` entry when coded, and tests should assert `channels` contains no `hal` in its set, just as tests today assert `ALLOWED["hal"]`. `perception/vision/` and `sim/vision/` belong to existing `perception` and `sim` units and do not need new entries; `services/` (including `services/metering/engine.py`, TSK-K3-02) lives outside the `neuroedge` package and is not scanned by this test.
+When one of them enters the repository, it requires an entry in `ALLOWED` (and `LAZY` if lazy imports are used) in [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). The five Q-72 packages follow the same rule: each adds an `ALLOWED` entry when coded, and tests should assert `channels` contains no `hal` in its set, just as tests today assert `ALLOWED["hal"]`. `perception/vision/` and `sim/vision/` belong to existing `perception` and `sim` units and do not need new entries.
 
 ## 3. Component catalog
 
@@ -118,6 +116,9 @@ When `lab/` enters the repository, it requires an entry in `ALLOWED` (and `LAZY`
 | `sim.py` | `SimHAL`: virtual pins, sensors, display, microphone, speaker; timed commands and cancellation on barge-in |
 | `linux.py` | `LinuxHAL`, `TypedLinuxHAL`: GPIO lines via libgpiod v2 looked up by name; preflight check on all devices before claiming lines; releases all lines on exit |
 | `sysfs.py` | hwmon and IIO sensors, looked up by label; never returns default values |
+| `virtual_board.py` | `sim-virtual` (Q-84 phase A, `docs/spec/virtual_parts.md` §3.1): board built in memory from the reference sim board plus what the agent declares; `sim` only, label `risk=virtual_board` |
+| `pin_map.py` | Per-board pin map `[targets.<board>.pins]` (Q-84 phase A+, VP-PM-*): renames mapped pins in the board declaration so an agent keeps its pin names from `sim` to a real board |
+| `parts.py`, `parts.toml` | Parts catalogue and `[sim.parts]` (Q-84 phase B, VP-PT-*): each kind names an existing HAL primitive and adds no behaviour; `parts.toml` is the one place listing kinds |
 | `framebuffer.py` | In-memory display or `/dev/fbN` |
 | `audio.py` | Standard library: WAV read/write, energy VAD, 20 ms frames, speaker timeline |
 
@@ -137,19 +138,25 @@ When `lab/` enters the repository, it requires an entry in `ALLOWED` (and `LAZY`
 | `voice_fsm.py` | Five-state conversation state machine (`IDLE`, `LISTENING`, `THINKING`, `SPEAKING`, `BARGE_IN`) per `docs/spec/voice_fsm.md`; never evaluates gates or touches pins |
 | `voice_session.py` | Places state machine in front of a `SimSession`: audio frames → VAD or wake word → STT → same path as typed commands; virtual time |
 | `providers/` | OpenAI-standard STT/TTS, wake words (openWakeWord or adapter), mock providers for testing |
+| `vision/` | Vision pipeline (TSK-V1b-03, RFC-0012 §3c–§3e, `docs/spec/vision.md`): frames in, typed facts out; the model is untrusted, its labels are domain-checked and its confidence is the gate's to threshold (Q-54) |
 
 ### 3.6 `sim/`, MCP, `testing/`, `viz/`, `cli/`
 
 | Component | Responsibility |
 |:---|:---|
 | `sim/session.py` | `SimSession`: assembly locus for an agent on `sim` or `linux`; processes turns (`handle`), tool calls (`call_tool`), confirmation responses |
+| `sim/vision/` | `vision.in` on `sim` (TSK-V1b-02): `VirtualCamera` and `VisionFeed`, camera frames to gate facts, fail-closed |
 | `sim/ui.py` | `SessionServer`: same-session web UI, SSE, same-origin verification |
 | `sim/serve.py` | Shared MCP serving loop: `neuroedge mcp serve` and `neuroedge.serve_mcp` (public Python function, `docs/spec/python_api.md`) both call `run_stdio`; `mcp serve --http` calls `run_http`, with identical session shutdown |
 | `mcp_server.py` | Agent as stdio MCP server; one call at a time |
 | `mcp_http.py` | Authenticated network door for the same server (TSK-P2-04, `docs/spec/tool_calling.md` §8): Streamable HTTP over mTLS, per-device OAuth 2.1 token, preflight config verification before opening port; tokens at most 7 days, `--revoked` certificate list read again on change (DP-A-04, DP-A-11) |
+| `proxy_mcp.py` | `neuroedge proxy mcp` (TSK-I2c-14): an existing MCP server (Home Assistant's, any stdio server) put behind a `Guard`; the real server is reached only inside a tool's `run`, after the gate said ALLOW |
+| `proxy_http.py` | `neuroedge proxy http` (TSK-I2c-15): a local HTTP API behind a `Guard`; each route of `[[proxy.http.routes]]` is a tool, the original request is forwarded only after ALLOW |
+| `install.py` | `neuroedge install --profile full` (Q-83, DP-A-09): Profile A on one machine, two OS users, keys and pairing set up in one command |
+| `paths.py` | Repository layout discovery: finds `schemas/`, `gates/`, `boards/`, `fixtures/`, `targets/` in a checkout, an editable install or a wheel (`neuroedge/_data/`) |
 | `isolation.py` | `neuroedge doctor` (Q-83, DP-A-03): the brain's OS user in no device group, opening no device node, reading no key, `/proc` with `hidepid=2`; fails closed |
 | `pairing.py` | `neuroedge pair init / renew / rotate` (Q-83): CA, box and brain certificates, token signing key, brain tokens of at most 7 days, revocation list (`docs/spec/deployment_profiles.md` DP-A-04, DP-A-11) |
-| `mcp_host.py` | System 2 as MCP host: device tools via agent's own MCP server (still gated), external info tools from allowlist |
+| `mcp_host.py` | *Legacy, off by default (Q-83).* System 2 as MCP host: device tools via agent's own MCP server (still gated), external info tools from allowlist |
 | `guard.py` | `Guard`, `Tool`, `Dispatcher`, `guard.toml`: gate → token → envelope → trace without `agent.toml`; all bridge `dispatch` calls serialized under a lock (traces must form a sequential step sequence for replay) |
 | `sdk/` | `ToolRequest` (no `source`), `Outcome`, `SDK_VERSION`, Protocol `Actuator`, `Command`, `DeviceDouble`, and four plugin errors |
 | `plugins/` | Entry point loader (actuator type only), `[actuators]` declaration + `check_actuators`, `neuroedge conformance` (`docs/spec/extension_sdk.md` §6–§8) |

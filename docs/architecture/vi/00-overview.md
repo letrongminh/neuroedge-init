@@ -27,7 +27,7 @@ is recorded into a replayable **trace** ([trace](../../user/thuat-ngu.md)). The 
 Linux (`linux`), and on the ESP32-S3 chip (`esp32s3`).
 
 **Direction decided, no code yet (`planned · Q-72`).** [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) places the above core into three loops: ① **build** —
-existing user MCP clients write contracts via NeuroEdge Lab (Q-71); ② **run** — an *operator agent*
+existing user MCP clients write contracts through the standard MCP tool set (TSK-I2d-23; Q-77, Q-88); ② **run** — an *operator agent*
 runs continuously on the home machine, executing **mission contracts** and reporting or asking for approval via chat channels
 (I2d); ③ **share, sell** — a **NeuroEdge Blueprint** packages kit, firmware, template contracts, detectors,
 and traces as evidence, installable with one command (I2e). A NeuroEdge Blueprint differs from a **Home Assistant
@@ -47,7 +47,7 @@ promise has an architectural mechanism upholding it. When a design decision weak
 | 2 | **When unsure, do not act.** Network down, stale sensor, frozen camera, model unresponsive ⇒ block | Fail-closed in all directions (Invariant 2); only commands moving actuators toward safe state are always allowed (Q-62) | Device stops or asks again, does not guess |
 | 3 | **One contract everywhere.** Testing on a laptop is identical to running on a $5 chip | Same gate file, pure resolution, two Python and C implementations of the same specification ([`10`](10-target-equivalence.md)) | `neuroedge verify` yields identical verdicts on `sim`, `linux`, `esp32s3` |
 | 4 | **Evidence instead of promises.** Every incident can be reproduced on a developer's machine | All facts, verdicts, pin commands recorded into traces; replay recalculates without calling models ([`06`](06-runtime-flows.md) §7) | `neuroedge replay`, `gate explain`, Action CI in PRs |
-| 5 | **Humans retain final authority.** Models and other agents cannot confirm on a human's behalf; nor can anyone override a physical measurement | `ask` can only be answered by a person at the device (Q-26); drafts written by MCP clients via NeuroEdge Lab require human approval, no tool can lock them (Q-71); numeric criteria forbidden in `confirms` (Q-62) | Confirmation prompt on `--ui` page, via voice or button press |
+| 5 | **Humans retain final authority.** Models and other agents cannot confirm on a human's behalf; nor can anyone override a physical measurement | `ask` can only be answered by a person at the device (Q-26); drafts written by MCP clients through the standard tool set (TSK-I2d-23) require human approval, no tool can lock them (Q-71); numeric criteria forbidden in `confirms` (Q-62) | Confirmation prompt on `--ui` page, via voice or button press |
 | 6 | **Plugs into other stacks, does not consume the whole stack.** NeuroEdge is a contract layer, not a closed platform | MCP is the entry door; models and voice are replaceable providers (P-4); schemas, specifications, compliance harnesses under Apache-2.0 (Q-45); network MCP authenticated at launch milestone (Q-58) | Claude, Home Assistant, or agent frameworks call devices through gates |
 
 **Will change under Q-72 (pending conditional safety RFC, `planned · Q-72`, I2d).** Promise 2: "safe state"
@@ -236,7 +236,7 @@ Principle statements are in PRD §1.5; this table identifies the **architectural
 |:---|:---|:---|
 | **P-1** Physical action is a typed contract | A single path `dispatch()` → `c.do()` → gate → token → HAL; HAL without token ledger rejects all commands | [`05`](05-code-gate-hal-c4l4.md) · `actions/`, `hal/` |
 | **P-2** Peer execution environments | Same gate file, same evaluation semantics on host (Python) and chip (C); `verify` compares verdicts across targets; verification commitment by target tier (FR-TGT-08, Q-13) | [`10`](10-target-equivalence.md) |
-| **P-3** Value lies in fleet management and commercial licensing | Safety core sits entirely within `neuroedge` package; services (Fleet OS) are separate containers, no code yet | [`02`](02-container-c4l2.md) §5 |
+| **P-3** Value lies in the safety core and commercial licensing | Safety core sits entirely within `neuroedge` package; fleet services were removed from the roadmap (Q-77; roadmap §6) | [`02`](02-container-c4l2.md) §5 |
 | **P-4** AI models are replaceable | All models behind `FactSource` protocol / providers; STT/TTS are also replaceable providers via config; chip only records/plays audio and evaluates gates (PRD §1.5 P-4); no SDK imported in core | [`03`](03-component-host-c4l3.md) §3.4 |
 | **P-5** Network effects from policy sharing | Gates are versioned data, identified by `neuroedge://`, hashed with JCS SHA-256, inheritance only tightens | [`07`](07-data-contracts.md) §2 |
 
@@ -268,17 +268,15 @@ NeuroEdge has three parts, plus the CI pipeline that keeps them aligned:
 
 | Part | What it is | Language | Status |
 |:---|:---|:---|:---|
-| **Package `neuroedge`** (host) | SDK, CLI, gate engine, `sim`/`linux` HAL, models, voice (from WAV files `done`, real-time voice sessions `partial` — [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) I4), MCP, Action CI | Python 3.11+ | `done` (real-time voice `partial` — roadmap I4) |
+| **Package `neuroedge`** (host) | SDK, CLI, gate engine, `sim`/`linux` HAL, models, voice (from WAV files and the laptop microphone `done`; further voice work was removed from the roadmap, Q-77 — [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §6), MCP, Action CI | Python 3.11+ | `done` |
 | **Firmware `esp32s3`** | `NETR` walker, token ledger, UART trace, generated components for agents, signed OTA | C99 on ESP-IDF v5.4 | `partial` — runs on QEMU; pins not yet driven |
 | **Data contracts** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, UART stream | JSON Schema, TOML, binary | `done`, frozen via RFC |
 | **CI** | Python tests, gpio-sim, QEMU, golden images, OTA, security | GitHub Actions | `done` |
 | **Operator agent** (home box) | Two processes: **trusted runtime** running 24/7 (HAL, gates, mission contracts, scheduler, deterministic detectors, chat channel adapter and approval check, data egress) and **untrusted LLM worker** (holds BYOK keys, calls runtime via local MCP, never approves) — [`02`](02-container-c4l2.md) §3 | Python | `planned · Q-72` (I2d) |
 | **NeuroEdge Blueprint** | Kit + firmware + template contracts + detectors + trace evidence bundle; `blueprint pack`/`install` downloads by URL and verifies full-bundle digest; Hub is static index repository | Files, git/HTTPS | `planned · Q-72` (I2e) |
 
-Two parts have no code today and only appear in `planned` status: **Fleet OS** (I9) and **Gate
-Registry** (I10). Q-72 adds three `planned` parts in the table above and external to the machine: operator agent (I2d), NeuroEdge
-Blueprint with Hub index (I2e), and optional cloud relay (`planned · Q-72`, outside I2d/I2e). All other planned items (four extended primitive packages, NeuroEdge Lab via MCP, multi-node robotics, vision on Jetson) are in
-roadmap §0.5.
+Q-72 adds three `planned` parts in the table above and external to the machine: operator agent (I2d), NeuroEdge
+Blueprint with Hub index (I2e), and optional cloud relay (`planned · Q-72`, outside I2d/I2e). Fleet OS, Gate Registry, NeuroEdge Lab, multi-node robotics and Jetson were removed from the roadmap (Q-77, Q-88); they are listed in roadmap §6.
 
 ### 5.1 Five-layer logical model
 
@@ -286,9 +284,9 @@ The 5-layer logical model of NeuroEdge (§5.1) is spanned horizontally by the Ac
 
 | Layer / Axis | Layer nature (§5.1) | Implemented by host packages (`03` §2) and firmware components (`04`) | Status |
 |:---|:---|:---|:---|
-| **L4: Agent Application Layer** | Agent logic, gated tool calls (MCP); the LLM agent itself is the NeuroClaw brain (Q-83) | `mcp_server`; `mcp_host` and System 2 in `models/` are legacy, off by default (DP-A-08) | `done` |
+| **L4: Agent Application Layer** | Agent logic, gated tool calls (MCP); the LLM agent itself is the NeuroClaw brain (Q-83) | `mcp_server`; `mcp_host` and System 2 in `models/` are legacy, off by default (Q-83, DP-A-08) | `done` |
 | **L3: Action Contract Engine** (core IP) | Typed gate evaluation, policy inheritance, fail-closed circuit breaker | `engine/`, `actions/` (one-time token ledger), `ne_gate` (`ne_walker.c`, `ne_token.c`), `ne_agent` | `done` (host and QEMU) |
-| **L2: Perception & Conversation Runtime** | Wake-word detection, neural VAD, AEC echo cancellation, low-latency STT/TTS, real-time conversation state machine (Q-48) | `perception/` (state machine, wake, STT/TTS), `hal/audio.py` (`EnergyVAD`), `models/` (System 1/2, grammar, knowledge) | `partial` — voice from WAV files and cloud STT/TTS `done`; real-time sessions, AEC (Q-22), remaining real wake-word models (roadmap I4) |
+| **L2: Perception & Conversation Runtime** | Wake-word detection, neural VAD, AEC echo cancellation, low-latency STT/TTS, real-time conversation state machine (Q-48) | `perception/` (state machine, wake, STT/TTS), `hal/audio.py` (`EnergyVAD`), `models/` (System 1/2, grammar, knowledge) | `done` for voice from WAV files, cloud STT/TTS and the laptop microphone; AEC (Q-22) and further real-time work removed from the roadmap (Q-77), host code stays |
 | **L1: Hardware Abstraction Layer (HAL)** | 5 fundamental primitives v1.x (`audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display`), compile-time capability contract checking | `hal/` (board checking, API); firmware HAL on chip | `done` (`hal/` on host); `planned` on chip (TSK-S4-01) |
 | **L0: Peer Execution Environments** | Concrete implementations per target (`sim`, `linux`, `esp32s3`) | `hal/sim.py` (`SimHAL`), `hal/linux.py` (`LinuxHAL`), firmware for `esp32s3` in `targets/esp32s3/` (`sim/` package is both target `sim` (L0) and host-side assembly — `03` §2 tier 7) | `done` (`sim`, virtual `linux`); `partial` (`esp32s3` on QEMU) |
 | **Cross-cutting axis: Action CI** | Event recording (JSON) → Exact replay → Action reconciliation | `testing/` (`TraceRecorder`, `TracePlayer`, `GoldenComparator`), `trace.py` (`trace.v1`) and `engine/trace_sink.py` (`EventLog`), `cli` (`record`, `replay`, `verify`) | `done` |
@@ -304,8 +302,7 @@ To prevent readers from confusing the various layering and tiering systems in th
 | **C4 architecture levels** | L1…L4 | Four architecture visualization levels: L1 Context · L2 Container · L3 Component · L4 Code | C4 model (Simon Brown) · [`00`](00-overview.md) §9…[`05`](05-code-gate-hal-c4l4.md) |
 | **System logical layers** | L0…L4 | Five logical functional layers of the platform: L0 Target · L1 HAL · L2 Perception/Runtime · L3 Action Contract Engine · L4 Agent Application, along with Action CI axis | §5.1 |
 | **Package dependency tiers** | Tier 0…10 | Import order of host Python modules, preventing cyclic dependencies (Tier 0: `errors`, `paths`… Tier 10: `cli`) | [`03`](03-component-host-c4l3.md) §2 · `python/tests/test_architecture_layers.py` |
-| **Target commitment tiers** | Tier 1…3 | Core team hardware verification commitment level: Tier 1 (official: `sim`, `linux`, `esp32s3`), Tier 2 (extended: `jetson`), Tier 3 (community: `stm32`, `rp2350`) | PRD FR-TGT-08, Q-13 · §5.2 · [`15`](15-target-architecture.md) §4.1 |
-| **Robot layering tiers** | T0…T6 | Seven distributed robotics architecture tiers: T0 Hardware actuators/local safety · T1 Wire Zenoh-pico · T2 Safety black channel layer · T3 Per-node gates · T4 Unified trace · T5 MCP · T6 ROS 2 bridge | `docs/architecture/vi/15-target-architecture.md` §4.3 · [`15`](15-target-architecture.md) §4.3 |
+| **Target commitment tiers** | Tier 1…3 | Core team hardware verification commitment level: Tier 1 (official: `sim`, `linux`, `esp32s3`), Tier 2 (extended: `jetson`, removed from the roadmap by Q-77), Tier 3 (community: `stm32`, `rp2350`) | PRD FR-TGT-08, Q-13 · §5.2 · [`15`](15-target-architecture.md) §4.1 |
 
 ## 6. Current status by capability
 
@@ -352,8 +349,8 @@ roadmap task — `test_architecture_progress.py` checks both.
 | Gate: resolution, evaluation, tokens | `done` | `done` | `done` on host and QEMU |
 | Pin control | `done` (virtual) | `done` on gpio-sim | `planned` (TSK-S4-01) |
 | Sensors, display | `done` (virtual) | `done` on `i2c-stub`, `vkms` | `planned`; LVGL interface built only on host |
-| Voice (from WAV files) | `done` | `done` | `planned` (I5) |
-| Real-time voice (microphone) | `done` on laptop (`run --mic`, TSK-I4-04) | `partial` — device opening only | `planned` |
+| Voice (from WAV files) | `done` | `done` | removed (Q-77), roadmap §6 |
+| Real-time voice (microphone) | `done` on laptop (`run --mic`, TSK-I4-04) | `partial` — device opening only | removed (Q-77), roadmap §6 |
 | Cloud models (System 1, System 2) | `done` | `done` | Profile B: NeuroClaw-ESP calls the LLM from the chip; the box side only evaluates gates |
 | MCP | `done` | `done` | not applicable |
 | Traces, replay, verify | `done` | `done` | `done` (UART, QEMU) |
@@ -374,7 +371,7 @@ roadmap task — `test_architecture_progress.py` checks both.
   static git repository ([PRD §15](../../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
   LLMs), unlocked after demand gates if metrics require; rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
 - **Does not resell inference tokens** (`docs/architecture/vi/15-target-architecture.md` §3.4; PRD §1.4 N4). The provider abstraction layer is self-hosted in core; users operate and pay model providers directly.
-- **Does not implement SLAM or navigation** — only gates velocity commands via ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
+- **Does not implement SLAM or navigation**; robot bridges (ROS 2, Nav2) left the roadmap with Q-77 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14).
 - **No paid marketplace** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).
 - **No automated agent-to-agent payment** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-4).
 - **No custom wake-word training in v1.0** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §3).
@@ -393,7 +390,7 @@ Role-based reading roadmap is in [`README.md`](../README.md). Beginners start at
 > `python/neuroedge/perception/providers/`, `python/neuroedge/mcp_server.py`, PRD §2,
 > `docs/spec/threat_model.md`.
 
-**Purpose of this chapter:** This chapter describes NeuroEdge at the C4 L1 level (System Context). It answers the questions: *Who are the direct users of NeuroEdge? What external services does the system integrate with (LLMs, voice, MCP, embedded devices, robots)? Where do trust boundaries lie and what data is permitted to leave the machine?* Before reading, readers should grasp the overview at [`00`](00-overview.md). After this chapter, continue to [`02`](02-container-c4l2.md) to understand the structure of independently running processes and containers.
+**Purpose of this chapter:** This chapter describes NeuroEdge at the C4 L1 level (System Context). It answers the questions: *Who are the direct users of NeuroEdge? What external services does the system integrate with (LLMs, voice, MCP, embedded devices)? Where do trust boundaries lie and what data is permitted to leave the machine?* Before reading, readers should grasp the overview at [`00`](00-overview.md). After this chapter, continue to [`02`](02-container-c4l2.md) to understand the structure of independently running processes and containers.
 
 ### 9.1 Context diagram
 
@@ -412,8 +409,6 @@ index (I2e), optional relay (Q-72).
 | **Core and embedded engineer** | Generates firmware for agent, flashes to chip, compares verdicts across environments | `build --target esp32s3 · verify · record --port` | `done` (on QEMU) |
 | **Safety reviewer, QA** | Reads and approves gates without reading code; investigates a session from traces | `gate explain · trace view · replay` | `done` |
 | **OEM partner** | Declares a new board, ports HAL, proves equivalence | `board.toml`, compliance vectors | `partial` — see [`10`](10-target-equivalence.md) §7 |
-| **Fleet operator** | Manages fleets across 5 capabilities: identity provisioning, staged OTA updates & rollback, health monitoring and inventory, remote gate and config updates, incident trace collection; needed to update, monitor, and collect traces on hundreds or thousands of devices without manual flashing (`docs/architecture/vi/15-target-architecture.md` §3.1) | Fleet OS | `planned` (I9) — see [`15`](15-target-architecture.md) §3.1 |
-| **Tiered robot integration team** | Integrates multi-node systems via Zenoh bus, ROS 2 / Nav2 bridge; necessary to decouple centralized intent on SBC from local actuator safety on each MCU node ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) U6, Q-32, Q-34) | Node firmware, Zenoh router, ROS 2 bridge | `planned` — see [`15`](15-target-architecture.md) §4.3 |
 
 Two new user groups from Q-72 (`planned · Q-72`, I2e — Home Assistant and ESPHome maker communities as early users):
 
@@ -437,16 +432,13 @@ and build rejects any field resembling a key (`models/providers/common.py`).
 | **Voice provider** | STT, TTS | OpenAI-standard `POST {base_url}/audio/transcriptions` and `/audio/speech` | `perception/providers/openai_audio.py` | `done` |
 | **Local STT server** | Fallback STT when primary STT fails | As above, typically `http://localhost` | `[stt.fallback]` | `done` |
 | **MCP client** | Calls agent actions as tools | JSON-RPC over **stdio**; over network only when `--http` enabled (mTLS + OAuth 2.1 token, disabled by default — NFR-SEC-09, `mcp_http.py`) | `mcp_server.py` | `done` |
-| **External MCP server** | Information source for System 2 (news, lookups) | stdio; only allowlisted tools | `mcp_host.py` | `done` |
+| **External MCP server** | Information source for System 2 (news, lookups) | stdio; only allowlisted tools | `mcp_host.py` | `done` — legacy, off by default (Q-83) |
 | **ESP-IDF v5.4 and Espressif QEMU** | Compiles firmware, runs virtual chip | ESP-IDF project generated by `build`; UART read via file or `tcp://` | `engine/firmware.py`, `testing/uart.py` | `done` |
 | **OTA image server** | Serves a signed app image | HTTP(S) GET on any static server | `components/ne_ota/` | `partial` — on QEMU |
-| **Fleet OS, Gate Registry** | Fleet management (5 capabilities) and shared gate registry; needed to automate safety updates and distribute policy at scale | Planned: MQTT with permissive-license broker (Mosquitto, NanoMQ, or VerneMQ — **not** EMQX, Q-11); OCI via ORAS and Harbor | no code yet | `planned` (I9, I10) — see [`15`](15-target-architecture.md) §3.1, §3.2 |
-| **ROS 2 / Nav2** | Navigation and motion planning system; only receives velocity commands through gates; needed to leverage robotics ecosystem without compromising safety ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34) | ROS 2 messages/actions via bridge on Linux SBC | No code yet (out of core) | `planned` (I14) — see [`15`](15-target-architecture.md) §4.3 |
 | **Operator agent LLM provider** (BYOK) | LLM worker explains, proposes, writes reports; never approves | Same as System 2 (LiteLLM, local models supported); user key only lives in worker process; worker network restricted to declared endpoints | No code yet | `planned · Q-72` (I2d) |
 | **Chat platform** (Telegram first; Slack, Zalo) | Operator agent reports proactively, receives commands, sends approval requests | Platform bot API; bot token resides in trusted runtime | No code yet | `planned · Q-72` (I2d) |
 | **Blueprint Hub index** | Public list of NeuroEdge Blueprints: URL, full-package digest, "unsigned" evidence | Static index repository (git), downloads packages via git/HTTPS; migrates to OCI Gate Registry when Hub monetizes | No code yet | `planned · Q-72` (I2e) |
 | **Cloud relay** (optional) | Remote access without opening home ports; trace backup | Home box initiates outbound connection; relay selects destination by SNI, passes TLS through, no decryption (SniTun pattern); backups encrypted at home box; approvals do not pass through relay | No code yet | `planned · Q-72` |
-| **Zenoh router** | Transport network between agent host (Pi) and MCU nodes; untrusted "black channel" (IEC 61784-3 — `docs/architecture/vi/15-target-architecture.md` §4.3); Zenoh-pico per Q-36 | Eclipse Zenoh (`zenohd` on host, `zenoh-pico` on MCU, Apache-2.0 branch) | No code yet | `planned` (I14) — see [`15`](15-target-architecture.md) §4.3 |
 
 ### 9.4 Trust boundaries
 

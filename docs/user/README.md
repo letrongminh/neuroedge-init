@@ -34,9 +34,11 @@ answers the question *"which file to read to know X"* — other files link to co
 | Minutes of review rounds | `docs/archive/` (deleted, see git history) | archive, non-normative |
 | Overall architecture with live progress (layers, release milestones, items waiting on a person) | [`docs/business/kien-truc-tong-the.html`](../business/kien-truc-tong-the.html) | open in browser; progress blocks generated from roadmap §0 — do not edit them by hand |
 | Demand gate 2026-10-25 (interviews, demos, scoring) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | business documentation; data for 8-week demand gate (Q-72, reversing Q-56) |
-| Plan: increment I0–I18 (including I2a, I2b, I3a, I4a, I5a), what to do when, forecast dates | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | sole roadmap (Q-39); increment table in §0.2 |
-| NeuroEdge Lab design (lab via MCP) | [`lab_mcp.md`](../spec/lab_mcp.md) | Block N0 → N7; increment I4a, I5a in roadmap (Q-55, Q-71); wireframe in [`wireframe/`](../../wireframe/README.md) |
-| Design notes — hierarchical robot (FOFOCA) | `docs/architecture/vi/15-target-architecture.md` §4.3 · draft RFC [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) | stages W0–W4; increment I14 in roadmap (Q-32), specifically block W1 in I2a, I3a (Q-53); node RFC not yet numbered |
+| Plan: increment I0–I8 and I2a–I2f, what to do when, forecast dates | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | sole roadmap (Q-39); increment table in §0.2 |
+| **Removed from roadmap (Q-77), kept for lookup** | | |
+| NeuroEdge Lab design (lab via MCP; replaced by the standard MCP tool set TSK-I2d-23, Q-88) | [`lab_mcp.md`](../spec/lab_mcp.md) | removed items: roadmap §6 |
+| Voice conversation state machine: turns, barge-in, wake-word, STT/TTS | [`docs/spec/voice_fsm.md`](../spec/voice_fsm.md) | voice removed from the roadmap; host code still ships |
+| Design notes — hierarchical robot (FOFOCA) | `docs/architecture/vi/15-target-architecture.md` §4.3 | I14 removed from the roadmap (Q-77); see roadmap §6 |
 | **Contributing** | | |
 | Conventions, processes, task completion | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 is the mandatory checklist |
 | Modifying `schemas/` (frozen schemas) | [`docs/rfc/README.md`](../rfc/README.md) | RFC process |
@@ -46,7 +48,6 @@ answers the question *"which file to read to know X"* — other files link to co
 | **Reference** | | |
 | Schemas, sample gates, traces, boards | `schemas/` · `gates/` · `fixtures/` · `boards/` | machine-readable artifacts |
 | Tool calling, MCP, `ask` confirmation (Gated Tool Profile) | [`docs/spec/tool_calling.md`](../spec/tool_calling.md) | sole source for tool calls |
-| Voice conversation state machine: turns, barge-in, wake-word, STT/TTS, fallback STT | [`docs/spec/voice_fsm.md`](../spec/voice_fsm.md) | normative for both Python and chip |
 | Device UI: screens, language rules, golden images | [`docs/spec/ui.md`](../spec/ui.md) | language rules in §2 |
 | Blocked bypass paths around gate, and out-of-scope items | [`docs/spec/threat_model.md`](../spec/threat_model.md) | includes test names |
 | Each HAL primitive × target: execution mechanism, test locations | [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) | Q-21, Q-22 |

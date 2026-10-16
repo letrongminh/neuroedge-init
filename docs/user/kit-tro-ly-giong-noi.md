@@ -7,6 +7,9 @@ One agent, three kinds of tasks, each with its own contract: Q&A over family kno
 when offline, reads local answers), news reading (requires network; when offline, states unavailable, never hallucinates), and
 **bật/tắt đèn** (turn on/off lights: physical, through gates): lights never turn off while the motion sensor still detects occupants.
 
+> **Note:** voice input was removed from the roadmap (Q-77, roadmap §6; the host voice code still ships). This kit runs
+> through text, chat or MCP.
+
 ## Locked gates
 
 `light_on@1.0.0` and `light_off@1.0.0` reside in `fixtures/agents/home-voice/gates/` and have digests in

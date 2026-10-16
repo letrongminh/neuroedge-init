@@ -1,8 +1,7 @@
 # Conversation state machine — normative specification
 
-**Status:** normative (TSK-S2-07). Implementation: Python for `sim`/`linux` (TSK-S3-11; audio path
-and STT/TTS providers: TSK-S3-13), C/C++ for `esp32s3` (TSK-S5-03, S5-04); both must pass **one**
-compliance vector suite (TSK-S3-10, §9). Requirements: FR-PER-02 → FR-PER-05 (`neuroedge-prd.md` §4.4), FR-MDL-09,
+**Status:** normative (TSK-S2-07). Host implementation normative (`python/neuroedge/perception/voice_fsm.py`); the `esp32s3` C port was removed from the roadmap by Q-77 (roadmap §6). §5 (revocation) also governs scheduled `digital.out` pulses and motion. Implementation: Python for `sim`/`linux` (TSK-S3-11; audio path
+and STT/TTS providers: TSK-S3-13); the C/C++ port for `esp32s3` (TSK-S5-03, S5-04) is removed (Q-77; `targets/esp32s3/fsm/` does not exist); the compliance vector suite (TSK-S3-10, §9) is the host contract. Requirements: FR-PER-02 → FR-PER-05 (`neuroedge-prd.md` §4.4), FR-MDL-09,
 FR-PER-07. Decisions: Q-8 (two languages), Q-12 (OpenAI standard), Q-14 (network loss), Q-17 (`on_block`),
 Q-26 (`ask` confirmation), Q-46 (D3) (spoken answers valid only within answer turn of the exact question).
 
@@ -282,7 +281,7 @@ Replay and golden:
 An implementation is considered **compliant** when passing the complete corpus `fixtures/compliance/voice/` against
 `expected_results.yaml`, bidirectionally closed like all corpuses (`CONTRIBUTING.md` §3). The corpus **does not**
 reside at root `fixtures/traces/`: that directory preserves three canonical decision traces, and modifications
-require RFCs. Phase 2 expands into `fixtures/compliance/multimodal/` (TSK-V3-02).
+require RFCs. Phase 2 expands into `fixtures/compliance/multimodal/` (TSK-V3-02, removed by Q-77).
 
 - **Case files**: agent (directory under `fixtures/agents/`), §6 parameters applied to case, gate facts, and §8
   input event sequences with `offset_ms` — virtual time.
@@ -304,7 +303,7 @@ Mandatory scenarios:
 | V7 | Slow speaker: pauses shorter than `end_of_turn_silence_ms` mid-sentence | Turn not truncated (FR-PER-03) |
 
 The two real-time budgets (20 ms, 300 ms) **cannot** be tested in virtual time. They are measured on physical
-hardware, under exit criterion 2 of I5 (roadmap §6) and nightly job TSK-S4-05.
+hardware, (the I5 exit criterion was removed with I5, Q-77) and nightly job TSK-S4-05.
 
 Three vectors of TSK-I4-01 reside in the same corpus (`scenario: "table"`): `i4_wake_word_opens_the_turn`
 (VAD alone does not open turns when `vad_activation` is disabled — detector never fired, matching cases
