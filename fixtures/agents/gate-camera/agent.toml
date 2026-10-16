@@ -101,3 +101,16 @@ default = []
 [sim.vision]
 source = "synthetic"
 frames = 60
+
+# What the live page calls each thing (docs/spec/virtual_parts.md §3.2): the board's pin names mean
+# nothing to a person watching, so each is declared as a part — its kind, what it is wired to, its words.
+# Parts only describe: no requirement, no envelope, no gate changes (VP-PT-08).
+[sim.parts.gate_lock]
+kind  = "lock"
+pin   = "gate_relay"
+label = "Khoá cổng"
+
+[sim.parts.porch_lamp]
+kind  = "light"
+pin   = "porch_light"
+label = "Đèn hiên"

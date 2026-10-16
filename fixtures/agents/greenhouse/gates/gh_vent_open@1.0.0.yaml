@@ -1,0 +1,20 @@
+# Opening the roof vent is the safe direction: always allowed. The servo's lease is 200 ms, so p95 <= lease_ms / 2 = 100.
+schema:  neuroedge.gate/v1
+name:    gh_vent_open
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100
+  fail:           closed

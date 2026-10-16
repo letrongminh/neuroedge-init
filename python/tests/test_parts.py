@@ -306,6 +306,35 @@ def test_the_page_describes_each_part_and_ui_labels_win(tmp_path):
     assert not re.search(r"""(src|href)\s*=\s*["']https?://""", body)
 
 
+@pytest.mark.parametrize(
+    ("sample", "board", "motion", "inputs", "analog"),
+    [
+        ("rover", "sim-rpi5", ["gripper", "wheel_left"], {}, {}),
+        ("rail-gate", "sim-rpi5", [], {"limit_switch": True}, {"adc0": 1.8}),
+        ("greenhouse", None, ["roof_vent"], {}, {}),
+    ],
+)
+def test_the_page_is_given_every_motion_input_and_analog_part_with_its_start(
+    sample, board, motion, inputs, analog
+):
+    # TC-PT-06-3: a servo, a motor, a limit switch and an ADC channel are things the agent uses too:
+    # the page draws each (motion as a device with its buttons, inputs and analog as rows a person
+    # can change), and with an agent loaded it no longer falls back to every pin of the board.
+    session = SimSession.load(ROOT / "fixtures" / "agents" / sample / "agent.toml", board_id=board)
+    try:
+        described = describe_agent(session)
+    finally:
+        session.hal.close()
+    assert described["motion"] == motion
+    assert described["inputs"] == inputs and described["analog"] == analog
+    moved = {ch for action in described["actions"] for ch in action["channels"]}
+    assert moved == set(motion)
+    script = (Path(neuroedge.__file__).parent / "viz" / "assets" / "ui.js").read_text("utf-8")
+    assert "agent.motion" in script and "agent.inputs" in script and "agent.analog" in script
+    assert '":input "' in script and '":analog "' in script
+    assert "!names.size && !agent.actions" in script
+
+
 def test_the_page_script_picks_the_icon_by_kind_and_shows_unit_and_range():
     # TC-PT-06-2: the drawing is the page's; this pins that it reads the parts
     script = (Path(neuroedge.__file__).parent / "viz" / "assets" / "ui.js").read_text("utf-8")

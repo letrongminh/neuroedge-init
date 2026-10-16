@@ -1,0 +1,35 @@
+# Với cá, trạng thái an toàn của máy sục khí là BẬT: tắt thì hỏi chủ nhà (RFC-0006).
+# Oxy thấp (< 5 mg/L), nước ấm (từ 29 °C) hoặc không có số đo thì từ chối luôn, không hỏi.
+schema:  neuroedge.gate/v1
+name:    reef_air_pump_off
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  water_hot:
+    type: bool
+    instructions: "Nước trong bể đang ấm (từ 29 °C), do cảm biến nhiệt trong nước báo"
+  oxygen_ok:
+    type: bool
+    instructions: "Oxy hoà tan đủ cho cá (từ 5 mg/L), do cảm biến oxy báo"
+  owner_confirmed:
+    type: bool
+    instructions: "Chủ nhà xác nhận tại nhà cho đúng lần gọi này"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  water_hot: false
+  oxygen_ok: true
+  owner_confirmed: true
+
+on_block:
+  action:   ask
+  message:  "Tắt sục khí thì cá thiếu oxy: chỉ chủ nhà xác nhận tại nhà mới tắt được; oxy dưới 5 mg/L hoặc nước từ 29 °C thì không tắt."
+  confirms: [owner_confirmed]
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

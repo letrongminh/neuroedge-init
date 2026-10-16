@@ -1,0 +1,55 @@
+# Fixed-command grammar of the greenhouse sample (Q-14, Q-15): what it understands with no network.
+# Every command is a physical action.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "heater_on"
+patterns = ["bật sưởi", "bật máy sưởi", "turn on the heater"]
+tool     = "gh_heater_on"
+
+[[command]]
+intent   = "heater_off"
+patterns = ["tắt sưởi", "tắt máy sưởi", "turn off the heater"]
+tool     = "gh_heater_off"
+
+[[command]]
+intent   = "fan_on"
+patterns = ["bật quạt", "bật quạt hút", "turn on the fan"]
+tool     = "gh_fan_on"
+
+[[command]]
+intent   = "fan_off"
+patterns = ["tắt quạt", "tắt quạt hút", "turn off the fan"]
+tool     = "gh_fan_off"
+
+[[command]]
+intent   = "mist_on"
+patterns = ["phun sương", "bật phun sương", "turn on the mist"]
+tool     = "gh_mist_on"
+
+[[command]]
+intent   = "mist_off"
+patterns = ["tắt phun sương", "ngừng phun sương", "turn off the mist"]
+tool     = "gh_mist_off"
+
+[[command]]
+intent   = "vent_open"
+patterns = ["mở cửa mái", "open the roof vent"]
+tool     = "gh_vent_open"
+
+[[command]]
+intent   = "vent_close"
+patterns = ["đóng cửa mái", "close the roof vent"]
+tool     = "gh_vent_close"
+
+[[command]]
+intent   = "light_on"
+patterns = ["bật đèn", "bật đèn quang hợp", "turn on the grow light"]
+tool     = "gh_light_on"
+
+[[command]]
+intent   = "light_off"
+patterns = ["tắt đèn", "tắt đèn quang hợp", "turn off the grow light"]
+tool     = "gh_light_off"

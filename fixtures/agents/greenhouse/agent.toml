@@ -1,0 +1,96 @@
+# Sample agent: a greenhouse (nhà kính) on the virtual board `sim-virtual` (docs/spec/virtual_parts.md, Q-84).
+#
+# Every part is the greenhouse's own, with its own name: no pin is borrowed from a reference board.
+# `[sim] board = "sim-virtual"` builds the board from `[requires]` and `[sim.parts]` and labels the
+# session `risk=virtual_board`; it runs on `sim` only (VP-VB-04).
+#
+# Rules a grower cares about:
+#   * the heater never comes on when the air is already hot (>= 30 C), or with no reading;
+#   * the exhaust fan is not turned off while it is very hot (>= 35 C), or with no reading;
+#   * the mist pump does not run when the air is already humid (>= 90 %), or with no reading;
+#   * the roof vent is not closed while it is very hot (>= 35 C), or with no reading.
+# Heater off, fan on, mist off, vent open (toward safety) and the grow light are always allowed.
+[agent]
+name    = "greenhouse"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["exhaust_fan", "heater", "mist_pump", "grow_light"] }
+"motion"      = { channels = ["roof_vent"] }
+"sensor.read" = { sensors = ["air_temp", "air_humidity", "soil_moisture"] }
+
+[gates]
+gh_heater_on  = "gates/gh_heater_on@1.0.0.yaml"
+gh_heater_off = "gates/gh_heater_off@1.0.0.yaml"
+gh_fan_on     = "gates/gh_fan_on@1.0.0.yaml"
+gh_fan_off    = "gates/gh_fan_off@1.0.0.yaml"
+gh_mist_on    = "gates/gh_mist_on@1.0.0.yaml"
+gh_mist_off   = "gates/gh_mist_off@1.0.0.yaml"
+gh_vent_open  = "gates/gh_vent_open@1.0.0.yaml"
+gh_vent_close = "gates/gh_vent_close@1.0.0.yaml"
+gh_light      = "gates/gh_light@1.0.0.yaml"
+
+[targets]
+supported = ["sim"]
+
+[sim]
+board = "sim-virtual"
+
+# Starting values, each inside its part's range: a mild morning in the greenhouse.
+[sim.sensors]
+air_temp      = { value = 25, unit = "C" }
+air_humidity  = { value = 60, unit = "%" }
+soil_moisture = { value = 45, unit = "%" }
+
+# No reading, or one the rule cannot place, leaves the fact undecided: the gates fail closed.
+[sim.sensor_facts]
+air_hot      = { sensor = "air_temp", gte = 30 }
+air_very_hot = { sensor = "air_temp", gte = 35 }
+air_humid    = { sensor = "air_humidity", gte = 90 }
+
+[sim.parts.exhaust_fan]
+kind  = "fan"
+pin   = "exhaust_fan"
+label = "Quạt hút"
+
+[sim.parts.heater]
+kind  = "heater"
+pin   = "heater"
+label = "Máy sưởi"
+
+[sim.parts.mist_pump]
+kind  = "pump"
+pin   = "mist_pump"
+label = "Bơm phun sương"
+
+[sim.parts.roof_vent]
+kind    = "servo"
+channel = "roof_vent"
+label   = "Cửa mái"
+
+[sim.parts.grow_light]
+kind  = "light"
+pin   = "grow_light"
+label = "Đèn quang hợp"
+
+[sim.parts.air_temp]
+kind   = "temperature"
+sensor = "air_temp"
+label  = "Nhiệt độ không khí"
+
+[sim.parts.air_humidity]
+kind   = "humidity"
+sensor = "air_humidity"
+label  = "Độ ẩm không khí"
+
+[sim.parts.soil_moisture]
+kind   = "humidity"
+sensor = "soil_moisture"
+label  = "Độ ẩm đất"
+
+# The facts are not parts: their words stay here.
+[ui.labels]
+air_hot      = "Không khí nóng (từ 30 °C)"
+air_very_hot = "Rất nóng (từ 35 °C)"
+air_humid    = "Không khí rất ẩm (từ 90 %)"
+call_source  = "Ai yêu cầu"

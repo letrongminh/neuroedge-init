@@ -20,6 +20,7 @@ answers the question *"which file to read to know X"* — other files link to co
 | All CLI commands and expected outputs | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | sole source for command syntax |
 | What the product does, in which environments, and step-by-step testing | [`huong-dan.md`](huong-dan.md) | capabilities by group (§3–§4) and step-by-step testing scenarios (§5) |
 | Current status | [`trang-thai.md`](trang-thai.md) | machine-generated from roadmap §0 |
+| Try devices without hardware: the samples named by parts, a greenhouse and a full fish tank on the virtual board, with screenshots | [`vi-du-linh-kien-ao.md`](vi-du-linh-kien-ao.md) | `sim` only; TSK-I2d-33, Q-84 |
 | Build real devices from five kits (BOM, wiring diagrams, from out-of-the-box to live run) | [`kit-phan-cung.md`](kit-phan-cung.md) | villa smart lock, voice assistant, machine room monitor, gate camera, window blinds; unverified on real hardware |
 | Partner pilots: shield Home Assistant, Python agents, or device APIs with a gate (pilot run, Q-70) | [`doi-tac/README.md`](doi-tac/README.md) | three runnable guides from wheel, boundary pages, feedback form; agreement list and test sessions in [`docs/business/doi-tac/`](../business/doi-tac/buoi-do.md) |
 | Flash your agent onto ESP32-S3-BOX-3 (or QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; sole source for flashing procedure |

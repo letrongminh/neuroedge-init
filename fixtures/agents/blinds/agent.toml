@@ -46,3 +46,21 @@ adc0 = 0.4
 # Dữ kiện không phải số đọc: trên thiết bị là cảm biến khe rèm (tuỳ chọn).
 [sim.facts]
 path_clear = true
+
+# What the live page calls each thing (docs/spec/virtual_parts.md §3.2): the board's pin names mean
+# nothing to a person watching, so each is declared as a part — its kind, what it is wired to, its words.
+# Parts only describe: no requirement, no envelope, no gate changes (VP-PT-08).
+[sim.parts.slats]
+kind  = "servo"
+channel = "gripper"
+label = "Lá rèm"
+
+[sim.parts.estop]
+kind  = "contact"
+pin   = "limit_switch"
+label = "Mạch dừng khẩn"
+
+[sim.parts.servo_current]
+kind  = "knob"
+channel = "adc0"
+label = "Dòng servo (cảm biến dòng)"

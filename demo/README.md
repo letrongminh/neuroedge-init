@@ -11,6 +11,8 @@ The `demo/` directory collects demo scenarios and prepared commands for each mil
 | I3 (boardless portion) + OTA of I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | ready | Docker `espressif/idf:v5.4` (Mac Apple Silicon or Linux) | `6a69626` (2026-09-29) |
 | I4 (voice on laptop) | — | removed (Q-77), folder deleted 2026-10-16, see git history | — | — |
 | I2d — **the fish tank on simulation and emulation** (TSK-I2d-28) | [`i2b-be-ca-gia-lap/`](i2b-be-ca-gia-lap/) | D1 (`sim`) and D4 (chat, `agent -m`) re-run on a Mac; D2 (`linux`) on CI only (no gpio-sim in OrbStack's kernel); D3/D5 (QEMU) re-run on a Mac in Docker (87 s) and on CI | laptop; Linux VM or CI log; Docker `espressif/idf:v5.4` or CI log | branch `feat/aquarium-demos` (2026-10-15) |
+| I2d — **greenhouse on the virtual board** (TSK-I2d-33) | [`i2d-nha-kinh/`](i2d-nha-kinh/) | ready on `sim` — page checked in a browser 2026-10-16 (roof vent opens; closing refused from 35 °C) | local macOS/Linux, `neuroedge run --ui` | 2026-10-16 |
+| I2d — **the full fish tank on the virtual board** (TSK-I2d-33) | [`i2d-be-ca-day-du/`](i2d-be-ca-day-du/) | ready on `sim` — page checked in a browser 2026-10-16 | local macOS/Linux, `neuroedge run --ui` | 2026-10-16 |
 | I2d/I2f — **chat controlling light and door via NeuroEdge Cloud** (Q-76) | [`i2f-chat-den-cua/`](i2f-chat-den-cua/) | ran all six screens via Telegram (OrbStack as cloud); no video yet, not yet run on real VPS | laptop as box + OrbStack VM or VPS, Telegram bot, OpenRouter key | branch `feat/demo-chat-den-cua` (2026-10-13) |
 
 ## Why run locally instead of Docker

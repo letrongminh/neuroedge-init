@@ -13,8 +13,9 @@ import urllib.request
 
 import pytest
 
+from neuroedge.paths import repo_root
 from neuroedge.sim import SimSession
-from neuroedge.sim.ui import SessionServer
+from neuroedge.sim.ui import SessionServer, describe_agent
 
 from .ui_support import page_headers
 
@@ -231,3 +232,26 @@ def test_the_live_page_embeds_the_agent_and_a_trace_view_has_none(root):
         server.stop()
     assert "Máy sưởi" in body and "agent: data.agent" in body
     assert '"agent": {}' in render_trace_html({"metadata": {}, "events": []})
+
+
+SAMPLES = sorted((repo_root() / "fixtures" / "agents").iterdir())
+
+
+@pytest.mark.parametrize("sample", SAMPLES, ids=[s.name for s in SAMPLES])
+def test_the_page_can_describe_every_sample_agent(sample):
+    """Every sample's page loads: `describe_agent` runs for each, on its own board or the first
+    reference board that fits (factory-monitor's banded fact once made the page answer nothing)."""
+    from neuroedge.errors import BuildFailed
+
+    for board in (None, "sim-rpi5"):
+        try:
+            session = SimSession.load(sample / "agent.toml", board_id=board)
+            break
+        except BuildFailed:
+            continue
+    try:
+        described = describe_agent(session)
+    finally:
+        session.hal.close()
+    json.dumps(described)  # the page embeds it as JSON
+    assert described["actions"], sample.name

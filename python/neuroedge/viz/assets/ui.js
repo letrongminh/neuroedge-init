@@ -11,7 +11,7 @@
   "use strict";
 
   function stateAt(events, t) {
-    const pins = {}, sensors = {}, inputs = {}, motion = {}, gates = [], asks = {}, askedBy = {};
+    const pins = {}, sensors = {}, inputs = {}, analog = {}, motion = {}, target = {}, gates = [], asks = {}, askedBy = {};
     let frame = null, begin = null, speech = null, heard = null, call = null;
     for (const [i, e] of events.entries()) {
       if (e.offset_ms > t) break;
@@ -27,12 +27,15 @@
         sensors[d.sensor] = { value: d.value, unit: d.unit };
       } else if ((e.type === "digital_in" || e.type === "digital_in_set") && typeof d.value === "boolean") {
         inputs[d.pin] = d.value;  // RFC-0007 §3a: the level of a digital.in line, high = true
+      } else if ((e.type === "analog_set" || e.type === "analog_in") && "value" in d) {
+        analog[d.channel] = d.value;  // RFC-0007 §3c: what an analog.in channel reads, in its unit
       } else if (e.type === "motion_command") {
+        if (d.kind !== "motor") target[d.channel] = d.target;
         motion[d.channel] = d.kind === "motor"
           ? "speed " + d.speed + " · ramp " + d.ramp_ms + " ms"
           : "target " + d.target;  // RFC-0011: a command holds its channel for one lease
       } else if (e.type === "motion_safe") {
-        motion[d.channel] = d.state + " (" + d.cause + ")";
+        motion[d.channel] = d.state + " (" + d.cause + ")" + (d.channel in target ? " at " + target[d.channel] : "");
       } else if (e.type === "display_frame") {
         frame = d;
       } else if (e.type === "tts_stream_start") {
@@ -72,7 +75,7 @@
     // The newest question still open at t, and not past its expiry.
     let pending = null;
     for (const id in asks) if (asks[id].expires_ms > t) pending = asks[id];
-    return { pins: pins, sensors: sensors, inputs: inputs, motion: motion, frame: frame, gates: gates, speech: speech, heard: heard,
+    return { pins: pins, sensors: sensors, inputs: inputs, analog: analog, motion: motion, frame: frame, gates: gates, speech: speech, heard: heard,
              pending: pending };
   }
 
@@ -130,6 +133,32 @@
     }
     if (name === "ph") {
       return svg('<text x="32" y="42" text-anchor="middle" font-size="28" font-weight="700" fill="' + c + '">pH</text>');
+    }
+    if (name === "pump") {
+      return svg('<path d="M24 10 C30 20 34 25 34 32 a10 10 0 0 1 -20 0 C14 25 18 20 24 10 Z" fill="' + (on ? "#58a6ff" : "none")
+        + '" stroke="' + c + '" stroke-width="4" stroke-linejoin="round"/>' +
+        '<path d="M38 40 H54 M48 34 L54 40 L48 46" fill="none" stroke="' + c + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>');
+    }
+    if (name === "servo") {
+      return svg('<path d="M12 46 A22 22 0 0 1 52 46" fill="none" stroke="' + c + '" stroke-width="3" stroke-dasharray="3 4"/>' +
+        '<circle cx="32" cy="46" r="6" fill="' + c + '"/>' +
+        '<line x1="32" y1="46" x2="' + (on ? 48 : 16) + '" y2="' + (on ? 28 : 40) + '" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/>');
+    }
+    if (name === "motor") {
+      return svg('<circle cx="32" cy="32" r="18" fill="' + (on ? "var(--allow)" : "none") + '" stroke="' + c + '" stroke-width="4"/>' +
+        '<text x="32" y="40" text-anchor="middle" font-size="20" font-weight="700" fill="' + (on ? "var(--panel)" : c) + '">M</text>');
+    }
+    if (name === "contact" || name === "button") {
+      return svg('<rect x="12" y="20" width="16" height="24" rx="3" fill="' + c + '"/>' +
+        '<rect x="' + (on ? 30 : 38) + '" y="20" width="16" height="24" rx="3" fill="none" stroke="' + c + '" stroke-width="4"/>');
+    }
+    if (name === "knob") {
+      return svg('<circle cx="32" cy="32" r="18" fill="none" stroke="' + c + '" stroke-width="4"/>' +
+        '<line x1="32" y1="32" x2="44" y2="20" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/>');
+    }
+    if (name === "display") {
+      return svg('<rect x="10" y="14" width="44" height="30" rx="3" fill="none" stroke="' + c + '" stroke-width="4"/>' +
+        '<line x1="24" y1="52" x2="40" y2="52" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>');
     }
     if (/sưởi|nhiệt|heat/.test(name)) {
       return svg('<path d="M32 8 C40 20 46 26 46 38 a14 14 0 0 1 -28 0 C18 30 24 26 26 18 C30 26 32 26 32 8 Z" fill="'
@@ -207,6 +236,22 @@
       return named.innerHTML === icon("", on).innerHTML ? plain : named;
     }
     function unit(u) { return u === "C" ? "°C" : u === "F" ? "°F" : u; }
+    // "target 90" → "ĐẾN 90", "speed 0.3 · ramp 200 ms" → "CHẠY 0.3", "hold (lease)" → "GIỮ (hết lease)".
+    function motionWords(text, partUnit) {
+      text = String(text);
+      let m = /^target (\S+)/.exec(text);
+      if (m) return "ĐẾN " + m[1] + (partUnit === "deg" ? "°" : "");
+      m = /^speed (\S+)/.exec(text);
+      if (m) return "CHẠY " + m[1];
+      m = /^(stop|hold|coast) \(([^)]*)\)(?: at (\S+))?/.exec(text);
+      if (m) {
+        const cause = ({ lease_expired: "hết lease", max_hold_ms: "hết thời gian giữ", max_continuous_ms: "chạy quá lâu",
+          envelope: "vượt phong bì", shutdown: "tắt máy" })[m[2]] || m[2];
+        const where = m[3] !== undefined ? " ở " + m[3] + (partUnit === "deg" ? "°" : "") : "";
+        return ({ stop: "DỪNG", hold: "GIỮ", coast: "THẢ TRÔI" })[m[1]] + where + " (" + cause + ")";
+      }
+      return text;
+    }
     const OP = { gte: "≥", lte: "≤", equals: "=" };
     function ruleText(rule) { return rule.replace(/\b(gte|lte|equals) /g, function (_, op) { return OP[op] + " "; }); }
     const order = {};
@@ -311,7 +356,8 @@
     function pinsDeclared() {
       const names = new Set();
       for (const a of agent.actions || []) for (const p of a.pins) names.add(p);
-      if (!names.size) for (const p of (opts.board && opts.board.pins) || []) names.add(p);
+      // A recording alone: what the board has. An agent loaded: only what its actions drive.
+      if (!names.size && !agent.actions) for (const p of (opts.board && opts.board.pins) || []) names.add(p);
       for (const e of view.events) if (e.type === "actuator_command") names.add(e.data.pin);
       return Array.from(names);
     }
@@ -355,7 +401,8 @@
       const s = stateAt(view.events, t);
 
       const pinKey = pinsDeclared().map(function (pin) { const p = s.pins[pin]; return [pin, !!(p && p.on), p && p.operation, p && p.aborted]; });
-      const devicesFresh = changed("devices", pinKey);
+      const motionKey = (agent.motion || []).map(function (ch) { return [ch, s.motion[ch]]; });
+      const devicesFresh = changed("devices", [pinKey, motionKey]);
       if (devicesFresh) devices.textContent = "";
       for (const pin of devicesFresh ? pinsDeclared() : []) {
         const p = s.pins[pin];
@@ -380,7 +427,30 @@
         ]));
       }
 
-      const sensorsFresh = changed("sensors", [s.sensors, s.inputs, s.motion]);
+      // VP-PT-06: a motion channel the agent moves is a device too (servo, motor), with its buttons.
+      for (const ch of devicesFresh ? agent.motion || [] : []) {
+        const moving = ch in s.motion && !/^(stop|hold|coast)/.test(String(s.motion[ch]));
+        const buttons = el("div", { class: "dev-actions" });
+        if (opts.onCommand) {
+          const mine = (agent.actions || []).filter(function (a) { return (a.channels || []).indexOf(ch) >= 0 && sayFor[a.name]; })
+            .sort(function (x, y) { return order[x.name] - order[y.name]; });
+          for (const a of mine) {
+            const b = el("button", { type: "button", text: sayFor[a.name], title: a.doc + " (gate " + a.gate + ")" });
+            b.addEventListener("click", function () { send(sayFor[a.name]); });
+            buttons.appendChild(b);
+          }
+        }
+        const part = partOf[ch];
+        devices.appendChild(el("div", { class: "device" + (moving ? " on" : "") }, [
+          part ? icon(part.kind, moving) : icon("", moving),
+          el("div", { class: "dev-name", text: label(ch) }),
+          labels[ch] ? el("div", { class: "dev-pin", text: ch }) : null,
+          el("div", { class: "state", text: ch in s.motion ? motionWords(s.motion[ch], part && part.unit) : "ĐỨNG YÊN" }),
+          buttons,
+        ]));
+      }
+
+      const sensorsFresh = changed("sensors", [s.sensors, s.inputs, s.analog, s.motion]);
       if (sensorsFresh) sensors.textContent = "";
       // An agent loaded: the sensors it reads. A recording alone: what the board has.
       const sensorNames = new Set(Object.keys(s.sensors).concat(agent.sensors || [],
@@ -411,12 +481,44 @@
           sensors.appendChild(el("div", { class: "edit" }, [field, set, lost]));
         }
       }
-      for (const name of sensorsFresh ? new Set(Object.keys(s.inputs).concat((opts.board && opts.board.inputs) || [])) : []) {
+      // VP-PT-06: the agent's input lines and analog channels, each a row a person can change.
+      for (const name of sensorsFresh && agent.inputs ? Object.keys(agent.inputs) : []) {
+        const level = name in s.inputs ? s.inputs[name] : agent.inputs[name];
+        const part = partOf[name];
+        sensors.appendChild(el("div", { class: "sensor" }, [
+          el("span", { class: "s-name" }, [part ? icon(part.kind, level === true) : null, document.createTextNode(label(name))]),
+          el("span", { class: "s-value", text: level === true ? "CAO (đóng)" : level === false ? "THẤP (mở)" : "—" })]));
+        if (part) sensors.appendChild(el("div", { class: "part-hint", text: part.word + " · " + name }));
+        if (opts.onCommand) {
+          const high = el("button", { type: "button", text: "Đặt cao" });
+          const low = el("button", { type: "button", class: "ghost", text: "Đặt thấp" });
+          high.addEventListener("click", function () { send(":input " + name + " true"); });
+          low.addEventListener("click", function () { send(":input " + name + " false"); });
+          sensors.appendChild(el("div", { class: "edit" }, [high, low]));
+        }
+      }
+      for (const name of sensorsFresh && agent.analog ? Object.keys(agent.analog) : []) {
+        const value = name in s.analog ? s.analog[name] : agent.analog[name];
+        const part = partOf[name];
+        sensors.appendChild(el("div", { class: "sensor" }, [
+          el("span", { class: "s-name" }, [part ? icon(part.kind, false) : null, document.createTextNode(label(name))]),
+          el("span", { class: "s-value" + (typeof value !== "number" && value !== null && value !== undefined ? " bad" : ""),
+            text: value === null || value === undefined ? "—" : String(value) + (part && part.unit ? " " + unit(part.unit) : "") })]));
+        if (part && partHint(part)) sensors.appendChild(el("div", { class: "part-hint", text: part.word + " · " + partHint(part) }));
+        if (opts.onCommand) {
+          const field = el("input", { type: "text", inputmode: "decimal", placeholder: part && part.range ? part.range[0] + "…" + part.range[1] : "giá trị mới", "aria-label": "giá trị mới cho " + name });
+          const set = el("button", { type: "button", text: "Đặt" });
+          set.addEventListener("click", function () { if (field.value.trim()) send(":analog " + name + " " + field.value.trim()); field.value = ""; });
+          field.addEventListener("keydown", function (ev) { if (ev.key === "Enter") set.click(); });
+          sensors.appendChild(el("div", { class: "edit" }, [field, set]));
+        }
+      }
+      for (const name of sensorsFresh && !agent.inputs ? new Set(Object.keys(s.inputs).concat((opts.board && opts.board.inputs) || [])) : []) {
         if (!(name in s.inputs) && agent.actions) continue;
         sensors.appendChild(el("div", { class: "sensor" }, [el("span", { text: label(name) }),
           el("span", { text: name in s.inputs ? (s.inputs[name] ? "HIGH" : "LOW") : "—" })]));
       }
-      for (const name of sensorsFresh ? new Set(Object.keys(s.motion).concat((opts.board && opts.board.motion) || [])) : []) {
+      for (const name of sensorsFresh && !agent.motion ? new Set(Object.keys(s.motion).concat((opts.board && opts.board.motion) || [])) : []) {
         if (!(name in s.motion) && agent.actions) continue;
         sensors.appendChild(el("div", { class: "sensor" }, [el("span", { text: label(name) }),
           el("span", { text: name in s.motion ? s.motion[name] : "—" })]));
