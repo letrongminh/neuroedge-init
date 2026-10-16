@@ -1,0 +1,15 @@
+bật đèn
+mở cửa mái
+:sensor air_temp 31
+bật sưởi
+:sensor air_temp 36
+tắt quạt
+đóng cửa mái
+bật quạt
+:sensor air_humidity 95
+phun sương
+:sensor air_humidity lỗi
+phun sương
+:sensor air_humidity 70
+phun sương
+exit
