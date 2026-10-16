@@ -30,6 +30,8 @@ Bản 1.0 (vào repo cùng commit `c0b5b9e`) được rà lại ngày 15/10/2026
 6. **Lộ trình theo roadmap:** I2d (2026-11-11), I2e (2026-11-25), cổng nhu cầu (2026-12-06).
 7. **Thêm:** đối thủ (§2.2), bằng chứng và mức tin cậy cho từng nỗi đau (§2.1), rủi ro mới (§11),
    các câu hỏi chờ duyệt (§12). Bỏ cách nói tuyệt đối ("an toàn tuyệt đối", "chặn đứng").
+8. **Chỉnh ngày 17/10/2026 (Q-90):** token theo Q-74 (§5, §9 H3); BNFR-2 là trần chi phí mỗi kỳ; BR-3 trỏ tới
+   `docs/spec/missions.md` MS-RT-09.
 
 ---
 
@@ -125,7 +127,7 @@ Ngưỡng đặt sau khi có dữ liệu từ K1–K3.
 | | Đến cổng nhu cầu | Sau cổng (nếu đạt) | Ngoài phạm vi |
 |:---|:---|:---|:---|
 | **NeuroClaw** | Hội thoại qua Telegram; nhận nhiệm vụ theo mục tiêu; ngữ cảnh từ cảm biến của hộp; trí nhớ ngắn hạn và tóm tắt ngày | Trí nhớ dài hạn có tìm kiếm; thời tiết, giá điện | Thiết bị đeo (Phụ lục A) |
-| **NeuroEdge** | Gate có điều kiện, hỏi người, trace; hợp đồng nhiệm vụ → envelope + watchdog; runtime 24/7; Blueprint pack/install | Hub có thu phí, Cloud | Bán lại token (N4) |
+| **NeuroEdge** | Gate có điều kiện, hỏi người, trace; hợp đồng nhiệm vụ → envelope + watchdog; runtime 24/7; Blueprint pack/install | Hub có thu phí, Cloud | Bán lại token (N4); Cloud chỉ kèm token nếu Q-74 bước 2 mở và một `Q-N` mới sửa N4 (Q-90) |
 
 Nguyên tắc không đổi: NeuroClaw không chạm chân GPIO và không tự cấp quyền; mọi lệnh vật lý qua gate.
 
@@ -139,7 +141,7 @@ Mã `BR-n` để không trùng với `FR-*` của PRD. Cột cuối là nơi yê
 |:---:|:---|:---|:---|
 | **BR-1** | **Ngữ cảnh nhiều cảm biến:** quyết định dựa trên nhiều cảm biến cùng lúc (cửa mở + gió lớn), nhịp sinh hoạt (dậy, đi làm, về, ngủ) từ hiện diện và lịch sử | NeuroClaw (suy luận); NeuroEdge (dữ kiện cho gate) | Repo NeuroClaw; FR-AGT-03 |
 | **BR-2** | **Trí nhớ nhiều tầng:** trạng thái tức thời (không tốn token), tóm tắt ngày, ký ức dài hạn cục bộ | NeuroClaw | Repo NeuroClaw (Q-83: trí nhớ thuộc bộ não) |
-| **BR-3** | **Tương tác tĩnh lặng:** mỗi hành động có một trong ba cách xử lý — làm im lặng, làm rồi báo, hỏi trước — **khai báo trong gate của hành động** và do hộp quyết định; NeuroClaw chỉ soạn lời báo. Một thông số vượt ngưỡng kéo dài chỉ báo một lần kèm xu hướng | NeuroEdge (quyết định); NeuroClaw (lời) | RFC-0006 (`ask`), NFR-COST-02; SRS nhiệm vụ (sắp viết) |
+| **BR-3** | **Tương tác tĩnh lặng:** mỗi hành động có một trong ba cách xử lý — làm im lặng, làm rồi báo, hỏi trước — **khai báo theo từng hành động** (hỏi trước: `ask` trong gate; làm rồi báo: nghĩa vụ `notify` trong hợp đồng nhiệm vụ; im lặng: mặc định — Q-90) và do hộp quyết định; NeuroClaw chỉ soạn lời báo. Một thông số vượt ngưỡng kéo dài chỉ báo một lần kèm xu hướng | NeuroEdge (quyết định); NeuroClaw (lời) | RFC-0006 (`ask`), NFR-COST-02; `docs/spec/missions.md` MS-RT-09 |
 | **BR-4** | **Nhiệm vụ theo mục tiêu:** giao việc bằng lời ("giữ bể cá ổn định"); hộp biên dịch thành giới hạn và watchdog; bộ não phát hiện suy giảm nhiều ngày và đề xuất, người duyệt một chạm | NeuroEdge (hợp đồng); NeuroClaw (đề xuất) | FR-MSN-01 → 14, TSK-I2d-04 → 06 |
 | **BR-5** | **Đóng gói cho maker:** một thiết bị + luật + cấu hình bộ não thành một Blueprint cài bằng một lệnh, có mã băm cả gói | NeuroEdge | FR-BP-01 → 07, TSK-I2e-01 → 03 |
 
@@ -150,7 +152,7 @@ Mã `BR-n` để không trùng với `FR-*` của PRD. Cột cuối là nơi yê
 | Mã | Hạng mục | Yêu cầu | Đã có trong PRD |
 |:---:|:---|:---|:---|
 | **BNFR-1** | Độ trễ | Quyết định của gate trên thiết bị tính bằng mili giây; câu trả lời bằng lời trong vài giây | NFR-PERF-* |
-| **BNFR-2** | Trần chi phí | Có trần token mỗi ngày; chạm trần thì về phản xạ tất định, không phát sinh chi phí ngoài dự kiến | FR-AGT-05, NFR-COST-01 |
+| **BNFR-2** | Trần chi phí | Có trần chi phí LLM mỗi kỳ, khai báo trong hợp đồng; chạm trần thì về phản xạ tất định, không phát sinh chi phí ngoài dự kiến | FR-AGT-05, NFR-COST-01 |
 | **BNFR-3** | Cục bộ trước | Trí nhớ và nhật ký ở máy nhà; chạy được hoàn toàn offline với mô hình cục bộ (Ollama) | FR-AGT-02, N4 |
 | **BNFR-4** | Sẵn sàng | Bộ não và hộp chạy như dịch vụ hệ thống, tự khởi động lại | NFR-REL-06, TSK-I2d-16 |
 
@@ -187,7 +189,7 @@ Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều k
 |:---|:---|:---|
 | **H1 — Hoa hồng kit** (BOM có liên kết affiliate) | Đã trong kế hoạch | FR-BP-07, trang riêng ngoài kit |
 | **H2 — Hub Blueprint có thu phí** | Sau cổng, nếu điều kiện ③ đạt | Q-72; Hub tối thiểu (miễn phí, tĩnh) có trước (FR-BP-05) |
-| **H3 — NeuroEdge Cloud** (bộ não chạy sẵn cho người không muốn tự vận hành) | Q-74 bước 2, khi số liệu cổng cho phép | Không bán lại token (N4); khoá BYOK không rời hộp (NFR-SEC-13) |
+| **H3 — NeuroEdge Cloud** (bộ não chạy sẵn cho người không muốn tự vận hành) | Q-74 bước 2, khi số liệu cổng cho phép | BYOK là mặc định, không bán lại token (N4). Gói Cloud chỉ được kèm token nếu Q-74 bước 2 mở và một `Q-N` mới sửa N4 (Q-90); khoá BYOK không rời hộp (NFR-SEC-13) |
 | **H4 — Giấy phép thương mại** cho doanh nghiệp nhúng vào sản phẩm | Sau cổng (chủ sản phẩm, 15/10/2026) | Loại giấy phép của lõi **đã chốt**: PolyForm Noncommercial (Q-45, Q-72); bán Blueprint hay thiết bị là dùng thương mại, cần giấy phép thương mại. Điều khoản và giá của giấy phép thương mại để sau cổng. NeuroClaw là fork của PicoClaw (MIT) — giữ thông báo bản quyền gốc |
 
 ---
@@ -212,7 +214,7 @@ Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều k
 | 3 | **Đối thủ cùng luận điểm** (Spatial OS trên Home Assistant) | Trung bình | Đi cùng HA thay vì cạnh tranh (add-on, RFC-0018); tốc độ ra kit bể cá chạy được |
 | 4 | **Trùng tên "Blueprint"** với *Home Assistant Blueprints* (từ 12/2020, có Blueprint Exchange) | Trung bình | Quyết định đổi tên hoặc giữ (§12 câu 5) trước khi công bố Hub |
 | 5 | AI suy luận sai do cảm biến nhiễu | Cao | Mọi lệnh qua gate; cảm biến lỗi → không đọc được → gate chặn (fail-closed) |
-| 6 | Chi phí token tăng | Trung bình | Trần mỗi ngày (BNFR-2), bộ phát hiện tất định lọc trước |
+| 6 | Chi phí token tăng | Trung bình | Trần chi phí mỗi kỳ (BNFR-2), bộ phát hiện tất định lọc trước |
 | 7 | Lo ngại riêng tư | Cao | Cục bộ trước, chạy offline được (BNFR-3) |
 | 8 | **Bộ não dựa trên dự án thượng nguồn còn sớm** (PicoClaw khuyến cáo chưa dùng production trước v1.0) | Trung bình | NeuroClaw là hard fork có CI riêng; hộp không tin bộ não nên lỗi bộ não không thành lỗi an toàn |
 | 9 | Nguồn lực: một người + AI | Cao | Phạm vi §5 cắt theo cổng; mọi thứ sau cổng chỉ mở với `Q-N` mới |

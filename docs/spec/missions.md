@@ -63,7 +63,8 @@ roles (FR-CH-07); phone-signed approvals (FR-CH-08); reflex-tier terms on the ch
 
 ### 1.4 References
 
-PRD §4.5, §5.4 → §5.6, §11.1 (A15 → A22), §15 Q-26, Q-62, Q-71, Q-72, Q-73, Q-77, Q-80, Q-83, Q-88 ·
+PRD §4.5, §5.4 → §5.6, §11.1 (A15 → A22), §15 Q-26, Q-62, Q-71, Q-72, Q-73, Q-77, Q-80, Q-83, Q-85, Q-88 ·
+`docs/business/brd-ambient-intelligence.md` (BR-3, BR-4) ·
 `docs/spec/deployment_profiles.md` (DP-COM-04, DP-COM-09, DP-A-05, DP-A-06) ·
 `docs/spec/core_contracts.md` Appendix B (gate inheritance, envelopes) · `docs/spec/lab_mcp.md`
 §12 (N6 trigger rules; the rest of that note is historical, Q-88) · `docs/spec/threat_model.md` · RFC-0004 (budget, `on_block` inheritance),
@@ -219,12 +220,13 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | MS-RT-06 | The brain shall be woken only by a detector event, a scheduled summary or a person's message; the box counts wake-ups per period and stops scheduled ones at the contract's `budget.llm` expressed as a wake-up cap derived from the brain's reported `cost_usd` (unmetered ⇒ the configured unit price; neither ⇒ refused at check). On reaching it the owner gets *"đã hết ngân sách phân tích kỳ này"* once; the brain keeps its own `llm_budget` as a second ceiling (Q-83). | The box can cap what it asks for even though it cannot see the LLM bill. | FR-AGT-05, FR-MSN-09, NFR-COST-01, Q-83 | T |
 | MS-RT-07 | Urgent alerts (a watchdog fired, `alarm`, a sensor gone, a budget reached, expiry) shall be sent by the box's own bot from fixed Vietnamese templates with no LLM, never batched or held by the message budget; routine messages from the brain beyond `budget.messages` are rolled into the next summary. | The alarm reaches the person even with no brain. | FR-AGT-06, NFR-COST-02, R-11 | T |
 | MS-RT-08 | Each failure branch — brain dead, brain hung, chat channel down (bounded queue of 100, local page alerts, original timestamps kept), budget reached, approval expired, power lost — shall have a G1 or G2 scenario whose expected outcome is recorded; in none does an output leave `safe_state` or a recorded BLOCK go missing. | Failure behaviour is specified by tests. | FR-AGT-07 | T |
+| MS-RT-09 | Whether a person is asked, told or left alone shall be declared per action and decided by the box, never by the brain: *ask first* is the gate's `on_block` `ask` (RFC-0006, MS-CH-04); *act and tell* is a mission obligation with `notify` (MS-WD-01); *silent*, the default, is an allowed call with no message. The brain only words the message the box sends or requests (MS-RT-07). A reading that stays beyond its threshold shall be reported once, with its trend, not once per sample. No new field in `mission.v1` or in a gate. | The decision to bother a person sits in the trusted part, not in the brain that can be talked into anything. | BR-3, Q-85, Q-90, FR-AGT-06, RFC-0006 | T |
 
 ### 3.9 Chat approvals and verification steps (MS-CH)
 
 | ID | Requirement | Rationale | Source | Verification |
 |:---|:---|:---|:---|:---|
-| MS-CH-01 | `neuroedge chat connect telegram` shall store the box's own bot token in the runtime's configuration (mode 0600, never printed, never given to the brain); `neuroedge chat pair` shall run only on the home machine and show the pairing code on-site; groups never pair. | The approval channel is the box's, not the brain's. | FR-CLI-14, FR-CH-03, DP-A-06 | T |
+| MS-CH-01 | `neuroedge chat connect telegram` shall store the box's own bot token in the runtime's configuration (mode 0600, never printed, never given to the brain); `neuroedge pair owner` (Q-89, RFC-0019 §9) shall run only on the home machine and show the pairing code on-site; groups never pair. | The approval channel is the box's, not the brain's. | FR-CLI-14, FR-CH-03, DP-A-06 | T |
 | MS-CH-02 | A message from a paired person shall enter as a tool call with source `chat:<id>` (not in `HUMAN_SOURCES`); "Có" that does not answer an approval request confirms nothing. | A chat message is a request, not consent. | FR-CH-02 (RFC) | T |
 | MS-CH-03 | An approval request shall carry `{id, nonce, deadline, digest, card}` and be answered only by the button or code for that `id`; the box shall check, in order, paired sender, not a group, nonce unused, deadline on the monotonic clock, digest equal to the pending change — and trace every answer with sender, `id`, digest and result (RFC-0019). | A20. | FR-CH-04, A20 | T |
 | MS-CH-04 | Approval records shall serve both an `ask` of a gate (entering the RFC-0006 confirmation path) and a contract lock (MS-AP-05); at most 4 requests pending per box (DP-COM-09); an expired one is a no. | One mechanism for both kinds of consent. | FR-ACE-10, FR-CH-04, DP-COM-09 | T |
@@ -322,7 +324,7 @@ neuroedge mission check <file>                 # 0 compiled · 1 refused (schema
 neuroedge mission explain <file> [--against <locked>] [--lang en]
 neuroedge mission lock <file>                  # local approval: shows the full diff, asks y/N
 neuroedge agent run [--agent dir]              # refuses an unlocked contract
-neuroedge chat connect telegram · neuroedge chat pair
+neuroedge chat connect telegram · neuroedge pair owner
 neuroedge lab doctor [--agent dir]
 ```
 
@@ -380,9 +382,10 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-RT-06-1 | MS-RT-06 | integration | Low budget: after the cap no scheduled wake-up, one budget message, urgent alerts still sent | planned — TSK-I2d-09 |
 | TC-RT-07-1 | MS-RT-07 | integration | Urgent alerts with the brain down and the message budget spent → sent at once from templates | planned — TSK-I2d-09 |
 | TC-RT-08-1 | MS-RT-08 | integration | Six failure scenarios with recorded expected outcomes → no output leaves `safe_state`, no BLOCK lost | planned — TSK-I2d-19 |
-| TC-CH-01-1 | MS-CH-01 | unit | Token stored 0600, never printed or sent to the brain; `chat pair` without a local terminal → refused; group → not paired | planned — TSK-I2d-12 |
-| TC-CH-02-1 | MS-CH-02 | unit | Chat message with self-declared source → `REJECTED`; stray "Có" → confirms nothing | planned — TSK-I2d-11 |
-| TC-CH-03-1 | MS-CH-03 | integration | A20 suite: unpaired, group, reused nonce, expired, digest mismatch, wrong `id` → each refused and traced | planned — TSK-I2d-11 |
+| TC-RT-09-1 | MS-RT-09 | integration | An action with `on_block` `ask` → request to the person, no effect until approved; an action with an obligation `notify` → done, then told once; a plain allowed action → no message; a brain message that names a different treatment → ignored; a reading beyond threshold for a whole day → one message with its trend | planned — TSK-I2d-09 |
+| TC-CH-01-1 | MS-CH-01 | unit | Token stored 0600, never printed or sent to the brain; `pair owner` without a local terminal → refused; group → not paired | planned — TSK-I2d-12 |
+| TC-CH-02-1 | MS-CH-02 | unit | Chat message with self-declared source → `REJECTED`; stray "Có" → confirms nothing | planned — TSK-I2d-12 |
+| TC-CH-03-1 | MS-CH-03 | integration | A20 suite: unpaired, group, reused nonce, expired, digest mismatch, wrong `id` → each refused and traced | planned — TSK-I2d-12 |
 | TC-CH-04-1 | MS-CH-04 | integration | Record answers a gate `ask` and a contract lock; fifth pending request → BLOCK; expired → no | planned — TSK-I2d-12 |
 | TC-CH-05-1 | MS-CH-05 | integration | Brain sends a forged record over MCP → refused, traced | planned — TSK-I2d-12 |
 | TC-CH-06-1 | MS-CH-06 | integration | Keypad checker passes → fact set for one call; retries and timeout enforced; risk label on card, `gate explain`; trace has no code | planned — TSK-I2d-21 |
@@ -423,7 +426,8 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | FR-MSN-12 | MS-AP-01, MS-AP-02 |
 | FR-MSN-13 | MS-CT-06, MS-AP-03 |
 | FR-MSN-14 | MS-AP-04 |
-| FR-AGT-01 → 09 | MS-RT-01 → 08, MS-WD-04 |
+| FR-AGT-01 → 09 | MS-RT-01 → 09, MS-WD-04 |
+| BR-3 (BRD, Q-85) | MS-RT-09 |
 | FR-CH-01 → 06 | MS-CH-01 → 07 |
 | FR-ACE-03, A21 | MS-SF-01 → 06 |
 | FR-EGR-01 → 04 | MS-EG-01 → 04 |
