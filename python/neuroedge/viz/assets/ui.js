@@ -11,7 +11,7 @@
   "use strict";
 
   function stateAt(events, t) {
-    const pins = {}, sensors = {}, inputs = {}, analog = {}, motion = {}, gates = [], asks = {}, askedBy = {};
+    const pins = {}, sensors = {}, inputs = {}, analog = {}, motion = {}, target = {}, gates = [], asks = {}, askedBy = {};
     let frame = null, begin = null, speech = null, heard = null, call = null;
     for (const [i, e] of events.entries()) {
       if (e.offset_ms > t) break;
@@ -30,11 +30,12 @@
       } else if ((e.type === "analog_set" || e.type === "analog_in") && "value" in d) {
         analog[d.channel] = d.value;  // RFC-0007 §3c: what an analog.in channel reads, in its unit
       } else if (e.type === "motion_command") {
+        if (d.kind !== "motor") target[d.channel] = d.target;
         motion[d.channel] = d.kind === "motor"
           ? "speed " + d.speed + " · ramp " + d.ramp_ms + " ms"
           : "target " + d.target;  // RFC-0011: a command holds its channel for one lease
       } else if (e.type === "motion_safe") {
-        motion[d.channel] = d.state + " (" + d.cause + ")";
+        motion[d.channel] = d.state + " (" + d.cause + ")" + (d.channel in target ? " at " + target[d.channel] : "");
       } else if (e.type === "display_frame") {
         frame = d;
       } else if (e.type === "tts_stream_start") {
@@ -236,14 +237,19 @@
     }
     function unit(u) { return u === "C" ? "°C" : u === "F" ? "°F" : u; }
     // "target 90" → "ĐẾN 90", "speed 0.3 · ramp 200 ms" → "CHẠY 0.3", "hold (lease)" → "GIỮ (hết lease)".
-    function motionWords(text) {
+    function motionWords(text, partUnit) {
       text = String(text);
       let m = /^target (\S+)/.exec(text);
-      if (m) return "ĐẾN " + m[1];
+      if (m) return "ĐẾN " + m[1] + (partUnit === "deg" ? "°" : "");
       m = /^speed (\S+)/.exec(text);
       if (m) return "CHẠY " + m[1];
-      m = /^(stop|hold|coast)\b(.*)$/.exec(text);
-      if (m) return ({ stop: "DỪNG", hold: "GIỮ", coast: "THẢ TRÔI" })[m[1]] + m[2];
+      m = /^(stop|hold|coast) \(([^)]*)\)(?: at (\S+))?/.exec(text);
+      if (m) {
+        const cause = ({ lease_expired: "hết lease", max_hold_ms: "hết thời gian giữ", max_continuous_ms: "chạy quá lâu",
+          envelope: "vượt phong bì", shutdown: "tắt máy" })[m[2]] || m[2];
+        const where = m[3] !== undefined ? " ở " + m[3] + (partUnit === "deg" ? "°" : "") : "";
+        return ({ stop: "DỪNG", hold: "GIỮ", coast: "THẢ TRÔI" })[m[1]] + where + " (" + cause + ")";
+      }
       return text;
     }
     const OP = { gte: "≥", lte: "≤", equals: "=" };
@@ -439,7 +445,7 @@
           part ? icon(part.kind, moving) : icon("", moving),
           el("div", { class: "dev-name", text: label(ch) }),
           labels[ch] ? el("div", { class: "dev-pin", text: ch }) : null,
-          el("div", { class: "state", text: ch in s.motion ? motionWords(s.motion[ch]) : "ĐỨNG YÊN" }),
+          el("div", { class: "state", text: ch in s.motion ? motionWords(s.motion[ch], part && part.unit) : "ĐỨNG YÊN" }),
           buttons,
         ]));
       }

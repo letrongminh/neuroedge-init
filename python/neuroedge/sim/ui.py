@@ -147,7 +147,8 @@ def describe_agent(session: SimSession) -> dict[str, Any]:
             if getattr(rule, op) is not None
         ]
         if rule.bands:
-            parts.append("bands " + ", ".join(f"{k} ≥ {v}" for k, v in rule.bands.items()))
+            # `bands` is a tuple of (band, lower bound) pairs, in order
+            parts.append("bands " + ", ".join(f"{k} ≥ {v}" for k, v in rule.bands))
         rules[fact] = {"sensor": rule.sensor, "rule": " · ".join(parts)}
     parts = describe_parts(session.manifest)
     # VP-PT-06: a part's label (else its kind's word) names its pin or sensor; `[ui.labels]` wins.
