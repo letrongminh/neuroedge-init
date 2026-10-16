@@ -17,8 +17,9 @@ version = "0.1.0"
 light = "gates/light@1.0.0.yaml"
 door  = "gates/door@1.0.0.yaml"
 
+# `esp32s3`: the same demo on one chip, NeuroClaw-ESP and the gate in one image (Q-83, Profile B).
 [targets]
-supported = ["sim", "linux"]
+supported = ["sim", "linux", "esp32s3"]
 
 # Dữ kiện phiên trên `sim`. Ở nhà thật, `daytime` đến từ đồng hồ của hộp và lỗi bộ điều sáng từ
 # chính thiết bị. Trang `sim` đổi chúng bằng `:set daytime false` (giả 2 giờ sáng).
@@ -27,3 +28,11 @@ supported = ["sim", "linux"]
 light_fault_free = true
 daytime          = true
 owner_confirmed  = false
+
+# Tên người đọc cho trang `run --ui` / `mcp serve --ui` / `trace view`. Chỉ là chữ: gate không đọc.
+[ui.labels]
+porch_light      = "Đèn hiên"
+door_lock        = "Khoá cửa"
+light_fault_free = "Đèn không báo lỗi"
+daytime          = "Đang là ban ngày"
+owner_confirmed  = "Chủ nhà đã xác nhận tại nhà"

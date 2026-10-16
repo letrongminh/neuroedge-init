@@ -244,5 +244,5 @@ def test_the_scripts_parse_and_the_vps_never_gets_the_keys_that_mint_or_serve(ro
     shipped = " ".join(copied)
     for name in ("ca.pem", "nao.pem", "nao.key", "nao.token"):
         assert name in shipped, name
-    for name in ("issuer.key", "hop.key", "jwks.json"):
+    for name in ("issuer.key", "ca.key", "hop.key", "jwks.json"):
         assert name not in shipped, name

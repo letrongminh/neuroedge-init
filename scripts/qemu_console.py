@@ -15,7 +15,7 @@ can type at the console:
        window — power lost, as far as the chip can tell;
   4    the fourth starts in safe mode: no gate self-test, the console only.
        The owner sets the bot token at the hidden prompt (an inline secret is
-       refused), an owner id (a malformed one is refused), an http:// LLM URL
+       refused; first refused until `config ack readable_flash`, DP-B-17), an owner id (a malformed one is refused), an http:// LLM URL
        (stored, labelled risk=cleartext_url), reads the token back as
        <secret>, clears the boot guard and reboots;
   5    a normal boot again (count=1, self-test, NE_TRACE DONE); the settings
@@ -35,6 +35,7 @@ again for the next boot.
 
 from __future__ import annotations
 
+import codecs
 import re
 import shutil
 import socket
@@ -44,6 +45,8 @@ import time
 from pathlib import Path
 
 TIMEOUT_S = 90.0
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")  # terminal escapes: never part of a marker
+PARTIAL = re.compile(r"\x1b(\[[0-9;?]*)?\Z")  # an escape whose rest is still on the wire
 STACK_FLOOR = 512  # bytes the console task must still have free after `config set`
 # Made up for the test: the shape of a BotFather token, no real bot.
 TOKEN = "7000000001:AAQemuOnlyNotARealTokenxxxxxxxxxxxx"
@@ -62,6 +65,8 @@ class Boot:
         self.log = log
         self.text = ""
         self.pos = 0  # what expect() has consumed
+        self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+        self._carry = ""  # the start of an escape split across two reads
         self.proc = subprocess.Popen(
             [
                 "qemu-system-xtensa",
@@ -103,7 +108,13 @@ class Boot:
         except OSError:
             data = b""
         if data:
-            self.text += data.decode(errors="replace").replace("\r", "")
+            # Without CRs and terminal escapes: the console's `ESC[5n` probe can precede a marker,
+            # and one read can end inside it, so an unfinished escape waits for the next read.
+            chunk = self._carry + self._decoder.decode(data).replace("\r", "")
+            partial = PARTIAL.search(chunk)
+            cut = partial.start() if partial else len(chunk)
+            self.text += ANSI.sub("", chunk[:cut])
+            self._carry = chunk[cut:]
             self.log.write_text(self.text)
         elif self.proc.poll() is not None:
             raise Fail(f"QEMU exited (log: {self.log})")
@@ -203,6 +214,11 @@ def run(build: Path) -> list[str]:
                 r"^NE_CONFIG REFUSED key=telegram\.token reason=inline_secret$",
             ),
         )
+        # DP-B-17: on readable flash a secret waits for the owner's acknowledgement
+        b.expect(r"neuroedge\(safe\)> ")
+        b.send("config set telegram.token")
+        note(b, b.expect(r"^NE_CONFIG REFUSED key=telegram\.token reason=risk_not_acknowledged$"))
+        note(b, b.command("config ack readable_flash", r"^NE_CONFIG ACK risk=readable_flash$"))
         b.expect(r"neuroedge\(safe\)> ")
         b.send("config set telegram.token")
         b.expect(r"telegram\.token \(hidden, Enter to finish\): ")
@@ -247,6 +263,7 @@ def run(build: Path) -> list[str]:
         b.expect(r"^NE_CONSOLE READY mode=normal$")
         note(b, b.command("config get telegram.owner", rf"^telegram\.owner = {OWNER}$"))
         note(b, b.command("config get telegram.token", r"^telegram\.token = <secret>$"))
+        b.command("config ack readable_flash", r"^NE_CONFIG ACK risk=readable_flash$")
         b.command("config set wifi.pass", r"wifi\.pass \(hidden, Enter to finish\): ")
         b.send("not-the-token-1")
         b.expect(r"^NE_CONFIG SET key=wifi\.pass storage=plaintext risk=readable_flash$")

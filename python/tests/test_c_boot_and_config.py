@@ -132,6 +132,20 @@ def test_a_secret_is_never_taken_from_the_command_line_or_kept_in_history(firmwa
     assert "linenoiseHistorySave" not in source  # history never reaches flash
 
 
+def test_on_readable_flash_a_secret_waits_for_the_owners_acknowledgement(firmware, root):
+    """TC-B-17-1 (DP-B-17), the console half; the QEMU half is scripts/qemu_console.py boot 4."""
+    source = (firmware / "components" / "ne_console" / "src" / "ne_console.c").read_text(
+        encoding="utf-8"
+    )
+    refuse = source.index('"risk_not_acknowledged"')
+    prompt = source.index('"%s (hidden, Enter to finish): "')
+    inline = source.index('"inline_secret"')
+    assert inline < refuse < prompt  # never a prompt before the owner said yes
+    assert "s_risk_acknowledged = true;" in source
+    script = (root / "scripts" / "qemu_console.py").read_text(encoding="utf-8")
+    assert script.index("reason=risk_not_acknowledged") < script.index("NE_CONFIG ACK")
+
+
 def test_the_new_partitions_move_nothing_that_was_there(firmware):
     rows = [
         [cell.strip() for cell in row]

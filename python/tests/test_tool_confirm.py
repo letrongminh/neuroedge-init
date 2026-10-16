@@ -480,3 +480,31 @@ def test_a_tool_call_through_mcp_then_a_person_on_the_page(home):
     finally:
         server.stop()
     assert light(session) == [("off", 0)]
+
+
+# --- DP-COM-09: at most four questions wait -------------------------------------------------
+
+
+def test_a_fifth_question_while_four_wait_is_a_block_and_no_question(home):
+    """TC-COM-09-1: a caller cannot flood the person with questions (deployment_profiles.md)."""
+    from neuroedge.actions.confirmation import MAX_PENDING
+
+    session = occupied(home)
+    results = [
+        asyncio.run(session.call_tool(ToolCall("light_off", {}, source="mcp"))).content()
+        for _ in range(MAX_PENDING + 1)
+    ]
+    asked, fifth = results[:MAX_PENDING], results[MAX_PENDING]
+    assert MAX_PENDING == 4
+    assert [r["confirmation"]["id"] for r in asked] == [f"confirm_{i}" for i in range(1, 5)]
+    assert fifth["status"] == "BLOCK" and fifth["reason"] == "budget_exceeded"
+    assert "confirmation" not in fifth
+    assert len(session.events.of_type("tool_confirm_requested")) == MAX_PENDING
+    assert session.events.of_type("tool_confirm_withheld") == [
+        {"action": "light_off", "gate": fifth["gate"], "pending": MAX_PENDING}
+    ]
+    # Answering one frees a place: the next call asks again.
+    session.conversation.decline("confirm_1", "local_grammar")
+    again = asyncio.run(session.call_tool(ToolCall("light_off", {}, source="mcp"))).content()
+    assert again["confirmation"]["id"] == "confirm_5"
+    assert light(session) == []

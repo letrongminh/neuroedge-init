@@ -20,3 +20,7 @@ CONFIG_FREERTOS_HZ=1000
 
 # Compiler Optimization for Performance
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
+
+# TLS as a client only (Q-83 DP-B-02): the device calls out (OTA, LLM, Telegram) and serves
+# nothing; scripts/check_brain_image.py fails on a TLS server handshake in the image.
+CONFIG_MBEDTLS_TLS_CLIENT_ONLY=y

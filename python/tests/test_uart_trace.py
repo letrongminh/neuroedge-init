@@ -361,3 +361,45 @@ def test_record_of_a_broken_capture_writes_nothing(tmp_path):
     assert result.exit_code == 1
     assert "NE4001" in result.output and "uart.log:5" in result.output
     assert not out.exists()
+
+
+# --- following a running image (Q-83, DP-B-12) --------------------------------------------------
+
+
+def test_follow_reads_the_sessions_a_running_image_writes_after_done(tmp_path):
+    """TC-B-12-1: the brain decides after boot; `record --follow` keeps reading past DONE."""
+    later = session("00002468", evaluations=2)
+    cut = session("00002468")[:2]  # stopped mid-session: left out, never written short
+    log = tmp_path / "uart.log"
+    log.write_text("".join(BOOT_LOG + session() + ["NE_TRACE DONE sessions=1\n"] + later + cut))
+    assert len(read_sessions(str(log))) == 1  # without --follow: the boot only
+    followed = read_sessions(str(log), follow=True)
+    assert [s.index for s in followed] == [0, 1]
+    with pytest.raises(TraceValidationError, match="no trace_end"):
+        sessions_from_lines(log.read_text().splitlines(), "uart.log")
+    out = tmp_path / "traces"
+    result = runner.invoke(
+        app,
+        ["record", "--target", "esp32s3", "--port", str(log), "--follow", "--out", f"{out}/"],
+    )
+    assert result.exit_code == 0, result.output
+    assert len(list(out.glob("sess_*.json"))) == 2
+
+
+def test_follow_on_tcp_reads_until_the_timeout_not_done():
+    port, thread = _serve(
+        BOOT_LOG + session() + ["NE_TRACE DONE sessions=1\n"] + session(evaluations=3), hold=5
+    )
+    started = time.monotonic()
+    sessions = read_sessions(port, timeout_s=1.0, follow=True)
+    assert len(sessions) == 2 and time.monotonic() - started >= 0.9
+
+
+def test_follow_ends_on_ctrl_c_with_what_it_has(monkeypatch):
+    def lines(*_args, **_kwargs):
+        yield from session()
+        yield from session()[:2]
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(uart, "read_lines", lines)
+    assert len(read_sessions("tcp://127.0.0.1:1", follow=True)) == 1

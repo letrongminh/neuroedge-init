@@ -16,10 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "roadmap"
 ROADMAP = DOCS / "neuroedge-roadmap.md"
-DESIGN_NOTES = (
-    "docs/spec/lab_mcp.md",
-    "docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md",
-)
+DESIGN_NOTES = ("docs/spec/lab_mcp.md",)
 GLYPHS = "✅🟡⏳⏸🔴"
 DATE = re.compile(r"\b20\d\d-\d\d-\d\d\b")
 TASK_ROW = re.compile(r"^\| \*\*(TSK-[A-Za-z0-9]+-\d+)\*\* \|")

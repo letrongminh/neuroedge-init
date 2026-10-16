@@ -1,0 +1,16 @@
+schema:  neuroedge.gate/v1
+name:    lamp
+version: 1.0.0
+
+evaluate:
+  lamp_ok:
+    type: bool
+    instructions: "The lamp driver reports no fault"
+allow_when:
+  lamp_ok: true
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

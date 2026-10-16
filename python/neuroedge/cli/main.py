@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +85,11 @@ proxy_app = typer.Typer(
 plugin_app = typer.Typer(
     name="plugin", help="Check the extensions and the Guard around them", epilog=epilog("plugin")
 )
+pair_app = typer.Typer(
+    name="pair",
+    help="Keys, certificates and short-lived tokens for a brain over the network (Q-83)",
+    epilog=epilog("pair"),
+)
 
 app.add_typer(gate_app, name="gate")
 app.add_typer(trace_app, name="trace")
@@ -93,6 +99,7 @@ app.add_typer(add_app, name="add")
 app.add_typer(guard_app, name="guard")
 app.add_typer(proxy_app, name="proxy")
 app.add_typer(plugin_app, name="plugin")
+app.add_typer(pair_app, name="pair")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -736,13 +743,20 @@ def mcp_serve(
         "--required-scope",
         help="With --http: the scope a token must carry (default neuroedge:call)",
     ),
+    revoked: Path | None = typer.Option(
+        None,
+        "--revoked",
+        help="With --http: brain certificate thumbprints to refuse, read again when it changes "
+        "(`neuroedge pair` writes revoked.txt)",
+    ),
 ):
     """
     Serve the agent as a gated MCP server over stdio: every @action is a tool,
     and every tools/call goes through the tool schema, c.do() and the gate.
     On `--target linux` a tool call drives real GPIO lines (as `run --target linux`).
-    With --ui (sim only) the same session is shown live in the browser: a tool call from
-    the MCP client moves the virtual devices on the page at once. The page never
+    With --ui the same session is shown live in the browser: a tool call from the MCP client
+    moves the devices on the page at once, and a person answers the box's `ask` there (on
+    `sim`, and on `linux` where the lines are real: DP-A-05). The page never
     takes the MCP server down: a taken port falls back to a free one (URL on stderr).
 
     With --http the server listens on the network instead: Streamable HTTP over mTLS
@@ -768,6 +782,7 @@ def mcp_serve(
         "--audience": audience,
         "--jwks": jwks,
         "--required-scope": required_scope,
+        "--revoked": revoked,
     }
     if not http and any(value is not None for value in network.values()):
         given = ", ".join(flag for flag, value in network.items() if value is not None)
@@ -795,12 +810,14 @@ def mcp_serve(
                     audience=audience,
                     jwks=jwks,
                     required_scope=required_scope or DEFAULT_SCOPE,
+                    revoked=revoked,
                 )
             )
         except NeuroEdgeError as error:
             _fail(error)
             return
-    if trace_out is not None and target != "linux" and not http:
+    if (trace_out is not None or ui) and target != "linux" and not http:
+        # (--ui: the page's link file, DP-A-10, is removed on the way out too)
         # SIGTERM / SIGHUP must still write the trace and close the HAL (TSK-N2-03): the host
         # that stops a server sends SIGTERM. `linux` installs the handlers in `_start_session`;
         # the network server (--http) listens for both signals itself and closes the same way.
@@ -839,7 +856,7 @@ def mcp_serve(
             # The person at home answers `ask` questions on this page (source `ui`, 127.0.0.1
             # only); the remote client is told a question is waiting and can never answer it.
             err_console.print(
-                f"sim UI at {page.open_url} (same session; `ask` is answered here)",
+                f"sim UI at {page.announced_url} (same session; `ask` is answered here)",
                 markup=False,
                 highlight=False,
                 soft_wrap=True,  # one line: the key after `#` stays part of the URL
@@ -859,14 +876,16 @@ def mcp_serve(
         return
     if page is not None:
         err_console.print(
-            f"sim UI at {page.open_url} (same session)",
+            f"sim UI at {page.announced_url} (same session)",
             markup=False,
             highlight=False,
             soft_wrap=True,
         )
 
     def on_ready() -> None:
-        if page is not None and open_browser:
+        from ..sim.ui import under_service_manager
+
+        if page is not None and open_browser and not under_service_manager():
             import webbrowser
 
             webbrowser.open(page.open_url)
@@ -906,7 +925,7 @@ def _mcp_page(session: Any, port: int) -> Any:
         else:
             err_console.print(
                 f"warning: sim UI port {port} is taken ({taken.why}) — an older server may "
-                f"still be running; the page is at {page.open_url} instead",
+                f"still be running; the page is at {page.announced_url} instead",
                 markup=False,
                 highlight=False,
                 soft_wrap=True,
@@ -1954,21 +1973,29 @@ def new(
         help="minimal (1 action, 1 gate, tests), villa-concierge, home-voice, factory-monitor, "
         "gate-camera or blinds",
     ),
+    board: str = typer.Option(
+        None,
+        "--board",
+        help="sim-virtual: run on the virtual board, which adds the pins and sensors the "
+        "agent needs (risk=virtual_board); default sim-default",
+    ),
 ):
     """Scaffold an agent project: agent.toml, commands.toml, a gate, an @action, tests."""
     from ..templates import scaffold
 
     try:
-        files = scaffold(name, template)
+        files = scaffold(name, template, board=board)
     except NeuroEdgeError as error:
         _fail(error)
         return
     console.print(f"[bold green]✓[/bold green] created {escape(name)}/ from template {template}")
     for path in files:
         console.print(f"  {escape(str(path))}")
+    if board is not None:
+        console.print("[yellow]risk=virtual_board[/yellow] (docs/spec/virtual_parts.md)")
     console.print(
         f"\nNext:\n  cd {escape(name)}\n"
-        "  neuroedge build --target sim --board sim-default\n"
+        f"  neuroedge build --target sim --board {board or 'sim-default'}\n"
         "  neuroedge run\n"
         "  neuroedge test"
     )
@@ -2028,8 +2055,17 @@ def _is_servo(channel: str | None) -> bool:
 def _add(kind: str, name: str, agent: Path, **options: Any) -> None:
     from ..templates.add import add
 
+    _run_add(
+        kind,
+        name,
+        lambda: add(agent.parent, kind, name, check=_check_added, manifest=agent.name, **options),
+    )
+
+
+def _run_add(kind: str, name: str, run: Callable[[], Any]) -> None:
+    """Run one add and say what it wrote; a refusal prints its three parts and changes nothing."""
     try:
-        plan = add(agent.parent, kind, name, check=_check_added, manifest=agent.name, **options)
+        plan = run()
     except BuildFailed as failed:
         _fail_build(failed)
         return
@@ -2101,6 +2137,81 @@ def add_sensor(
         label=label,
         board=board,
     )
+
+
+@add_app.command(name="part", epilog=epilog("add part"))
+def add_part_command(
+    kind: str = typer.Argument(None, help="Kind of part (neuroedge add part --list)"),
+    name: str = typer.Argument(None, help="Name of the part (and of its action, gate and test)"),
+    pin: str = typer.Option(None, "--pin", help="Output and input kinds: the pin it is wired to"),
+    sensor: str = typer.Option(None, "--sensor", help="Sensor kinds: the sensor it reads"),
+    channel: str = typer.Option(None, "--channel", help="knob, motor, servo: the channel"),
+    drives: str = typer.Option(
+        None,
+        "--drives",
+        help="Sensor and input kinds: the output pin an action decided by it drives",
+    ),
+    label: str = typer.Option(None, "--label", help="What the page calls the part"),
+    list_kinds: bool = typer.Option(False, "--list", help="Print the catalogue and stop"),
+    board: str = ADD_BOARD_OPTION,
+    agent: Path = AGENT_OPTION,
+):
+    """Add a part of the catalogue: its \\[sim.parts] entry, its \\[requires], and an action, a gate and a test."""
+    from ..hal.parts import listing
+    from ..templates.add_part import add_part
+
+    if list_kinds:
+        console.print(escape(listing()), highlight=False)
+        return
+    if kind is None or name is None:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge add part",
+                why="a kind and a name are needed: the kind says what the part is, the name is its own",
+                how="neuroedge add part heater heater --pin gate_relay (neuroedge add part --list shows the kinds)",
+            )
+        )
+        return
+    _run_add(
+        f"part {kind}",
+        name,
+        lambda: add_part(
+            agent.parent,
+            kind,
+            name,
+            pin=pin,
+            sensor=sensor,
+            channel=channel,
+            drives=drives,
+            label=label,
+            board=board,
+            check=_check_added,
+            manifest=agent.name,
+            **part_context(),
+        ),
+    )
+
+
+def part_context() -> dict[str, Any]:
+    """What `add part` needs from the HAL, handed to the template layer (which reads no board)."""
+    from ..hal.parts import catalogue
+    from ..hal.virtual_board import VIRTUAL_BOARD
+
+    def board_lacks(board_id: str, kind: Any, target: str | None) -> list[str] | None:
+        """None when the board has the target; else the names it offers for the kind's primitive."""
+        board = load_board_by_id(board_id)
+        if kind.primitive == "display":
+            return None if board.supports("display") else []
+        names = {
+            "digital.out": list(board.pins),
+            "digital.in": list(board.input_pins),
+            "sensor.read": list(board.sensors),
+            "analog.in": [channel["name"] for channel in board.analog_channels],
+            "motion": [channel["name"] for channel in board.motion_channels],
+        }[kind.primitive]
+        return None if target in names else names
+
+    return {"kinds": catalogue(), "board_lacks": board_lacks, "virtual_board": VIRTUAL_BOARD}
 
 
 @add_app.command(name="device", epilog=epilog("add device"))
@@ -2242,7 +2353,9 @@ def _start_session(
             )
         )
         raise typer.Exit(code=2)
-    if ui and target != "sim":
+    # DP-A-05 (Q-83): on a real home the box's page is where the person answers `ask`, so
+    # `mcp serve --ui` runs on `linux` too; `run --ui` stays a simulator view.
+    if ui and target != "sim" and not (verb == "mcp serve" and target == "linux"):
         err_console.print(
             Panel(
                 f"`neuroedge {verb} --ui --target {escape(target)}` is not implemented: the "
@@ -2256,15 +2369,24 @@ def _start_session(
     if target == "linux":
         _exit_on_signals()  # before the lines are requested
     try:
-        return SimSession.load(
+        session = SimSession.load(
             agent or _default_agent(),
             target=target,
-            board_id=board,  # None: the target's reference board
+            board_id=board,  # None: `[sim] board`, else the target's reference board
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
             **({"clock": clock} if clock is not None else {}),
             **({"target_options": target_options} if target_options is not None else {}),
         )
+        if session.virtual_board is not None:  # VP-VB-05; stderr keeps MCP stdio clean
+            err_console.print(f"[yellow]{escape(session.virtual_board.startup_line())}[/yellow]")
+        if session.events.metadata.get("pin_map"):  # VP-PM-04
+            from ..hal.pin_map import startup_line
+
+            err_console.print(
+                f"[yellow]{escape(startup_line(session.events.metadata['pin_map']))}[/yellow]"
+            )
+        return session
     except BuildFailed as failed:
         _fail_build(failed)
     except NeuroEdgeError as error:
@@ -2721,12 +2843,24 @@ def build(
     agent: Path = typer.Option(Path("agent.toml"), "--agent", "-a", help="Path to agent.toml"),
     out: Path = typer.Option(Path("build"), "--out", "-o", help="Directory for build artifacts"),
     registry: Path | None = REGISTRY_OPTION,
+    brain: str | None = typer.Option(
+        None,
+        "--brain",
+        help="esp32s3: put a brain in the same image (neuroclaw: Profile B, risk=single_chip)",
+    ),
+    brain_source: Path | None = typer.Option(
+        None,
+        "--brain-source",
+        help="With --brain: a NeuroClaw checkout at the pinned commit (default: fetch it)",
+    ),
 ):
     """
     Match the agent's capability needs against the board and compile its gates.
 
     For esp32s3 it also writes the agent's firmware: an ESP-IDF project in
-    <out>/esp32s3/ to build and flash with idf.py. Any problem: exit 1, nothing written.
+    <out>/esp32s3/ to build and flash with idf.py. With --brain neuroclaw the same project
+    holds NeuroClaw-ESP, checked against targets/esp32s3/brain/neuroclaw.lock, and the bridge
+    (Q-83, Profile B). Any problem: exit 1, nothing written.
     """
     from ..engine.compiler import build as run_build
 
@@ -2737,6 +2871,8 @@ def build(
             board_id=board,  # None: the target's default board, never another one (RFC-0013 §3e)
             out_dir=out,
             registry=GateRegistry(registry) if registry is not None else None,
+            brain=brain,
+            brain_source=brain_source,
         )
     except BuildFailed as failed:
         _fail_build(failed)
@@ -2842,6 +2978,12 @@ def record(
     timeout: float = typer.Option(
         30.0, "--timeout", help="Seconds to wait for NE_TRACE DONE on a live port"
     ),
+    follow: bool = typer.Option(
+        False,
+        "--follow",
+        help="esp32s3: keep reading after NE_TRACE DONE (a running image's decisions) until "
+        "--timeout, the end of a file, or Ctrl-C; a session cut by stopping is left out",
+    ),
     voice_file: Path = VOICE_FILE_OPTION,
     voice_out: Path = VOICE_OUT_OPTION,
     registry: Path | None = REGISTRY_OPTION,
@@ -2885,7 +3027,9 @@ def record(
             )
         if keep_raw:
             _warn_raw()
-        _record_from_device(target, port, baud, timeout, out, keep_raw, board, agent, command)
+        _record_from_device(
+            target, port, baud, timeout, out, keep_raw, board, agent, command, follow
+        )
         return
     if voice_file is not None or voice_out is not None:
         code = _voice_session(
@@ -2920,7 +3064,9 @@ def record(
     raise typer.Exit(code=code)
 
 
-def _record_from_device(target, port, baud, timeout, out, raw, board, agent, command) -> None:
+def _record_from_device(
+    target, port, baud, timeout, out, raw, board, agent, command, follow=False
+) -> None:
     """`record --target esp32s3 --port`: the device's sessions, one trace file each."""
     from ..testing.uart import read_sessions
 
@@ -2950,7 +3096,7 @@ def _record_from_device(target, port, baud, timeout, out, raw, board, agent, com
         )
         return
     try:
-        sessions = read_sessions(port, baud=baud, timeout_s=timeout)
+        sessions = read_sessions(port, baud=baud, timeout_s=timeout, follow=follow)
     except NeuroEdgeError as error:
         _fail(error)
         return
@@ -2988,6 +3134,291 @@ def _record_from_device(target, port, baud, timeout, out, raw, board, agent, com
             f"{escape(what)}, device {escape(session.info['device_id'])}"
         )
     raise typer.Exit(code=0)
+
+
+@app.command("ui-link", epilog=epilog("ui-link"))
+def ui_link():
+    """
+    Print a fresh link to the running box's local page (DP-A-10): under a service manager the
+    URL is never printed to the journal; this asks the page for a new one-time code, and the
+    previous code stops working. Run it as the box's own user.
+    """
+    import urllib.error
+    import urllib.request
+    from urllib.parse import urlsplit
+
+    from ..sim.ui import CONTROL_HEADER, LINK_FILE, state_dir
+
+    link = state_dir() / LINK_FILE
+    try:
+        known = json.loads(link.read_text(encoding="utf-8"))
+        url, control = str(known["url"]), str(known["control"])
+    except (OSError, ValueError, KeyError, TypeError):
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge ui-link ({link})",
+                why="no running page has written its link file here",
+                how="start the box with --ui, as this user (or with the same $STATE_DIRECTORY)",
+            )
+        )
+        return
+    parts = urlsplit(url)
+    request = urllib.request.Request(
+        f"{parts.scheme}://{parts.netloc}/pair/new",
+        data=b"{}",
+        method="POST",
+        headers={CONTROL_HEADER: control, "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310 - loopback only
+            fresh = json.loads(response.read())["url"]
+    except (OSError, ValueError, KeyError, urllib.error.URLError) as error:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge ui-link ({parts.netloc})",
+                why=f"the page did not give a new link: {error}",
+                how="check that the box is still running; its link file may be from an old run",
+            )
+        )
+        return
+    console.print(fresh, soft_wrap=True)
+    err_console.print(
+        "the code after # works once, within ten minutes; open it before anything else"
+    )
+
+
+@app.command("doctor", epilog=epilog("doctor"))
+def doctor(
+    brain_user: str = typer.Option(
+        "neuroclaw", "--brain-user", help="The OS user the brain (NeuroClaw) runs as"
+    ),
+    keys: Path = typer.Option(
+        ..., "--keys", help="The box's key directory (`neuroedge pair init --out`)"
+    ),
+):
+    """
+    Check that the brain's user is kept apart from the box (Q-83, DP-A-03): no device group,
+    no device node, no read of the key directory, /proc with hidepid=2. Exit 1 naming each
+    problem; 0 when there is none.
+    """
+    import sys
+
+    from .. import isolation
+
+    if sys.platform != "linux":
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge doctor",
+                why="the checks read Linux users, /dev and /proc",
+                how="run it on the box's Linux machine",
+            )
+        )
+        return
+    found = isolation.problems(isolation.System.live(brain_user), keys)
+    for problem in found:
+        console.print(f"[bold red]✗[/bold red] {escape(problem)}")
+    if found:
+        raise typer.Exit(code=1)
+    console.print(f"[bold green]✓[/bold green] {escape(brain_user)} is kept apart from the box")
+
+
+@app.command("status", epilog=epilog("status"))
+def status_profile(
+    brain_config: Path = typer.Option(
+        Path("/var/lib/neuroclaw/config.json"),
+        "--brain-config",
+        help="The brain's config.json, as `neuroedge install --profile full` wrote it",
+    ),
+):
+    """
+    The risk labels in force on this box (Q-83 DP-COM-06): every Q-80 capability the brain has
+    on, `risk=<name>`, one per line, as the install printed them. Read it as root (the file is
+    the brain's, 0600). Exit 1 when the config cannot be read.
+    """
+    from .. import install
+
+    try:
+        config = json.loads(brain_config.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge status ({brain_config})",
+                why=f"the brain's config cannot be read: {error}",
+                how="run as root on the box, or pass --brain-config",
+            )
+        )
+        return
+    found = install.labels(config)
+    for label in found:
+        console.print(label)
+    if not found:
+        console.print("no risk label: every Q-80 capability of the brain is off")
+
+
+@app.command("install", epilog=epilog("install"))
+def install_profile(
+    profile: str = typer.Option(
+        ..., "--profile", help="full: the box and the NeuroClaw brain on this machine (Profile A)"
+    ),
+    agent: Path = typer.Option(
+        ..., "--agent", "-a", help="The agent's directory (it holds agent.toml)"
+    ),
+    target: str = typer.Option("linux", "--target", "-t", help="linux (real GPIO lines) or sim"),
+    host: str = typer.Option("localhost", "--host", help="The name the brain reaches the box by"),
+    port: int = typer.Option(8443, "--port", help="The box's MCP port"),
+    env_file: Path = typer.Option(
+        None,
+        "--env-file",
+        help="TELEGRAM_BOT_TOKEN, TELEGRAM_OWNER_ID, LLM_API_KEY (or OPENROUTER_API_KEY), "
+        "LLM_MODEL, LLM_PROVIDER, LLM_API_BASE: secrets never go on the command line",
+    ),
+    root: Path = typer.Option(
+        None, "--root", help="Stage every file under this directory and run nothing (to read it)"
+    ),
+    start: bool = typer.Option(True, "--start/--no-start", help="Start the services"),
+    allow: list[str] = typer.Option(
+        [],
+        "--allow",
+        help="Turn a NeuroClaw capability on (Q-80): shell, cron_shell, skill_install — each "
+        "printed and listed by `neuroedge status` as risk=<name>",
+    ),
+):
+    """
+    Install Profile A on this machine in one command (Q-83, DP-A-09): a `neuroedge` and a
+    `neuroclaw` system user, the box's keys, the pinned NeuroClaw release checked by SHA-256,
+    the brain's config over mTLS, hardened systemd units, /proc with hidepid=2, then
+    `neuroedge doctor`. Run as root; with --root the plan is staged and printed instead.
+    """
+    import sys
+
+    from .. import install, isolation
+
+    if profile != "full":
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge install --profile {profile}",
+                why="the one profile installed here is `full` (Profile A); Profile B is an image",
+                how="neuroedge install --profile full, or neuroedge build --target esp32s3 --brain neuroclaw",
+            ),
+            code=2,
+        )
+    env = install.read_env_file(env_file) if env_file is not None else {}
+    settings = install.settings_from_env(
+        agent, env, target=target, host=host, port=port, allow=tuple(allow)
+    )
+    system = install.System(root=root or Path("/"), live=root is None)
+    if system.live and sys.platform != "linux":
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge install",
+                why="it installs systemd units and Linux users",
+                how="run it on the box's Linux machine, or stage it with --root",
+            )
+        )
+        return
+    try:
+        done = install.install(settings, system, start=start and system.live)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    for line in done:
+        console.print(f"[green]✓[/green] {escape(line)}")
+    if not system.live:
+        console.print(f"Staged under {escape(str(system.root))}; as root this would run:")
+        for command in system.ran:
+            console.print(f"  {escape(' '.join(command))}")
+        return
+    found = isolation.problems(
+        isolation.System.live(install.BRAIN_USER), Path("/var/lib/neuroedge/keys")
+    )
+    for problem in found:
+        console.print(f"[bold red]✗[/bold red] {escape(problem)}")
+    if found:
+        raise typer.Exit(code=1)
+    console.print(f"[bold green]✓[/bold green] {install.BRAIN_USER} is kept apart from the box")
+
+
+# --- pair: a brain over the network (Q-83, DP-A-04, DP-A-11) --------------------------------
+
+
+def _pair(step: Callable[[], Any], directory: Path, what: str) -> None:
+    from .. import pairing
+
+    try:
+        step()
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    settings = json.loads((directory / "hop.json").read_text())
+    console.print(f"[green]✓[/green] {escape(what)} in {escape(str(directory))}")
+    console.print(
+        f"  box:   --tls-cert hop.pem --tls-key hop.key --client-ca ca.pem --jwks jwks.json "
+        f"--revoked {pairing.REVOKED}"
+    )
+    console.print(
+        f"         --issuer {escape(settings['issuer'])} --audience {escape(settings['audience'])}"
+    )
+    console.print("  brain: nao.pem, nao.key, nao.token (never issuer.key or ca.key)")
+
+
+@pair_app.command("init", epilog=epilog("pair init"))
+def pair_init(
+    out: Path = typer.Option(..., "--out", "-o", help="Directory for the keys (created)"),
+    audience: str = typer.Option(
+        ..., "--audience", help="https://<box>:8443/mcp, exactly the URL the brain calls"
+    ),
+    issuer: str | None = typer.Option(None, "--issuer", help="Token issuer URL"),
+    host: list[str] = typer.Option([], "--host", help="Another name or IP of the box"),
+    cert_days: int = typer.Option(365, "--cert-days", help="Lifetime of the certificates"),
+    token_days: int = typer.Option(7, "--token-days", help="Lifetime of the brain token, 1-7"),
+):
+    """
+    Create the CA, the box and brain certificates, the token signing key and a brain token
+    that lives at most 7 days (DP-A-04).
+    """
+    from .. import pairing
+
+    _pair(
+        lambda: pairing.create(
+            out,
+            audience,
+            issuer or pairing.ISSUER,
+            cert_days=cert_days,
+            token_days=token_days,
+            hosts=host,
+        ),
+        out,
+        "keys, certificates and a brain token",
+    )
+
+
+@pair_app.command("renew", epilog=epilog("pair renew"))
+def pair_renew(
+    directory: Path = typer.Option(..., "--dir", "-d", help="The directory `pair init` wrote"),
+    token_days: int = typer.Option(7, "--token-days", help="Lifetime of the new token, 1-7"),
+):
+    """A new brain token for the same certificate; the running box accepts it as is (DP-A-04)."""
+    from .. import pairing
+
+    _pair(lambda: pairing.renew(directory, token_days), directory, "a new brain token")
+
+
+@pair_app.command("rotate", epilog=epilog("pair rotate"))
+def pair_rotate(
+    directory: Path = typer.Option(..., "--dir", "-d", help="The directory `pair init` wrote"),
+    token_days: int = typer.Option(7, "--token-days", help="Lifetime of the new token, 1-7"),
+):
+    """
+    A new brain certificate and token; the old certificate goes into revoked.txt, which a
+    running box (`--revoked`) reads again on its next connection (DP-A-11).
+    """
+    from .. import pairing
+
+    _pair(
+        lambda: pairing.rotate(directory, token_days=token_days),
+        directory,
+        "a new brain certificate and token; the old one is revoked",
+    )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,34 @@
+# For fish the safe state of the air pump is ON. Turning it off asks the owner at home, and only
+# the owner's "có" stands in for owner_confirmed, for this one call (RFC-0006); a brain calling
+# over MCP is told a question is waiting and cannot answer it (Q-26). Warm water holds less
+# oxygen: from 29 °C water_hot fails too, a yes would not be enough, so nothing is asked and the
+# pump keeps running. No reading at all leaves water_hot undecided: refused the same way.
+schema:  neuroedge.gate/v1
+name:    aerator_off
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  water_hot:
+    type: bool
+    instructions: "Nước trong bể đang ấm (từ 29 °C), do cảm biến nhiệt trong nước báo"
+  owner_confirmed:
+    type: bool
+    instructions: "Chủ nhà xác nhận tại nhà cho đúng lần tắt sục khí này"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  water_hot:       false
+  owner_confirmed: true
+
+on_block:
+  action:   ask
+  message:  "Tắt sục khí thì cá thiếu oxy: chỉ chủ nhà xác nhận tại nhà mới tắt được, và nước từ 29 °C thì không tắt."
+  confirms: [owner_confirmed]
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

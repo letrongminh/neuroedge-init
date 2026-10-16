@@ -4,7 +4,7 @@
 frozen in `schemas/tool-call.v1.json` and `schemas/tool-result.v1.json` (RFC-0015, §1, §4, §9). Decisions:
 Q-24, Q-25, Q-26, Q-27, Q-58, Q-66 (`neuroedge-prd.md` §15).
 **Source code:** `python/neuroedge/actions/tools.py` (dispatch), `python/neuroedge/mcp_server.py`
-(MCP server), `python/neuroedge/mcp_http.py` (MCP server network port, §8.1), `python/neuroedge/mcp_host.py` (System 2 as MCP client),
+(MCP server), `python/neuroedge/mcp_http.py` (MCP server network port, §8.1), `python/neuroedge/mcp_host.py` (System 2 as MCP client; legacy, behind `NEUROEDGE_LEGACY_SYSTEM_TWO`, Q-83, DP-A-08),
 `python/neuroedge/sim/session.py` (grammar, System 2 loop).
 
 This document is the **sole** definition of tool calling in NeuroEdge. Other documents link
@@ -275,11 +275,13 @@ models, and turn measurements (§7.1). HAL primitive events (`actuator_command`,
 | `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | RFC-0006 |
 | `tool_confirm_rejected` | `id`, `source`, `reason` | RFC-0006 |
 | `tool_confirm_expired` | `id` | RFC-0006 |
-| `mcp_auth_refused` | `reason`, `status`, `subject?` — request to network port (§8.1) met 401 or 403, forwarding nothing. `reason`: `no_token` · `malformed_authorization` · `invalid_token` (signature, formatting, missing `exp` `iss` `sub`) · `expired` · `wrong_audience` · `wrong_issuer` · `not_cert_bound` · `cert_mismatch` · `insufficient_scope` (`status` 403). `subject` present only after signature validated (`cert_mismatch`, `not_cert_bound`, `insufficient_scope`). **Never** contains token, client address, or certificate. Max 10,000 events per session; final event marked `last_recorded: true`. Not a turn (no `turn_latency`); replay skips | TSK-P2-04 |
-| `ui_auth_refused` | `reason`, `path`, `last_recorded?` — POST to the local page (`run --ui`, `mcp serve --ui`, Studio) refused with 403, nothing run. `reason`: `foreign_host` · `no_origin` · `foreign_origin` · `no_key` · `wrong_key` · `bad_code` (`POST /pair`). `path` cut to 64 characters. **Never** contains the key or the pairing code. Max 10,000 events per session; final event marked `last_recorded: true`. Not a turn; replay skips | DP-A-02 (`deployment_profiles.md`) |
+| `tool_confirm_withheld` | `action`, `gate`, `pending` — a call that would ask while `pending` (4) questions wait; no question sent, the call is BLOCK `budget_exceeded` | DP-COM-09 (`deployment_profiles.md`) |
+| `mcp_auth_refused` | `reason`, `status?`, `subject?` — request to network port (§8.1) met 401 or 403, forwarding nothing. `reason`: `no_token` · `malformed_authorization` · `invalid_token` (signature, formatting, missing `exp` `iat` `iss` `sub`) · `expired` · `wrong_audience` · `wrong_issuer` · `not_cert_bound` · `cert_mismatch` · `lifetime_too_long` (`exp` − `iat` over 7 days, DP-A-04) · `insufficient_scope` (`status` 403) · `revoked_certificate` (the client certificate is in `--revoked`: the connection is closed after the handshake, before any HTTP, so no `status`; DP-A-11). `subject` present only after signature validated (`cert_mismatch`, `not_cert_bound`, `insufficient_scope`). **Never** contains token, client address, or certificate. Max 10,000 events per session; final event marked `last_recorded: true`. Not a turn (no `turn_latency`); replay skips | TSK-P2-04 |
+| `ui_auth_refused` | `reason`, `path`, `last_recorded?` — POST to the local page (`run --ui`, `mcp serve --ui`, Studio) refused with 403, nothing run. `reason`: `foreign_host` · `no_origin` · `foreign_origin` · `no_key` · `wrong_key` · `bad_code` (`POST /pair`) · `bad_control` (`POST /pair/new` without the control secret of `ui.json`, DP-A-10). `path` cut to 64 characters. **Never** contains the key or the pairing code. Max 10,000 events per session; final event marked `last_recorded: true`. Not a turn; replay skips | DP-A-02 (`deployment_profiles.md`) |
 | `mcp_tool_result` | `id`, `server`, `tool`, `status`, `sha256`, `bytes` — payload unrecorded (§10 rule 3) | Q-27 |
 | `mcp_server_unavailable` | `server`, `reason` (§10 rule 4) | Q-27 |
 | `system_two_call` | `provider`, `model`, `task`, `latency_ms`, `status`, `prompt_tokens?`, `completion_tokens?`, `cost_usd?`, `error?` — no prompts, no keys; replay skips | FR-MDL-06 |
+| `system_two_off` | `provider`, `model`, `flag` — the agent declares `[system_two]` but the box's own LLM path is legacy and off without `NEUROEDGE_LEGACY_SYSTEM_TWO=1`; the grammar, System 1 and the offline answer run as before. Once per session; replay skips | DP-A-08 (`deployment_profiles.md`) |
 | `system_two_unavailable` | `task`, `reason` — model failed to answer | FR-MDL-06 |
 | `system_two_rounds_exceeded` | `task`, `rounds` — exceeded `max_rounds` (§10 rule 6) | FR-MDL-11 |
 | `system_one_call` | `provider`, `model`, `criterion`, `latency_ms`, `status` (`ok` · `unavailable`), `reason?` (`Unavailable` reason: `offline`, `timeout`, `rate_limited`, `refused`, `malformed`, `empty`), `http_status?`, `confidence?`, `served_by?` (responding model version), `prompt_tokens?`, `completion_tokens?`, `cost_usd?` — per-turn SystemOne evaluation of cloud model for a criterion (`[system_one]`). Model receives speaker utterance only (`state = {utterance}`), never caller action or parameters; absent speaker utterance (e.g. MCP client call) or missing key skips call and logging. Events omit state, text, or keys; replay skips | TSK-I4-02 |
@@ -405,7 +407,8 @@ nothing forwards to MCP:
 | Check | Details |
 |:---|:---|
 | Signature | Asymmetric algorithms only (`RS*`, `PS*`, `ES*`, `EdDSA`) against `--jwks` keys, matched by `kid` (omitted `kid` allowed only with single key). `none` and `HS*` rejected unconditionally. JWKS containing private keys (`d`), symmetric keys (`oct`), or lacking signing keys **aborts startup**: a resource server holding signing keys can forge its own tokens |
-| `iss`, `aud`, `exp`, `sub` | All mandatory. `iss` equals `--issuer`; `aud` contains `--audience` (RFC 8707); `exp` unexpired, no clock skew tolerance; `sub` is device ID |
+| `iss`, `aud`, `exp`, `iat`, `sub` | All mandatory. `iss` equals `--issuer`; `aud` contains `--audience` (RFC 8707); `exp` unexpired, no clock skew tolerance; `exp` − `iat` at most 7 days (`lifetime_too_long`, DP-A-04: `neuroedge pair renew` issues the next one while the box runs); `sub` is device ID |
+| Revocation (`--revoked`, optional) | One certificate thumbprint per line, read again whenever the file changes. A client certificate on the list is cut off right after the TLS handshake, before any HTTP (`revoked_certificate`, DP-A-11); `neuroedge pair rotate` issues the brain a new certificate and lists the old one |
 | Certificate binding (RFC 8705) | `cnf.x5t#S256` mandatory and must match SHA-256 of connecting client certificate. Token issued to device A presented with certificate B returns 401; unbound tokens return 401. Both must be compromised together to exploit |
 | Scope | Token contains `--required-scope` in `scope` (space-delimited string) or `scp`; missing returns **403** (`insufficient_scope`) |
 
@@ -470,7 +473,7 @@ Compliance corpus licensing not yet under Apache-2.0: `TODOS.md` #57.
 
 ## 10. NeuroEdge as MCP Client (Q-27)
 
-System 2 acts as an **MCP host**: every tool it invokes routes through an MCP client
+System 2 acts as an **MCP host** (legacy: only with `NEUROEDGE_LEGACY_SYSTEM_TWO=1`, Q-83, DP-A-08): every tool it invokes routes through an MCP client
 (`ToolHost`, `python/neuroedge/mcp_host.py`), connecting to two server categories:
 
 ```text

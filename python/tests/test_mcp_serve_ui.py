@@ -243,7 +243,8 @@ def test_the_page_names_the_caller_of_each_verdict(served):
     _, server = served
     with urllib.request.urlopen(server.url, timeout=TIMEOUT) as response:
         body = response.read().decode("utf-8")
-    assert '"tool_call " + g.call.name + " · " + g.call.source' in body
+    assert "SOURCE[g.call.source] || g.call.source" in body
+    assert 'mcp: "Brain / client MCP"' in body
     # Trace text is only ever textContent; the one innerHTML is the constant SVG icons.
     assert set(re.findall(r"innerHTML\s*=\s*(\w+)", body)) == {"markup"}
     assert not re.search(r"<(script|link|img)[^>]+(src|href)=", body)
@@ -537,3 +538,64 @@ def test_the_real_command_writes_its_trace_and_leaves_with_143_on_sigterm(home, 
             process.wait()
     trace = written(trace_out)
     assert [e["type"] for e in trace["events"]].count("actuator_command") == 1
+
+
+def test_under_a_service_manager_the_link_goes_to_a_private_file_and_ui_link_renews_it(
+    home, tmp_path
+):
+    """TC-A-10-1 (DP-A-10): no URL in the journal, a 0600 link file, a fresh code on demand."""
+    import stat
+    import subprocess
+
+    env = {**child_env(), "NEUROEDGE_SERVICE": "1", "XDG_STATE_HOME": str(tmp_path / "state")}
+    env.pop("INVOCATION_ID", None)
+    link = tmp_path / "state" / "neuroedge" / "ui.json"
+    process = subprocess.Popen(
+        [sys.executable, *serve_args(home, "--port", "0")],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    try:
+        deadline = time.monotonic() + TIMEOUT
+        while not link.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert stat.S_IMODE(link.stat().st_mode) == 0o600
+        assert stat.S_IMODE(link.parent.stat().st_mode) == 0o700
+        first = json.loads(link.read_text())["url"]
+        base, old = first.split("#c=")
+        linked = subprocess.run(
+            [sys.executable, "-m", "neuroedge.cli.main", "ui-link"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT,
+        )
+        assert linked.returncode == 0, linked.stderr
+        fresh = linked.stdout.strip()
+        assert fresh.startswith(base + "#c=") and fresh.split("#c=")[1] != old
+        assert json.loads(link.read_text())["url"] == fresh
+
+        def pair(code: str, path: str = "/pair", headers: dict | None = None) -> int:
+            request = urllib.request.Request(
+                base.rstrip("/") + path,
+                data=json.dumps({"code": code}).encode(),
+                method="POST",
+                headers={"Origin": base.rstrip("/"), **(headers or {})},
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+                    return response.status
+            except urllib.error.HTTPError as error:
+                return error.code
+
+        assert pair(old) == 403  # the code printed before `ui-link` no longer works
+        assert pair(fresh.split("#c=")[1]) == 200
+        assert pair("", "/pair/new", {"X-NeuroEdge-UI-Control": "guess"}) == 403
+    finally:
+        process.terminate()
+        _, stderr = process.communicate(timeout=3 * TIMEOUT)
+    journal = stderr.decode()
+    assert "#c=" not in journal and "ui.json" in journal and "neuroedge ui-link" in journal
+    assert not link.exists()  # the page that wrote it removed it on the way out

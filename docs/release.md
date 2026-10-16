@@ -23,15 +23,14 @@ Publishing to indexes uses trusted publishing (OIDC): the repository holds no Py
 Pull requests modifying packaging files run `build`, `sbom`, and `smoke`, never reaching `attest` or `publish-*`.
 **Keep `PUBLISH_ENABLED` unset until I6.**
 
-## Internal tags (I1–I5)
+## Internal tags (I1–I3a, I2a–I2f)
 
-The example below is I1 (`v0.1.0`). The repository is still private, so wheels only go to people in the organization or
+The example below is I1 (`v0.1.0`). The repository is public (since 2026-09-25), but nothing is on an index yet: wheels only go to people in the organization or
 testers handed them directly by the team (I1: on-site TTFV test session, `TSK-I1-02`).
 
 - **Version PR.** Update `version` in `python/pyproject.toml` (I1: `0.1.0`); change the heading
-  `### [Chưa phát hành]` in `CHANGELOG.md` §1 to `### [0.1.0] — YYYY-MM-DD — internal`, add an
-  empty `### [Unreleased]` above it. Do not add a version link at the end of the file — the repo is
-  still private. CI passes, merge.
+  `### [Unreleased]` in `CHANGELOG.md` §1 to `### [0.1.0] — YYYY-MM-DD — internal`, add an
+  empty `### [Unreleased]` above it. Do not add a version link at the end of the file — internal tags have no public release page. CI passes, merge.
 - **Tag.** `git tag v0.1.0 && git push origin v0.1.0`. Since `PUBLISH_ENABLED` is not set, only
   `build`, `sbom`, `smoke`, and `attest` run; `publish-*` and `github-release` are skipped.
 - **Internal GitHub Release** attaching the exact wheel verified by `smoke`, and its SBOM:
@@ -95,7 +94,7 @@ Follow in exact order when I6 opens. Steps 1–4 are configuration; none of them
    ```
 
 6. **Production release.** A PR updating `version` to `0.6.0` **and** changing heading
-   `### [Chưa phát hành]` in `CHANGELOG.md` §1 to `### [0.6.0] — YYYY-MM-DD`, adding an empty
+   `### [Unreleased]` in `CHANGELOG.md` §1 to `### [0.6.0] — YYYY-MM-DD`, adding an empty
    `### [Unreleased]` above it, and adding the link at the end of the file
    `[0.6.0]: https://github.com/letrongminh/neuroedge-init/releases/tag/v0.6.0` (following the public repo
    from step 1). Merge, then `git tag v0.6.0 && git push origin v0.6.0`. Approve the `pypi` environment

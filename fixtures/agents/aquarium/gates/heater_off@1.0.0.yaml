@@ -1,0 +1,22 @@
+# Turning the heater off is safe at any temperature: a cooler tank warms up again when it comes
+# back on. Still gated (A3): every path to a pin goes through a gate. `call_source` is set by the
+# dispatcher (on the chip, by the bridge).
+schema:  neuroedge.gate/v1
+name:    heater_off
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

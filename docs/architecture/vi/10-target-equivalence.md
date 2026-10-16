@@ -20,8 +20,8 @@ the board profile.
 Equivalence is not promised equally across all hardware. NeuroEdge clearly defines commitments across three tiers (Q-13, FR-TGT-08, `simulation_coverage.md` §7):
 
 - **Tier 1 (`sim`, `linux`, `esp32s3`):** `neuroedge verify` achieves 100%; tested on every PR (`sim`, gpio-sim; QEMU for PRs touching `targets/**`) and nightly testing commitment on real boards (TSK-S4-05, TSK-I2-01 — not yet running).
-- **Tier 2 (maintained by the core team, e.g. `jetson` at I16):** `neuroedge verify` on the verdict domain; hardware testing per release cycle, not nightly.
-- **Tier 3 (ported by community, e.g. `stm32`, `rp2350` outside the robot node role):** contributors self-verify via the Compliance Test Suite; the core team does not commit to quality and does not block releases for this tier.
+- **Tier 2 (maintained by the core team; `jetson`, its example, was removed from the roadmap by Q-77):** `neuroedge verify` on the verdict domain; hardware testing per release cycle, not nightly.
+- **Tier 3 (ported by community, e.g. `stm32`, `rp2350` ):** contributors self-verify via the Compliance Test Suite; the core team does not commit to quality and does not block releases for this tier.
 
 Details on target tiering and expansion roadmap: [`15`](15-target-architecture.md) §4.1.
 
@@ -62,8 +62,8 @@ flowchart TB
 | Primitive | `sim` (`sim-default`) | `linux` (`linux-rpi5`) | `esp32s3` (`esp32s3-box-3`) |
 |:---|:---|:---|:---|
 | `digital.out` | `SimHAL`, single-use tokens — PR | libgpiod v2, find line by name — PR on gpio-sim | C walker + token ledger — host and QEMU; real pins `planned` (TSK-S4-01) |
-| `audio.in` | typed text to grammar; WAV → VAD → STT — PR | WAV file — PR; real microphone via PipeWire — newly opened device | `planned` (I5) |
-| `audio.out` | sentence to speak; TTS → speaker timeline → WAV — PR | WAV file — PR; real speaker — not yet tested on hardware | `planned` (I5) |
+| `audio.in` | typed text to grammar; WAV → VAD → STT — PR | WAV file — PR; real microphone via PipeWire — newly opened device | removed (Q-77), roadmap §6 |
+| `audio.out` | sentence to speak; TTS → speaker timeline → WAV — PR | WAV file — PR; real speaker — not yet tested on hardware | removed (Q-77), roadmap §6 |
 | `sensor.read` | emulated readings — PR | sysfs hwmon/IIO — PR on `i2c-stub` + `lm75` | `planned` (TSK-S4-03) |
 | `display` | in-memory buffer, digest — PR | framebuffer — PR on `vfb`/`vkms` | LVGL interface: golden image on host — PR; real panel `planned` |
 
@@ -79,7 +79,7 @@ They await nightly runners on real hardware (TSK-S4-05, TSK-I2-01).
   Missing ⇒ `NE3001`, build halts, nothing is written. Example: `villa-concierge` requires `aec = true`, so it is rejected
   on `linux-rpi5` until the Pi measurements achieve echo cancellation (`simulation_coverage.md` §6.2).
 - **Pin names are logical** (`door_lock`, `porch_light`, `gate_relay`); GPIO numbers belong to each target's HAL.
-- The target list is frozen at the three tier-1 targets until the code portion of RFC-0002 (signed 2026-10-04) lands in I2c.
+- The target list is closed at the three tier-1 targets (`sim`, `linux`, `esp32s3`; enum in `schemas/board.v1.json`). The code portion of RFC-0002 was removed from the roadmap (Q-77, TSK-V1a-02); roadmap §6.
 
 ## 5. What `verify` Does on Each Target
 
@@ -99,8 +99,6 @@ a `gate_digest` (recorded prior to RFC-0008) replay exactly as before.
 An artifact type matching 0 files ⇒ `NE4004`, exit code 1: no empty "PASS".
 
 > [!NOTE]
-> **Verification plan for tiered robots (planned):** `neuroedge verify` will extend to node clusters (Pi 5 + ESP32-S3 + RP2350, TSK-W3-06): comparing verdicts and actuator states across nodes in the verdict domain; divergence → `NE4002` (draft RFC-node §3.6). Details: [`15`](15-target-architecture.md) §4.3.
-
 ## 6. What Equivalence Does Not Promise
 
 - **Timing.** `verify` compares decisions, not timing yet (TSK-S4-04).
@@ -119,9 +117,9 @@ An artifact type matching 0 files ⇒ `NE4004`, exit code 1: no empty "PASS".
 
 | Port Type | Possible Today? | Notes |
 |:---|:---|:---|
-| **New board for an existing target** (another Linux SBC, another ESP32-S3 board) | Technically yes; but `boards/` only accepts **reference board profiles for the three tier-1 targets** (four files since `sim-rpi5`, RFC-0013) until the code portion of RFC-0002 lands in I2c (`test_boards.py`), and the reference board for `esp32s3` is strictly Box-3 (invariant 6) | Used for internal experimentation; not publishable yet. From I2c (`planned`), community boards outside the repo are loaded via `--board <path>`, self-certified via `board validate`, and never serve as reference boards (TSK-I2c-05) |
-| **New target** (`stm32`, `rp2350`, `jetson`) | **Not yet**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` | RFC-0002 (signed 2026-10-04) opens tiered lists — code lands in I2c ([`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §4.3.3, formerly I11); community porting toolkit in I13 |
-| **Tier 3 self-tested by community** (Q-13) | Process planned for I13 (`TSK-P1-01…05`) | This chapter describes what code exists today and what will change |
+| **New board for an existing target** (another Linux SBC, another ESP32-S3 board) | Technically yes; but `boards/` only accepts **reference board profiles for the three tier-1 targets** (four files since `sim-rpi5`, RFC-0013) while the target list stays closed (Q-77; `test_boards.py`), and the reference board for `esp32s3` is strictly Box-3 (invariant 6) | Used for internal experimentation; not publishable yet. From I2c (`planned`), community boards outside the repo are loaded via `--board <path>`, self-certified via `board validate`, and never serve as reference boards (TSK-I2c-05) |
+| **New target** (`stm32`, `rp2350`, `jetson`) | **No**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` (Q-77) | RFC-0002 is approved but its code was removed from the roadmap ([`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §6) |
+| **Tier 3 self-tested by community** (Q-13) | No process: the porting kit (I13) was removed from the roadmap (Q-77) | This chapter describes what code exists today and what will change |
 
 The remainder describes the **contract** — which does not change when the target list opens — and immediately reusable code.
 
@@ -272,8 +270,8 @@ measurable static buffers, command cancellation within ≤ 1 frame, `const` capa
 | 5 | `neuroedge verify --targets <t> --port <source>` (chip) or `neuroedge verify --targets sim,<t>` (host) | three canonical traces yield identical decisions; divergence ⇒ `NE4002` |
 | 6 | Tool call and voice corpus on the new HAL | matches `expected_results.yaml` |
 
-Tools for packaging the vector suite to run **outside** the repo, and the `board check` command, are slated for I13 (`TSK-P1-01`,
-`TSK-P1-05`).
+Tools for packaging the vector suite to run **outside** the repo, and the `board check` command, were part of I13 (`TSK-P1-01`,
+`TSK-P1-05`), removed from the roadmap (Q-77).
 
 ### 7.7 Assets and Licensing of a Port
 

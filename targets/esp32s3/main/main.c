@@ -61,6 +61,7 @@
 #include "freertos/task.h"
 #include "nvs_flash.h"
 
+#include "brain.h"
 #include "gate_selftest.h"
 #include "memory_probe.h"
 #include "ne_agent.h"
@@ -122,7 +123,7 @@ static void init_nvs(void)
  * overstate the memory available to the agent by tens of kilobytes, and
  * overstating it is the failure mode R-1 warns about.
  */
-#ifndef CONFIG_NEUROEDGE_SKIP_NETWORK
+#if !defined(CONFIG_NEUROEDGE_SKIP_NETWORK) && !NEUROEDGE_BRAIN
 static void init_network_stack(void)
 {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -188,6 +189,9 @@ void app_main(void)
      * and whether the last update was rolled back (FR-OTA-01/02). */
     ne_ota_boot();
     ne_config_init(); /* NE_CONFIG STORAGE ...: the owner's settings, in safe mode too */
+#if NEUROEDGE_BRAIN
+    if (!boot.safe_mode) brain_prepare(); /* NE_RISK risk=single_chip, before the console */
+#endif
 
     if (boot.safe_mode) {
         /* Serial console only. A pending image stays pending, so the bootloader
@@ -228,7 +232,20 @@ void app_main(void)
             vTaskDelay(pdMS_TO_TICKS(10000));
         }
     }
+#if NEUROEDGE_BRAIN
+    if (brain_selftest() != 0) {
+        /* DP-B-15: an update whose bridge does not answer is not kept. */
+        ne_ota_boot_rejected();
+        ESP_LOGE(TAG, "bridge self-check failed: the brain is not started, stopping");
+        while (true) {
+            vTaskDelay(pdMS_TO_TICKS(10000));
+        }
+    }
+#endif
     ne_ota_boot_confirmed(); /* a pending image that passed the self-test may stay */
+#if NEUROEDGE_BRAIN
+    brain_trace(&info); /* the brain's decisions, NE1 sessions on this UART (DP-B-12) */
+#endif
     int sessions = 1;
 #ifdef CONFIG_NEUROEDGE_REPLAY_VECTORS
     const int replayed = neuroedge_trace_vectors(&sink, &info, &s_vector_ledger, esp_fill_random,
@@ -249,9 +266,19 @@ void app_main(void)
 
 #ifdef CONFIG_NEUROEDGE_SKIP_NETWORK
     ESP_LOGW(TAG, "network skipped (CONFIG_NEUROEDGE_SKIP_NETWORK): network_ready not measured");
+#if NEUROEDGE_BRAIN
+    brain_offline();
+#endif
+#elif NEUROEDGE_BRAIN
+    brain_network(); /* DP-B-11: the one Wi-Fi start, connected from ne_config */
+    neuroedge_memory_probe(NEUROEDGE_CP_NETWORK_READY, "network_ready");
 #else
     init_network_stack();
     neuroedge_memory_probe(NEUROEDGE_CP_NETWORK_READY, "network_ready");
+#endif
+#if NEUROEDGE_BRAIN
+    brain_start(); /* without the network the board's buttons still go through the gate */
+    neuroedge_memory_report_heap_json("brain_ready");
 #endif
 
     /* The gate runtime is trusted by now: an update may be fetched. No-op

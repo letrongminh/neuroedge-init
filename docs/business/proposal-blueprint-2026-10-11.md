@@ -1,3 +1,5 @@
+> **Historical rationale, not maintained.** Format and install → `docs/spec/blueprint.md` (Q-86); missions → `docs/spec/missions.md` (Q-87); business → `brd-ambient-intelligence.md` (Q-85).
+
 # NeuroEdge — Draft Proposal: from an utterance to a physical AI product
 
 2026-10-11 · Trong-Minh Le (@letrongminh) · **Status:** proposed for **Q-72** (PRD §15); four items decided during review under "Decisions to finalize"

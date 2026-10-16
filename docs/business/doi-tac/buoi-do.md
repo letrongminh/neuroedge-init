@@ -1,6 +1,6 @@
 # Buổi đo ≤ 15 phút với đối tác (điều kiện đối tác 5)
 
-> Điều kiện (roadmap §4.3.3, Q-60): *đội đối tác cài wheel trên máy của họ, chạy ba hướng dẫn và che được một MCP server hoặc API thiết bị thật của họ trong ≤ 15 phút.*
+> Điều kiện (roadmap §4.3.3, Q-70): *đội đối tác cài wheel trên máy của họ, chạy ba hướng dẫn và che được một MCP server hoặc API thiết bị thật của họ trong ≤ 15 phút.*
 > Buổi này đo đúng điều đó. Nó là **bước của người**; script duy nhất là đồng hồ ([`scripts/partner_session_timer.sh`](../../../scripts/partner_session_timer.sh)).
 > Hướng dẫn người tham gia đọc: [`docs/user/doi-tac/`](../../user/doi-tac/README.md). Đã có script chạy mọi lệnh của hướng dẫn trên bản giả
 > ([`scripts/partner_guides_check.sh`](../../../scripts/partner_guides_check.sh)) — buổi này đo điều script không đo được: **người thật, máy thật, thiết bị thật**.

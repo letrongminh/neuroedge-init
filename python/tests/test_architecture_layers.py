@@ -31,6 +31,12 @@ ALLOWED: dict[str, set[str]] = {
     "mcp_server": {"actions", "errors"},
     # the network door (TSK-P2-04): the same server as stdio's, behind TLS and token checks
     "mcp_http": {"errors", "mcp_server"},
+    # `neuroedge pair` (Q-83, DP-A-04, DP-A-11): keys, certificates and tokens for the network door
+    "pairing": {"errors"},
+    # `neuroedge doctor` (Q-83, DP-A-03): reads users, /dev and /proc; no other layer
+    "isolation": set(),
+    # `neuroedge install --profile full` (Q-83, DP-A-09): users, keys, the brain, systemd units
+    "install": {"errors", "pairing"},
     "viz": {"errors", "hal", "trace"},
     "templates": {"errors", "paths"},
     "sim": {
@@ -80,12 +86,18 @@ ALLOWED: dict[str, set[str]] = {
     "__main__": {"cli"},
 }
 # the engine's pure core: only engine/compiler.py matches the agent against a board
-HAL_IN_ENGINE = {"engine/compiler.py"}
+# build time only: board validation (compiler), an action's pin operations for the chip (Q-83)
+HAL_IN_ENGINE = {"engine/compiler.py", "engine/chip_actions.py"}
 # module -> units it may import lazily (inside a function) beyond its module-level set
 LAZY: dict[str, set[str]] = {
     # `plugins`: `[plugins]` and `[actuators]` are checked by the build (RFC-0018 §3b)
     "engine/compiler.py": {"actions", "mcp_host", "models", "perception", "plugins"},
+    # the chip's tools are the ones `mcp serve` lists, from the same function (DP-COM-02, DP-B-03)
+    "engine/firmware.py": {"actions"},
     "cli/main.py": {
+        "install",
+        "isolation",
+        "pairing",
         "guard",
         "plugins",
         "mcp_desktop",

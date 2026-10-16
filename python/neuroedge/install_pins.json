@@ -1,0 +1,16 @@
+{
+  "comment": "NeuroClaw for `neuroedge install --profile full` (Q-83 DP-A-09, DP-NF-02): one version, the SHA-256 of each release archive. Upgrade in one commit, with a passing contract run.",
+  "repository": "https://github.com/letrongminh/neuroclaw",
+  "version": "v0.2.2",
+  "commit": "71b76a939379bd3b7b8842353272f27253716b63",
+  "assets": {
+    "x86_64": {
+      "name": "neuroclaw_Linux_x86_64.tar.gz",
+      "sha256": "bde8a1d0625805baaeee2ab144d5bdd2939e94f2ac0a66840d77ecbe7405ef95"
+    },
+    "aarch64": {
+      "name": "neuroclaw_Linux_arm64.tar.gz",
+      "sha256": "3660986c8a8c6f4495f713ac2baad3550011f459f777cbb68da0ce88c57dc473"
+    }
+  }
+}

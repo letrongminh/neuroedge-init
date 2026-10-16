@@ -35,13 +35,27 @@
 #   g  a correctly signed but lower version is refused as a downgrade
 #      (SKIP reason=downgrade) by the high-water mark from boot b.
 #
+# With the brain in the image (Q-83 Profile B, NEUROEDGE_OTA_BRAIN=1 and
+# NEUROEDGE_OTA_PROJECT=<the project `neuroedge build --brain neuroclaw` wrote>)
+# every image is box and brain together — an update replaces both (DP-B-15) —
+# on the same table with its factory slot; phase g is then the brain's downgrade
+# refusal by the high-water mark (DP-B-17, TC-B-17-1), and one more phase runs:
+#
+#   h  an image whose bridge self-check fails marks itself INVALID and the
+#      bootloader rolls back (NEUROEDGE_OTA_TEST_FAIL_BRAIN, TC-B-15-1).
+#
 # Any missing marker, wrong order, marker that must not appear, unexpected
 # QEMU exit or timeout is exit 1. The QEMU UART logs and the HTTP server log
 # stay under targets/esp32s3/build/ota-test/logs/.
 set -euo pipefail
 
-project=$(cd "$(dirname "$0")/../targets/esp32s3" && pwd)
 repo=$(cd "$(dirname "$0")/.." && pwd)
+project=$(cd "${NEUROEDGE_OTA_PROJECT:-$repo/targets/esp32s3}" && pwd)
+brain=${NEUROEDGE_OTA_BRAIN:-0}
+# The slot the first update lands in, and the other one. Both tables (the box's, and the box
+# and brain's from engine/brain.py, DP-B-09) boot from `factory`, so updates go ota_0, then
+# ota_1, and roll back to ota_0.
+first=ota_0 second=ota_1
 work=${NEUROEDGE_OTA_WORK:-"$project/build/ota-test"}
 timeout_s=${NEUROEDGE_OTA_TIMEOUT:-240}
 port=8070
@@ -133,6 +147,9 @@ size_check() { # <name> <build> <image>
 }
 
 defaults="sdkconfig.defaults;sdkconfig.qemu;sdkconfig.ota;sdkconfig.qemu_ota"
+if [ "$brain" = 1 ]; then
+  [ -d "$project/components/neuroclaw" ] || fail "NEUROEDGE_OTA_BRAIN=1 needs a --brain project: $project"
+fi
 espsecure.py generate_signing_key --version 2 --scheme rsa3072 "$work/key-a.pem" >/dev/null
 espsecure.py generate_signing_key --version 2 --scheme rsa3072 "$work/key-b.pem" >/dev/null
 
@@ -155,6 +172,12 @@ sign_image "$work/key-b.pem" "$work/c/$(app_bin "$work/c")" "$images/c-bad.bin"
 printf 'CONFIG_NEUROEDGE_OTA_TEST_FAIL_SELFTEST=y\n' >"$work/sdkconfig.fail"
 build_variant c2 0.3.1 "$defaults" "$work/sdkconfig.fail"
 sign_image "$work/key-a.pem" "$work/c2/$(app_bin "$work/c2")" "$images/c2.bin"
+
+if [ "$brain" = 1 ]; then
+  printf 'CONFIG_NEUROEDGE_OTA_TEST_FAIL_BRAIN=y\n' >"$work/sdkconfig.fail-brain"
+  build_variant c3 0.3.2 "$defaults" "$work/sdkconfig.fail-brain"
+  sign_image "$work/key-a.pem" "$work/c3/$(app_bin "$work/c3")" "$images/c3.bin"
+fi
 
 # The board OTA image (Wi-Fi linked, no QEMU layer) is the one that ships: check
 # it fits an A/B slot with room for the Q-3 floor. The key is a throwaway, like
@@ -286,15 +309,15 @@ assert a ota_count_is "$logs/a.log" '^NE_SELFTEST PASS' 1
 # (b) a signed newer image is fetched and switched to; on its first boot it
 # passes the gate self-test and is marked VALID (its own boot, fresh process).
 serve "$images/b.bin"
-qemu_once b 1 '^NE_OTA SWITCH partition=ota_0$' idle 0
+qemu_once b 1 "^NE_OTA SWITCH partition=${first}\$" idle 0
 qemu_once b 2 '^NE_OTA SKIP reason=same_version version=0\.2\.0$' idle
 join_boots b
 assert b ota_ordered "$logs/b.log" \
   "^NE_OTA CHECK url=$URL\$" \
   '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.2\.0$' \
-  '^NE_OTA SWITCH partition=ota_0$' \
+  "^NE_OTA SWITCH partition=${first}\$" \
   '^NE_SELFTEST PASS walker=[0-9]+ token=[0-9]+' \
-  '^NE_OTA VALID partition=ota_0$' \
+  "^NE_OTA VALID partition=${first}\$" \
   '^NE_OTA SKIP reason=same_version version=0\.2\.0$'
 assert b ota_forbid "$logs/b.log" '^NE_OTA (REJECTED|ROLLBACK)'
 assert b ota_count_is "$logs/b.log" '^NE_SELFTEST PASS' 2
@@ -321,7 +344,7 @@ assert c ota_nothing_after "$logs/c.log" '^NE_OTA REJECTED reason=signature$' '^
 # stopped at the self-test line, before it reaches the network, and boot 4 (a
 # fresh process, fresh cache) reads the rollback and refuses that version.
 serve "$images/c-good.bin"
-qemu_once d 1 '^NE_OTA SWITCH partition=ota_1$' idle 0
+qemu_once d 1 "^NE_OTA SWITCH partition=${second}\$" idle 0
 qemu_once d 2 '^NE_OTA TEST BOOTLOOP$' exit
 qemu_once d 3 '^NE_SELFTEST PASS walker=[0-9]+ token=[0-9]+$' idle 0
 qemu_once d 4 '^NE_OTA SKIP reason=rolled_back version=0\.3\.0$' idle
@@ -329,30 +352,30 @@ join_boots d
 assert d ota_ordered "$logs/d.log" \
   "^NE_OTA CHECK url=$URL\$" \
   '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.3\.0$' \
-  '^NE_OTA SWITCH partition=ota_1$' \
+  "^NE_OTA SWITCH partition=${second}\$" \
   '^NE_OTA TEST BOOTLOOP$' \
-  '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' \
+  "^NE_OTA ROLLBACK from=${second} to=${first}\$" \
   '^NE_SELFTEST PASS walker=[0-9]+ token=[0-9]+' \
   '^NE_OTA SKIP reason=rolled_back version=0\.3\.0$'
-assert d ota_forbid "$logs/d.log" '^NE_OTA VALID partition=ota_1'
-assert d ota_count_is "$logs/d.log" '^NE_OTA ROLLBACK from=ota_1 to=ota_0' 1
+assert d ota_forbid "$logs/d.log" "^NE_OTA VALID partition=${second}"
+assert d ota_count_is "$logs/d.log" "^NE_OTA ROLLBACK from=${second} to=${first}" 1
 
 # (e) an image whose gate self-test fails marks itself INVALID and reboots
 # (the self-test path of FR-OTA-02); the bootloader rolls back to 0.2.0 again.
 serve "$images/c2.bin"
-qemu_once e 1 '^NE_OTA SWITCH partition=ota_1$' idle 0
-qemu_once e 2 '^NE_OTA INVALID partition=ota_1$' exit
+qemu_once e 1 "^NE_OTA SWITCH partition=${second}\$" idle 0
+qemu_once e 2 "^NE_OTA INVALID partition=${second}\$" exit
 qemu_once e 3 '^NE_OTA SKIP reason=rolled_back version=0\.3\.1$' idle
 join_boots e
 assert e ota_ordered "$logs/e.log" \
   "^NE_OTA CHECK url=$URL\$" \
   '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.3\.1$' \
-  '^NE_OTA SWITCH partition=ota_1$' \
+  "^NE_OTA SWITCH partition=${second}\$" \
   '^NE_SELFTEST FAIL test image NEUROEDGE_OTA_TEST_FAIL_SELFTEST$' \
-  '^NE_OTA INVALID partition=ota_1$' \
-  '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' \
+  "^NE_OTA INVALID partition=${second}\$" \
+  "^NE_OTA ROLLBACK from=${second} to=${first}\$" \
   '^NE_OTA SKIP reason=rolled_back version=0\.3\.1$'
-assert e ota_forbid "$logs/e.log" '^NE_OTA VALID partition=ota_1'
+assert e ota_forbid "$logs/e.log" "^NE_OTA VALID partition=${second}"
 assert e ota_count_is "$logs/e.log" '^NE_SELFTEST FAIL test image' 1
 
 # (f) an unsigned image is refused: no signature block, no switch, and the
@@ -364,12 +387,12 @@ join_boots f
 assert f ota_ordered "$logs/f.log" \
   "^NE_OTA CHECK url=$URL\$" \
   '^NE_OTA REJECTED reason=signature$' \
-  '^NE_OTA ERASED partition=ota_1$'
+  "^NE_OTA ERASED partition=${second}\$"
 # The boot reports phase e's aborted slot once, before the check; nothing may
 # switch, confirm or roll back after it.
 assert f ota_forbid "$logs/f.log" '^NE_OTA (SWITCH|VALID)'
 assert f ota_count_is "$logs/f.log" '^NE_OTA ROLLBACK' 1
-assert f ota_count_is "$logs/f.log" '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' 1
+assert f ota_count_is "$logs/f.log" "^NE_OTA ROLLBACK from=${second} to=${first}\$" 1
 assert f ota_nothing_after "$logs/f.log" "^NE_OTA CHECK url=$URL\$" '^NE_OTA ROLLBACK'
 assert f ota_count_is "$logs/f.log" '^NE_SELFTEST PASS' 1
 
@@ -385,15 +408,41 @@ assert g ota_ordered "$logs/g.log" \
   '^NE_OTA SKIP reason=downgrade version=0\.1\.0$'
 assert g ota_forbid "$logs/g.log" '^NE_OTA (DOWNLOADED|SWITCH|REJECTED)'
 assert g ota_count_is "$logs/g.log" '^NE_OTA ROLLBACK' 1
-assert g ota_count_is "$logs/g.log" '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' 1
+assert g ota_count_is "$logs/g.log" "^NE_OTA ROLLBACK from=${second} to=${first}\$" 1
 assert g ota_nothing_after "$logs/g.log" "^NE_OTA CHECK url=$URL\$" '^NE_OTA ROLLBACK'
 assert g ota_count_is "$logs/g.log" '^NE_SELFTEST PASS' 1
+
+# --- box and brain in one image (Q-83 Profile B) ----------------------------------------------
+
+phases="a b c d e f g"
+if [ "$brain" = 1 ]; then
+  # (h) the bridge self-check is part of the boot self-test: an image whose
+  # bridge does not answer is never kept (DP-B-15).
+  serve "$images/c3.bin"
+  qemu_once h 1 "^NE_OTA SWITCH partition=${second}\$" idle 0
+  qemu_once h 2 "^NE_OTA INVALID partition=${second}\$" exit
+  qemu_once h 3 '^NE_OTA SKIP reason=rolled_back version=0\.3\.2$' idle
+  join_boots h
+  assert h ota_ordered "$logs/h.log" \
+    "^NE_OTA CHECK url=$URL\$" \
+    '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.3\.2$' \
+    "^NE_OTA SWITCH partition=${second}\$" \
+    '^NE_SELFTEST PASS walker=[0-9]+ token=[0-9]+' \
+    '^NE_BRAIN SELFTEST FAIL test image NEUROEDGE_OTA_TEST_FAIL_BRAIN$' \
+    "^NE_OTA INVALID partition=${second}\$" \
+    "^NE_OTA ROLLBACK from=${second} to=${first}\$" \
+    '^NE_BRAIN SELFTEST PASS tools=[1-9][0-9]*$' \
+    '^NE_OTA SKIP reason=rolled_back version=0\.3\.2$'
+  assert h ota_forbid "$logs/h.log" "^NE_OTA VALID partition=${second}"
+
+  phases="$phases h"
+fi
 
 # --- evidence -----------------------------------------------------------------------------------
 
 echo
 echo "OTA on QEMU: all phases passed (logs in $logs)"
-for phase in a b c d e f g; do
+for phase in $phases; do
   echo "--- $phase"
-  grep -aE '^(NE_SELFTEST|NE_OTA|Guru Meditation)' "$logs/$phase.log" | tr -d '\r'
+  grep -aE '^(NE_SELFTEST|NE_BRAIN SELFTEST|NE_OTA|Guru Meditation)' "$logs/$phase.log" | tr -d '\r'
 done

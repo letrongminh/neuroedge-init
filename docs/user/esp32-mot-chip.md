@@ -34,8 +34,11 @@ reboots with summaries of older context, `cron` schedule reminders, heartbeat, w
 proactive messaging or sending files to the owner, and a fallback LLM when the primary LLM fails.
 It already runs on QEMU with an emulated gate; comparison table with the Go version is at `esp32/README.md` in that repo.
 
-Not yet in NeuroEdge firmware: active Wi-Fi connection, connecting NeuroClaw-ESP into `ne_gate` (TSK-I2f-11, I2f-12). Stored keys
-remain unread until then.
+**With the brain in the image** (`neuroedge build --target esp32s3 --brain neuroclaw`, Q-83 Profile B,
+[`deployment_profiles.md`](../spec/deployment_profiles.md)): NeuroClaw-ESP starts on the bridge from the keys below, the image
+connects Wi-Fi from `wifi.ssid` / `wifi.pass` (the brain never starts it itself), prints `risk=single_chip` at boot and in
+`status`, and refuses an update whose bridge does not answer. Checked on QEMU in CI (`firmware-qemu.yml` job `brain-firmware`);
+not yet on a board (TSK-S4-01: GPIO numbers and sensors; until then pins print `NE_PIN` lines).
 
 ## 3. Serial console
 
@@ -50,12 +53,21 @@ Open using `idf.py monitor` (or `screen /dev/ttyUSB0 115200`). The prompt is `ne
 | `config set <key> <value>` | Set standard key |
 | `config set <secret key>` | Prompt value at **hidden prompt**: no characters displayed, omitted from command history |
 | `config unset <key>` | Unset a key |
+| `config ack readable_flash` | Without flash encryption: say you know secrets can be read back from the chip; until then `config set <secret key>` is refused (`reason=risk_not_acknowledged`, DP-B-17) |
 | `bootguard` · `bootguard clear` | View counter · reset (then `reboot` to exit safe mode) |
 | `reboot` | Reboot |
 | `factory-reset confirm` | Erase all configuration and secrets, reset counter, reboot |
 | `help` | List commands |
 
-No command toggles pins or invokes tools.
+Without the brain, no command toggles pins or invokes tools. With it, the same console also holds:
+
+| Command | Action |
+|:---|:---|
+| `button <action> [key=value …]` | A board button bound to an action: decided by the gate like any call, with or without Wi-Fi (DP-B-16) |
+| `button <confirm_N> yes\|no` | The board's answer to the question it shows (DP-B-07) |
+| `tasks` | Each task's lowest free stack (`NE_STACK` lines) |
+| `fact <name> <value>` | QEMU builds only: stands in for the board's sensors |
+| `memory_read`, `diag`, `llm_limit`, … | NeuroClaw-ESP's own commands |
 
 **Keys:**
 
@@ -68,6 +80,11 @@ No command toggles pins or invokes tools.
 | `llm.url` | | `https://…` (or `http://…`, with label `risk=cleartext_url`: key sent in cleartext) |
 | `llm.key` | ✓ | no spaces |
 | `llm.model` | | no spaces |
+| `llm.fallback_url` | | as `llm.url`; used when the first endpoint fails (one-chip brain, DP-B-10) |
+| `llm.fallback_key` | ✓ | no spaces |
+| `llm.fallback_model` | | no spaces |
+| `search.key` | ✓ | web search API key for the brain, no spaces |
+| `tz` | | POSIX time zone, e.g. `ICT-7` |
 
 Typing secrets directly on the command line is rejected (`reason=inline_secret`): typed text displays on screen and enters command
 history. Example setting a token:
@@ -123,6 +140,12 @@ cd ../.. && python3 scripts/qemu_console.py targets/esp32s3/build
 The script boots six times on the same flash image: three failed boots, the fourth enters safe mode and inputs configuration via
 the console, the fifth boots normally with configuration intact, followed by factory reset. Individual logs are located at
 `targets/esp32s3/build/console-test/`.
+
+With the brain: build `fixtures/agents/chat-den-cua` with `--brain neuroclaw`, the project's `build/` with the same two
+sdkconfig layers, then `python3 scripts/qemu_brain.py <project>/build` (labels, one console, offline buttons, every setting,
+the brain starting; logs in `<project>/build/brain-test/`) and
+`NEUROEDGE_OTA_PROJECT=<project> NEUROEDGE_OTA_BRAIN=1 scripts/qemu_ota.sh` (the update path, the bridge self-check,
+the downgrade refused).
 
 ## 7. Sources
 

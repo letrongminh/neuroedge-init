@@ -23,7 +23,7 @@ Stated upfront so nobody reads diagrams as more than reality:
   Q-79 exist: serial console (`ne_console`, 4 KB stack) and boot counter clearing task after the
   stability window (`ne_boot`). No queues or core pinning yet.
 - **No audio.** No I2S, codec, AEC, VAD, Opus, or ESP-SR — only a `TODO(TSK-S1-10)`
-  in `main/main.c`. On-chip voice is increment I5.
+  in `main/main.c`. On-chip voice (I5) was removed from the roadmap (Q-77), roadmap §6.
 - **No GPIO control.** Agent pin tables hold pin **names**, not GPIO numbers; on-chip HAL
   is TSK-S4-01.
 - **Wi-Fi initializes but never connects** (no `esp_wifi_connect`): networking is initialized
@@ -42,9 +42,11 @@ Stated upfront so nobody reads diagrams as more than reality:
 | `ne_boot` | `components/ne_boot/` | Boot guard (Q-79): counts each boot in NVS, clears after stability window, enters safe mode on `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` attempt; policy is pure C99 (`ne_boot_policy.c`). Ported from zclaw | `nvs_flash` | `partial` — on QEMU |
 | `ne_config` | `components/ne_config/` | Owner configuration and secrets (Wi-Fi, bot token, owner ID, LLM) in `ne_config` NVS partition; encrypted when built with `sdkconfig.secure`, never falls back to plaintext; validation and rendering rules in pure C99 (`ne_config_keys.c`) | `nvs_flash` | `partial` — on QEMU |
 | `ne_console` | `components/ne_console/` | Serial console (`esp_console`): `status`, `config`, `bootguard`, `reboot`, `factory-reset`; secrets entered at hidden prompt; no command touches pins or calls tools. Framed after MimiClaw | `console`, `ne_boot`, `ne_config` | `partial` — on QEMU |
+| `ne_hal` | `components/ne_hal/` (**unlinked**) | The one door from firmware to a `digital.out` pin: `ne_hal_on` writes only on a live token for that pin (`ne_token_authorize`), `ne_hal_off` (safe state) is never refused; the platform writer is a function pointer (DP-B-08, TSK-S4-01) | `ne_gate` | `partial` — host-tested (`test_c_hal.py`); the ESP-IDF writer comes with TSK-S4-01 |
+| `ne_brain_bridge` | `components/ne_brain_bridge/` (**unlinked**) | Profile B (Q-83): NeuroClaw-ESP calls the gate by function call with the box's own contract — the tools `neuroedge mcp serve` lists, JSON arguments checked against their schema, facts only from on-chip sources, `tool-result.v1` results, a table of 4 questions answered by the owner's Telegram ID or the board button (`deployment_profiles.md` DP-B-03 → DP-B-07, §4.3); pure C99, no allocation | `ne_gate`, `ne_agent` | `partial` — host core, checked against the box (`test_c_bridge.py`); linked into the image with TSK-I2f-14 |
 | `ne_ui` | `ui/` (**unlinked**) | Nine LVGL screens, Vietnamese and English | LVGL v9.6 | `partial` — built on host only |
 
-`ne_gate`, `ne_trace`, `ne_agent` compile with `-std=c99 -Wall -Wextra -Wconversion -Werror`.
+`ne_gate`, `ne_trace`, `ne_agent`, `ne_brain_bridge`, `ne_hal` compile with `-std=c99 -Wall -Wextra -Wconversion -Werror`.
 
 ### Planned components
 
@@ -52,15 +54,10 @@ Stated upfront so nobody reads diagrams as more than reality:
 |:---|:---|:---|:---|
 | `targets/esp32s3/hal/` | TSK-S4-01 | Implementation of 5 HAL primitives on ESP-IDF; needed to control physical hardware instead of simulation | [`15`](15-target-architecture.md) §2.1 |
 | `targets/esp32s3/drivers/` | TSK-S4-03 | `digital.out` and `sensor.read` drivers on real pins; needed to pulse actuators and read sensors on Box-3 board | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/audio/` | TSK-S5-01 | WebRTC AEC, libfvad (VAD), Opus streaming integration; needed for acoustic echo cancellation, voice detection, and audio compression | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/drivers/audio_path.c` | TSK-S5-02 | I2S audio capture/playback path driver (ES8311/ES7210); needed to interface with Box-3 hardware audio codec | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/fsm/voice_fsm.c` | TSK-S5-03 | C implementation of conversation state machine (`voice_fsm.md`); needed to coordinate real-time voice turns directly on chip | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/fsm/actuator_abort.c` | TSK-S5-04 | Actuator abort logic for unexecuted commands on barge-in; needed to cancel uncommitted actuator commands in ≤ 20 ms and close tokens on interruption ([`voice_fsm.md`](../../spec/voice_fsm.md) §5.2) | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/audio/provider_client.c` | TSK-S5-06 | Cloud provider audio streaming client; needed to stream STT/TTS from microcontroller | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/fallback/` | TSK-S5-07 | Local fixed command recognizer; needed for device to evaluate gates and act safely during Internet outages | [`15`](15-target-architecture.md) §2.1 |
+| *On-chip audio, voice FSM, actuator abort, provider client* (TSK-S5-01 → S5-07, including the local fallback) | | Removed from the roadmap (Q-77), roadmap §6 | |
 | `targets/esp32s3/security/` | TSK-S6-05 | Secure Boot, flash encryption, physical microphone disconnect button; needed to protect firmware integrity and privacy | [`15`](15-target-architecture.md) §2.1 |
 
-Currently firmware has only a sequential `app_main`; FreeRTOS task models (task counts, priorities, queues, and core pinning) for the voice path remain undesigned (→ [`15`](15-target-architecture.md) §2.2). Firmware for the secondary external MCU robot node (RP2350, TSK-W3-07 in `targets/rp2350/`, running an independent C99 gate walker and token ledger on arm actuator nodes — robot draft §9.4) is detailed in [`15`](15-target-architecture.md) §4.3.
+Currently firmware has only a sequential `app_main`; FreeRTOS task models (task counts, priorities, queues, and core pinning) for a voice path remain undesigned, since on-chip voice left the roadmap (→ [`15`](15-target-architecture.md) §2.2). The RP2350 robot node (TSK-W3-07) was removed too (Q-77, roadmap §6).
 
 ### 3.1 `ne_gate` — walker and token ledger
 

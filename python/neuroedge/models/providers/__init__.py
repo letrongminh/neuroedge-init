@@ -25,6 +25,8 @@ fallback (Q-14):
 
 from __future__ import annotations
 
+import os
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +59,8 @@ __all__ = [
     "TracedSource",
     "call_adapter",
     "from_response",
+    "LEGACY_FLAG",
+    "legacy_system_two",
     "load_adapter",
     "load_system_one_config",
     "load_system_two_config",
@@ -70,6 +74,14 @@ __all__ = [
     "system_two_for",
     "to_messages",
 ]
+
+
+LEGACY_FLAG = "NEUROEDGE_LEGACY_SYSTEM_TWO"
+
+
+def legacy_system_two() -> bool:
+    """`NEUROEDGE_LEGACY_SYSTEM_TWO=1`: the box's own System 2 LLM path is on (DP-A-08)."""
+    return os.environ.get(LEGACY_FLAG) == "1"
 
 
 def make_provider(config: SystemTwoConfig, root: Path | None = None) -> Any:
@@ -96,6 +108,20 @@ def system_two_for(manifest: Any, events: Any = None) -> Any:
     config = load_system_two_config(manifest)
     if config is None:
         return None
+    if not legacy_system_two():
+        # DP-A-08 (Q-83): the brain is NeuroClaw; the box's own LLM path is off unless asked for.
+        if events is not None:
+            events.emit(
+                "system_two_off",
+                {"provider": config.provider, "model": config.model or "", "flag": LEGACY_FLAG},
+            )
+        return None
+    warnings.warn(
+        f"[system_two] in the box is deprecated (Q-83, DP-A-08): the brain is NeuroClaw; "
+        f"{LEGACY_FLAG}=1 keeps it for now",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     provider = make_provider(config, manifest.root)
     return SystemTwo(config.model or config.provider, provider=provider, events=events)
 

@@ -61,6 +61,24 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge proxy mcp --desktop-config --write",
     ),
     "plugin": ("neuroedge plugin list", "neuroedge plugin doctor"),
+    # -- pair (Q-83) -----------------------------------------------------------------------
+    "pair": (
+        "neuroedge pair init --out keys --audience https://box.local:8443/mcp",
+        "neuroedge pair renew --dir keys",
+    ),
+    "pair init": (
+        "neuroedge pair init --out keys --audience https://box.local:8443/mcp",
+        "neuroedge pair init -o keys --audience https://box.local:8443/mcp --host 192.168.1.20",
+    ),
+    "pair renew": ("neuroedge pair renew --dir keys",),
+    "pair rotate": ("neuroedge pair rotate --dir keys",),
+    "ui-link": ("neuroedge ui-link",),
+    "doctor": ("neuroedge doctor --brain-user neuroclaw --keys /var/lib/neuroedge/keys",),
+    "status": ("neuroedge status --brain-config /var/lib/neuroclaw/config.json",),
+    "install": (
+        "neuroedge install --profile full --agent fixtures/agents/chat-den-cua --env-file .env.txt",
+        "neuroedge install --profile full --agent my-agent --root /tmp/staged",
+    ),
     "plugin list": ("neuroedge plugin list", "neuroedge plugin list --json"),
     # -- conformance (TSK-I2c-12, the actuator kind of TSK-I2c-16) ----------------------
     "conformance": (
@@ -140,6 +158,7 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
     "build": (
         "neuroedge build --target sim --board sim-default",
         "neuroedge build --target esp32s3 --board esp32s3-box-3   # + build/esp32s3/",
+        "neuroedge build --target esp32s3 --brain neuroclaw --brain-source ../neuroclaw",
     ),
     "test": (
         "neuroedge test",
@@ -167,6 +186,11 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge add sensor limit-guard --primitive digital.in --source limit_switch "
         "--pin gate_relay",
         "neuroedge add sensor watch-gate --primitive vision.in --label person --pin porch_light",
+    ),
+    "add part": (
+        "neuroedge add part --list",
+        'neuroedge add part heater tank-heater --pin gate_relay --label "Máy sưởi"',
+        "neuroedge add part humidity air-humidity --sensor humidity --drives porch_light",
     ),
     "add device": ("neuroedge add device read-supply --device i2c1/ina219 --register 0x02",),
     "add gate": ("neuroedge add gate night-lock --fact user_verified --fact door_closed",),

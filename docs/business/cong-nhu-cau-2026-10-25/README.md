@@ -1,10 +1,10 @@
 # Cổng nhu cầu 2026-10-25 (Q-20)
 
-> **Cổng nhu cầu khôi phục (Q-72, 2026-10-11, đảo Q-56).** Cổng có hiệu lực là **cổng 8 tuần sau khi chốt
-> Q-72**, ba điều kiện: ① ≥ 3 người ngoài đội tự cài một NeuroEdge Blueprint và chạy được · ② ≥ 1 người chạy
-> liên tục 2 tuần trên giả lập G2 hoặc G3 · ③ ≥ 1 maker muốn đóng gói và bán Blueprint của mình. Đạt ① ② mà
-> trượt ③ thì NeuroEdge là công cụ cá nhân, tìm nguồn thu khác. Cách đếm, nhánh và mẫu quyết định:
-> [`cham-diem.md`](cham-diem.md) §4.0. Quyết định: PRD §15 Q-72.
+> **Ngày cổng: 2026-12-06 (Q-72).** Tên thư mục giữ ngày gốc của Q-20.
+
+> **Cổng nhu cầu khôi phục (Q-72, đảo Q-56).** Cổng có hiệu lực là **cổng 8 tuần** của Q-72; ngày, ba
+> điều kiện và các nhánh quyết định nằm ở PRD §15 Q-72 và ngưỡng nghiệm thu ở PRD §11.2 (không chép lại ở
+> đây). Cách đếm và mẫu quyết định: [`cham-diem.md`](cham-diem.md) §4.0.
 >
 > Bộ phỏng vấn này là nguồn dữ liệu cho điều kiện ③: phần **Maker / Home Assistant / ESPHome**
 > ([`phong-van.md`](phong-van.md) §5b, mục tiêu ≥ 5 cuộc). Mục 1, 2 và 5 dưới đây là kế hoạch của cổng cũ
@@ -35,7 +35,7 @@ Cổng không quyết code của I1, I2. Nó quyết ba việc:
    đổi hướng (Approach C / E) có bằng chứng — *(Go / Adjust / Stop ở `cham-diem.md` §4.1 hết hiệu lực, Q-56.)*
 3. Phân khúc nào là phân khúc đầu tiên để làm tiếp (tối đa hai).
 
-Rủi ro số một là nhu cầu chưa kiểm chứng (premise P4, `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`).
+Rủi ro số một là nhu cầu chưa kiểm chứng (premise P4, `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`).
 Tới hôm nay: `U1`–`U5` và `J1`–`J7` (PRD §2) là giả định của chính đội, **chưa người thật nào
 xác nhận** (premise P1). Không có con số thị trường nào trong bộ tài liệu này; mọi con số
 cần có là thứ đi thu.
@@ -59,7 +59,8 @@ tóm tắt; định nghĩa chấm điểm ở `cham-diem.md`.
 | **C10** | Thứ tự quyết định / code: bằng chứng có về **trước** các cam kết code của I3–I7 không? | `CEO-T4` | thiết kế GĐ1 §Nhánh quyết định | Trưởng nhóm tự trả lời tại cổng từ kết quả C1–C9 | — (không hỏi khách hàng) |
 
 `CEO-X3` (tỷ lệ discovery 40:1) được Q-20 xử bằng chính cổng này và **không** nằm trong
-`TODOS.md` #19; `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Quyết định 2026-09-23, dòng `CEO-X3`, ghi `CEO-X3 → Q-20`.
+`TODOS.md` #19; `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Quyết định 2026-09-23, dòng `CEO-X3`, ghi `CEO-X3 → Q-20`.
+Cột "Chạm vào" ở bảng trên trỏ tới mục của đề xuất cũ (`git show 7626b62:roadmap/neuroedge-proposal.md`: §6.3, §8.7, §10, Phụ lục G), không phải PRD hiện tại; PRD không có §8.7 hay Phụ lục G.
 Kế hoạch dưới đây chính là câu trả lời cho nó: khoảng 40 giờ của trưởng nhóm thay vì 8.
 
 ## 3. Phân khúc và số lượng mục tiêu (đề xuất)
@@ -126,9 +127,9 @@ Mô tả việc cần làm sau mỗi đợt phỏng vấn; bộ tài liệu này
 |:---|:---|
 | `neuroedge-prd.md` §15 | Chỉ khi kết quả đổi một quyết định: dòng `Q-N` kế tiếp chưa dùng — số cuộc theo phân khúc, điểm C1–C9, phân khúc đầu tiên, và mục `CEO-*` nào thành quyết định |
 | `TODOS.md` #19 | Từng mã (`CEO-X2`, `X4`, `X5`, `T1`, `T2`, `T3`, `T4`) gạch và dẫn tới quyết định hoặc lý do đóng; mục nào còn mở phải có **mốc kích hoạt mới** (luật của `TODOS.md`) |
-| `CHANGELOG.md` `[Chưa phát hành]` | Một mục ngắn (CLAUDE.md "Khi xong một task", `CONTRIBUTING.md` §8) |
+| `CHANGELOG.md` `[Unreleased]` | Một mục ngắn (CLAUDE.md "Khi xong một task", `CONTRIBUTING.md` §8) |
 | `docs/reports/` | Bản tổng hợp **ẩn danh** (vai trò + phân khúc, không tên người, không tên tổ chức nếu chưa được đồng ý). Bản ghi thô **không vào kho** (PII) |
-| PRD Q-72, §8.7, §10, Phụ lục G | Chỉ sửa nếu quyết định cổng đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |
+| PRD Q-72, §11.2, §13.3 | Chỉ sửa nếu quyết định cổng đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |
 
 Nếu kết quả là **stop** cho I3–I7, đó là đổi phạm vi: theo `CONTRIBUTING.md` xem việc nào cần
 RFC; đổi hướng sản phẩm không đụng `schemas/` thì không cần RFC, nhưng phải có dòng PRD §15.

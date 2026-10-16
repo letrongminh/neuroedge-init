@@ -2,9 +2,11 @@
 
 ## Hardware bring-up under contract, using the AI users already have
 
-> **Design note.** This document maintains positioning, principles, architecture, safety tier boundaries, and block designs for N0–N7. It carries **no** schedules, statuses, exit criteria, or scope ladders: tasks, exit criteria, and dependencies reside solely in [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) increments **I4a** (host, §4.5.1) and **I5a** (chip, §4.6.1), with N2 envelope in **I2a** (§4.3.1); there is no independent scope ladder (roadmap §9.1). Decisions reside solely in `neuroedge-prd.md` §15: **Q-71** (NeuroEdge Lab via MCP, replacing NeuroBrain and Q-31), **Q-55** (entering MVP, scope unchanged), **Q-72** (Lab as loop ① of NeuroEdge Blueprint; operator agent; Lab loop ① deferred to **I2d**).
+> **Historical design note.** NeuroEdge Lab was removed from the roadmap by Q-77; Q-88 lists which parts still live in I2d. Normative only where a live spec cites a section: §7 and §7.1 (physical safety envelope and its regression contract — roadmap I2a §4.3.1, `python/tests/test_safety_regressions.py`, `python/tests/test_mcp_serve_ui.py`) and §12 (N6 trigger rules — `docs/spec/missions.md` MS-RT-03). §2.4 (device privileges separated from the client) is the design behind TSK-N0-08, which stays in I2d. Everything else describes the removed Lab and is kept for reference; the contract tools that replace loop ① are TSK-I2d-23, specified in `docs/spec/missions.md` MS-AP-03 and MS-LB-01.
+>
+> This document carries no schedules, statuses, exit criteria, or scope ladders: tasks reside solely in [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) — the N-tasks that stay in I2d (§4.3.4), the N2 envelope in I2a (§4.3.1), every removed Lab task in §6. Decisions reside solely in `neuroedge-prd.md` §15: **Q-71** (NeuroEdge Lab via MCP, replacing NeuroBrain and Q-31), **Q-72** (Lab as loop ① of NeuroEdge Blueprint; operator agent), **Q-77** (Lab removed), **Q-88** (what stays in I2d).
 
-**Updated:** 2026-10-11 (Q-72: §1.3.4, §1.5; Q-71: previously `neuroedge-design-neurobrain.md`) · change history: `CHANGELOG.md`
+**Updated:** 2026-10-16 (Q-77, Q-88: historical status banner; Q-72: §1.3.4, §1.5; Q-71: previously `neuroedge-design-neurobrain.md`) · change history: `CHANGELOG.md`
 
 **Source documents:**
 - `neuroedge-prd.md` §1.5 (P-1), §15 (Q-24, Q-26, Q-27, Q-11, Q-21, Q-55, Q-71)
@@ -119,8 +121,8 @@ and users benefit from the strongest models available to them.
 
 ### 1.3 Tool surface
 
-The list below represents the design. Normative specifications — names, inputs, outputs, error codes — belong to
-TSK-N0-07 (`docs/spec/lab_tools.md`), written ahead of code. All tools are registered only when
+The list below represents the removed Lab design. A separate Lab tool specification was planned and never written; the
+live MCP tool contract is `docs/spec/missions.md` MS-AP-03 (TSK-I2d-23, specified ahead of code by TSK-N0-07, Q-88). All tools are registered only when
 `[lab] enabled` (TSK-N1-02). Tools must remain usable by clients **lacking a shell**: everything shell-capable clients
 accomplish via files, shell-less clients accomplish via tools.
 
@@ -170,7 +172,7 @@ implementations requires an RFC (CONTRIBUTING §3).
 
 #### 1.3.4 Planned per Q-72 (planned · Q-72, I2d)
 
-Loop ① of Q-72 expands authoring surfaces from single board bring-up to full device construction. The three capabilities below are planned; tool names, inputs, and outputs are finalized in `docs/spec/lab_tools.md` (TSK-N0-07) like all other tools, not specified here:
+Loop ① of Q-72 expands authoring surfaces from single board bring-up to full device construction. The three capabilities below were planned for Lab; after Q-77 and Q-88, contract checking moves to TSK-I2d-23 (`docs/spec/missions.md` MS-AP-03, MS-LB-01) and the per-sensor check to TSK-I2d-17 (MS-LB-02):
 
 | Capability | Function | Tier |
 |:---|:---|:---|
@@ -271,13 +273,13 @@ keep drafts out of release builds, not off user machines. Details:
 
 ## 3. Resource assumptions
 
-→ Personnel (V7) and entry conditions for I4a: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §1.1 and §4.5.1.
+→ Personnel (V7): [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §1.1. I4a was removed by Q-77 (roadmap §6).
 
 ---
 
 ## 4. Critical path and dependencies
 
-→ Dependencies for I4a, I5a, and individual tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.2, §4.5.1, and §4.6.1.
+→ I4a and I5a were removed by Q-77; their tasks keep one row each in [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
 
 ---
 
@@ -286,7 +288,7 @@ keep drafts out of release builds, not off user machines. Details:
 Documentation only, no code (principle 7, §1.4): `Q-N` decisions (Q-71), threat model §2c, tool surface
 specifications (§1.3), draft review processes, and device privilege separation guides (§2.4).
 
-→ Tasks and exit criteria: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I4a (§4.5.1), Block N0; TSK-N0-07, N0-08 deferred to I2d per Q-72 (§4.3.4).
+→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6 (removed, Q-77); TSK-N0-07 and N0-08 stay in I2d, reworded without Lab (§4.3.4, Q-88).
 
 ---
 
@@ -302,7 +304,7 @@ on physical `linux` boards requires interactive `linux` sessions (TSK-S5-10).
 **Client configuration.** `mcp desktop-config --lab` for Claude Desktop; for shell-capable clients
 (Claude Code), an equivalent `.mcp.json` entry. Exactly one server entry per client is preserved (TSK-N1-05).
 
-→ Tasks and exit criteria: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I4a (§4.5.1), Block N1; TSK-N1-02, N1-04, N1-05 deferred to I2d per Q-72 (§4.3.4).
+→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6 (removed, Q-77); TSK-N1-02, N1-04, N1-05 moved there from I2d by Q-88.
 
 ---
 
@@ -326,24 +328,28 @@ per **locked** profiles loaded from trees unwritable by clients (§2.4) — not 
 
 ## 8. Block N3 — Read-only I2C bus
 
+**Removed (Q-77).** The read-only I2C bus itself shipped in I2a (RFC-0007, TSK-I2a-03); the Lab additions below (`lab_scan`, chip detection) are not planned.
+
 N3 builds upon `sensor.read` over `i2c-stub` from TSK-S5-09. HAL scanning surfaces already exist
 (TSK-I2a-03); N3 adds chip detection and tool `lab_scan`.
 
 **ADC.** Spike TSK-N3-03 passed (`ads7828`, `ina219` on `i2c-stub`), so `analog.in` reads hwmon
 (TSK-I2a-04). `sim` only replays recorded values, without live I2C scanning.
 
-→ Bus scanning (TSK-N3-01), tests on `i2c-stub` (TSK-N3-02), and exit criteria: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I4a (§4.5.1), Block N3.
+→ Bus scanning (TSK-N3-01), tests on `i2c-stub` (TSK-N3-02): [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
 
 ---
 
 ## 9. Block N4 — Workbench notebook
+
+**Removed (Q-77).**
 
 Notebook records discovered facts, each entry accompanied by source trace, exposed via `lab_notebook` so clients
 read rather than guess. Draft board profiles proposed by clients; NeuroEdge validates and writes via `BoardProfile`
 read/write code, not raw TOML string formatting. If new profiles must pass `test_boards.py`, it depends
 on RFC-0002 (signed).
 
-→ Fact notebook (TSK-N4-01), draft board profiles (TSK-N4-02), special pin warnings (TSK-N4-03): [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I4a (§4.5.1), Block N4.
+→ Fact notebook (TSK-N4-01), draft board profiles (TSK-N4-02), special pin warnings (TSK-N4-03): [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
 
 ---
 
@@ -361,23 +367,25 @@ real boards, only locked gates are loaded (§2.4):
 4. Render via existing `templates.scaffold`/`_render`, restricted to user agent directories.
 5. Draft PRs print verbal `gate explain`, policy diffs, and ALLOW/BLOCK test suites.
 
-→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I4a (§4.5.1), Block N5; TSK-N5-01…03, N5-05, N5-06 deferred to I2d per Q-72 (§4.3.4).
+→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6 (removed, Q-77); TSK-N5-01…03, N5-05, N5-06 moved there from I2d by Q-88. Drafting mission contracts over MCP: TSK-I2d-23 (`docs/spec/missions.md` MS-AP-03).
 
 ---
 
 ## 11. Block N5b — Lab Monitor
 
+**Removed (Q-77).**
+
 A panel within the existing sim page (`python/neuroedge/viz/assets/ui.js`, `ui.css`), **without
 an independent tab**. The panel displays only when `[lab] enabled`. This is the sole place humans answer `ask`
 questions for lab calls — MCP clients cannot do so on their behalf (Q-26). Reference wireframe:
-[`wireframe/lab-monitor-v2.html`](../../wireframe/lab-monitor-v2.html).
+`wireframe/lab-monitor-v2.html` (removed, see git history).
 
 **Hierarchy:**
 - Right column: confirmation card → active row → pulse timeline → verdicts.
 - Left column: devices → I2C buses.
 - Header: LAB MODE badge.
 
-→ Tasks and exit criteria: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I4a (§4.5.1), Block N5b.
+→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
 
 ---
 
@@ -388,21 +396,25 @@ questions for lab calls — MCP clients cannot do so on their behalf (Q-26). Ref
 trigger declarations; `lab_trigger_check` grades them; runtime executes them — even without active client
 sessions, so debounce and rate ceilings reside in runtime, not in clients.
 
-→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I2d (§4.3.4), Block N6 — deferred from I4a per Q-72.
+Since Q-88 these rules serve the operator runtime's scheduler and detectors, not Lab: the runtime's non-human source is `schedule` (`docs/spec/missions.md` MS-RT-03), and trigger declarations are part of a locked mission contract rather than graded by a Lab tool.
+
+→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I2d (§4.3.4), TSK-N6-01 → N6-03 (Q-88); `lab_trigger_check` (TSK-N6-04) in §6.
 
 ---
 
 ## 13. Block N7 — NeuroEdge Lab on ESP32-S3
 
+**Removed (Q-77).**
+
 N7 delivers N1–N6 lab actions, gates, and envelopes to silicon, requiring Box-3 hardware and `esp32s3` HAL.
 Silicon runs no clients: drafts are authored and locked on host, while chip runs locked gates. MCP on
 chip occurs solely via authenticated ports from TSK-P2-04, or via UART.
 
-→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) I5a (§4.6.1), Block N7; firmware envelope enforcement (TSK-N7-02) in I3a.
+→ Tasks: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6; firmware envelope enforcement (TSK-N7-02) stays in I3a.
 
 ## 14. Demand gate and milestones
 
-→ Q-40 removed the dedicated demand gate rule for NeuroBrain; Q-56 removed the general demand gate rule; Q-72 restored a single general gate, 8 weeks after finalization (PRD §11.2, Q-72) — Lab loop ① provides the path for external parties to self-install and run NeuroEdge Blueprints. Measurement signals for I4a and I5a: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
+→ Q-72 restored a single general demand gate (PRD §11.2), reversing Q-56. Q-77 removed Lab, so Lab is not measured at that gate; mission contracts reach testers through TSK-I2d-23 (Q-88). Lab's re-opening trigger: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
 
 ---
 
@@ -410,15 +422,15 @@ chip occurs solely via authenticated ports from TSK-P2-04, or via UART.
 
 | # | Risk | Severity | Early indicator | Mitigation strategy |
 |:---:|:---|:---:|:---|:---|
-| **1** | NeuroEdge Lab diverts personnel from v1.0 critical path | High | v1.0 tasks assigned to N0/N1 | Q-55 keeps NeuroEdge Lab in MVP, so I6 depends on I5a (`neuroedge-roadmap.md` §0.2); Q-71 drops dedicated LLM loop so block N5 is lighter. If MVP slips, postpone dates without cutting scope (Q-52) |
+| **1** | NeuroEdge Lab diverts personnel from v1.0 critical path | High | v1.0 tasks assigned to N0/N1 | Closed by Q-77: Lab is removed from the roadmap and I6 no longer depends on I5a (Q-55 superseded) |
 | **2** | AI writes gates looser than user intent | High | Draft contains only ALLOW tests | Bidirectional tests (TSK-N5-02), rerun in CI (TSK-N5-06), `gate explain` in PR (TSK-N5-04), human review (TSK-N0-05) |
 | **3** | Pin stuck HIGH upon process death | Medium | Relays warm or clicking after crash | §2.3: software cannot save it. Lab README and runbooks must explicitly state requirement for pull-down resistors |
 | **4** | Lab leaks into release builds | Medium | Build report records `lab_enabled: true` | Flag disabled by default, blocked by `build --release` (TSK-N1-03) |
 | **5** | No personnel available for role V7 | Medium | Role unfilled when I4a approaches opening | Q-60: one person + AI agents; if short-staffed, adjust dates in `neuroedge-roadmap.md` §0.2, do not cut scope |
 | **6** | Extension Q-11 (OFL fonts) rejected | Low | Critique focused on font licensing | Restyle retains system fonts, only removing left border (TSK-N5b-07) |
-| **7** | Client with shell bypasses gates (`gpioset`, file edits) | High | Lab runs on board where client user belongs to `gpio` group | §2.4: separate device privileges; `lab doctor` warns (TSK-N0-08); `threat_model.md` §2c |
+| **7** | Client with shell bypasses gates (`gpioset`, file edits) | High | Lab runs on board where client user belongs to `gpio` group | §2.4: separate device privileges; `neuroedge doctor` warns (TSK-N0-08, still in I2d); `threat_model.md` §2c |
 | **8** | Client self-locks drafts | High | Commits dropping `-draft` without PR | No locking tools (§1.3.3); protected branches; `check_digests.py` and `lab check` in CI |
-| **9** | Experience dependent on external clients | Medium | Clients alter MCP support; users lack accounts | Neutral tools, acceptance tested on two clients (A11); `sim` and `neuroedge add` remain usable without AI |
+| **9** | Experience dependent on external clients | Medium | Clients alter MCP support; users lack accounts | Neutral tools, acceptance tested on two clients (A11, dropped with Lab by Q-77); `sim` and `neuroedge add` remain usable without AI |
 
 ---
 
@@ -431,6 +443,8 @@ chip occurs solely via authenticated ports from TSK-P2-04, or via UART.
 # Appendices
 
 ## Appendix A — Selective reuse from ESP-Claw
+
+**Removed (Q-77)** with blocks N3, N4 and N7; kept for reference.
 
 Source: [espressif/esp-claw](https://github.com/espressif/esp-claw), Apache-2.0 (in allowlist Q-11). Following the XiaoZhi pattern (`NOTICE` Section A item 1):
 - clone **outside repository** for inspection, pin commits;

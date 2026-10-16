@@ -7,6 +7,7 @@
 > `picoclaw mcp test neuroedge` printed `✓ MCP server "neuroedge" reachable (3 tools)` and
 > `picoclaw mcp show neuroedge` listed correctly `living_light_on`, `living_light_off`,
 > `front_door_unlock`. No LLM key yet, so tools were not called via chat utterances.
+> Recorded before the NeuroClaw fork (Q-78); the folder now uses `neuroclaw/config.json`.
 > **Duration:** 6–8 minutes. **Required:** one Linux VPS, one laptop as the box, Tailscale on both,
 > one Telegram bot, one LLM key (OpenRouter).
 
@@ -49,13 +50,14 @@ bash demo/i2f-chat-den-cua/chay-hop.sh
 ```
 
 First time, the script generates keys at `~/neuroedge-demo-khoa` (`tao-khoa.py`: CA, box and brain certificates,
-30-day token bound to certificate). Then it runs `neuroedge mcp serve --http --ui --target sim` on the Tailscale
+a token bound to the brain certificate that lives at most 7 days, DP-A-04; the same as `neuroedge pair init`). Then it runs `neuroedge mcp serve --http --ui --target sim` on the Tailscale
 IP, port 8443. Notice on stderr: `sim UI at http://127.0.0.1:8765/#c=… (same session; `ask`
 is answered here)` and `listening on <ip>:8443/mcp`. Open that exact URL, with its `#c=…`: this is the "home screen".
 The code after `#` works once, within ten minutes: the page trades it for this run's key, so no other process on
 the machine can press "approve" for you (DP-A-02). Open it before anything else does.
-The box only listens on the Tailscale IP, not on home Wi-Fi or the Internet. When the token expires, run
-`tao-khoa.py --out ~/neuroedge-demo-khoa --renew-token`.
+The box only listens on the Tailscale IP, not on home Wi-Fi or the Internet. Before the token expires, run
+`tao-khoa.py --out ~/neuroedge-demo-khoa --renew-token` (or `neuroedge pair renew --dir ~/neuroedge-demo-khoa`)
+and copy `nao.token` to the brain: the box keeps running.
 
 ### 0.2 Brain (VPS), from laptop
 

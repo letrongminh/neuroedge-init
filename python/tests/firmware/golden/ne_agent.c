@@ -31,10 +31,28 @@ static const char *const ne_agent_pin_table[3] = {
     "porch_light",
 };
 
+static const ne_agent_pin_op ne_agent_ops_1[1] = {
+    {1u, 2u, 1000u, "seconds"}, /* gate_relay */
+};
+
+static const ne_agent_pin_op ne_agent_ops_2[2] = {
+    {0u, 2u, 5000u, NULL}, /* door_lock */
+    {1u, 2u, 5000u, NULL}, /* gate_relay */
+};
+
 static const ne_agent_action ne_agent_action_table[3] = {
-    {"fixture_announce", 2u, 0x0u},
-    {"fixture_buzz", 1u, 0x2u},
-    {"fixture_open_door", 0u, 0x3u},
+    {"fixture_announce", 2u, 0x0u,
+     "Speech only: no pin. (Guarded by gate `announce`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}",
+     NULL, 0u},
+    {"fixture_buzz", 1u, 0x2u,
+     "fixture buzz (Guarded by gate `buzz`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{\"zone\":{\"type\":\"string\",\"default\":\"front\",\"enum\":[\"front\",\"side\"]},\"seconds\":{\"type\":\"integer\",\"default\":2,\"minimum\":1,\"maximum\":10}},\"additionalProperties\":false}",
+     ne_agent_ops_1, 1u},
+    {"fixture_open_door", 0u, 0x3u,
+     "fixture open door (Guarded by gate `open_door`: the call may be blocked.)",
+     "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}",
+     ne_agent_ops_2, 2u},
 };
 
 static const ne_agent_check ne_agent_check_table[37] = {

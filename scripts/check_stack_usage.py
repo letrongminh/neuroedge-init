@@ -22,6 +22,10 @@ a run only shows the paths it took.
    replay. It must be at least `--floor` bytes (default 512). The console
    task's figure comes from scripts/qemu_console.py (`status`, after the
    deepest command).
+   With the brain in the image (Profile B, DP-B-13) the console's `tasks`
+   command prints one `NE_STACK task=<name> …` line per task; `--task <name>`
+   (repeatable) checks the last line of each named task against `--floor`, and
+   `--component ne_brain_bridge --limit 512` keeps the bridge to the `ne_*` rule.
 
 Idea from zclaw scripts/check-stack-usage.sh (https://github.com/tnm/zclaw,
 commit e3ad271, MIT, Copyright (c) 2026 Ted Nyman), which recompiles three
@@ -40,6 +44,7 @@ DEFAULT_LIMIT = 1024
 DEFAULT_FLOOR = 512
 OURS = re.compile(r"^(main|ne_[a-z_]+)$")
 STACK_LINE = re.compile(r"^NE_STACK task=main free_min=(\d+) size=(\d+)\r?$", re.MULTILINE)
+TASK_LINE = re.compile(r"^NE_STACK task=(\S+) free_min=(\d+) size=(\d+)\r?$", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -50,12 +55,12 @@ class Frame:
     kind: str  # static, dynamic, dynamic,bounded
 
 
-def read_frames(build: Path) -> tuple[list[Frame], list[str]]:
+def read_frames(build: Path, ours: re.Pattern[str] = OURS) -> tuple[list[Frame], list[str]]:
     """Every frame of our components, and the components that have objects but no .su file."""
     frames: list[Frame] = []
     missing: list[str] = []
     components = sorted(
-        p for p in (build / "esp-idf").glob("*") if p.is_dir() and OURS.match(p.name)
+        p for p in (build / "esp-idf").glob("*") if p.is_dir() and ours.match(p.name)
     )
     for component in components:
         su_files = sorted(component.rglob("*.su"))
@@ -71,16 +76,17 @@ def read_frames(build: Path) -> tuple[list[Frame], list[str]]:
     return frames, missing
 
 
-def check_frames(build: Path, limit: int) -> list[str]:
+def check_frames(build: Path, limit: int, ours: re.Pattern[str] = OURS) -> list[str]:
     if not (build / "esp-idf").is_dir():
         return [f"{build}: not an ESP-IDF build directory (no esp-idf/)"]
-    frames, missing = read_frames(build)
+    frames, missing = read_frames(build, ours)
     errors = [
         f"{name}: no .su files — is -fstack-usage in targets/esp32s3/CMakeLists.txt?"
         for name in missing
     ]
     if not frames and not errors:
-        errors.append(f"{build}: no main or ne_* component objects found")
+        what = "main or ne_* component" if ours is OURS else f"{ours.pattern} component"
+        errors.append(f"{build}: no {what} objects found")
     for frame in frames:
         if frame.kind != "static":
             errors.append(f"{frame.where}: {frame.kind} stack frame ({frame.size} B)")
@@ -109,18 +115,49 @@ def check_uart(log: Path, floor: int) -> list[str]:
     return []
 
 
+def check_tasks(log: Path, tasks: list[str], floor: int) -> list[str]:
+    """DP-B-13: the last `NE_STACK task=<name>` line of every named task clears the floor."""
+    if not log.is_file():
+        return [f"{log}: no UART log"]
+    last = {
+        name: (int(free), int(size))
+        for name, free, size in TASK_LINE.findall(log.read_text(errors="replace"))
+    }
+    errors = []
+    for name in tasks:
+        if name not in last:
+            errors.append(f"{log}: no NE_STACK line for task {name}")
+            continue
+        free, size = last[name]
+        print(f"task {name}: {free} of {size} B never used (floor {floor} B)")
+        if free < floor:
+            errors.append(
+                f"task {name}: {free} B of stack left at its lowest, under the {floor} B floor"
+            )
+    return errors
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     parser.add_argument("build", type=Path, help="the ESP-IDF build directory")
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help="bytes per frame")
     parser.add_argument("--uart-log", type=Path, help="check NE_STACK in this UART log instead")
     parser.add_argument("--floor", type=int, default=DEFAULT_FLOOR, help="bytes left on QEMU")
+    parser.add_argument(
+        "--component", help="only components whose name matches this regex (default main|ne_*)"
+    )
+    parser.add_argument(
+        "--task", action="append", default=[], help="with --uart-log: a task that must report"
+    )
     args = parser.parse_args(argv)
     try:
-        if args.uart_log is not None:
+        if args.uart_log is not None and args.task:
+            errors = check_tasks(args.uart_log, args.task, args.floor)
+        elif args.uart_log is not None:
             errors = check_uart(args.uart_log, args.floor)
         else:
-            errors = check_frames(args.build, args.limit)
+            ours = re.compile(args.component) if args.component else OURS
+            errors = check_frames(args.build, args.limit, ours)
     except ValueError as error:
         errors = [str(error)]
     for error in errors:

@@ -227,8 +227,8 @@ targets (sim is no richer than the board); requires an RFC to enable.
 |:---|:---|:---|:---|:---|
 | `digital.out` | `LinuxHAL` via libgpiod v2; per-pin envelope with real auto-off timer and per-board persistent state file; supervisor process holds actuator pin lines (on by default, `hal/supervisor.py`) | PR — gpio-sim, and runtime SIGSTOP on gpio-sim (`tests_linux/test_gpio_envelope.py`) | Voltage, timing | TSK-S3-05, N2-01, N2-02 |
 | `digital.out` — PWM *(only boards declaring `digital_out.pwm`, e.g. `linux-rpi5`)* | **Kernel hardware PWM only** via `/sys/class/pwm/pwmchipN/pwmM/{period,duty_cycle,enable}` — `hal/pwm.py`; no bit-banging. `enable_pin` is a HAL gpiod line, held by the supervisor process with the envelope deadline: raised after controller is programmed, lowered **before** shutting down controller | PR — fake sysfs tree + fake gpiod + mock supervisor (`tests/test_hal_linux_pwm.py`); gpio-sim for `enable` line and SIGSTOP (`tests_linux/test_gpio_pwm.py`). **No simulated PWM chip on runner** (gpio-sim only has lines; azure kernel lacks `pwm-sim`), so real controllers tested only on nightly Pi 5 | Real pulses, load, real readback | TSK-W1-01 |
-| `audio.in` | **File backend**: WAV (`--voice-file`) at any rate 8–96 kHz, 1–2 channels → mono at board rate (`hal/audio.py`, `open_audio_file`) · **Live backend**: `sounddevice` (PortAudio) reads `neuroedge.ec.source` node of `module-echo-cancel` (Q-22) | PR — file backend on fake gpiod + mock `sounddevice`; `tests_linux/test_audio_file.py` on gpio-sim (**runner lacks `snd-aloop`**, so live backend runs only on hardware) | Microphone, AEC, acoustics — RPi 5 + I2S HAT, `snd-aloop` on Pi | TSK-S5-08 |
-| `audio.out` | **File backend**: `Speaker` timeline records WAV at board rate (`--voice-out`) · **Live backend**: `sounddevice` plays to `neuroedge.ec.sink` node (AEC reference signal) | PR — as above | Speaker, volume | TSK-S5-08 |
+| `audio.in` | **File backend**: WAV (`--voice-file`) at any rate 8–96 kHz, 1–2 channels → mono at board rate (`hal/audio.py`, `open_audio_file`) · **Live backend**: `sounddevice` (PortAudio) reads `neuroedge.ec.source` node of `module-echo-cancel` (Q-22) | PR — file backend on fake gpiod + mock `sounddevice`; `tests_linux/test_audio_file.py` on gpio-sim (**runner lacks `snd-aloop`**, so live backend runs only on hardware) | Microphone, AEC, acoustics — RPi 5 + I2S HAT, `snd-aloop` on Pi | out of roadmap (Q-77), code retained: TSK-S5-08 |
+| `audio.out` | **File backend**: `Speaker` timeline records WAV at board rate (`--voice-out`) · **Live backend**: `sounddevice` plays to `neuroedge.ec.sink` node (AEC reference signal) | PR — as above | Speaker, volume | out of roadmap (Q-77), code retained: TSK-S5-08 |
 | `sensor.read` | sysfs **hwmon** and **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) — `hal/sysfs.py` | PR — `i2c-stub` + `lm75` driver → hwmon (`scripts/setup_i2c_stub.sh`, `tests_linux/`); IIO on fake sysfs tree (`tests/test_hal_linux_io.py`) | Real sensors; IIO on Pi only (`CONFIG_IIO` disabled on runner) | TSK-S5-09 |
 | `analog.in` | sysfs **hwmon** (`inN_input`, mV → V per `HWMON_UNITS`) and IIO, channels located by **source** `NEUROEDGE_LINUX_ANALOG='adc0=hwmon:ads7828/in0'` / `LinuxHAL(analog_sources=…)` (like `sensor.read`, `board.v1` lacks channel-to-device mapping keys) or by `inN_label` label; converted to declared channel unit, rejected outside `[min, max]` as read errors — `hal/analog.py`, `hal/linux.py` | PR — fake sysfs tree (`tests/test_hal_linux_analog.py`); `i2c-stub` + `ads7828` driver → hwmon, code `0x800` → 1249 mV, gate decides on reading, replay (`scripts/setup_i2c_stub.sh`, `tests_linux/test_analog_in.py`) | Real ADC on Pi 5 (spike TSK-N3-03 only proved `i2c-stub` + hwmon, RFC-0007 §3c demands nightly hardware evidence before I2a exit criteria) | TSK-I2a-04 |
 | `display` | Checked and frame written using exact `sim` code (`make_frame`), then → `/dev/fb*` on Pi, or in-memory only — `hal/framebuffer.py` | PR — in-memory frame + digest; `/dev/fbN` via `vfb`, or `vkms` on azure kernel (`scripts/setup_vfb.sh`) | HDMI/DSI panel | TSK-S5-09 |
@@ -332,7 +332,7 @@ motion on all boards declaring `motion` — `sim-rpi5`, `linux-rpi5`; otherwise 
 not changing repo) and carry `board_id: sim-rpi5`: replay does not read controllers, it reloads recorded facts. Replay
 on `linux` with mock gpiod: `test_the_corpus_replays_to_what_it_recorded_on_every_board_that_declares_its_primitives`.
 
-**Audio explicitly chosen, no guessing** (TSK-S5-08): two backends, never guessed.
+**Audio explicitly chosen, no guessing** (TSK-S5-08; out of roadmap per Q-77, code retained): two backends, never guessed.
 
 - **File backend** is the default for `--voice-file` (and replay): WAV reads entire file, 16-bit PCM,
   1–2 channels, 8–96 kHz rate, converted to **mono at board `audio_in.sample_rate_hz`** using the exact
@@ -379,13 +379,13 @@ cross-target inference equivalence (`tolerance`): TSK-V1b-04.
 | Primitive | Backend | Tested In | Hardware Only | Task |
 |:---|:---|:---|:---|:---|
 | `digital.out` | ESP-IDF `gpio` downstream of `NETR` tree walker and C token ledger | PR — walker and C token ledger compiled on host (truth table, ASan/UBSan) · QEMU (`firmware-qemu`, every PR touching `targets/**` and nightly) — boot-time gate self-test, full firmware generated for a new agent (`agent-firmware`); pin commands via UART (QEMU lacks GPIO matrix) | Real pins | walker, token ledger, self-test: TSK-S4-02, S4-07, S4-08 · agent firmware: I3-01 · pins: S4-01 · UART: S4-09 |
-| `audio.in` | I2S ES7210 + ESP-SR AFE (AEC, VAD) — driver from XiaoZhi | **No** — QEMU lacks I2S; ESP-SR is a prebuilt Xtensa library, does not run on host | Entire primitive | TSK-S5-01, S5-02 |
-| `audio.out` | I2S ES8311 | No | Entire primitive | TSK-S5-02 |
+| `audio.in` | I2S ES7210 + ESP-SR AFE (AEC, VAD) — driver from XiaoZhi | **No** — QEMU lacks I2S; ESP-SR is a prebuilt Xtensa library, does not run on host | Entire primitive | out of roadmap (Q-77), code retained: TSK-S5-01, S5-02 |
+| `audio.out` | I2S ES8311 | No | Entire primitive | out of roadmap (Q-77), code retained: TSK-S5-02 |
 | `sensor.read` | ESP-IDF I2C driver | QEMU — mock driver via same HAL interface (QEMU lacks I2C) | I2C bus, sensors | TSK-S4-03 |
 | `display` | `esp_lcd` + LVGL | PR — **same LVGL UI code** built on host with LVGL test display, compared against golden image ([`ui.md`](ui.md): screens, language rules, golden generation) · QEMU — `esp_lcd_qemu_rgb` | SPI lines to ILI9342C/ST7789 | TSK-S4-10 |
 
 Each cell has a task. Three cells can only be tested on hardware (`audio.in`, `audio.out` on `esp32s3`, and
-acoustics on `linux`); they belong to nightly TSK-S4-05 and exit criteria for I5 (roadmap §6) and I7 (roadmap §4.8).
+acoustics on `linux`); they belong to nightly TSK-S4-05 and the I7 exit criteria (roadmap §4.8); the `esp32s3` audio cells are out of the roadmap (Q-77).
 
 ## 3. Trace Events by Primitive
 
@@ -587,12 +587,34 @@ frame). No CDN dependencies: `sim` must operate offline (FR-DX-02).
 Wokwi Elements (MIT) can replace renderings for lights, servos, relays, `ili9341` screens if bundled
 (no CDN loading); door locks not provided out of box.
 
+### 5.1 One page, the same sections for every agent
+
+`run --ui`, `mcp serve --ui` and `trace view` render one page (`neuroedge/viz/assets/ui.js`). It is
+laid out for someone testing an agent who did not write it; nothing in it is specific to a sample:
+
+| Section | Shows | Comes from |
+|:---|:---|:---|
+| Header + "Trang này là gì?" | Agent, live or recorded, a four-step guide | trace metadata |
+| 1 · Thiết bị | One card per pin: name, pin code, ON/OFF, a button per command that drives it | `[requires]`, `@action` pins, `commands.toml` |
+| 2 · Cảm biến và dữ kiện | Readings with unit, the fact each derives (`water_hot: ≥ 29`), set / lose-signal controls (live); facts | `[sim.sensors]`, `[sim.sensor_facts]`, `[sim.facts]` |
+| Thiết bị hỏi xác nhận | The open question, why it was asked, time left, yes / no | RFC-0006 confirmation events |
+| 3 · Ra lệnh (live) | Free text plus one button per command pattern | `commands.toml` (first pattern) |
+| Hội thoại | Commands, MCP calls, verdict lines, sensor changes, what the assistant said | trace events |
+| 4 · Quyết định của gate | Per call: verdict word, action, who asked, each criterion ✓ / ✗ / ✓* (waived by a yes), outcome: pins moved, or why it blocked and whether a person could have unblocked it | `gate_evaluation_result`, the gate's `evaluate.*.instructions` and `on_block.confirms` |
+| Chi tiết kỹ thuật (collapsed) | The raw event stream | trace events |
+
+Names are the agent's own: `[ui.labels]` in agent.toml maps a pin, sensor or fact to the words the
+page shows (`gate_relay = "Máy sưởi"`); without it the page shows the identifier. Labels are words
+for people only: no gate, build or replay reads them, and they are not part of any schema or digest.
+`trace view` has no agent loaded, so it shows identifiers and no command controls. Parts the
+board lacks, a catalogue of part kinds and a drag-and-drop canvas: `virtual_parts.md` (Q-84).
+
 ## 6. Three Devices Running the Same Sample Agent
 
 FR-TGT-02 and FR-TGT-03 require **sample agents running on real hardware** on RPi 5 and Box-3. Sample agent
 `villa-concierge` declares `audio.in aec = true`, and `linux-rpi5` declares `aec = false`, so `build
 --target linux` rejects it — sample agent covers only 2/3 devices. **Q-22 (decided, option A)** closes
-this gap using PipeWire software AEC: TSK-S5-08 delivered live backends, drop-in configs, and
+this gap using PipeWire software AEC: TSK-S5-08 delivered live backends (out of roadmap per Q-77, code retained), drop-in configs, and
 WAV file paths; `linux-rpi5` **retains `aec = false`** until nightly Pi runs pass both measurements
 in §6.2, so `build` continues rejecting agents requiring AEC — no mechanism permits declaring unverified
 capabilities. Three-target equivalence tests use agents requiring only `digital.out` (`minimal` template from
@@ -612,7 +634,7 @@ LinuxHAL.audio_out ─► sink ─────►└─────────�
 directly to speaker deprives AEC of subtraction reference. Alternative is `monitor.mode = true`, sampling reference from
 default sink monitor — used when external processes also play through speaker.
 
-Bundled configuration delivered by TSK-S5-08 at `pipewire/neuroedge-echo-cancel.conf` (in wheel:
+Bundled configuration delivered by TSK-S5-08 (out of roadmap per Q-77, code retained) at `pipewire/neuroedge-echo-cancel.conf` (in wheel:
 `neuroedge/_data/pipewire/`, located via `neuroedge.paths.echo_cancel_conf()`), **copy** to
 `~/.config/pipewire/pipewire.conf.d/` (user) or `/etc/pipewire/pipewire.conf.d/` (system), then
 `systemctl restart --user pipewire.service`: `LinuxHAL` reads/writes the two nodes

@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeuroEdge app nhà - prototype</title>
+<style>
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --surface2:#f3f5f8; --text:#16202a; --muted:#566473;
+  --line:#d5dbe2; --accent:#0b5fcc; --accent-text:#ffffff;
+  --green-bg:#d9f2e0; --green-fg:#0d5a27; --green:#2f9e57;
+  --amber-bg:#fdecc4; --amber-fg:#744a00; --amber:#d9930d;
+  --lock-bg:#e3e6ea; --lock-fg:#2b3640; --lock:#6a7683;
+  --red-bg:#fbdcdc; --red-fg:#8a1414; --red:#c62828;
+  --focus:#0b5fcc; --shadow:0 8px 30px rgba(0,0,0,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1318; --surface:#19212a; --surface2:#222c37; --text:#e8eef4; --muted:#a2b0be;
+    --line:#35424f; --accent:#6aa8ff; --accent-text:#08121f;
+    --green-bg:#16402a; --green-fg:#9ce6b5; --green:#4cc57a;
+    --amber-bg:#4a3a0c; --amber-fg:#ffd98a; --amber:#f0b429;
+    --lock-bg:#2c353f; --lock-fg:#d3dce5; --lock:#8a97a4;
+    --red-bg:#4d1d1d; --red-fg:#ffb4b4; --red:#ef6b6b;
+    --focus:#8dbdff; --shadow:0 8px 30px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:12px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+a{color:var(--accent)}
+.outside{max-width:880px;margin:0 auto 12px}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px}
+.picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.picker button,.simbtn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px}
+.picker button[aria-current="true"]{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.simbtn{margin-top:10px;border-color:var(--accent);color:var(--accent)}
+.phone{position:relative;width:390px;height:790px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:34px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.status{display:flex;justify-content:space-between;padding:10px 22px 4px;font-size:12px;color:var(--muted)}
+.main{flex:1;overflow-y:auto;padding:6px 16px 16px;position:relative}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tabbar button{background:none;border:0;padding:8px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--muted)}
+.tabbar button[aria-current="page"]{color:var(--accent);font-weight:600}
+.tabbar svg{width:22px;height:22px}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.screen{display:none}.screen.on{display:block}
+h1{font-size:20px;margin:6px 0 10px}
+h2{font-size:15px;margin:16px 0 6px;color:var(--muted);font-weight:600}
+.code{font-size:11px;color:var(--muted);float:right;margin-top:10px}
+.card{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.card.tap{width:100%;text-align:left;display:block}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.muted{color:var(--muted);font-size:13px}
+.big{font-size:26px;font-weight:700}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;min-height:40px}
+.btn.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.pill.green{background:var(--green-bg);color:var(--green-fg)}
+.pill.amber{background:var(--amber-bg);color:var(--amber-fg)}
+.pill.lock{background:var(--lock-bg);color:var(--lock-fg)}
+.pill.red{background:var(--red-bg);color:var(--red-fg)}
+.banner{background:var(--red-bg);color:var(--red-fg);border:1px solid var(--red);border-radius:14px;padding:12px;margin:8px 0}
+.banner.ack{background:var(--surface2);color:var(--text);border-color:var(--line)}
+.banner .btn{color:var(--text)}
+.spark{width:100%;height:36px}
+.spark polyline,.chart polyline{stroke:var(--accent);stroke-width:2}
+.zonebar{position:relative;height:12px;border-radius:6px;margin:14px 0 0;background:linear-gradient(to right,var(--amber) 0 10%,var(--green) 10% 50%,var(--amber) 50% 80%,var(--lock) 80% 100%)}
+input[type=range]{width:100%;margin:-2px 0 0;accent-color:var(--accent)}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.why{font-size:13px;color:var(--lock-fg);background:var(--lock-bg);border-radius:8px;padding:6px 8px;margin-top:8px}
+.wi{font-size:13.5px;margin-top:8px}
+.bubble{max-width:86%;padding:9px 12px;border-radius:14px;margin:8px 0;background:var(--surface2);border:1px solid var(--line)}
+.bubble.me{margin-left:auto;background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.composer{display:flex;gap:6px;margin-top:10px}
+.composer input{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;min-width:0}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.iconbtn{background:none;border:0;padding:6px;color:var(--muted);display:inline-flex}
+.iconbtn svg{width:20px;height:20px}
+.entry{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.entry time{min-width:44px;font-weight:600;font-variant-numeric:tabular-nums}
+.progress{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;margin:6px 0 12px;border:1px solid var(--line)}
+.progress div{height:100%;background:var(--accent)}
+.bar{height:10px;background:var(--surface2);border-radius:5px;border:1px solid var(--line);overflow:hidden}
+.bar div{height:100%;background:var(--accent)}
+.toggle{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px}
+.toggle[aria-checked="true"]{background:var(--green-bg);color:var(--green-fg);border-color:var(--green)}
+input[type=text].field{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+.back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--accent);padding:6px 0}
+.back svg{width:20px;height:20px}
+.chart{width:100%;height:130px;background:var(--surface2);border:1px solid var(--line);border-radius:10px}
+.overlay{position:absolute;inset:0;z-index:40;display:none;flex-direction:column;justify-content:center;padding:24px;background:rgba(0,0,0,.55)}
+.overlay.on{display:flex}
+.sheet{background:var(--surface);border-radius:18px;padding:18px;text-align:center}
+.fp{width:64px;height:64px;margin:6px auto;color:var(--accent)}
+.lockscreen{position:absolute;inset:0;z-index:30;display:none;flex-direction:column;padding:60px 16px 24px;background:linear-gradient(160deg,#16324f,#0a1622);color:#fff}
+.lockscreen.on{display:flex}
+.lockscreen .clock{text-align:center;font-size:52px;font-weight:300;margin-bottom:20px}
+.lockscreen .notif{background:rgba(255,255,255,.14);border-radius:16px;padding:14px;font-size:14px}
+.lockscreen .notif .btn{background:#fff;color:#0a1622;border-color:#fff}
+.lockscreen a,.lockscreen .btn.danger{color:#ffb4b4;border-color:#ffb4b4;background:transparent}
+.lockscreen .btn.primary{background:#8dbdff;color:#08121f;border-color:#8dbdff}
+.lockscreen :focus-visible{outline-color:#fff}
+.toast{position:absolute;left:16px;right:16px;bottom:12px;background:var(--text);color:var(--bg);border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:45}
+.toast.on{display:block}
+@media (max-width:430px){
+  body{padding:0}
+  .outside{padding:8px}
+  .phone{width:100%;height:calc(100dvh - 0px);min-height:560px;border-radius:0;border-left:0;border-right:0}
+}
+</style>
+</head>
+<body>
+<div class="outside">
+  <div class="note" role="note">Prototype — dữ liệu giả, không nối với hộp. Thiết kế:
+    <a href="../README.md">README.md</a>, <a href="../01-user-stories.md">01-user-stories.md</a>,
+    <a href="../02-brd.md">02-brd.md</a>, <a href="../03-srs.md">03-srs.md</a></div>
+  <nav class="picker" aria-label="Chọn màn hình">
+    <button data-pick="MH-1">MH-1 Nhà</button>
+    <button data-pick="MH-2">MH-2 Chat</button>
+    <button data-pick="MH-3">MH-3 Thiết bị</button>
+    <button data-pick="MH-4">MH-4 Máy sưởi</button>
+    <button data-pick="MH-5">MH-5 Hoạt động</button>
+    <button data-pick="MH-6">MH-6 Thêm thiết bị</button>
+    <button data-pick="MH-7">MH-7 Cài đặt</button>
+    <button data-pick="MH-8">MH-8 Thông báo cài</button>
+  </nav>
+  <button class="simbtn" id="simM8">Mô phỏng thông báo cài Blueprint</button>
+</div>
+
+<div class="phone" id="phone">
+  <div class="status"><span>9:41</span><span>Hộp nhà: đã kết nối</span></div>
+  <div class="main" id="main">
+
+    <!-- MH-1 -->
+    <section class="screen on" id="MH-1" aria-label="Nhà">
+      <span class="code">MH-1</span>
+      <h1>Nhà</h1>
+      <div class="banner" id="urgent" role="alert">
+        <strong>Nhà bố mẹ: chưa thấy hoạt động từ 7:00</strong> — đã hỏi tại chỗ, chưa ai bấm OK; đang báo bạn, 5 phút nữa báo người thứ hai.
+        <div class="btns"><button class="btn" id="callDad">Gọi bố</button><button class="btn" id="ackBtn">Đã biết</button></div>
+      </div>
+      <button class="card tap" data-go="MH-4">
+        <div class="row"><strong>Bể cá phòng khách</strong><span class="pill green">Ổn</span></div>
+        <div class="big">26,8 °C</div>
+        <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-label="Nhiệt độ nước 24 giờ qua"><polyline id="spark1" points=""></polyline></svg>
+      </button>
+      <div class="card">
+        <div class="row"><strong>Nhà bố mẹ</strong><span class="pill amber">Cần chú ý</span></div>
+        <div class="muted">Hôm qua dậy 6:20 · Thuốc 2/3 cữ</div>
+        <div class="muted">Chỉ báo thay đổi thói quen, không chẩn đoán.</div>
+      </div>
+      <button class="card tap" id="pendingRow" data-go="MH-2"><div class="row"><span id="pendingText">1 đề xuất chờ bạn duyệt</span><span aria-hidden="true">&rsaquo;</span></div></button>
+    </section>
+
+    <!-- MH-2 -->
+    <section class="screen" id="MH-2" aria-label="Chat">
+      <span class="code">MH-2</span>
+      <h1>Chat</h1>
+      <div id="chatlog">
+        <div class="bubble me">Hôm nay bể thế nào?</div>
+        <div class="bubble">Nước giữ quanh 26–27 °C cả ngày, hiện 26,8 °C. Lúc 14:10 hộp không cho bật sưởi vì nước đã 29,1 °C. Sục khí vẫn bật.</div>
+        <div class="bubble me">Giữ tầm 26–28 thôi</div>
+        <div class="bubble">Tôi đề xuất thay đổi dưới đây. Chỉ bạn duyệt được.</div>
+      </div>
+      <div class="card" data-card>
+        <strong>Tắt sưởi khi đạt <span data-val>28</span> °C</strong>
+        <div class="muted">Hiện: tắt sưởi khi đạt 29 °C</div>
+        <div><span class="pill" data-pill></span></div>
+        <div class="zonebar" aria-hidden="true"></div>
+        <input type="range" min="24" max="34" step="0.5" value="28" data-slider aria-label="Ngưỡng tắt sưởi, độ C">
+        <div class="scale"><span>24</span><span>29</span><span>32</span><span>34</span></div>
+        <div class="why" data-why hidden></div>
+        <div class="wi" data-wi></div>
+        <div class="btns"><button class="btn" data-go="MH-4">Chỉnh</button><button class="btn primary" data-approve>Duyệt</button></div>
+        <div class="muted" data-done hidden></div>
+      </div>
+      <div class="chips" id="sugs">
+        <button class="chip">Sưởi bị chặn lúc nào?</button>
+        <button class="chip">Nước bể hôm qua</button>
+        <button class="chip">Tắt đèn bể lúc 22:00</button>
+      </div>
+      <form class="composer" id="chatForm">
+        <input id="chatIn" placeholder="Nhắn cho nhà…" aria-label="Nhắn cho nhà">
+        <button class="btn primary" type="submit">Gửi</button>
+      </form>
+    </section>
+
+    <!-- MH-3 -->
+    <section class="screen" id="MH-3" aria-label="Thiết bị">
+      <span class="code">MH-3</span>
+      <h1>Thiết bị</h1>
+      <h2>Bể cá phòng khách</h2>
+      <ul class="list card">
+        <li><button class="back" style="color:var(--text);flex:1;justify-content:space-between" data-go="MH-4"><span>Máy sưởi · <strong>Tắt</strong></span><span aria-hidden="true">&rsaquo;</span></button><button class="btn" id="heaterOn">Bật</button></li>
+        <li><span>Sục khí · <strong>Bật</strong></span><span class="pill lock"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> luôn bật</span></li>
+        <li><span>Nhiệt độ nước</span><strong>26,8 °C</strong></li>
+      </ul>
+      <h2>Nhà bố mẹ</h2>
+      <ul class="list card" id="parentsList">
+        <li><span>Cửa phòng ngủ</span><strong>Đóng · 6:20</strong></li>
+        <li><span>Radar nhà tắm</span><strong>Không có người</strong></li>
+        <li><span>Hộp thuốc</span><strong>Sáng ✓ / Trưa chưa</strong></li>
+        <li><span>Cảm biến cửa trước</span><span class="pill amber">Pin 12%</span></li>
+      </ul>
+      <div class="toast" id="devToast"></div>
+      <button class="btn primary" id="addDev" style="width:100%">Thêm thiết bị</button>
+    </section>
+
+    <!-- MH-4 -->
+    <section class="screen" id="MH-4" aria-label="Chi tiết máy sưởi">
+      <span class="code">MH-4</span>
+      <button class="back" data-go="MH-3" aria-label="Quay lại danh sách thiết bị"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Thiết bị</button>
+      <h1>Máy sưởi bể cá</h1>
+      <svg class="chart" viewBox="0 0 240 130" preserveAspectRatio="none" aria-label="Nhiệt độ nước 24 giờ, đường đứt là ngưỡng">
+        <polyline id="chartLine" points=""></polyline>
+        <line id="thrLine" x1="0" x2="240" y1="60" y2="60" stroke-dasharray="5 4" style="stroke:var(--amber)"/>
+      </svg>
+      <div class="muted">24 giờ qua · đường đứt: ngưỡng <span data-val>28</span> °C</div>
+      <h2>Luật</h2>
+      <ul class="list card">
+        <li><span>Tắt sưởi khi đạt <strong data-val>28</strong> °C</span><span><span class="pill" data-pill></span> <button class="iconbtn" aria-label="Sửa luật ngưỡng tắt sưởi" data-focus="slider4"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg></button></span></li>
+        <li><span>Không bật sưởi khi chưa có số đo nước</span><span class="pill green">Mặc định</span></li>
+        <li><span>Giới hạn phần cứng <strong>32 °C</strong></span><span class="pill lock">Khóa</span></li>
+      </ul>
+      <div class="card" data-card>
+        <strong>Chỉnh ngưỡng tắt sưởi</strong>
+        <div class="zonebar" aria-hidden="true"></div>
+        <input type="range" min="24" max="34" step="0.5" value="28" data-slider id="slider4" aria-label="Ngưỡng tắt sưởi, độ C">
+        <div class="scale"><span>24</span><span>29</span><span>32</span><span>34</span></div>
+        <div class="why" data-why hidden></div>
+        <div class="wi" data-wi></div>
+        <div class="btns"><button class="btn primary" data-approve>Duyệt</button><button class="btn" data-go="MH-2">Chỉnh bằng chat</button></div>
+        <div class="muted" data-done hidden></div>
+      </div>
+      <p class="muted">Bị chặn gần nhất 14:10, nước 29,1 °C.</p>
+    </section>
+
+    <!-- MH-5 -->
+    <section class="screen" id="MH-5" aria-label="Hoạt động">
+      <span class="code">MH-5</span>
+      <h1>Hoạt động</h1>
+      <div class="chips" id="filters" role="group" aria-label="Lọc hoạt động">
+        <button class="chip" data-f="all" aria-pressed="true">Tất cả</button>
+        <button class="chip" data-f="blocked" aria-pressed="false">Bị chặn</button>
+        <button class="chip" data-f="alert" aria-pressed="false">Cảnh báo</button>
+        <button class="chip" data-f="approved" aria-pressed="false">Đã duyệt</button>
+      </div>
+      <div id="entries"></div>
+      <button class="btn" id="replayBtn" style="width:100%;margin-top:12px">Chạy lại hôm qua với luật hiện tại</button>
+      <div class="card" id="replayOut" hidden></div>
+    </section>
+
+    <!-- MH-6 -->
+    <section class="screen" id="MH-6" aria-label="Thêm thiết bị">
+      <span class="code">MH-6</span>
+      <h1>Thêm thiết bị</h1>
+      <div class="muted" id="wizLabel"></div>
+      <div class="progress" role="progressbar" aria-valuemin="1" aria-valuemax="5" id="wizProg"><div id="wizBar"></div></div>
+      <div id="wizBody"></div>
+      <div class="btns"><button class="btn" id="wizBack">Quay lại</button><button class="btn primary" id="wizNext">Tiếp</button></div>
+    </section>
+
+    <!-- MH-7 -->
+    <section class="screen" id="MH-7" aria-label="Cài đặt">
+      <span class="code">MH-7</span>
+      <h1>Cài đặt</h1>
+      <h2>Gia đình và vai trò</h2>
+      <ul class="list card">
+        <li><span>Bạn</span><span class="pill green">duyệt + khẩn cấp</span></li>
+        <li><span>Con thứ hai</span><span class="pill amber">khẩn cấp</span></li>
+        <li><span>Hàng xóm</span><span class="pill lock">sau 10 phút</span></li>
+      </ul>
+      <h2>Kênh báo</h2>
+      <ul class="list card">
+        <li><span>Zalo</span><button class="toggle" role="switch" aria-checked="true">Bật</button></li>
+        <li><span>SMS qua 4G</span><button class="toggle" role="switch" aria-checked="true">Bật</button></li>
+        <li><span>Gọi tự động</span><button class="toggle" role="switch" aria-checked="false">Tắt</button></li>
+        <li><span>Telegram</span><button class="toggle" role="switch" aria-checked="true">Bật</button></li>
+      </ul>
+      <h2>Ngân sách AI</h2>
+      <div class="card"><div class="row"><span>Tháng này</span><strong>0,40 / 2 USD</strong></div><div class="bar" aria-hidden="true"><div style="width:20%"></div></div></div>
+      <h2>Rủi ro đang bật</h2>
+      <div class="card row"><span>Sục khí tắt được từ xa</span><span class="pill amber">Có nhãn rủi ro</span></div>
+      <h2>Canh hộp</h2>
+      <div class="card">Relay canh hộp: tín hiệu 30 giây trước</div>
+    </section>
+
+  </div>
+  <nav class="tabbar" aria-label="Điều hướng chính" id="tabbar">
+    <button data-tab="MH-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Nhà</button>
+    <button data-tab="MH-2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Chat</button>
+    <button data-tab="MH-3"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>Thiết bị</button>
+    <button data-tab="MH-5"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M5 12h14M5 19h9"/></svg>Hoạt động</button>
+    <button data-tab="MH-7"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Cài đặt</button>
+  </nav>
+
+  <div class="overlay" id="fpOverlay" role="dialog" aria-modal="true" aria-label="Xác nhận vân tay">
+    <div class="sheet">
+        <svg class="fp" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11a5 5 0 0 1 10 0v2M12 11v5M9 14v2a3 3 0 0 0 3 3M15 15v1M5 12a7 7 0 0 1 14 0v3"/></svg>
+      <div id="fpText">Chạm cảm biến vân tay để duyệt</div>
+      <div class="btns" style="justify-content:center"><button class="btn primary" id="fpTouch">Chạm để duyệt</button><button class="btn" id="fpCancel">Hủy</button></div>
+      </div>
+    </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- MH-8 -->
+  <div class="lockscreen" id="MH-8" role="dialog" aria-modal="true" aria-label="Thông báo cài Blueprint">
+    <div class="clock" aria-hidden="true">9:41</div>
+    <div class="notif">
+      <strong>Blueprint "Bể cá tự chăm" muốn cài lên hộp</strong>
+      <div style="margin-top:8px">Hộp bể cá sẽ:</div>
+      <ul style="margin:6px 0 8px;padding-left:18px">
+        <li>không bật sưởi khi nước từ 29 °C;</li>
+        <li>luôn giữ sục khí, tắt thì hỏi bạn;</li>
+        <li>báo khi sưởi bật mà không ấm.</li>
+      </ul>
+      <div style="font-size:13px;opacity:.85">Đã qua Action CI · digest khớp</div>
+      <div id="m8detail" style="font-size:13px;margin-top:8px" hidden>Gói chưa chạy gì trước khi bạn duyệt (BL-IN-05). Tham số cài đặt không được ghi vào gate (BL-IN-04).</div>
+      <div id="m8done" style="margin-top:8px;font-weight:600" hidden>Đã duyệt, ghi vào nhật ký</div>
+      <div class="btns">
+        <button class="btn primary" id="m8Touch">Chạm để duyệt</button>
+        <button class="btn" id="m8Detail">Xem chi tiết</button>
+        <button class="btn danger" id="m8Reject">Từ chối</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var READINGS=[25.8,25.9,26.0,26.1,26.3,26.5,26.6,26.8,27.0,27.1,27.3,27.5,27.8,28.2,29.1,27.6,27.9,27.4,27.0,26.8,26.6,26.5,26.3,26.2];
+var BASE=29, VALUE=28, APPROVED=false, pendingOpen=true;
+var entries=[
+ {t:"14:10",type:"blocked",text:"Hộp không cho bật sưởi vì nước đã 29,1 °C."},
+ {t:"13:02",type:"approved",text:"Bạn duyệt lịch tắt đèn bể lúc 22:00 (vân tay)."},
+ {t:"07:00",type:"alert",text:"Nhà bố mẹ chưa thấy hoạt động. Bố bấm OK lúc 07:03."},
+ {t:"06:20",type:"event",text:"Cửa phòng ngủ bố mẹ mở."}
+];
+var filter="all";
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var fmt=function(v){return String(v).replace(".",",")};
+var now=function(){var d=new Date();return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)};
+
+function pts(arr,w,h,lo,hi){return arr.map(function(v,i){return (i*w/(arr.length-1)).toFixed(1)+","+(h-(v-lo)/(hi-lo)*h).toFixed(1)}).join(" ")}
+$("#spark1").setAttribute("points",pts(READINGS,200,34,25,30));
+$("#chartLine").setAttribute("points",pts(READINGS,240,120,24,34));
+
+/* navigation */
+var TABS={"MH-1":"MH-1","MH-2":"MH-2","MH-3":"MH-3","MH-4":"MH-3","MH-5":"MH-5","MH-6":"MH-3","MH-7":"MH-7"};
+function show(id){
+  if(id==="MH-8"){$("#MH-8").classList.add("on");mark(id);return}
+  $("#MH-8").classList.remove("on");
+  $$(".screen").forEach(function(s){s.classList.toggle("on",s.id===id)});
+  $$("#tabbar button").forEach(function(b){
+    if(b.dataset.tab===TABS[id]) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+  });
+  $("#main").scrollTop=0; mark(id);
+  if(id==="MH-6") wizRender();
+}
+function mark(id){$$(".picker button").forEach(function(b){b.setAttribute("aria-current",b.dataset.pick===id?"true":"false")})}
+document.addEventListener("click",function(e){
+  var g=e.target.closest("[data-go]"); if(g){show(g.dataset.go);return}
+  var t=e.target.closest("[data-tab]"); if(t){show(t.dataset.tab);return}
+  var p=e.target.closest("[data-pick]"); if(p){show(p.dataset.pick);return}
+  var f=e.target.closest("[data-focus]"); if(f){var el=document.getElementById(f.dataset.focus);if(el){el.scrollIntoView({block:"center"});el.focus()}}
+});
+$("#simM8").addEventListener("click",function(){show("MH-8")});
+function toast(msg,el){el=el||$("#toast");el.textContent=msg;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove("on")},2600)}
+
+/* zones */
+function zone(v){ if(v>32) return "lock"; if(v>=25&&v<=29) return "green"; return "amber"; }
+function countGE(t){return READINGS.filter(function(x){return x>=t}).length}
+function whatIf(v){
+  var d=countGE(v)-countGE(BASE);
+  var s;
+  if(d>0) s="Nếu áp dụng hôm qua: chặn thêm "+d+" lần";
+  else if(d<0) s="Nếu áp dụng hôm qua: chặn ít hơn "+(-d)+" lần";
+  else s="Nếu áp dụng hôm qua: không đổi so với luật hiện tại";
+  return s;
+}
+function renderZone(){
+  var z=zone(VALUE);
+  $$("[data-val]").forEach(function(e){e.textContent=fmt(VALUE)});
+  $$("[data-slider]").forEach(function(s){if(Number(s.value)!==VALUE) s.value=VALUE});
+  $$("[data-pill]").forEach(function(p){
+    p.className="pill "+z;
+    p.textContent=z==="green"?"Trong khoảng maker cho phép":z==="amber"?"Ngoài khoảng maker, có nhãn rủi ro":"Vượt giới hạn phần cứng";
+  });
+  $$("[data-approve]").forEach(function(b){
+    b.disabled=(z==="lock")||APPROVED;
+    b.textContent=APPROVED?"Đã duyệt":z==="amber"?"Duyệt, chấp nhận rủi ro":"Duyệt";
+  });
+  $$("[data-why]").forEach(function(w){
+    if(z==="lock"){w.hidden=false;w.textContent="Không áp dụng được: vượt giới hạn phần cứng 32 °C. Hộp không cho đổi từ app."}
+    else w.hidden=true;
+  });
+  $$("[data-wi]").forEach(function(w){w.textContent=whatIf(VALUE)});
+  var y=120-(VALUE-24)/10*120;
+  var ln=$("#thrLine"); ln.setAttribute("y1",y.toFixed(1)); ln.setAttribute("y2",y.toFixed(1));
+  if(!$("#replayOut").hidden) replay();
+}
+$$("[data-slider]").forEach(function(s){s.addEventListener("input",function(){VALUE=Number(s.value);APPROVED=false;$$("[data-done]").forEach(function(d){d.hidden=true});renderZone()})});
+
+/* fingerprint */
+var fpDone=null;
+function openFp(cb){fpDone=cb;$("#fpText").textContent="Chạm cảm biến vân tay để duyệt";$("#fpOverlay").classList.add("on");$("#fpTouch").focus()}
+$("#fpCancel").addEventListener("click",function(){$("#fpOverlay").classList.remove("on");fpDone=null});
+$("#fpTouch").addEventListener("click",function(){
+  $("#fpText").textContent="Đang xác minh…";
+  setTimeout(function(){$("#fpOverlay").classList.remove("on");var cb=fpDone;fpDone=null;if(cb)cb()},700);
+});
+$$("[data-approve]").forEach(function(b){b.addEventListener("click",function(){
+  if(zone(VALUE)==="lock") return;
+  openFp(function(){
+    APPROVED=true;pendingOpen=false;
+    addEntry("approved","Bạn duyệt: tắt sưởi khi đạt "+fmt(VALUE)+" °C (vân tay).");
+    $$("[data-done]").forEach(function(d){d.hidden=false;d.textContent="Đã duyệt, ghi vào nhật ký"});
+    $("#pendingText").textContent="Không có đề xuất chờ duyệt";
+    renderZone();
+  });
+})});
+
+/* activity */
+function addEntry(type,text){entries.unshift({t:now(),type:type,text:text});renderEntries()}
+var LABEL={blocked:"Bị chặn",approved:"Đã duyệt",alert:"Cảnh báo",event:"Sự kiện"};
+function renderEntries(){
+  var box=$("#entries");box.textContent="";
+  var shown=entries.filter(function(e){return filter==="all"||e.type===filter});
+  if(!shown.length){var p=document.createElement("p");p.className="muted";p.textContent="Không có mục nào.";box.appendChild(p)}
+  shown.forEach(function(e){
+    var d=document.createElement("div");d.className="entry";
+    var t=document.createElement("time");t.textContent=e.t;
+    var b=document.createElement("div");
+    var pl=document.createElement("span");pl.className="pill "+(e.type==="blocked"?"lock":e.type==="alert"?"red":e.type==="approved"?"green":"amber");pl.textContent=LABEL[e.type];
+    var tx=document.createElement("div");tx.textContent=e.text;
+    b.appendChild(pl);b.appendChild(tx);d.appendChild(t);d.appendChild(b);box.appendChild(d);
+  });
+}
+$$("#filters .chip").forEach(function(c){c.addEventListener("click",function(){
+  filter=c.dataset.f;$$("#filters .chip").forEach(function(x){x.setAttribute("aria-pressed",x===c?"true":"false")});renderEntries();
+})});
+function replay(){
+  var o=$("#replayOut");o.hidden=false;
+  var n=countGE(VALUE);
+  o.textContent="Chạy lại 24 giờ hôm qua với ngưỡng "+fmt(VALUE)+" °C (mẫu 24 số đo giả): sưởi sẽ bị chặn ở "+n+" số đo. "+whatIf(VALUE)+".";
+}
+$("#replayBtn").addEventListener("click",replay);
+
+/* home banner */
+$("#ackBtn").addEventListener("click",function(){
+  var b=$("#urgent");b.className="banner ack";b.setAttribute("role","status");
+  b.textContent="";
+  var s=document.createElement("strong");s.textContent="Bạn đã biết lúc "+now()+".";
+  b.appendChild(s);b.appendChild(document.createTextNode(" Đã ghi nhận, dừng báo người thứ hai."));
+  addEntry("alert","Bạn bấm Đã biết cho cảnh báo Nhà bố mẹ.");
+});
+$("#callDad").addEventListener("click",function(){toast("Giả lập: đang gọi bố…")});
+
+/* chat */
+function bubble(text,me){var d=document.createElement("div");d.className="bubble"+(me?" me":"");d.textContent=text;$("#chatlog").appendChild(d);d.scrollIntoView({block:"nearest"})}
+function send(text){
+  text=text.trim();if(!text)return;bubble(text,true);
+  setTimeout(function(){bubble("Tôi sẽ đề xuất thay đổi, bạn duyệt trong thẻ bên dưới")},400);
+}
+$("#chatForm").addEventListener("submit",function(e){e.preventDefault();var i=$("#chatIn");send(i.value);i.value=""});
+$$("#sugs .chip").forEach(function(c){c.addEventListener("click",function(){send(c.textContent)})});
+
+/* devices */
+$("#heaterOn").addEventListener("click",function(){
+  toast("Hộp từ chối: nước đang 26,8 °C và luật hiện tại chỉ cho bật khi đo được nhiệt độ. Giả lập, chưa nối hộp.",$("#devToast"));
+});
+$("#addDev").addEventListener("click",function(){wiz=0;wizName="Cảm biến cửa nhà tắm";show("MH-6")});
+
+/* wizard */
+var wiz=0,wizKind="Cảm biến cửa",wizName="Cảm biến cửa nhà tắm",wizOk=false;
+var STEPS=["Chọn loại","Kết nối","Thử trực tiếp","Đặt tên","Luật và chạy thử → Duyệt"];
+function el(tag,txt,cls){var e=document.createElement(tag);if(txt)e.textContent=txt;if(cls)e.className=cls;return e}
+function wizRender(){
+  var body=$("#wizBody");body.textContent="";
+  $("#wizLabel").textContent="Bước "+(wiz+1)+"/5 "+STEPS[wiz].replace(" → Duyệt","");
+  $("#wizBar").style.width=((wiz+1)*20)+"%";
+  $("#wizProg").setAttribute("aria-valuenow",wiz+1);
+  $("#wizBack").textContent="Quay lại";
+  $("#wizNext").textContent=wiz===4?"Duyệt":"Tiếp";
+  $("#wizNext").disabled=wiz===4&&wizOk;
+  if(wiz===0){
+    ["Cảm biến cửa","Đèn","Công tắc","Cảm biến nhiệt độ"].forEach(function(k){
+      var b=el("button",k,"btn");b.style.cssText="display:block;width:100%;margin:6px 0;text-align:left";
+      b.setAttribute("aria-pressed",k===wizKind?"true":"false");
+      if(k===wizKind) b.classList.add("primary");
+      b.addEventListener("click",function(){wizKind=k;wizRender()});body.appendChild(b);
+    });
+  }else if(wiz===1){
+    var c=el("div",null,"card");c.appendChild(el("strong","Đang tìm thiết bị Zigbee gần hộp"));
+    c.appendChild(el("div","Giữ nút ghép đôi trên thiết bị 3 giây. Đã thấy: "+wizKind+" (Zigbee).","muted"));body.appendChild(c);
+  }else if(wiz===2){
+    var c3=el("div",null,"card");
+    c3.appendChild(el("strong","Cảm biến cửa · Zigbee, đã ghép đôi, loại: contact"));
+    c3.appendChild(el("p","Mở rồi đóng cửa nhà tắm một lần"));
+    c3.appendChild(el("div","✓ thấy mở 15:42:08, đóng 15:42:11","pill green"));
+    body.appendChild(c3);
+  }else if(wiz===3){
+    body.appendChild(el("label","Tên thiết bị"));
+    var i=el("input");i.type="text";i.className="field";i.value=wizName;i.setAttribute("aria-label","Tên thiết bị");
+    i.addEventListener("input",function(){wizName=i.value});body.appendChild(i);
+  }else{
+    var c5=el("div",null,"card");
+    c5.appendChild(el("strong","Luật mặc định cho "+wizName));
+    c5.appendChild(el("p","Ghi nhật ký mỗi lần cửa mở hoặc đóng. Không điều khiển thiết bị nào."));
+    c5.appendChild(el("div","Nếu áp dụng hôm qua: chưa có lịch sử, xem lại sau 24 giờ","wi"));
+    c5.appendChild(el("div","Thẻ duyệt: thêm "+wizName+" và 1 luật ghi nhật ký","muted"));
+    body.appendChild(c5);
+    if(wizOk) body.appendChild(el("div","Đã duyệt, ghi vào nhật ký","pill green"));
+  }
+}
+$("#wizBack").addEventListener("click",function(){if(wiz===0){show("MH-3")}else{wiz--;wizRender()}});
+$("#wizNext").addEventListener("click",function(){
+  if(wiz<4){wiz++;wizOk=false;wizRender();return}
+  openFp(function(){
+    wizOk=true;
+    addEntry("approved","Bạn duyệt thêm thiết bị "+wizName+" (vân tay).");
+    var li=document.createElement("li");li.appendChild(el("span",wizName));li.appendChild(el("strong","Mới ghép"));
+    $("#parentsList").appendChild(li);
+    wizRender();setTimeout(function(){show("MH-3")},900);
+  });
+});
+
+/* settings switches */
+$$(".toggle").forEach(function(t){t.addEventListener("click",function(){
+  var on=t.getAttribute("aria-checked")!=="true";t.setAttribute("aria-checked",on);t.textContent=on?"Bật":"Tắt";
+})});
+
+/* MH-8 */
+$("#m8Detail").addEventListener("click",function(){var d=$("#m8detail");d.hidden=!d.hidden});
+$("#m8Reject").addEventListener("click",function(){$("#m8done").hidden=true;show("MH-1")});
+$("#m8Touch").addEventListener("click",function(){
+  openFp(function(){
+    $("#m8done").hidden=false;
+    addEntry("approved","Bạn duyệt cài Blueprint Bể cá tự chăm (vân tay).");
+  });
+});
+
+renderEntries();renderZone();show("MH-1");
+})();
+</script>
+</body>
+</html>

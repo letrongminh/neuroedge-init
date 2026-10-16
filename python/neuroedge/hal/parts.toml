@@ -1,0 +1,130 @@
+# The parts catalogue (docs/spec/virtual_parts.md §4.2, VP-PT-02): the one place that says what each
+# kind of part is. A kind names an existing HAL primitive and adds no behaviour of its own; a gate
+# never reads a kind. Adding a kind is a regular PR: one table here, a row in the spec's §4.2.
+#
+#   primitive  the HAL primitive the part is (digital.out, digital.in, sensor.read, analog.in,
+#              motion, display)
+#   target     which key of `[sim.parts.<name>]` wires it: pin, sensor or channel (none: display)
+#   word       what the page calls the kind when the part has no label
+#   unit/range what a sensor part reads in; a `:sensor` value outside the range is refused (VP-PT-05)
+#   envelope   the safety preset of an output part on `sim-virtual` (VP-PT-04). Every digital.out
+#              preset has window_s 3600 and max_on_ms_per_window 600000, and none is looser than the
+#              reference board's loosest pin of the same use (`porch_light` for lights); motor and
+#              servo copy `wheel_left` and `gripper` of `sim-rpi5`
+#   element    the Wokwi Element phase C draws it with; none: the page's own icon (VP-CV-05)
+
+[kinds.relay]
+primitive = "digital.out"
+target    = "pin"
+word      = "Relay"
+envelope  = { max_continuous_ms = 60000, min_interval_ms = 2000 }
+element   = "wokwi-ks2e-m-dc5"
+
+[kinds.light]
+primitive = "digital.out"
+target    = "pin"
+word      = "Đèn"
+envelope  = { max_continuous_ms = 600000, min_interval_ms = 2000 }
+element   = "wokwi-led"
+
+[kinds.heater]
+primitive = "digital.out"
+target    = "pin"
+word      = "Máy sưởi"
+envelope  = { max_continuous_ms = 60000, min_interval_ms = 2000 }
+
+[kinds.pump]
+primitive = "digital.out"
+target    = "pin"
+word      = "Máy bơm"
+envelope  = { max_continuous_ms = 60000, min_interval_ms = 2000 }
+
+[kinds.fan]
+primitive = "digital.out"
+target    = "pin"
+word      = "Quạt"
+envelope  = { max_continuous_ms = 600000, min_interval_ms = 2000 }
+
+[kinds.lock]
+primitive = "digital.out"
+target    = "pin"
+word      = "Khoá"
+envelope  = { max_continuous_ms = 60000, min_interval_ms = 1000 }
+
+[kinds.button]
+primitive = "digital.in"
+target    = "pin"
+word      = "Nút bấm"
+element   = "wokwi-pushbutton"
+
+[kinds.contact]
+primitive = "digital.in"
+target    = "pin"
+word      = "Cảm biến cửa"
+element   = "wokwi-slide-switch"
+
+[kinds.temperature]
+primitive = "sensor.read"
+target    = "sensor"
+word      = "Nhiệt độ"
+unit      = "C"
+range     = [-40, 125]
+element   = "wokwi-ntc-temperature-sensor"
+
+[kinds.humidity]
+primitive = "sensor.read"
+target    = "sensor"
+word      = "Độ ẩm"
+unit      = "%"
+range     = [0, 100]
+element   = "wokwi-dht22"
+
+[kinds.level]
+primitive = "sensor.read"
+target    = "sensor"
+word      = "Mực nước"
+unit      = "%"
+range     = [0, 100]
+element   = "wokwi-hc-sr04"
+
+[kinds.ph]
+primitive = "sensor.read"
+target    = "sensor"
+word      = "Độ pH"
+unit      = "pH"
+range     = [0, 14]
+
+# No unit or range of its own: the part gives them (`unit`, `range`), or reads without a range.
+[kinds.sensor]
+primitive = "sensor.read"
+target    = "sensor"
+word      = "Cảm biến"
+
+[kinds.knob]
+primitive = "analog.in"
+target    = "channel"
+word      = "Núm vặn"
+unit      = "V"
+range     = [0, 2.5]
+element   = "wokwi-potentiometer"
+
+[kinds.motor]
+primitive = "motion"
+target    = "channel"
+word      = "Động cơ"
+envelope  = { max_continuous_ms = 10000, min_interval_ms = 2000 }
+element   = "wokwi-stepper-motor"
+
+[kinds.servo]
+primitive = "motion"
+target    = "channel"
+word      = "Servo"
+unit      = "deg"
+range     = [0, 90]
+envelope  = { max_continuous_ms = 3000, min_interval_ms = 1000 }
+element   = "wokwi-servo"
+
+[kinds.display]
+primitive = "display"
+word      = "Màn hình"
+element   = "wokwi-ili9341"

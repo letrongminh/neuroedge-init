@@ -37,10 +37,27 @@ typedef struct {
     const ne_arg_value *args;   /* self-test: one value per argument limit, or NULL */
 } ne_agent_gate;
 
+/* What an action's body does to one pin, recorded at build time (engine/chip_actions.py). */
+#define NE_AGENT_OP_ON 0u
+#define NE_AGENT_OP_OFF 1u
+#define NE_AGENT_OP_PULSE 2u
+#define NE_AGENT_OP_UNSUPPORTED 3u /* the chip refuses to drive it, never guesses */
+typedef struct {
+    uint8_t pin;                /* index into pins */
+    uint8_t op;                 /* NE_AGENT_OP_* */
+    uint32_t ms;                /* a pulse's length, or its length per unit of `arg` */
+    const char *arg;            /* the argument a pulse's length follows, or NULL */
+} ne_agent_pin_op;
+
 typedef struct {
     const char *name;           /* the @action */
     uint16_t gate;              /* index into gates: the gate that guards it */
     uint32_t pin_mask;          /* bit i = pins[i]: what a token for it may drive */
+    /* The tool the brain sees, as `neuroedge mcp serve` lists it (DP-COM-02, DP-B-03). */
+    const char *description;
+    const char *input_schema;   /* JSON Schema of the arguments, compact */
+    const ne_agent_pin_op *ops; /* in the order the body drives them, or NULL */
+    uint32_t op_count;
 } ne_agent_action;
 
 typedef struct {

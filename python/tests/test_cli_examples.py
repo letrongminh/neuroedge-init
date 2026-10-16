@@ -191,6 +191,28 @@ NOT_RUN = {
         "tests/test_hal_linux_audio.py runs it on the fake gpiod"
     ),
     "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json": "as above",
+    "neuroedge build --target esp32s3 --brain neuroclaw --brain-source ../neuroclaw": (
+        "needs a NeuroClaw checkout at the pinned commit; tests/test_firmware_brain.py builds "
+        "with a stand-in component"
+    ),
+    # Q-83 DP-A-09: as root it makes users and units; staged, it still downloads NeuroClaw.
+    # tests/test_install.py runs it staged with a stand-in release; CI job install-full, live
+    "neuroedge install --profile full --agent fixtures/agents/chat-den-cua --env-file .env.txt": (
+        "installs system users and services as root"
+    ),
+    "neuroedge status --brain-config /var/lib/neuroclaw/config.json": (
+        "reads the installed brain's config (tests/test_install.py runs it on a staged one)"
+    ),
+    "neuroedge install --profile full --agent my-agent --root /tmp/staged": (
+        "downloads the pinned NeuroClaw release"
+    ),
+    "neuroedge doctor --brain-user neuroclaw --keys /var/lib/neuroedge/keys": (
+        "reads a Linux machine's users, /dev and /proc; tests/test_isolation.py runs it on a "
+        "fake one"
+    ),
+    "neuroedge ui-link": (
+        "needs a running page; tests/test_mcp_serve_ui.py runs it against `mcp serve --ui`"
+    ),
 }
 
 
@@ -215,13 +237,20 @@ def fresh_actions():
     The scaffold defines `operate_hardware` at a new path: free that one name. The
     rest stays — `verify` replays sample agents whose modules are already imported.
     """
+    import sys
+
     from neuroedge.actions import spec
 
-    saved = dict(spec.REGISTRY)
+    saved, modules = dict(spec.REGISTRY), set(sys.modules)
     spec.REGISTRY.pop("operate_hardware", None)
     yield
     spec.REGISTRY.clear()
     spec.REGISTRY.update(saved)
+    # An agent first imported here registered its actions in the registry just restored; its
+    # module must go too, or the next load finds it imported and registers nothing.
+    for module in set(sys.modules) - modules:
+        if module.startswith("neuroedge_agent_"):
+            del sys.modules[module]
 
 
 def test_the_examples_run_in_a_new_project(tmp_path, monkeypatch, fresh_actions):

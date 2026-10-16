@@ -30,7 +30,9 @@ What the client gets back is the verdict, as JSON text and structured content:
 A BLOCK is the gate working, not an error (`isError` stays false); a call the
 schema rejects is an error (`isError` true), and nothing moved. Every tool
 declares that shape as its `outputSchema` (`neuroedge.actions.tools.result_schema`),
-which an MCP client checks the structured content of every non-error result against.
+which an MCP client checks the structured content of every non-error result against, and
+names it in `_meta["dev.neuroedge/contract"]` (`CONTRACT`): a brain that meets a major version it
+does not know treats the call as REJECTED (DP-COM-08, `docs/spec/deployment_profiles.md`).
 
 `neuroedge mcp serve --ui` (TSK-S3-27) also serves the session as the live
 `sim` page (`neuroedge.sim.ui`); the two share one session through the hooks of
@@ -49,6 +51,10 @@ from typing import Any, Protocol
 
 from .actions.tools import ToolCall
 from .errors import NeuroEdgeError
+
+# DP-COM-08: the result contract every tool answers in — `schemas/tool-result.v1.json`.
+CONTRACT_KEY = "dev.neuroedge/contract"
+CONTRACT = "tool-result.v1"
 
 
 def _sdk() -> tuple[Any, Any]:
@@ -114,6 +120,7 @@ def build_server(
                     description=tool["description"],
                     input_schema=tool["inputSchema"],
                     output_schema=tool["outputSchema"],
+                    meta={CONTRACT_KEY: CONTRACT},
                 )
                 for tool in session.tools.mcp()
             ]

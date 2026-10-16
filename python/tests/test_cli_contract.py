@@ -25,11 +25,18 @@ COMMANDS = {
     "add action": ("<name> --agent|-a= --board= --channel= --pin= --primitive="),
     "add device": ("<name> --agent|-a= --board= --device=! --register=! --width="),
     "add gate": "<name> --agent|-a= --fact=*",
+    # Q-84: a part of the catalogue (docs/spec/virtual_parts.md VP-PT-07)
+    "add part": (
+        "[kind] [name] --agent|-a= --board= --channel= --drives= --label= --list --pin= --sensor="
+    ),
     "add sensor": ("<name> --agent|-a= --board= --label= --pin= --primitive= --source="),
     "board list": "",
     "board show": "<board_id>",
-    "build": "--agent|-a= --board|-b= --out|-o= --registry|-r= --target|-t=!",
+    "build": (
+        "--agent|-a= --board|-b= --brain-source= --brain= --out|-o= --registry|-r= --target|-t=!"
+    ),
     "conformance": "<distribution> --json --kind=",
+    "doctor": "--brain-user= --keys=!",
     "gate add": "<uri>",
     "gate explain": "<target> --registry|-r=",
     "gate lint": "[directory] --registry|-r=",
@@ -38,23 +45,30 @@ COMMANDS = {
     "guard init": (
         "--allow-lan-http --dir= --env-from=* --header-env=* --http= --mcp= --name= --route=*"
     ),
+    "install": (
+        "--agent|-a=! --allow=* --env-file= --host= --no-start|--start --port= --profile=! "
+        "--root= --target|-t="
+    ),
     "mcp desktop-config": (
         "--agent|-a= --config-path= --name= --port= --raw --trace-out= --ui --write"
     ),
     "mcp serve": (
         "--agent|-a= --audience= --board|-b= --client-ca= --host= --http --init-timeout= "
-        "--issuer= --jwks= --open --port= --raw --registry|-r= --required-scope= --target|-t= "
-        "--tls-cert= --tls-key= --trace-out= --ui"
+        "--issuer= --jwks= --open --port= --raw --registry|-r= --required-scope= --revoked= "
+        "--target|-t= --tls-cert= --tls-key= --trace-out= --ui"
     ),
     "mcp tools": "--agent|-a= --external --json --openai",
-    "new": "<name> --template=",
+    "new": "<name> --board= --template=",
+    "pair init": "--audience=! --cert-days= --host=* --issuer= --out|-o=! --token-days=",
+    "pair renew": "--dir|-d=! --token-days=",
+    "pair rotate": "--dir|-d=! --token-days=",
     "plugin doctor": "--config|-c= --json",
     "plugin list": "--json",
     "proxy http": "--config|-c= --trace-out=",
     "proxy mcp": "--config-path= --config|-c= --desktop-config --name= --trace-out= --write",
     "record": (
-        "--agent|-a= --anonymize --baud= --board|-b= --command|-c= --out|-o= --port= --raw "
-        "--registry|-r= --target|-t= --timeout= --voice-file= --voice-out="
+        "--agent|-a= --anonymize --baud= --board|-b= --command|-c= --follow --out|-o= --port= "
+        "--raw --registry|-r= --target|-t= --timeout= --voice-file= --voice-out="
     ),
     "replay": (
         "<trace_file> --agent|-a= --board|-b= --golden|-g= --raw --registry|-r= --target|-t= "
@@ -64,12 +78,14 @@ COMMANDS = {
         "--agent|-a= --board|-b= --command|-c= --half-duplex --mic --no-browser --port= --raw "
         "--registry|-r= --target|-t= --trace-out= --ui --voice-file= --voice-out="
     ),
+    "status": "--brain-config=",
     "studio": "--agent|-a= --half-duplex --mic --no-browser --port=",
     "test": "[path] --pytest-arg=*",
     "trace export": "<trace_file> --format|-f= --out|-o=",
     "trace show": "<trace_file>",
     "trace validate": "<trace_files>...",
     "trace view": "<trace_file> --open --out|-o=",
+    "ui-link": "",
     "verify": "--baud= --port= --targets= --timeout=",
 }
 

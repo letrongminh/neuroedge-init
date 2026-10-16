@@ -20,7 +20,10 @@ Rules (docs/spec/tool_calling.md §6):
 * one confirmation answers one request, once; it expires after its TTL
   (``max(p95 × 3, 10 s)``);
 * it is bound to the gate's digest: if the gate changed in between, it is void;
-* a gate that declares no `confirms` only informs — nothing is pending.
+* a gate that declares no `confirms` only informs — nothing is pending;
+* at most `MAX_PENDING` questions wait at once: a call that would ask a fifth is a BLOCK
+  `budget_exceeded` and no question is sent (DP-COM-09, `deployment_profiles.md`), so a
+  caller cannot flood the person with questions.
 
 Every step is an event in the trace, so a replay reproduces the decision.
 """
@@ -33,6 +36,7 @@ from typing import Any
 HUMAN_SOURCES = ("local_grammar", "ui")
 MIN_TTL_MS = 10_000
 TTL_FACTOR = 3
+MAX_PENDING = 4  # DP-COM-09: the same bound as the chip's table (NE_BRIDGE_PENDING)
 
 
 @dataclass
@@ -137,6 +141,17 @@ class ConfirmationBook:
 
     def get(self, confirm_id: str) -> PendingConfirmation | None:
         return self._pending.get(confirm_id)
+
+    def full(self) -> bool:
+        """`MAX_PENDING` questions are waiting: another one may not be asked (DP-COM-09)."""
+        self._expire_due()
+        return sum(p.state == "pending" for p in self._pending.values()) >= MAX_PENDING
+
+    def withhold(self, action: str, gate: str) -> None:
+        """Record a question not asked because the book is full."""
+        self.events.emit(
+            "tool_confirm_withheld", {"action": action, "gate": gate, "pending": MAX_PENDING}
+        )
 
     def latest(self) -> PendingConfirmation | None:
         """The most recent question still awaiting an answer, if any."""

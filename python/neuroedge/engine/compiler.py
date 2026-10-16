@@ -46,7 +46,6 @@ from ..errors import (
 from ..hal.audio import MAX_RATE_HZ, MIN_RATE_HZ, rate_ok
 from ..hal.board import (
     ALL_PRIMITIVES,
-    REFERENCE_BOARD,
     REFERENCE_BOARDS,
     REQUIRABLE_PRIMITIVES,
     BoardProfile,
@@ -1697,17 +1696,31 @@ def build(
     board_id: str | None = None,
     out_dir: str | Path | None = None,
     registry: GateRegistry | None = None,
+    brain: str | None = None,
+    brain_source: str | Path | None = None,
 ) -> BuildReport:
     """
     Check everything; raise `BuildFailed` with every problem, or write artifacts.
 
+    `brain` "neuroclaw" (Profile B, Q-83) puts NeuroClaw-ESP, checked against its pin, and the
+    bridge into the one `esp32s3` project (`engine/brain.py`); `brain_source` is a checkout.
+
     `board_id` None builds on the target's default board. It is never replaced by another
     board that would fit: the user must know which board they flash (RFC-0013 §3e).
     """
+    from ..hal.parts import agent_parts
+    from ..hal.virtual_board import resolve_board, sim_board_of
+
     manifest = load_agent_manifest(agent_toml)
-    explicit_board = board_id is not None
-    board = load_board_by_id(board_id or REFERENCE_BOARD.get(target, "esp32s3-box-3"))
+    explicit_board = board_id is not None or (
+        target == "sim" and sim_board_of(manifest) is not None
+    )
+    board, virtual = resolve_board(board_id, target, manifest)
     problems: list[NeuroEdgeError] = []
+    try:  # `[sim.parts]` (VP-PT-01, VP-PT-03): checked on every target; parts only describe
+        agent_parts(manifest)
+    except AgentManifestError as error:
+        problems.append(error)
 
     if manifest.targets and target not in manifest.targets:
         problems.append(
@@ -1725,6 +1738,27 @@ def build(
                 how=f"pick a {target} board, or build with --target {board.target}",
             )
         )
+    brain_project: dict[str, bytes] | None = None
+    if brain is not None:
+        from .brain import BRAINS, brain_files
+        from .firmware import firmware_root
+
+        if brain not in BRAINS or target != "esp32s3":
+            problems.append(
+                NeuroEdgeError(
+                    where=f"--brain {brain} --target {target}",
+                    why=f"a brain goes into the one image of target esp32s3, and is one of {list(BRAINS)}",
+                    how="build with --target esp32s3 --brain neuroclaw, or leave --brain out "
+                    "(on other targets the brain runs beside the box, Profile A)",
+                )
+            )
+        else:
+            try:  # DP-B-01: checked against its pin before anything is written
+                brain_project = brain_files(
+                    firmware_root(), Path(brain_source) if brain_source is not None else None
+                )
+            except NeuroEdgeError as error:
+                problems.append(error)
     # `[plugins]` and `[actuators]` (RFC-0016 §3d, RFC-0018 §3b): the one check that `SimSession`
     # and `Guard` run at load time too. A remote actuator is a `digital.out` the board lacks.
     from ..plugins.actuators import remote_setup
@@ -1739,6 +1773,12 @@ def build(
     )
     problems += remote.problems
     warnings = list(remote.checked.warnings)
+    if virtual is not None:  # VP-VB-05: said at every build, never hidden
+        warnings.insert(0, virtual.startup_line())
+    if board.pin_map:  # VP-PM-04: a wrong map is seen before it drives a pin
+        from ..hal.pin_map import startup_line
+
+        warnings.insert(0, startup_line(board.pin_map))
     capability_problems = check_capabilities(manifest, board, remote.names)
     problems += capability_problems
     if capability_problems and not explicit_board:
@@ -1800,7 +1840,9 @@ def build(
         if project is not None:
             from . import firmware
 
-            project_files = firmware.render_project(manifest, board.id, gates, actions)
+            project_files = firmware.render_project(
+                manifest, board.id, gates, actions, brain=brain_project
+            )
         folder = Path(out_dir) / "gates"
         folder.mkdir(parents=True, exist_ok=True)
         from .binary_tree import c_header, encode

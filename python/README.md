@@ -5,7 +5,7 @@ NeuroEdge core: the Hardware Abstraction Layer (HAL), the Action Contract Engine
 the gate resolver, and the Action CI test harness.
 
 This page is for working on NeuroEdge from a checkout. To *use* it, install from
-PyPI as the root [`README.md`](../README.md) says — that file is also the package's
+source until I6 (Q-39), as the root [`README.md`](../README.md) says — that file is also the package's
 PyPI page (`hatch_build.py` reads it in). Releasing: [`docs/release.md`](../docs/release.md).
 
 Everything else has one home in the repository root, and this page only points there:

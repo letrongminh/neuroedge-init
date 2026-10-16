@@ -1,8 +1,10 @@
 # Demo script — NeuroEdge Studio (I1, TSK-I1-04)
 
+> **Status: paused (Q-72).** Studio is not being developed now; the command still works.
+
 > **Last re-run:** 2026-09-29, macOS, branch `studio/integration`: seven browser verification scenes with agent
 > `home-voice` (light and dark themes, 1280 px and 390 px, VI and EN, no console errors).
-> **Duration:** 7–8 minutes. No hardware needed. The voice scene requires `--mic` and headphones (see `demo/i4-thoai-laptop/`).
+> **Duration:** 7–8 minutes. No hardware needed. The voice scene requires `--mic` and headphones; the I4 voice demo was removed (Q-77).
 
 Studio is a **single page** for all capabilities runnable on a laptop, opened only at `127.0.0.1`, downloading nothing from the network.
 Server–page contract: [`docs/spec/studio.md`](../../docs/spec/studio.md). What not to say: table in
@@ -15,7 +17,7 @@ bash demo/i1-sim/chuan-bi.sh                 # venv + three sample projects in /
 alias ne="$PWD/python/.venv/bin/neuroedge"
 cd /tmp/neuroedge-demo
 ne studio --agent home-voice/agent.toml      # opens browser; Ctrl-C to stop
-# with key and headphones: use agent from demo/i4-thoai-laptop and add --mic
+# with key and headphones: add --mic (voice removed from the roadmap, Q-77)
 ```
 
 The **VI | EN** button in the top right switches all labels; selection is remembered in the browser.
@@ -67,4 +69,4 @@ The **VI | EN** button in the top right switches all labels; selection is rememb
 
 - *Can it run on a local network for others to view?* No: `127.0.0.1` only (`docs/spec/studio.md` §2).
 - *Are metrics prefabricated?* No: every screen reads the API of the running session; screens without data state "none yet" (`docs/spec/studio.md` §4).
-- *Can we talk to it?* Yes, with `--mic` on laptop and headphones (Q-50) — script in `demo/i4-thoai-laptop/`.
+- *Can we talk to it?* Yes, with `--mic` on laptop and headphones (Q-50); voice was removed from the roadmap (Q-77), the host code still ships.

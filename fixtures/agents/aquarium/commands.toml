@@ -1,0 +1,35 @@
+# Fixed-command grammar of the aquarium sample (Q-14, Q-15): what the tank understands with no
+# network. Every command is a physical action.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "tank_heater_on"
+patterns = ["bật sưởi", "bật máy sưởi", "turn on the heater"]
+tool     = "tank_heater_on"
+
+[[command]]
+intent   = "tank_heater_off"
+patterns = ["tắt sưởi", "tắt máy sưởi", "turn off the heater"]
+tool     = "tank_heater_off"
+
+[[command]]
+intent   = "tank_aerator_on"
+patterns = ["bật sục khí", "bật máy sục khí", "turn on the air pump"]
+tool     = "tank_aerator_on"
+
+[[command]]
+intent   = "tank_aerator_off"
+patterns = ["tắt sục khí", "tắt máy sục khí", "turn off the air pump"]
+tool     = "tank_aerator_off"
+
+[[command]]
+intent   = "light_on"
+patterns = ["bật đèn bể", "bật đèn", "turn on the tank light"]
+tool     = "tank_light_on"
+
+[[command]]
+intent   = "light_off"
+patterns = ["tắt đèn bể", "tắt đèn", "turn off the tank light"]
+tool     = "tank_light_off"
