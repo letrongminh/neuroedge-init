@@ -117,7 +117,7 @@ def test_every_part_is_declared_and_labelled_in_vietnamese():
         "grow_light": "light",
         "air_temp": "temperature",
         "air_humidity": "humidity",
-        "soil_moisture": "level",
+        "soil_moisture": "humidity",
     }
     assert parts["roof_vent"]["label"] == "Cửa mái"
     assert parts["exhaust_fan"]["label"] == "Quạt hút"

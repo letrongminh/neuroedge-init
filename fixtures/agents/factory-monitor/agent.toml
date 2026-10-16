@@ -73,7 +73,10 @@ kind  = "relay"
 pin   = "porch_light"
 label = "Còi báo động"
 
+# A plain `sensor`, not `temperature`: the tests feed a broken probe (-300 °C, ±inf) to prove the gates
+# fail closed, and a temperature part would refuse those readings (VP-PT-05) before the gates see them.
 [sim.parts.room_temp]
-kind  = "temperature"
+kind   = "sensor"
 sensor = "temperature"
-label = "Nhiệt độ xưởng"
+unit   = "C"
+label  = "Nhiệt độ xưởng"

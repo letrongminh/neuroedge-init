@@ -84,7 +84,7 @@ sensor = "air_humidity"
 label  = "Độ ẩm không khí"
 
 [sim.parts.soil_moisture]
-kind   = "level"
+kind   = "humidity"
 sensor = "soil_moisture"
 label  = "Độ ẩm đất"
 

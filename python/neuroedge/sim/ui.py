@@ -115,6 +115,7 @@ def describe_agent(session: SimSession) -> dict[str, Any]:
                 "name": name,
                 "gate": spec.gate,
                 "pins": [r.name for r in spec.requires if r.primitive == "digital.out"],
+                "channels": [r.name for r in spec.requires if r.primitive == "motion"],
                 "doc": doc[0] if doc else "",
             }
         )
@@ -159,10 +160,35 @@ def describe_agent(session: SimSession) -> dict[str, Any]:
         "commands": commands,
         "gates": gates,
         "sensors": sorted(session.manifest.requires.get("sensor.read", {}).get("sensors", [])),
+        # VP-PT-06: the other things the agent uses, so the page draws each (a motion channel as a
+        # device, an input line and an analog channel as a row a person can change) with its start.
+        "motion": _required(session, "motion", "channels"),
+        "inputs": {
+            pin: level
+            for pin, level in _values(session, "digital_in_values").items()
+            if pin in _required(session, "digital.in", "pins")
+        },
+        "analog": {
+            channel: json_safe(reading)
+            for channel, (reading, _unit) in _values(session, "analog_values").items()
+            if channel in _required(session, "analog.in", "channels")
+        },
         "facts": json_safe(dict(session.facts)),
         "sensor_facts": rules,
         "requires": sorted(session.manifest.requires),
     }
+
+
+def _required(session: SimSession, primitive: str, key: str) -> list[str]:
+    need = session.manifest.requires.get(primitive, {})
+    names = need.get(key, []) if isinstance(need, dict) else []
+    return sorted(name for name in names if isinstance(name, str))
+
+
+def _values(session: SimSession, method: str) -> dict[str, Any]:
+    """The simulated HAL's current input levels or analog readings; {} on a HAL without them."""
+    read = getattr(session.hal, method, None)
+    return dict(read()) if callable(read) else {}
 
 
 def _parse_value(text: str) -> Any:

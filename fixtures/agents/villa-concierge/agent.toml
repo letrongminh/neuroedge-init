@@ -40,7 +40,3 @@ room_matches = { slot = "room", equals = "101" }
 kind  = "lock"
 pin   = "door_lock"
 label = "Khoá cửa phòng"
-
-[sim.parts.screen]
-kind  = "display"
-label = "Màn hình"
