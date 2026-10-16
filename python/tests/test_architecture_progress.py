@@ -57,3 +57,47 @@ def test_every_increment_belongs_to_exactly_one_release_milestone() -> None:
     increments = [inc for inc, _ in INCREMENT_ROW.findall(roadmap)]
     assert sorted(grouped) == sorted(increments)
     assert len(grouped) == len(set(grouped))
+
+
+def _generator():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "gen_architecture_progress", REPO_ROOT / "scripts" / "gen_architecture_progress.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses look their module up while the script loads
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_every_capability_of_today_is_a_card_on_the_page() -> None:
+    """`00-overview.md` §6.1 is the one list of what a person can do today (CONTRIBUTING.md §8.1)."""
+    roadmap = ROADMAP.read_text(encoding="utf-8")
+    caps = _generator().capabilities(roadmap)
+    page = PAGE.read_text(encoding="utf-8")
+    today = re.search(r"<!-- GENERATED:today -->(.*?)<!-- /GENERATED:today -->", page, re.S)
+    assert today and len(caps) >= 10
+    assert today.group(1).count('<article class="ability ') == len(caps)
+    for cap in caps:
+        assert cap.status in ("done", "partial", "planned"), cap.what
+        assert cap.evidence, cap.what
+
+
+def test_a_capability_whose_evidence_is_missing_is_refused(tmp_path, monkeypatch) -> None:
+    gen = _generator()
+    overview = tmp_path / "00-overview.md"
+    overview.write_text(
+        "### 6.1 What a person can do today\n\n"
+        "| Capability | Try it | Runs on | Status | Evidence |\n|:---|:---|:---|:---|:---|\n"
+        "| Fly | `neuroedge fly` | `sim` | `done` | `python/tests/test_no_such_file.py` |\n\n"
+        "### 6.2 By target\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(gen, "OVERVIEW", overview)
+    try:
+        gen.capabilities(ROADMAP.read_text(encoding="utf-8"))
+    except SystemExit as stop:
+        assert "test_no_such_file.py" in str(stop)
+    else:
+        raise AssertionError("a capability with missing evidence was accepted")

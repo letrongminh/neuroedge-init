@@ -309,7 +309,41 @@ To prevent readers from confusing the various layering and tiering systems in th
 
 ## 6. Current status by capability
 
-The table below is a capability snapshot, not a progress tracking table; task progress is in roadmap §4–§8.
+The tables below are a capability snapshot, not a progress tracking table; task progress is in roadmap §4–§8.
+
+### 6.1 What a person can do today
+
+What works on `main`, in the words of the person using it. This is the source of the chapter "What it can do
+today" of [`kien-truc-tong-the.html`](../../business/kien-truc-tong-the.html), which
+`scripts/gen_architecture_progress.py` writes from it; update a row in the same PR that changes what a person
+can do (CONTRIBUTING.md §8), then run the script. *Status* is `done`, `partial` (the rest is said in *Runs on*) or
+`planned`; *Evidence* names files that exist (a test, a CI workflow, a specification) or, for `planned`, the
+roadmap task — `test_architecture_progress.py` checks both.
+
+| Capability | Try it | Runs on | Status | Evidence |
+|:---|:---|:---|:---|:---|
+| Run a gated agent on a laptop in minutes, no hardware, account or API key | `neuroedge new my-agent && cd my-agent && neuroedge run` | `sim` | `done` | `python/tests/test_cli_new.py`, `python/tests/test_cli_run.py` |
+| Watch devices and every gate decision in the browser, confirm what asks | `neuroedge run --ui` | `sim` | `done` | `python/tests/test_sim_ui.py`, `python/tests/test_ui_text.py` |
+| Start from a ready kit: villa, home voice, factory, gate camera, blinds | `neuroedge new my-agent --template blinds` | `sim`, `linux` | `done` | `python/tests/test_kits.py` |
+| Add an action, sensor, device, gate or part with one command | `neuroedge add part heater` | `sim`, `linux` | `done` | `python/tests/test_cli_add.py`, `python/tests/test_parts.py` |
+| Try any device idea on a virtual board: the pins and sensors the agent needs appear, labelled as a risk | `neuroedge new my-agent --board sim-virtual` | `sim` | `done` | `python/tests/test_virtual_board.py` |
+| Keep the agent's pin names on a real board through a pin map | `[targets.<board>.pins]` in `agent.toml` | `linux` on gpio-sim, `esp32s3` build; awaits lead-engineer sign-off | `partial` | `python/tests/test_pin_map.py`, `python/tests_linux/test_pin_map_linux.py` |
+| Check, explain and lock a gate before it runs | `neuroedge gate lint`, `gate explain`, `gate publish` | host | `done` | `python/tests/test_cli_explain.py`, `python/tests/test_gate_resolver.py` |
+| Record a session, replay it, and get the same verdicts on every target | `neuroedge record`, `replay`, `verify` | `sim`, `linux`, `esp32s3` on QEMU | `done` | `python/tests/test_recorder.py`, `python/tests/test_c_bridge.py` |
+| Drive pins, sensors and displays from Linux | `neuroedge run --target linux` | gpio-sim and `i2c-stub` on CI; a real Raspberry Pi 5 not yet | `partial` | `python/tests_linux/test_gpio_sim.py`, `.github/workflows/ci-sim-linux.yml` |
+| Run the gate on an ESP32-S3 chip | `neuroedge build --target esp32s3` | QEMU; real pins wait for boards | `partial` | `python/tests/test_qemu_boot.py`, `.github/workflows/firmware-qemu.yml` |
+| Let Claude Desktop or any MCP client use the devices through the gate, with tokens over the network | `neuroedge mcp desktop-config`, `mcp serve --http` | host | `done` | `python/tests/test_mcp_desktop.py`, `python/tests/test_mcp_http.py` |
+| Put the gate in front of an existing MCP server or HTTP API | `neuroedge guard init --mcp`, `proxy mcp`, `proxy http` | host | `done` | `python/tests/test_guard.py`, `python/tests/test_proxy_mcp.py`, `python/tests/test_proxy_http.py` |
+| Control Home Assistant devices through the gate | `[plugins] enable` with the Home Assistant actuator | host | `done` | `python/tests/test_remote_actuator_build.py`, `python/tests/test_plugins.py` |
+| Chat on Telegram with the NeuroClaw brain to turn on lights and open doors, with the box deciding | `neuroedge install --profile full --target sim` | `sim`, Linux on CI | `done` | `python/tests/test_install.py`, `python/tests/test_demo_chat_den_cua.py` |
+| Build and test agents in a local multi-screen web studio | `neuroedge studio` | host | `done` | `python/tests/test_studio_page.py`, `python/tests/test_studio_server.py` |
+| Watch a fish tank agent run a day: heater, air pump, light, asking before the pump stops | `fixtures/agents/aquarium` demos D1–D5 | `sim`, `esp32s3` on QEMU | `done` | `python/tests/test_aquarium.py` |
+| Update chip firmware signed, with automatic rollback | `neuroedge build --target esp32s3` OTA image | QEMU only | `partial` | `python/tests/test_ota_markers.py`, `.github/workflows/firmware-qemu.yml` |
+| Run brain and gate on one ESP32-S3, labelled as a risk | Profile B firmware | QEMU only; Wi-Fi setup on a board is TSK-I2f-13 | `partial` | `python/tests/test_firmware_brain.py` |
+| Give a device a 24/7 mission in plain words; it reports and asks on chat | `mission.v1` contract | — | `planned` | TSK-I2d-04 |
+| Pack a working device as a Blueprint; others install it with one command | `neuroedge blueprint pack`, `blueprint install` | — (specification approved, Q-86) | `planned` | TSK-I2e-02, `docs/spec/blueprint.md` |
+
+### 6.2 By target
 
 | Capability | `sim` | `linux` | `esp32s3` |
 |:---|:---|:---|:---|

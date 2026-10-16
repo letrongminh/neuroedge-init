@@ -245,6 +245,7 @@ A task is **not done** until the updates below are included **in the same PR** a
 | Schedule: forecast date, dependencies, release tag | Roadmap §0.2 (increment table) | Reference increment code; do not copy dates or tags |
 | Progress overview, current test count, blocked items | Roadmap §0.1–§0.2 | Do not copy numbers |
 | User release milestones and per-milestone increments | Roadmap §0.5 ("User Release Milestones" table) | The architecture page progress blocks and poster E-09 read this table at generation; other places reference milestone name or number |
+| What a person can do today: capability, how to try it, where it runs, evidence | `docs/architecture/vi/00-overview.md` §6.1 | Chapter 12 of the architecture page reads it at generation; other places reference the section |
 | Next steps, what is currently underway | Roadmap §0.3 (Handoff Card) | None |
 | Scope cut ladder | Roadmap §9 | Reference tier or increment |
 | Measurement values B1–B5 (and full A1 measurement) | Roadmap §5.5 | Thresholds in PRD §11; other places reference code |
@@ -288,6 +289,9 @@ content. When copying a sentence feels necessary for readability, that is a sign
      over total tasks, R10), and "Status" column if needed. "Forecast" column updates only **in the same PR
      with evidence** driving the change, shifting all dependent increments simultaneously (R5).
    - §0.1: update metrics (test count, blocked items).
+   - Capabilities: when a task changes what a person can do (a command starts working, a target moves
+     from QEMU to a board, `planned` becomes `partial`), update its row in `docs/architecture/vi/00-overview.md`
+     §6.1 and run `python3 scripts/gen_architecture_progress.py`; `test_architecture_progress.py` fails otherwise.
    - §0.3: **replace** stale entries, do not append. See §8.3.
 3. **Changelog.** One entry in `## [Unreleased]` at top of `CHANGELOG.md` §1,
    under the appropriate section *Added / Changed / Fixed / Removed*:
