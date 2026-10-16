@@ -126,8 +126,8 @@ I3 does not need to deduce them again:
 
 | # | Constraint | Reason |
 |:---:|:---|:---|
-| RB-1 | No `malloc` on audio path after initialization finishes | Heap fragmentation after hours of running causes frame drops; I5 criterion 4 (roadmap §6) measures memory remaining after 4 hours |
-| RB-2 | Audio buffers statically allocated in PSRAM, named and measurable | Q-3 reserves ≥ 2 MB PSRAM for ring buffer, VAD, and wake-word; if not measurable, cannot be verified |
+| RB-1 | No `malloc` on audio path after initialization finishes | Heap fragmentation after hours of running causes frame drops; the criterion measuring memory after 4 hours left the roadmap with I5 (Q-77, roadmap §6). **Dormant** until voice reopens via a new Q-N |
+| RB-2 | Audio buffers statically allocated in PSRAM, named and measurable | **Dormant** until voice reopens via a new Q-N (Q-77). Q-3 reserves ≥ 2 MB PSRAM for ring buffer, VAD, and wake-word; if not measurable, cannot be verified |
 | RB-3 | `digital.out` must cancel pending command in ≤ 1 audio frame | Physical command revocation contract ([`voice_fsm.md`](voice_fsm.md) §5): barge-in must cancel pending door latch pulse, log `ACTUATOR_ABORTED_BY_BARGE_IN` |
 | RB-4 | Capability table is `const` in flash, not a runtime-built structure | Saves SRAM and eliminates possibility of capabilities being modified at runtime — a shortcut bypassing gates (A3) |
 
@@ -147,4 +147,4 @@ measurements on real hardware — that is TSK-S1-10, and its status in
 **no measurements yet**.
 
 The two items are independent: the HAL design can be correct while the memory budget
-still slips — in that case, replan I5 according to Q-44, do not cut voice.
+still slips — in that case, replan according to Q-44. Voice I4/I5 were removed from the roadmap by Q-77 (roadmap §6), so this no longer concerns voice.

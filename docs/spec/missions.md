@@ -39,7 +39,7 @@ In scope, by block (the roadmap tasks in brackets):
 5. **Data and traces** — the box as the only exit for data, and segmented traces that replay a month
    [I2d-10, I2d-13, I2d-14].
 6. **Proof on the fish tank** — the physics model (G1), the 24/7 run on Linux (G2), `lab doctor`, the
-   Lab loop for contracts, and acceptance A15 → A22 [I2d-15 → I2d-19].
+   MCP contract tools, and acceptance A15 → A22 [I2d-15 → I2d-17, I2d-19, I2d-23; Q-88].
 
 Out of scope: the brain's own conversation, memory, LLM calls and report wording (NeuroClaw,
 `deployment_profiles.md` §2.2); mesh and multi-home (FR-AGT-11, Q-74); cloud brain (FR-AGT-10);
@@ -63,10 +63,10 @@ roles (FR-CH-07); phone-signed approvals (FR-CH-08); reflex-tier terms on the ch
 
 ### 1.4 References
 
-PRD §4.5, §5.4 → §5.6, §11.1 (A15 → A22), §15 Q-26, Q-62, Q-71, Q-72, Q-73, Q-80, Q-83 ·
+PRD §4.5, §5.4 → §5.6, §11.1 (A15 → A22), §15 Q-26, Q-62, Q-71, Q-72, Q-73, Q-77, Q-80, Q-83, Q-88 ·
 `docs/spec/deployment_profiles.md` (DP-COM-04, DP-COM-09, DP-A-05, DP-A-06) ·
 `docs/spec/core_contracts.md` Appendix B (gate inheritance, envelopes) · `docs/spec/lab_mcp.md`
-(Lab tools, N6 triggers) · `docs/spec/threat_model.md` · RFC-0004 (budget, `on_block` inheritance),
+§12 (N6 trigger rules; the rest of that note is historical, Q-88) · `docs/spec/threat_model.md` · RFC-0004 (budget, `on_block` inheritance),
 RFC-0005 (argument constraints), RFC-0006 (`ask`/`confirms`), RFC-0007 and RFC-0010 (envelopes),
 RFC-0018 (remote actuators), RFC-0019 draft (approval records, PR #133) · `TODOS.md` #20, #48, #58,
 #62 · `docs/spec/blueprint.md` (BL-FMT-05 reserves the contract section).
@@ -104,7 +104,7 @@ changes `hal/`, `engine/`, `schemas/board.v1.json` and the C walker (`targets/es
 | Class | Uses |
 |:---|:---|
 | Home owner (family, Q-85) | Says what they want in chat; reads the card; approves; receives reports and alerts |
-| Maker | Writes or reviews contracts with an MCP client (Lab); ships one in a Blueprint |
+| Maker | Writes or reviews contracts with an MCP client through the standard tool set (TSK-I2d-23); ships one in a Blueprint |
 | Safety reviewer | Reads contracts, cards, `missions.lock`, traces; replays a month |
 | Developer of NeuroEdge | Builds against G1 and G2 scenarios |
 
@@ -129,7 +129,8 @@ changes `hal/`, `engine/`, `schemas/board.v1.json` and the C walker (`targets/es
   approval bot and signed records are RFC-0019 (draft).
 - The fish tank agent (`fixtures/agents/aquarium`) is the reference agent; its `aerator_off` gate
   today asks the owner because the pump's safe state is *on* and `board.v1` cannot yet say so.
-- Lab tools of `lab_mcp.md` are designed, not built; I2d-18 builds the contract part of them.
+- NeuroEdge Lab was removed by Q-77; the contract tools are built by TSK-I2d-23, the only MCP
+  authoring route (Q-88). `lab_mcp.md` is a historical design note.
 
 ---
 
@@ -202,7 +203,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 |:---|:---|:---|:---|:---|
 | MS-AP-01 | `neuroedge mission explain <file> [--against <locked>]` shall print the approval card: at most 5 lines of plain Vietnamese (English with `--lang en`), generated only from the compiled structured diff, each line tagged with its tier; it lists only non-default terms and always shows `safe_state ≠ off` actuators, new destinations, probabilistic terms and risk labels. Same input ⇒ same bytes. | A card a person reads, that an LLM cannot reword. | FR-MSN-12, R-15 | T |
 | MS-AP-02 | A change that does not fit 5 lines shall not be sent to chat; the card says *"quá dài để duyệt qua chat — duyệt tại nhà"* and approval is local only (CLI or page, full diff shown). | Long changes need a full read. | FR-MSN-12 | T |
-| MS-AP-03 | Drafting shall happen outside the box (brain or MCP client); the box offers read-only checking tools — `mission_check`, `mission_explain` over MCP and Lab — and one write tool, `mission_draft_write`, that writes only `missions/*-draft.yaml`. No tool exposed to the brain or an MCP client can lock, approve, or write `missions.lock`, gates or `digests.lock` (tool list pinned by a test). | Agents propose; people decide. | FR-MSN-13, FR-AGT-09, Q-71 | T |
+| MS-AP-03 | Drafting shall happen outside the box (brain or MCP client); the box offers read-only checking tools — `mission_check`, `mission_explain` over MCP (TSK-I2d-23) — and one write tool, `mission_draft_write`, that writes only `missions/*-draft.yaml`. No tool exposed to the brain or an MCP client can lock, approve, or write `missions.lock`, gates or `digests.lock` (tool list pinned by a test). | Agents propose; people decide. | FR-MSN-13, FR-AGT-09, Q-71 | T |
 | MS-AP-04 | Every change — new contract, amendment, renewal, a proposal from the brain — shall go draft → `mission check` → card → approval → lock; until locked it has no effect. An amendment that adds a destination or a data type shall be approvable only locally. | One pipeline; data permissions are never widened by a tap in chat. | FR-MSN-14 | T |
 | MS-AP-05 | Locking shall write `missions.lock` (contract name, version, digest, approver identity, channel `local` or `chat:<id>`, monotonic and wall time) only after a local approval or a verified approval record (MS-CH-03) for exactly that digest; `agent run` shall refuse a contract whose digest is not in `missions.lock`. | The digest approved is the digest that runs. | FR-MSN-01, FR-CLI-15 | T |
 
@@ -212,7 +213,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 |:---|:---|:---|:---|:---|
 | MS-RT-01 | `neuroedge agent run` shall start one long-lived process holding HAL, gates, locked contracts, schedule, detectors, approval verification, egress and traces; installed by `install --profile full` as a service that restarts on failure and power loss, each restart a trace event; outputs fall to `safe_state` while it is down through on-device lease or envelope expiry. | 24/7 without a person keeping a terminal open. | FR-AGT-01, NFR-REL-06 | T |
 | MS-RT-02 | The runtime shall supervise the brain: the brain connects over MCP as today (Profile A); if it dies, hangs (no heartbeat within 60 s) or is not installed, gates, watchdogs, detectors and urgent alerts continue, the owner gets *"phân tích tạm ngưng"* once, and the brain's service is restarted with back-off. | Losing the brain loses analysis, nothing else. | FR-AGT-07, NFR-REL-05, Q-83 | T |
-| MS-RT-03 | The scheduler shall run periodic sensor polling, contract expiry, summaries and detector evaluation on the monotonic clock, building on the N6 trigger rules of `lab_mcp.md` (debounce, rate ceiling, non-human origin); a call it makes has source `schedule` and is gated like any other. | Scheduled actions are not privileged. | FR-AGT-03, FR-ACE-09 | T |
+| MS-RT-03 | The scheduler shall run periodic sensor polling, contract expiry, summaries and detector evaluation on the monotonic clock, building on the N6 trigger rules of `lab_mcp.md` §12 (debounce, rate ceiling, non-human origin); a call it makes has source `schedule` and is gated like any other. | Scheduled actions are not privileged. | FR-AGT-03, FR-ACE-09 | T |
 | MS-RT-04 | No tool the runtime exposes to the brain shall write gates, `digests.lock`, `board.v1`, contracts other than drafts, or `missions.lock`; the list is pinned by a test. | Agent does not build, does not lock. | FR-AGT-09 | T |
 | MS-RT-05 | Detectors shall be declared in the contract (or a Blueprint) from a closed set — `threshold`, `slope` (over N samples or days), `flatline`, `oscillation`, `sensor_stale` — with bounded parameters, computed in the box from sensor history kept for their longest window, each firing a traced `detector` event that replay reproduces. | Deterministic first, LLM second. | FR-AGT-04 | T |
 | MS-RT-06 | The brain shall be woken only by a detector event, a scheduled summary or a person's message; the box counts wake-ups per period and stops scheduled ones at the contract's `budget.llm` expressed as a wake-up cap derived from the brain's reported `cost_usd` (unmetered ⇒ the configured unit price; neither ⇒ refused at check). On reaching it the owner gets *"đã hết ngân sách phân tích kỳ này"* once; the brain keeps its own `llm_budget` as a second ceiling (Q-83). | The box can cap what it asks for even though it cannot see the LLM bill. | FR-AGT-05, FR-MSN-09, NFR-COST-01, Q-83 | T |
@@ -249,11 +250,11 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | MS-TS-03 | Segments shall be flushed every 10 s and at once on a BLOCK, an approval or a watchdog; 30 days kept on the box, older compressed then deleted; a power loss loses at most the tail of routine events and `replay` reports the truncated segment. | Nothing that matters is lost to a power cut. | FR-TRC-12 | T |
 | MS-TS-04 | `trace.v1` shall gain events: `approval_request`, `approval`, `detector`, `egress`, `llm_wake` (with reported cost), `budget_reached`, `restart`, `clock` (`synced`/`unsynced`), `watchdog`, `mission_term`, `expiry`; the 30-day G1 run shall produce each and pass `trace validate`. | Every new decision is auditable. | FR-TRC-13 | T |
 
-### 3.12 Lab loop for contracts (MS-LB)
+### 3.12 MCP contract tools and sensor check (MS-LB)
 
 | ID | Requirement | Rationale | Source | Verification |
 |:---|:---|:---|:---|:---|
-| MS-LB-01 | Lab shall offer the contract tools of MS-AP-03 to any MCP client, sharing the checking code with `mission check` (one implementation), and grade drafts without calling an LLM. | Loop ①: the client writes, NeuroEdge grades, a person locks. | FR-DX-10, Q-71 | T |
+| MS-LB-01 | The standard MCP tool set (TSK-I2d-23) shall offer the contract tools of MS-AP-03 to any MCP client, sharing the checking code with `mission check` (one implementation), and grade drafts without calling an LLM. | The client writes, NeuroEdge grades, a person locks; this replaces Lab loop ① (Q-77, Q-88). | FR-DX-10, Q-71, Q-77, Q-88 | T |
 | MS-LB-02 | `neuroedge lab doctor` shall read every sensor a contract uses and report, per sensor, a reading, its age and a plain hint when it looks wrong (*"cảm biến oxy đọc 0 — kiểm lại dây"*: constant zero, stuck value, out of range, no reading). | Wiring mistakes are found before the mission starts. | FR-DX-10 | T |
 
 ### 3.13 Proof on the fish tank (MS-FT)
@@ -394,7 +395,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-TS-02-1 | MS-TS-02 | integration | Replay of day 17 alone matches, including a lease crossing midnight; edited or missing segment reported | planned — TSK-I2d-14 |
 | TC-TS-03-1 | MS-TS-03 | integration | Power cut mid-segment → all BLOCKs and approvals kept, truncated segment reported; day 31 pruned | planned — TSK-I2d-14 |
 | TC-TS-04-1 | MS-TS-04 | integration | 30-day G1 run contains every new event kind and passes `trace validate` | planned — TSK-I2d-19 |
-| TC-LB-01-1 | MS-LB-01 | integration | Lab `mission_check` and CLI give the same result on the conflict corpus; no LLM call made | planned — TSK-I2d-18 |
+| TC-LB-01-1 | MS-LB-01 | integration | MCP `mission_check` and CLI give the same result on the conflict corpus; no LLM call made | planned — TSK-I2d-23 |
 | TC-LB-02-1 | MS-LB-02 | integration | Probe stuck at 0, constant, out of range, absent → each reported with its hint | planned — TSK-I2d-17 |
 | TC-FT-01-1 | MS-FT-01 | integration | Same seed → same 30-day series and verdicts; fast-forward under 5 min on CI; outages injected | planned — TSK-I2d-15 |
 | TC-FT-02-1 | MS-FT-02 | integration | Reference contract checks, explains in ≤ 5 lines, locks, runs | planned — TSK-I2d-19 |

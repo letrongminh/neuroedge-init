@@ -160,7 +160,7 @@ Proxy tools do not manipulate pins (`requires`, `drive` rejected): they forward 
 
 ### 4.3 `proxy mcp`
 
-`neuroedge proxy mcp [--config guard.toml] [--trace-out PATH]` serves **strictly over stdio** (`--http` is TSK-I2c-15, not yet implemented) exactly the tools in `guard.toml`, descriptions inherited from upstream. On startup it connects upstream and validates each guard tool:
+`neuroedge proxy mcp [--config guard.toml] [--trace-out PATH]` serves **strictly over stdio** (HTTP APIs are served by `proxy http`, §5, TSK-I2c-15, ✅ 2026-10-09) exactly the tools in `guard.toml`, descriptions inherited from upstream. On startup it connects upstream and validates each guard tool:
 tools must be present upstream (per `[proxy.mcp.names]`), declared parameters must match types, and all mandatory upstream parameters must be declared. **Missing tools, schema mismatches, or connection failures ⇒ fails to start** (exit code 1, three-part error), never "serving the remainder".
 
 - **Source.** Calls retain frontend client source `mcp` via internal pathway `Guard._dispatch_front` (RFC-0016 §3b item 4): unreachable by any `Dispatcher`, so bridges remain strictly `bridge:<id>` (`test_a_bridge_cannot_obtain_the_front_source`).
@@ -168,7 +168,7 @@ tools must be present upstream (per `[proxy.mcp.names]`), declared parameters mu
 - **Upstream failure after ALLOW** ⇒ error result (`status = ALLOW`, `isError` = true, "was not retried"); **never retried**, because call side-effects may have occurred (`test_an_upstream_error_after_allow_is_an_error_result_not_a_retry`).
 - **Traces.** `--trace-out` writes `guard.trace()` on exit (including SIGTERM); `metadata.proxy = {kind, upstream}` — without command arguments or query URLs. Traces retain **call arguments** as received from client (unhashed): treated as upstream data. Replay: `TracePlayer(trace, guard="guard.toml")`, never touching upstream (`test_the_proxy_trace_validates_and_replays`).
 - **Claude Desktop.** `neuroedge proxy mcp --desktop-config [--write] [--config-path P] [--name N]` prints (or writes, with backups, exactly one `mcpServers` entry) configuration for Desktop to run proxy. Desktop launches with minimal environment: variables in `env_from`/`headers_env` must be added to the entry's `env` block **manually** (prompted, never writing secrets to files).
-- Not yet implemented: network frontend (for MCP: TSK-I2c-15 implements `proxy http` for HTTP APIs, §5), `--init-timeout` like `mcp serve`, gates reading facts from upstream itself.
+- Not implemented: network frontend for `proxy mcp` (HTTP APIs are covered by `proxy http`, §5), `--init-timeout` like `mcp serve`, gates reading facts from upstream itself.
 
 ### 4.4 `plugin doctor` — "proxy is the only path" can only be partially checked
 
@@ -318,7 +318,7 @@ HAL receives class `Command` and four SDK exceptions via `hal.remote.Vocabulary`
 `simulation_coverage.md` §3; lint `remote_command_sent` (NE4001): `python/neuroedge/trace.py::lint_remote`.
 
 Reference plugins (Apache-2.0, `fixtures/compliance/actuators/valid/neuroedge-ref-actuators/`): four entry points `ref_l0` … `ref_l3`, toy TCP protocols to mock devices, used solely via doubles.
-Home Assistant adapter represents part B of TSK-I2c-16, not yet implemented.
+The Home Assistant adapter (part B of TSK-I2c-16) is not in this repository: it is the plugin `home_assistant` in `letrongminh/neuroedge-homeassistant` (CHANGELOG: L1 for switch/light/input_boolean, passes the conformance suite on a mock). This repository holds the core (`python/neuroedge/hal/remote.py`, `plugins/actuators.py`); the adapter has not been verified on a real Home Assistant (human step of TSK-I2c-16).
 
 ## 8. `neuroedge conformance` — actuator category (RFC-0016 §3g, RFC-0018 §3e; TSK-I2c-12 part)
 

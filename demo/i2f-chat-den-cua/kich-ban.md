@@ -7,6 +7,7 @@
 > `picoclaw mcp test neuroedge` printed `✓ MCP server "neuroedge" reachable (3 tools)` and
 > `picoclaw mcp show neuroedge` listed correctly `living_light_on`, `living_light_off`,
 > `front_door_unlock`. No LLM key yet, so tools were not called via chat utterances.
+> Recorded before the NeuroClaw fork (Q-78); the folder now uses `neuroclaw/config.json`.
 > **Duration:** 6–8 minutes. **Required:** one Linux VPS, one laptop as the box, Tailscale on both,
 > one Telegram bot, one LLM key (OpenRouter).
 

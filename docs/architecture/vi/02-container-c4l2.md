@@ -22,7 +22,6 @@
 | **Linux device** | Linux kernel: libgpiod v2, sysfs hwmon/IIO, framebuffer, PipeWire | Real pins, sensors, display, audio for `LinuxHAL` | `--target linux` | `partial` — verified on virtual hardware, not yet on Pi |
 | **Firmware image** | C99, ESP-IDF v5.4 | `NETR` walker, token ledger, agent tables, UART traces, OTA; self-tests at boot | `app_main` | `partial` — runs on QEMU, pins not yet driven |
 | **Flash** | 16 MB, partition table `partitions.csv` | `factory`, `ota_0`, `ota_1` (3.5 MB each slot); `nvs`, `otadata`, `phy_init`, `storage` | — | `done` |
-| **Fleet OS, Gate Registry** | Not fully chosen; Eclipse Hawkbit decided (Q-11), ORAS and Harbor | Fleet management; signed gate registry | — | `planned` (I9, I10) |
 | **24/7 Runtime** (home box) | Python, systemd service | Sole trusted process holding HAL and GPIO privileges: gates, mission contract execution, scheduler, deterministic detectors, `llm_budget`, chat channel adapter and approval record verification, data egress, segment-based traces | none yet | `planned · Q-72` (I2d) |
 | **NeuroClaw brain** (Profile A, Q-83) | Go (separate repository `letrongminh/neuroclaw`); dedicated OS user on a shared machine | Conversation, LLM calls, memory, reminders; calls the box only through MCP + mTLS; never holds a human source | NeuroClaw `gateway` | `partial` — `neuroedge install --profile full` runs it as its own OS user, isolation checked on CI (TSK-I2d-24, I2d-25); its signed approval records await RFC-0019 (TSK-I2d-11) |
 
@@ -71,8 +70,6 @@ Only what is in code is recorded. No latency budgets here are measured; latency 
 | Library → build output → firmware image | `idf.py build` reads generated project | C, `.netree.h` headers, `version.txt` | Build error ⇒ prints all problems, writes no files |
 | Firmware image → library | UART (log file, `tcp://`, serial port) | `NE1 {…}` lines ≤ 512 bytes, frames `device_info` … `trace_end` | Corrupted lines, missing frames, mismatched counts ⇒ `NE4001`, writes nothing |
 | Firmware image → OTA server | HTTP(S) GET | RSA-3072 signed app image | No redirects; download deadline; invalid signature ⇒ erases written slot |
-| Firmware image → Fleet OS | MQTT | — | `planned` (I9) — see [`15`](15-target-architecture.md) §3.1 |
-| Firmware image ↔ provider *(planned)* | WebSocket (TLS 1.3) | Opus (binary 16 kHz audio) and JSON (events/results) ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) Appendix D.2) | MCU-optimized audio endpoint (FR-GW-04, TSK-S5-06); per-device quotas are optional in provider layer (FR-GW-05, v1.1) — see [`15`](15-target-architecture.md) §2.3 |
 | LLM worker → runtime *(`planned · Q-72`, I2d)* | Local MCP (stdio or local socket) | JSON-RPC (MCP) | Source assigned by runtime per connection, not declared by worker; all calls pass through gates; worker lacks tools to answer `ask` or approve |
 | LLM worker → LLM provider *(`planned · Q-72`, I2d)* | HTTPS (LiteLLM) | OpenAI-standard Chat completions | BYOK keys stay in worker; worker network restricted at OS level to declared provider endpoints |
 | Runtime → chat platform (Telegram first) *(`planned · Q-72`, I2d)* | HTTPS, bot API | Messages, approval requests `{id, nonce, expiration, digest, approval summary}` | Bot token only in runtime; sent only to paired chats; chat down ⇒ bounded queue and on-device UI alert |
@@ -86,10 +83,8 @@ Only technologies stated in planning documents are listed; everything else is "u
 
 | Container | Increment | Stated technology | Undecided | Source | Target architecture |
 |:---|:---:|:---|:---|:---|:---|
-| **Fleet OS** | I9 | Eclipse Hawkbit for staged OTA campaigns; permissive-license MQTT broker (Mosquitto, NanoMQ, or VerneMQ, chosen via load benchmarks); FastAPI WebSockets for connectivity and telemetry; audio does not transit Fleet OS and terminates at self-hosted provider layer (Q-47, FR-GW-04) | Central trace store, database, gateway | Q-11, Q-47, `docs/architecture/vi/15-target-architecture.md` §3.1, roadmap §3.4, §6.1 | [`15`](15-target-architecture.md) §3.1 |
-| **Gate Registry** | I10 | OCI standard with ORAS and Harbor; OpenMeter for metering | Concrete gate signing mechanism (only "OCI/ORAS" specified, TSK-W2-04) | roadmap §6, Q-5 | [`15`](15-target-architecture.md) §3.2 |
-| **Robotics node (MCU node)** | I14 | Zenoh-pico on MCU and `zenohd` on Pi (micro-ROS is Plan B only); mTLS or PSK between Pi and nodes; local watchdog / black channel safety (IEC 61784-3) | Wire intent encoding, clock sync | Q-36, node RFC draft, `docs/architecture/vi/15-target-architecture.md` §4.3 | [`15`](15-target-architecture.md) §4.3 |
-| **Vision Pipeline** | I2a, I3a (basic); I16–I17 (`jetson`, multimodal) | `vision.in` HAL on `sim`, `linux`, and `esp32s3` (RFC-0012, TSK-V1b-07; Q-53), then `jetson`; maker declares `bool`/`level`/`choice` facts with numeric confidence from model labels, gate bounds threshold via `numeric` criteria (Q-54; `docs/architecture/vi/15-target-architecture.md` §4.4), dedicated gate semantics for vision evidence left open (TSK-V3-04); traces do not embed raw frames, raw storage requires explicit opt-in (phase2 §2.3) | Concrete framework choice (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) and models | `docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
+| *Fleet OS, Gate Registry, robotics node* | removed (Q-77) | — | — | roadmap §6 | — |
+| **Vision Pipeline** | I2a, I3a (basic); `jetson` and multimodal removed (Q-77) | `vision.in` HAL on `sim`, `linux`, and `esp32s3` (RFC-0012, TSK-V1b-07; Q-53); maker declares `bool`/`level`/`choice` facts with numeric confidence from model labels, gate bounds threshold via `numeric` criteria (Q-54; `docs/architecture/vi/15-target-architecture.md` §4.4), dedicated gate semantics for vision evidence left open (TSK-V3-04); traces do not embed raw frames, raw storage requires explicit opt-in (phase2 §2.3) | Concrete framework choice (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) and models | `docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
 
 Q-72 adds the planned containers below (`planned · Q-72`; decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)):
 
@@ -113,8 +108,8 @@ What current architecture has already prepared for these containers is in [`15`]
 *Figure E-08 — Three areas: engineer machine, GitHub CI runner machine, device; plus dashed area "home box" (Pi, mini PC, or NAS) running operator agent, alongside chat platforms, relay, and Hub index — `planned · Q-72`. Bottom band: optional NeuroEdge Cloud and small ESP32-S3 home box — conditional, `planned · Q-74`, I2f. Boxes labeled `○ planned` lack hardware or code.*
 
 NeuroEdge has **no server-side services** prior to the v1.1 service tier (I0–I8): no accounts, no brokers, no
-backends. Everything runs on the user's machine or on devices. The first server-side service is Fleet
-OS at I9 (roadmap §0.5).
+backends. Everything runs on the user's machine or on devices. Fleet OS, the first planned server-side
+service, was removed from the roadmap (Q-77; roadmap §6).
 
 `planned · Q-72` ([Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)): Blueprint positioning adds a **home box** node running 24/7 and two items external to user
 machines, both optional and **never on the safety path**: Hub index (a static git repository, not a
@@ -199,10 +194,8 @@ Concrete steps are in the workflow files themselves. Current green/red status: r
 
 ### 6.6 Not yet deployed
 
-- **No NeuroEdge servers prior to v1.1** — except the optional relay of Q-72 (`planned`, limited exception of Q-10: no decryption, not on the safety path). Q-74 (conditional, after demand gate) adds optional NeuroEdge Cloud running LLM workers; trusted runtime remains on the home box ([`15`](15-target-architecture.md) §6.10). Staged OTA orchestration (Hawkbit), MQTT broker, incident trace store, device identity reside in Fleet OS (I9); gate storage and distribution in Gate Registry (I10) — server deployment architecture details: [`15`](15-target-architecture.md) §3.1/§3.2.
-- **Tiered robot cluster not yet deployed.** Layered architecture comprising Raspberry Pi 5 brain connected to dedicated ESP32-S3 and RP2350 microcontroller nodes via Zenoh-pico bus (I14, Q-32, Q-33, Q-36) — network node topology details: [`15`](15-target-architecture.md) §4.3.
-- **Jetson vision inference node not yet deployed.** Target `jetson` (tier 2, I16) (tier 2 per FR-TGT-08, Q-13) running vision via JetPack and TensorRT (`docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V2-01) — hardware deployment details: [`15`](15-target-architecture.md) §4.4.
-- **Lab mode via MCP not yet deployed (I4a, Q-71).** When available, MCP clients (Claude Code, Claude Desktop) and the `mcp serve` process holding devices must enforce privilege separation: client not in `gpio`/`i2c` groups — primary path is stdio over SSH with `restrict,command=…` keys, or `mcp serve` under a dedicated user (`mcp serve --http` only when client presents mTLS certificates); `mcp serve` loads policies from approved checkouts that clients cannot write to; gates lock solely via PRs on protected branches — details: [`15`](15-target-architecture.md) §4.2, `docs/spec/threat_model.md` §2c.
+- **No NeuroEdge servers prior to v1.1** — except the optional relay of Q-72 (`planned`, limited exception of Q-10: no decryption, not on the safety path). Q-74 (conditional, after demand gate) adds optional NeuroEdge Cloud running LLM workers; trusted runtime remains on the home box ([`15`](15-target-architecture.md) §6.10). Fleet OS, Gate Registry, a tiered robot cluster and a Jetson vision node were removed from the roadmap (Q-77): see roadmap §6.
+- **NeuroEdge Lab was removed from the roadmap (Q-77, Q-88).** MCP clients author contracts through the standard tool set (TSK-I2d-23); privilege separation of `mcp serve` is in [`15`](15-target-architecture.md) §4.2 and `docs/spec/threat_model.md` §2c.
 - **24/7 Home box not yet deployed (`planned · Q-72`, I2d, I2e).** Today no background processes run continuously ([`02`](02-container-c4l2.md) §3). The 24/7 runtime, LLM worker, chat platforms, Hub index, and relay above are design: [`15`](15-target-architecture.md) §6. Runs in simulation first (G1 `sim`, G2 `linux` on `gpio-sim`, G3 ESP32 firmware on Espressif QEMU — Wokwi, Velxio pending Q-21, Q-69 reconciliation, G4 ESPHome host), physical hardware purchased later.
 - **No real boards in CI.** All on-chip evidence today comes from QEMU and host C tests; silicon
   evidence awaits boards and self-hosted runners (`TODOS.md` #10).

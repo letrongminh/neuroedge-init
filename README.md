@@ -38,7 +38,7 @@ Not yet published to PyPI: before public release, install from source per
 commands.
 
 ```bash
-pip install neuroedge    # with Claude Desktop or real LLMs: 'neuroedge[mcp,cloud]'
+pip install neuroedge    # after I6 (Q-39); from source until then: cd python && pip install -e '.[dev,mcp,cloud]'
 neuroedge new my-home --template home-voice
 neuroedge run --agent my-home/agent.toml -c "bật đèn"
 ```
@@ -73,7 +73,7 @@ No path to GPIO pins bypasses the gate.
 
 - [User Guide](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/README.md)
   · [five hardware kits](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/kit-phan-cung.md)
-  · [all commands and expected output](https://github.com/letrongminh/neuroedge-init/blob/main/CHANGELOG.md#2-cách-vận-hành)
+  · [all commands and expected output](https://github.com/letrongminh/neuroedge-init/blob/main/CHANGELOG.md#2-operating-guide)
 - [Tool calling via gates and MCP](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/tool_calling.md)
   · [threat model](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/threat_model.md)
 - [Architecture](https://github.com/letrongminh/neuroedge-init/blob/main/docs/architecture/README.md)

@@ -20,12 +20,9 @@
 | **Error** `error.v1` · **code catalog** `error-codes.v1` | JSON | `NeuroEdgeError.as_dict()` · catalog file | Studio, `sim` page, integrator SDK | `schemas/error.v1.json`, `schemas/error-codes.v1.json` | yes — RFC-0015 | `done` |
 | **Device tree** `NETR` v1 | binary | `binary_tree.encode` | C walker | `ne_tree_load` (magic, version, CRC, limits) | yes — RFC-0003 | `done` |
 | **UART lines** | text | firmware | `testing/uart.py`, CI scripts | parser, anchored regex `^` | normative in `simulation_coverage.md` §4 | `done` |
-| **Manifest** `manifest.v1` (`schemas/manifest.v1.json`, TSK-K3-03) | JSON | agent / gate packager | Gate Registry | JSON Schema | planned yes — → [`15`](15-target-architecture.md) §3.2 | `planned` |
-| **Opus/JSON WebSocket frame** (and SLIP on UART if needed — PRD Appendix D.2) | binary / JSON | firmware (`provider_client.c`, TSK-S5-06) | provider layer / cloud provider | TBD | normative in PRD Appendix D.2 — → [`15`](15-target-architecture.md) §2.3 | `planned` |
-| **Black-channel wire and multi-node trace** (`metadata.nodes[]`, `data.node_id`, Q-32) | Zenoh-pico (intent encoding unchosen) / JSON | coordinator Pi, MCU nodes | MCU nodes, TracePlayer | RFC-node; optional fields, no edit to `schemas/` (TSK-W3-04) | via RFC — → [`15`](15-target-architecture.md) §4.3 | `planned` |
-| **`agent.toml` extension tables (`[lab]`, `[nodes]`)** | TOML | agent author | `agent.toml` parser | config parser (TSK-N1-02, RFC-node draft) | no — → [`15`](15-target-architecture.md) §4.2, §4.3 | `planned` |
-| **Mission contract** `mission.v1` (`planned · Q-72`, I2d) | YAML or TOML, unchosen | LLM worker (draft), mission compiler | runtime | schema + compiler (contradiction check) | planned RFC — §12.1 | `planned` |
-| **NeuroEdge Blueprint** `blueprint.v1` (`planned · Q-72`, I2e) | package + manifest | seller, maker | `blueprint install`, Hub index | schema + full-package digest | planned RFC — §12.2 | `planned` |
+| **Mission contract** `mission.v1` (`planned · Q-72`, I2d) | YAML (Q-87(3)) | LLM worker (draft), mission compiler | runtime | schema + compiler (contradiction check) | planned RFC — §12.1; `docs/spec/missions.md` MS-CT-01 | `planned` |
+| **`missions.lock`** (`planned · Q-87(3)`, I2d) | file written by the box | runtime, only after a person approves the exact digest | runtime, `agent run` | digest check | no — MS-AP-05 | `planned` |
+| **NeuroEdge Blueprint** `blueprint.v1` (`planned · Q-72`, I2e); manifest `blueprint.toml` | package + manifest (digest over canonical manifest + per-file SHA-256, Q-86(4), BL-PK-02) | seller, maker | `blueprint install`, Hub index | schema + full-package digest | planned RFC — §12.2 | `planned` |
 | **Data destination declarations** (`planned · Q-72`, I2d) | in `mission.v1` and runtime config | user | runtime egress port | runtime | planned RFC — §12.3 | `planned` |
 | **Chat events** and **approval records** (`planned · Q-72`, I2d) | in-runtime JSON, `trace.v1` events | chat adapter, runtime | runtime, `replay` | runtime | planned RFC (source `chat:<id>`) — §12.4 | `planned` |
 | **`safe_state` in `board.v1`** (`planned · Q-72`, I2d) | TOML | OEM, maker | build, HAL | `schemas/board.v1.json` | planned RFC (conditional safety) — §4 | `planned` |
@@ -92,8 +89,6 @@ unknown keys. CLI syntax uses these tables: `CHANGELOG.md` §2.3.
 | `[stt]`, `[stt.fallback]`, `[tts]` | `perception/providers/config.py` | `provider` (`openai` or `python:…`), `base_url`, `model`, `voice` (TTS), `language` (STT), `timeout_s`, `api_key_env`; `[stt]` requires `audio.in`, `[tts]` requires `audio.out` |
 | `[wake_word]` | as above | `provider` (`openwakeword` or `python:…`), three model files `model`, `melspectrogram`, `embedding` (user-provided), `word`, `threshold`; rejected on `esp32s3` |
 | `[mcp]`, `[mcp.servers.<name>]` | `mcp_host.load_mcp_config` | `max_rounds` (1–16); each server: `command`, `tools` (allowlist, required), `args`, `env`, `timeout_s` |
-| `[lab]` | `lab/` (TSK-N1-02, planned) | Flag `enabled`, default off; when off, lab tools (effecting tools and scaffolding tools, Q-71) are not registered; no tool can enable the flag; `build --release` rejects when enabled (TSK-N1-03) — → [`15`](15-target-architecture.md) §4.2 |
-| `[nodes]` | RFC-node (proposed) | MCU node config for tiered robots; shape not yet decided (open question 3 in RFC-node draft) — → [`15`](15-target-architecture.md) §4.3 |
 
 **Common rules for all provider tables** (`models/providers/common.py`): fields named like keys
 (`api_key`, `token`, `secret`…) are rejected; values that look like keys are rejected and never reprinted;
@@ -121,7 +116,7 @@ levels L0–L3 (RFC-0018), and Q-62 gate exemptions all refer to "returning to `
 contracts, gates, or NeuroEdge Blueprints — and `safe_state: on` realized through default-on wiring
 (normally-closed relays) is declared as a hardware interlock. Existing profiles (`off`; `motion.*` `stop`/`hold`)
 preserve their behavior. Precondition: `TODOS.md` #58 (old parsers ignoring unknown keys in `board.v1`) must
-be fixed first, so that a new safety key is not silently ignored.
+be fixed first, so that a new safety key is not silently ignored. On a `sim` board, `safe_state = on` with an interlock entry is allowed under the label `risk=simulated_interlock`, never on `sim-virtual` (Q-87(4), MS-SF-05); shipped boards inside a Blueprint wait for the conditional-safety RFC (Q-86(2), BL-FMT-04).
 
 ## 5. Grammar and Knowledge
 
@@ -282,24 +277,12 @@ windows, obligations (only bounded watchdog style), data flow (§12.3), on failu
 `llm_budget` (LLM cost ceiling). The mission compiler lowers each clause to the lowest tier capable of
 enforcing it — reflex (MCU with `ne_gate`), skill (host), thinking (LLM) — rejects conflicting contracts
 with specific conflict locations, then deterministically generates an **approval sheet of ≤ 5 lines** from
-the structured diff. Gates remain pure functions; mission contracts do not carry a `safe_state` other than
-`off` (§4). Time-window clauses read wall-clock facts; such facts carry `unsynced` when the machine has not
+the structured diff. Gates remain pure functions; mission contracts do not carry a `safe_state` (§4; Q-87(4), MS-SF-05). Contract format, locking and `missions.lock`: Q-87(3), `docs/spec/missions.md` MS-CT-01, MS-AP-05. Time-window clauses read wall-clock facts; such facts carry `unsynced` when the machine has not
 synced time and are then treated as missing facts. Flow: [`06`](06-runtime-flows.md) §11.1.
 
-### 12.2 NeuroEdge Blueprint — `blueprint.v1` (I2e), Compared to `manifest.v1`
+### 12.2 NeuroEdge Blueprint — `blueprint.v1` (I2e)
 
-| | `blueprint.v1` (MVP, I2e) | `manifest.v1` (H2, TSK-K3-03) |
-|:---|:---|:---|
-| Packaging | kit (linked BOM), firmware, template mission contracts, detectors, evidence traces | agent or gate |
-| Distribution | URL (git or HTTPS) + digest; Hub is a **static index repository** listing URLs, digests, evidence (like the I2c plugin index) | OCI Registry (ORAS) |
-| Digest | covers the **entire package**, verified on install; mismatch ⇒ rejected | pins artifact digest |
-| Evidence | trace explicitly marked "unsigned" (signing deferred, `TODOS.md` #1) | signed at Registry |
-| NeuroEdge-operated server | no (index is a static git repository) | yes |
-
-When Hub monetizes for sellers, NeuroEdge Blueprints migrate to the Horizon 2 OCI Registry — the
-relationship between the two manifests is finalized in the `blueprint.v1` RFC. A NeuroEdge Blueprint is
-declarative only, carrying no executable code in the runtime. It differs from a Home Assistant Blueprint
-(an automation template) and may bundle an HA blueprint.
+Requirements: `docs/spec/blueprint.md`; packing and install choices: Q-86 (manifest `blueprint.toml`, package digest taken over the canonical manifest and each file's SHA-256 so a directory, a git checkout and a `.tar.gz` give one digest, BL-PK-02; `contract` and `detectors` sections reserved and refused in v1, BL-FMT-05). Distribution is by URL (git or HTTPS) plus digest; the Hub is a static index repository listing URLs, digests and evidence, with no NeuroEdge-operated server. Evidence traces are marked "unsigned" (signing deferred, `TODOS.md` #1). The OCI Registry (Gate Registry, `manifest.v1`) was removed from the roadmap (Q-77). A NeuroEdge Blueprint is declarative only, carrying no executable code in the runtime. It differs from a Home Assistant Blueprint (an automation template) and may bundle an HA blueprint.
 
 ### 12.3 Data Destination Declarations (I2d)
 

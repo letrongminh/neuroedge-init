@@ -196,8 +196,8 @@ Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều k
 
 | Mốc | Ngày (roadmap) | Kết quả cho BRD này |
 |:---|:---|:---|
-| I2d — Nhiệm vụ, runtime 24/7 | 2026-11-11 | BR-3, BR-4; K4, K5 trên G1 |
-| I2e — Blueprint tối thiểu | 2026-11-25 | BR-5; K1; add-on HA và ảnh thẻ nhớ (TSK-I2e-12, I2e-13) theo lịch roadmap |
+| I2d — Nhiệm vụ, runtime 24/7 | roadmap §0.2 | BR-3, BR-4; K4, K5 trên G1 |
+| I2e — Blueprint tối thiểu | roadmap §0.2 | BR-5; K1; add-on HA và ảnh thẻ nhớ (TSK-I2e-12, I2e-13) theo lịch roadmap |
 | **Cổng nhu cầu 8 tuần** | **2026-12-06** | K1–K3 quyết định nhánh: tiếp tục, đổi hướng, hoặc dừng thương mại |
 | Sau cổng | Theo nhánh | BR-1 mở rộng (thời tiết, giá điện), BR-2 dài hạn, H2–H4, Phụ lục A |
 

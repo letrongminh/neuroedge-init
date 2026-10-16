@@ -75,8 +75,8 @@ capability logs a line `NeuroClaw risk=<name>` at startup (Q-80).
 - **Brain on a different machine** (VPS, cloud): the gate still decides every action for home devices; the shell only reaches
   that machine itself.
 
-Rationale: [`threat_model.md`](../spec/threat_model.md) §2k. Label list: `docs/reference/capabilities.md`
-§2 of the `neuroclaw` repo.
+Rationale: [`threat_model.md`](../spec/threat_model.md) §2k. Label list: in the NeuroClaw repository
+([`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw)), `docs/reference/capabilities.md` §2.
 
 ## 4. Chat
 

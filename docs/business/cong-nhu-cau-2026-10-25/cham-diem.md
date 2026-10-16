@@ -118,7 +118,7 @@ Ba trích dẫn ngược mạnh nhất (bắt buộc, như mục 7 của mẫu �
 
 ### 4.1 I3–I7 — giữ nguyên nhánh của thiết kế GĐ1 (hết hiệu lực, Q-56)
 
-Ngưỡng này là bảng cổng nhu cầu của thiết kế GĐ1 (`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`),
+Ngưỡng này là bảng cổng nhu cầu của thiết kế GĐ1 (`git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`),
 đếm theo `N2(P1)`. Nhánh áp cho các increment **I3–I7** (roadmap §0.2; tên lịch sử: Khối 1b). Theo
 Q-20 nó **không chặn** I1 và I2.
 
@@ -213,7 +213,7 @@ Chủ trì: <trưởng nhóm>         Người chấm thứ hai: <tên>        S
    3. ______________________________________________________________
 
 8. VIỆC SAU CỔNG (README.md §6)
-   [ ] PRD §15 (Q-N của cổng)   [ ] TODOS.md #19   [ ] roadmap §0   [ ] CHANGELOG [Chưa phát hành]
+   [ ] PRD §15 (Q-N của cổng)   [ ] TODOS.md #19   [ ] roadmap §0   [ ] CHANGELOG [Unreleased]
    [ ] docs/reports/ bản tổng hợp ẩn danh   [ ] proposal (chỉ nếu đổi giả định)
 
 Ký: ____________________ (trưởng nhóm)        ____________________ (sponsor)

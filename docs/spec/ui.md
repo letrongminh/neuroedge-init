@@ -70,6 +70,8 @@ Each screen has a function `ne_ui_show_*` in `ne_ui.h`; accompanying state struc
 Agent text — action name, `on_block` message, response, readings — renders **verbatim**, not
 translated. Interface labels live in `ne_ui_strings.c`, one table per language.
 
+The screens keyed by `VoiceState` (`ne_ui_show_idle`, `ne_ui_show_voice`) are dormant: voice was removed from the roadmap (Q-77); the UI code stays.
+
 | Function | Runtime state | What it draws |
 |:---|:---|:---|
 | `ne_ui_show_boot` | boot-time gate self-test (`main/gate_selftest.c`) | `NE_UI_BOOT_RUNNING` (progress bar) · `_PASSED` · `_FAILED` with reason (data) |

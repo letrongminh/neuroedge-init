@@ -1,3 +1,5 @@
+> **Superseded by Q-72/Q-77 for I3–I8 forecasts; historical evidence for TSK-I2a-01 only.**
+
 # Re-estimating MVP Scope — 2026-09-30
 
 Evidence for forecasted dates of I2a → I8 in [`roadmap/neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.2
