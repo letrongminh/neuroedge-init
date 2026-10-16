@@ -56,9 +56,27 @@ heat_critical = { sensor = "temperature", gte = 55 }
 
 # Words for the `--ui` page and `trace view`; gates never read them.
 [ui.labels]
-gate_relay    = "Quạt thông gió"
-porch_light   = "Còi báo động"
-temperature   = "Nhiệt độ xưởng"
 heat_level    = "Mức nóng"
 heat_critical = "Nóng nguy hiểm (từ 55 °C)"
 call_source   = "Ai yêu cầu"
+
+# What the live page calls each thing (docs/spec/virtual_parts.md §3.2): the board's pin names mean
+# nothing to a person watching, so each is declared as a part — its kind, what it is wired to, its words.
+# Parts only describe: no requirement, no envelope, no gate changes (VP-PT-08).
+[sim.parts.vent_fan]
+kind  = "fan"
+pin   = "gate_relay"
+label = "Quạt thông gió"
+
+[sim.parts.siren]
+kind  = "relay"
+pin   = "porch_light"
+label = "Còi báo động"
+
+# A plain `sensor`, not `temperature`: the tests feed a broken probe (-300 °C, ±inf) to prove the gates
+# fail closed, and a temperature part would refuse those readings (VP-PT-05) before the gates see them.
+[sim.parts.room_temp]
+kind   = "sensor"
+sensor = "temperature"
+unit   = "C"
+label  = "Nhiệt độ xưởng"

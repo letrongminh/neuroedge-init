@@ -1,0 +1,25 @@
+# Mực nước thấp (< 30 %) thì bơm lọc chạy khô: từ chối; không có số đo cũng từ chối.
+schema:  neuroedge.gate/v1
+name:    reef_filter_on
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  water_ok:
+    type: bool
+    instructions: "Mực nước đủ cao (từ 30 %), do cảm biến mực nước báo"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  water_ok: true
+
+on_block:
+  action:  deny
+  message: "Mực nước dưới 30 % hoặc không có số đo — không bật bơm lọc (chạy khô sẽ hỏng bơm)."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

@@ -1,0 +1,26 @@
+# Tắt bơm lọc làm nước bẩn dần: hỏi chủ nhà tại nhà.
+schema:  neuroedge.gate/v1
+name:    reef_filter_off
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  owner_confirmed:
+    type: bool
+    instructions: "Chủ nhà xác nhận tại nhà cho đúng lần gọi này"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  owner_confirmed: true
+
+on_block:
+  action:   ask
+  message:  "Tắt bơm lọc thì nước bể sẽ bẩn dần: chỉ chủ nhà xác nhận tại nhà mới tắt được."
+  confirms: [owner_confirmed]
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

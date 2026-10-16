@@ -1,0 +1,30 @@
+# CO₂ làm nước chua: pH dưới 6.5 thì không bơm thêm, oxy thấp (< 5 mg/L) cũng không (cá đã khó thở).
+# Không có số đo thì từ chối.
+schema:  neuroedge.gate/v1
+name:    reef_co2_on
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  ph_ok:
+    type: bool
+    instructions: "Độ pH không quá thấp (từ 6.5), do cảm biến pH báo"
+  oxygen_ok:
+    type: bool
+    instructions: "Oxy hoà tan đủ cho cá (từ 5 mg/L), do cảm biến oxy báo"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  ph_ok: true
+  oxygen_ok: true
+
+on_block:
+  action:  deny
+  message: "pH dưới 6.5, oxy dưới 5 mg/L hoặc không có số đo — không mở van CO₂."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

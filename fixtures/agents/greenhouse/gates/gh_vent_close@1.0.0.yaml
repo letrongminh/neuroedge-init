@@ -1,0 +1,25 @@
+# The roof vent stays open while it is very hot (>= 35 C); no reading fails closed. Servo lease 200 ms => p95 <= 100.
+schema:  neuroedge.gate/v1
+name:    gh_vent_close
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  air_very_hot:
+    type: bool
+    instructions: "Nhà kính đang rất nóng (từ 35 °C), do cảm biến nhiệt độ báo"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  air_very_hot:      false
+
+on_block:
+  action:  deny
+  message: "Đang rất nóng (từ 35 °C) — không đóng cửa mái."
+
+budget:
+  p95_latency_ms: 100
+  fail:           closed
