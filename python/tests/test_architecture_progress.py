@@ -84,20 +84,45 @@ def test_every_capability_of_today_is_a_card_on_the_page() -> None:
         assert cap.evidence, cap.what
 
 
-def test_a_capability_whose_evidence_is_missing_is_refused(tmp_path, monkeypatch) -> None:
-    gen = _generator()
+def _refused(gen, tmp_path, monkeypatch, row: str) -> str:
     overview = tmp_path / "00-overview.md"
     overview.write_text(
         "### 6.1 What a person can do today\n\n"
-        "| Capability | Try it | Runs on | Status | Evidence |\n|:---|:---|:---|:---|:---|\n"
-        "| Fly | `neuroedge fly` | `sim` | `done` | `python/tests/test_no_such_file.py` |\n\n"
-        "### 6.2 By target\n",
+        "| Name | Capability | Try it | Runs on | Reach | Status | Evidence |\n"
+        "|:---|:---|:---|:---|:---|:---|:---|\n"
+        f"{row}\n\n### 6.2 By target\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(gen, "OVERVIEW", overview)
     try:
         gen.capabilities(ROADMAP.read_text(encoding="utf-8"))
     except SystemExit as stop:
-        assert "test_no_such_file.py" in str(stop)
-    else:
-        raise AssertionError("a capability with missing evidence was accepted")
+        return str(stop)
+    raise AssertionError(f"accepted: {row}")
+
+
+def test_a_capability_whose_evidence_is_missing_is_refused(tmp_path, monkeypatch) -> None:
+    row = "| Fly | Fly | `neuroedge fly` | `sim` | laptop ● | `done` | `python/tests/test_no_such_file.py` |"
+    assert "test_no_such_file.py" in _refused(_generator(), tmp_path, monkeypatch, row)
+
+
+def test_a_reach_that_contradicts_the_status_is_refused(tmp_path, monkeypatch) -> None:
+    """A `planned` capability cannot work anywhere; a `done` one works somewhere; places are known."""
+    gen, ev = _generator(), "`python/tests/test_architecture_progress.py`"
+    for reach, status in (
+        ("laptop ●", "planned"),
+        ("laptop ○", "done"),
+        ("laptop ●, qemu ◐", "done"),
+        ("cloud ●", "done"),
+    ):
+        row = f"| Fly | Fly | `x` | `sim` | {reach} | `{status}` | {ev}, TSK-I2d-04 |"
+        assert "§6.1" in _refused(gen, tmp_path, monkeypatch, row), (reach, status)
+
+
+def test_the_reach_map_counts_what_works_in_each_place() -> None:
+    caps = _generator().capabilities(ROADMAP.read_text(encoding="utf-8"))
+    page = PAGE.read_text(encoding="utf-8")
+    counts = re.findall(r'<span class="rm-count">(\d+)</span>', page)
+    places = ("laptop", "linux", "qemu", "board")
+    assert [int(n) for n in counts] == [sum(c.reach.get(p) == "done" for c in caps) for p in places]
+    assert page.count('<div class="rm-row ') == len(caps) + 2  # head, rows, foot
