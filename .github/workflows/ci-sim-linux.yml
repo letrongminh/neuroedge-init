@@ -173,7 +173,7 @@ jobs:
               sys.exit("::error::no tests ran")
           PY
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: junit-${{ matrix.python-version }}
@@ -226,7 +226,7 @@ jobs:
         # Last: it remounts /proc with hidepid=2 and closes the device nodes to other users.
         run: bash scripts/brain_isolation.sh
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: junit-linux
@@ -379,7 +379,7 @@ jobs:
           pip-licenses --partial-match --ignore-packages neuroedge --fail-on="GPL;GNU General Public License;GNU Affero General Public License;AGPL"
           echo "  ok  no strong-copyleft dependency found"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: licences
@@ -423,7 +423,7 @@ jobs:
       - name: The adapter on the real LiteLLM (offline, no key)
         run: python scripts/cloud_smoke.py
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: licences-cloud
@@ -450,7 +450,7 @@ jobs:
           . "$IDF_PATH/export.sh"
           bash scripts/run_ui_golden.sh
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: ui-golden-diff
