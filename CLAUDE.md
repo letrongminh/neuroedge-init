@@ -35,6 +35,17 @@ Two non-negotiable rules, detailed in `CONTRIBUTING.md`:
 
 Current test count lives in `roadmap/neuroedge-roadmap.md` §0.1, not recorded here.
 
+## Local pages and background servers
+
+`neuroedge run --ui` (and `mcp serve --ui`, `studio`) serves until it is killed; it does **not**
+stop when its stdin closes, so `(sleep 25) | neuroedge run --ui … &` in a script leaves it running
+under PID 1 once the script exits (2026-10-19: 44 such pages, ~2.8 GB). When you start one to look
+at a page or take screenshots:
+
+- pass `--exit-with-parent` and/or `--idle-timeout <s>` to `run --ui`, or `trap 'kill …' EXIT INT TERM`;
+- stop every page you started before you finish, and never leave one running in the background;
+- check with `pgrep -fl "neuroedge (run|mcp serve|studio)"`; clean up with `bash scripts/kill-ui.sh --all`.
+
 ## Completing a Task
 
 Follow **`CONTRIBUTING.md` §8**, in the same PR as code: progress in roadmap, one entry

@@ -75,8 +75,9 @@ COMMANDS = {
         "--trace-out="
     ),
     "run": (
-        "--agent|-a= --board|-b= --command|-c= --half-duplex --mic --no-browser --port= --raw "
-        "--registry|-r= --target|-t= --trace-out= --ui --voice-file= --voice-out="
+        "--agent|-a= --board|-b= --command|-c= --exit-with-parent --half-duplex --idle-timeout= "
+        "--mic --no-browser --port= --raw --registry|-r= --target|-t= --trace-out= --ui "
+        "--voice-file= --voice-out="
     ),
     "status": "--brain-config=",
     "studio": "--agent|-a= --half-duplex --mic --no-browser --port=",

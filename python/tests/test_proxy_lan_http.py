@@ -238,7 +238,12 @@ def test_guard_init_mcp_writes_the_key_and_refuses_it_for_a_command(tmp_path, mo
         assert len(warned) == 1 and "PLAIN" in warned[0].message
     finally:
         server.terminate()
-        server.wait(timeout=10)
+        try:
+            server.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            server.kill()  # never leave the server behind, even when the test fails
+            server.wait()
+            raise
 
 
 # --- doctor ---------------------------------------------------------------------------------------------------

@@ -30,9 +30,12 @@ work=$(mktemp -d)
 page_pid=
 cleanup() {
   [ -n "$page_pid" ] && kill "$page_pid" 2>/dev/null || true
+  pkill -P $$ -x sleep 2>/dev/null || true # the `sleep 600` that holds the page's stdin
   rm -rf "$work"
 }
 trap cleanup EXIT
+trap 'exit 130' INT # through the EXIT trap: the page never outlives the script
+trap 'exit 143' TERM
 chmod 755 "$work" # the brain may enter it; what is inside decides the rest
 
 # --- the machine as a box keeps it --------------------------------------------------------------

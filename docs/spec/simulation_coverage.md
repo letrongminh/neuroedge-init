@@ -584,6 +584,12 @@ frame). No CDN dependencies: `sim` must operate offline (FR-DX-02).
 | `neuroedge mcp serve --ui` → same page, for MCP sessions | Claude Desktop or external agents calling device, human observers monitoring and intervening | As above, in **same session** as MCP client (`tool_calling.md` §8) | TSK-S3-27 |
 | `neuroedge trace export --format chrome` → Perfetto | Timing analysis | Opens in Perfetto UI (Apache-2.0) | TSK-S3-22 |
 
+A local page serves until Ctrl-C, SIGTERM or SIGHUP (all three write the trace and remove
+`ui.json`); it never reads stdin, so a closed stdin does not stop it. A page a script or check starts
+in the background passes `run --ui --exit-with-parent` (stop once the starting process is gone, or if
+started under PID 1) and/or `--idle-timeout <s>` (stop after that long with no HTTP request; the open
+`/events` stream does not count). `scripts/kill-ui.sh` stops leftovers.
+
 Wokwi Elements (MIT) can replace renderings for lights, servos, relays, `ili9341` screens if bundled
 (no CDN loading); door locks not provided out of box.
 

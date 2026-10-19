@@ -37,6 +37,11 @@ Turns run one at a time under a lock: the session, like a device, handles one
 utterance after another. `neuroedge mcp serve --ui` (TSK-S3-27) serves this
 page next to an MCP server over the same session: each MCP tool call takes the
 same `lock` and ends with `notify()`, so the page shows it at once.
+
+The page serves until Ctrl-C, SIGTERM or SIGHUP. A script or a check that starts it in the
+background adds `--exit-with-parent` (stop once the process that started it is gone) and/or
+`--idle-timeout N` (stop after N seconds with no request; an open page's event stream does not
+count): a background page outlives its shell otherwise, as PID 1's child.
 """
 
 from __future__ import annotations
@@ -228,6 +233,10 @@ class SessionServer:
         self.link_file: Path | None = None
         self._link_lock = threading.Lock()  # one writer of `ui.json` at a time
         self.refusals = 0
+        self.last_request = time.monotonic()  # --idle-timeout: any request, the stream's opening
+
+    def idle_for(self) -> float:
+        return time.monotonic() - self.last_request
 
     @property
     def url(self) -> str:
@@ -437,7 +446,8 @@ class SessionServer:
         return self
 
     def stop(self) -> None:
-        self.httpd.shutdown()
+        if self._thread is not None:  # `shutdown` waits for a `serve_forever` that never started
+            self.httpd.shutdown()
         self.httpd.server_close()
         link, self.link_file = self.link_file, None
         if link is not None:
@@ -453,6 +463,10 @@ class _Handler(BaseHTTPRequestHandler):
 
     def log_message(self, format: str, *args: Any) -> None:  # quiet: the terminal shows turns
         return None
+
+    def parse_request(self) -> bool:
+        self.server_state.last_request = time.monotonic()
+        return super().parse_request()
 
     def _send(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)
@@ -618,20 +632,47 @@ class _Handler(BaseHTTPRequestHandler):
         self._send(HTTPStatus.OK, _json(reply).encode(), "application/json")
 
 
-def serve(session: SimSession, port: int, console: Any, open_browser: bool = True) -> None:
-    """Serve until Ctrl-C."""
-    server = SessionServer(session, port=port).start()
-    console.print(
-        f"[bold green]✓[/bold green] sim UI at [link]{server.announced_url}[/link] — Ctrl-C to stop",
-        soft_wrap=True,  # one line: the key after `#` stays part of the URL
-    )
-    if open_browser and not under_service_manager():
-        import webbrowser
+def stop_reason(
+    server: SessionServer, parent: int, exit_with_parent: bool, idle_timeout: float | None
+) -> str | None:
+    """Why a page started with `--exit-with-parent` / `--idle-timeout` should stop now, if it should."""
+    # Reparented (to PID 1, or a subreaper): the parent is gone. PPID 1 from the start is the
+    # same case — the shell that started it left before the first check.
+    if exit_with_parent and (os.getppid() != parent or parent == 1):
+        return "the process that started it has exited (--exit-with-parent)"
+    if idle_timeout is not None and server.idle_for() >= idle_timeout:
+        return f"no request for {idle_timeout:g} s (--idle-timeout)"
+    return None
 
-        webbrowser.open(server.open_url)
+
+def serve(
+    session: SimSession,
+    port: int,
+    console: Any,
+    open_browser: bool = True,
+    *,
+    exit_with_parent: bool = False,
+    idle_timeout: float | None = None,
+) -> None:
+    """Serve until Ctrl-C (SIGTERM/SIGHUP with `exit_on_signals`), or a `stop_reason`."""
+    parent = os.getppid()
+    server = SessionServer(session, port=port)
+    # From `start()` on, inside the `try`: a SIGTERM (`exit_on_signals`) that lands just after
+    # `ui.json` is written must still reach `stop()`, which removes it.
     try:
-        while True:
+        server.start()
+        console.print(
+            f"[bold green]✓[/bold green] sim UI at [link]{server.announced_url}[/link]"
+            " — Ctrl-C to stop",
+            soft_wrap=True,  # one line: the key after `#` stays part of the URL
+        )
+        if open_browser and not under_service_manager():
+            import webbrowser
+
+            webbrowser.open(server.open_url)
+        while (reason := stop_reason(server, parent, exit_with_parent, idle_timeout)) is None:
             time.sleep(0.5)
+        console.print(f"sim UI stopped: {reason}")
     except KeyboardInterrupt:
         console.print()
     finally:
