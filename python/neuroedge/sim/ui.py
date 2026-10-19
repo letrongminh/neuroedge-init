@@ -446,7 +446,8 @@ class SessionServer:
         return self
 
     def stop(self) -> None:
-        self.httpd.shutdown()
+        if self._thread is not None:  # `shutdown` waits for a `serve_forever` that never started
+            self.httpd.shutdown()
         self.httpd.server_close()
         link, self.link_file = self.link_file, None
         if link is not None:
@@ -655,16 +656,20 @@ def serve(
 ) -> None:
     """Serve until Ctrl-C (SIGTERM/SIGHUP with `exit_on_signals`), or a `stop_reason`."""
     parent = os.getppid()
-    server = SessionServer(session, port=port).start()
-    console.print(
-        f"[bold green]✓[/bold green] sim UI at [link]{server.announced_url}[/link] — Ctrl-C to stop",
-        soft_wrap=True,  # one line: the key after `#` stays part of the URL
-    )
-    if open_browser and not under_service_manager():
-        import webbrowser
-
-        webbrowser.open(server.open_url)
+    server = SessionServer(session, port=port)
+    # From `start()` on, inside the `try`: a SIGTERM (`exit_on_signals`) that lands just after
+    # `ui.json` is written must still reach `stop()`, which removes it.
     try:
+        server.start()
+        console.print(
+            f"[bold green]✓[/bold green] sim UI at [link]{server.announced_url}[/link]"
+            " — Ctrl-C to stop",
+            soft_wrap=True,  # one line: the key after `#` stays part of the URL
+        )
+        if open_browser and not under_service_manager():
+            import webbrowser
+
+            webbrowser.open(server.open_url)
         while (reason := stop_reason(server, parent, exit_with_parent, idle_timeout)) is None:
             time.sleep(0.5)
         console.print(f"sim UI stopped: {reason}")

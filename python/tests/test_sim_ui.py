@@ -10,6 +10,7 @@ import contextlib
 import json
 import os
 import re
+import select
 import shlex
 import signal
 import subprocess
@@ -368,6 +369,18 @@ def test_an_idle_page_stops_and_removes_its_link_file(root, tmp_path):
             process.wait()
 
 
+def _ready(process: subprocess.Popen, within: float) -> str:
+    """The output up to the printed URL: the page serves, and SIGTERM is handled."""
+    output, deadline = b"", time.monotonic() + within
+    while b"sim UI at" not in output and time.monotonic() < deadline:
+        if select.select([process.stdout], [], [], 0.1)[0]:
+            chunk = os.read(process.stdout.fileno(), 4096)
+            if not chunk:
+                break
+            output += chunk
+    return output.decode(errors="replace")
+
+
 def test_sigterm_stops_the_page_like_ctrl_c(root):
     link = Path(os.environ["XDG_STATE_HOME"]) / "neuroedge" / "ui.json"
     process = subprocess.Popen(
@@ -378,9 +391,8 @@ def test_sigterm_stops_the_page_like_ctrl_c(root):
         start_new_session=True,
     )
     try:
-        deadline = time.monotonic() + 3 * TIMEOUT
-        while not link.exists() and time.monotonic() < deadline:
-            time.sleep(0.05)
+        output = _ready(process, within=3 * TIMEOUT)
+        assert "sim UI at" in output, output
         assert link.exists()
         process.terminate()
         assert process.wait(3 * TIMEOUT) == 128 + signal.SIGTERM
@@ -389,3 +401,20 @@ def test_sigterm_stops_the_page_like_ctrl_c(root):
         if process.poll() is None:
             os.killpg(process.pid, signal.SIGKILL)
             process.wait()
+
+
+def test_a_signal_just_after_the_link_file_is_written_still_removes_it(root):
+    """The 3.12 CI race of PR #148: SIGTERM between `start()` and the serving loop."""
+    from neuroedge.sim.ui import serve
+
+    link = Path(os.environ["XDG_STATE_HOME"]) / "neuroedge" / "ui.json"
+
+    class Console:
+        def print(self, *args, **kwargs):  # the first thing after `ui.json` is written
+            assert link.exists()
+            raise SystemExit(128 + signal.SIGTERM)
+
+    session = SimSession.load(root / "fixtures" / "agents" / "villa-concierge" / "agent.toml")
+    with pytest.raises(SystemExit):
+        serve(session, 0, Console(), open_browser=False)
+    assert not link.exists()
