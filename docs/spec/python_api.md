@@ -60,7 +60,7 @@ so an unexported error class cannot be caught.
 
 ### 2.1 `SimSession` and `Turn`: only these members are promised
 
-`SimSession` is where an agent is assembled (`docs/architecture/vi/03-component-host-c4l3.md` §2), making this
+`SimSession` is where an agent is assembled (`docs/architecture/03-component-host-c4l3.md` §2), making this
 class large and subject to evolution. The SemVer promise covers **only** members used by `neuroedge new` code and documentation;
 everything else on `SimSession` and `Turn` is outside the promise (§1), even if not prefixed with `_`.
 
@@ -162,7 +162,7 @@ rules (§5, Q-64) as Python API; in `0.x`, MINOR acts as MAJOR.
 | Command and subcommand names (`gate lint`, `mcp serve`…) | Human-readable text printed to stdout and stderr: wording, colors, line order, tables, boxes |
 | Flag and option names (including short form `-t`), their semantics, whether flags take values, repeatability | Execution duration, table widths, `Examples:` block of `--help` |
 | Required arguments and order of positional arguments | Default output paths for files written when `--out` is omitted |
-| **Exit codes** — table in `CHANGELOG.md` §2.3 (`0` pass, `1` fail, `2` not implemented), not duplicated here | Diagnostic text in `why`/`how` (`NE…` codes are promised, §1) |
+| **Exit codes** — table in `docs/reference/cli.md` §3 (`0` pass, `1` fail, `2` not implemented), not duplicated here | Diagnostic text in `why`/`how` (`NE…` codes are promised, §1) |
 | Machine-readable output: `--json`, `--openai`, and command output files (separate versioned schemas — `schemas/`, PRD §10.3; not repeated here) | |
 
 **`add` command family (TSK-I2b-04, FR-DX-08).** Promises five subcommands `add action`, `add sensor`, `add device`,

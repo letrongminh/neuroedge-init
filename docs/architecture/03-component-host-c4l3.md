@@ -2,11 +2,11 @@
 
 > **Scope:** Python package `python/neuroedge/` — subpackages, responsibilities of each package,
 > actual dependencies between them, connecting protocols, and assembly locus. **Sources:** code in `python/neuroedge/`;
-> dependency graph is locked by test [`test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py).
+> dependency graph is locked by test [`test_architecture_layers.py`](../../python/tests/test_architecture_layers.py).
 
 ## 1. Component diagram
 
-![E-03 · Host components](../assets/svg/E-03-host-components.svg)
+![E-03 · Host components](assets/svg/E-03-host-components.svg)
 *Figure E-03 — Subpackages ordered by dependency direction: packages above use packages below, never the reverse.*
 
 ## 2. Layers and dependency rules
@@ -24,7 +24,7 @@ to top:
 | 2 | `engine` | tier 0; **`engine/compiler.py` and `engine/chip_actions.py` only** may use `hal`, both at build time (board validation; an action's pin operations for the chip, Q-83) and lazy-import `actions`, `models`, `perception`, `mcp_host` (config validation), `plugins` (`[plugins]` and `[actuators]`) | L3 core |
 | 3 | `actions` | `engine`, `hal`, tier 0 (edge `actions` → `paths`: `actions/tools.py::result_schema` reads `schemas/tool-result.v1.json`, RFC-0015) | L3 surface |
 | 4 | `models` | `engine` (implements its protocol), `net`, tier 0 | L2 |
-| 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http`, `pairing`, `isolation` | `actions`, tier 0; `mcp_http` specifically uses only `mcp_server` and `errors` — network door (TSK-P2-04) placed behind the same stdio server, without building a second path; `pairing` uses only `errors` — the keys, certificates and short-lived tokens of that door (`neuroedge pair`, Q-83); `isolation` imports no other layer — `neuroedge doctor`, is the brain's user kept apart (DP-A-03) | L4 per `docs/architecture/vi/00-overview.md` §5.1 (docstring does not declare layer) |
+| 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http`, `pairing`, `isolation` | `actions`, tier 0; `mcp_http` specifically uses only `mcp_server` and `errors` — network door (TSK-P2-04) placed behind the same stdio server, without building a second path; `pairing` uses only `errors` — the keys, certificates and short-lived tokens of that door (`neuroedge pair`, Q-83); `isolation` imports no other layer — `neuroedge doctor`, is the brain's user kept apart (DP-A-03) | L4 per `docs/architecture/00-overview.md` §5.1 (docstring does not declare layer) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, tier 0; `templates`: `errors`, `paths` | tools |
 | 7 | `sim` | all tiers below (including `plugins`: `SimSession` re-runs `[actuators]` validator on load, `sim/hal_build.py` connects remote actuators to HAL); lazy-imports `perception` in `sim/session.py` and `sim/vision/feed.py` (camera → gate facts, only when agent declares `[vision]`: `perception` sits above `sim`) | L0, **assembly locus** |
 | 8 | `perception` | `sim` (voice sessions wrap typing sessions), `models`, `actions`, `engine`, `hal`, `net` | L2 |
@@ -56,7 +56,7 @@ Packages in this section have no code in the repository today, or were removed f
 
 - Removed from the roadmap (Q-77, Q-88): `lab/` (NeuroEdge Lab), `services/fleet/` and `services/registry/` (Fleet OS, Gate Registry) — see roadmap §6. `perception/vision/` and `sim/vision/` (TSK-V1b-*) already exist and are described in §3.5 and §3.6.
 
-The operator agent and NeuroEdge Blueprint of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) add five packages (`planned · Q-72`; no code yet, package names are proposed):
+The operator agent and NeuroEdge Blueprint of [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log) add five packages (`planned · Q-72`; no code yet, package names are proposed):
 
 | Package | Increment | Responsibility | Allowed dependencies (planned) |
 |:---|:---:|:---|:---|
@@ -70,7 +70,7 @@ Layer rules for this group strictly follow rules 2 and 3 above: `channels/` and 
 `dispatch()` → gate; no package other than `actions` both calls `evaluate()` and touches pins. The LLM worker is a
 separate process, not a package in core ([`02`](02-container-c4l2.md) §3).
 
-When one of them enters the repository, it requires an entry in `ALLOWED` (and `LAZY` if lazy imports are used) in [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). The five Q-72 packages follow the same rule: each adds an `ALLOWED` entry when coded, and tests should assert `channels` contains no `hal` in its set, just as tests today assert `ALLOWED["hal"]`. `perception/vision/` and `sim/vision/` belong to existing `perception` and `sim` units and do not need new entries.
+When one of them enters the repository, it requires an entry in `ALLOWED` (and `LAZY` if lazy imports are used) in [`python/tests/test_architecture_layers.py`](../../python/tests/test_architecture_layers.py). The five Q-72 packages follow the same rule: each adds an `ALLOWED` entry when coded, and tests should assert `channels` contains no `hal` in its set, just as tests today assert `ALLOWED["hal"]`. `perception/vision/` and `sim/vision/` belong to existing `perception` and `sim` units and do not need new entries.
 
 ## 3. Component catalog
 

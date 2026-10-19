@@ -20,10 +20,9 @@ the board profile.
 Equivalence is not promised equally across all hardware. NeuroEdge clearly defines commitments across three tiers (Q-13, FR-TGT-08, `simulation_coverage.md` §7):
 
 - **Tier 1 (`sim`, `linux`, `esp32s3`):** `neuroedge verify` achieves 100%; tested on every PR (`sim`, gpio-sim; QEMU for PRs touching `targets/**`) and nightly testing commitment on real boards (TSK-S4-05, TSK-I2-01 — not yet running).
-- **Tier 2 (maintained by the core team; `jetson`, its example, was removed from the roadmap by Q-77):** `neuroedge verify` on the verdict domain; hardware testing per release cycle, not nightly.
-- **Tier 3 (ported by community, e.g. `stm32`, `rp2350` ):** contributors self-verify via the Compliance Test Suite; the core team does not commit to quality and does not block releases for this tier.
+- **Tiers 2 and 3** (core-maintained; community-ported, Q-13) have no target: the target list is closed at tier 1 (Q-77, §7.1).
 
-Details on target tiering and expansion roadmap: [`15`](15-target-architecture.md) §4.1.
+Why the list stays closed: [`15`](15-target-architecture.md) §4.1.
 
 ## 2. Three Layers of Defense
 
@@ -56,7 +55,7 @@ flowchart TB
 
 ## 3. Five Primitives × Three Targets Matrix
 
-![E-07 · Target matrix](../assets/svg/E-07-target-matrix.svg)
+![E-07 · Target matrix](assets/svg/E-07-target-matrix.svg)
 *Figure E-07 — Each cell: backend running it, where it is automated-tested, status.*
 
 | Primitive | `sim` (`sim-default`) | `linux` (`linux-rpi5`) | `esp32s3` (`esp32s3-box-3`) |
@@ -118,7 +117,7 @@ An artifact type matching 0 files ⇒ `NE4004`, exit code 1: no empty "PASS".
 | Port Type | Possible Today? | Notes |
 |:---|:---|:---|
 | **New board for an existing target** (another Linux SBC, another ESP32-S3 board) | Technically yes; but `boards/` only accepts **reference board profiles for the three tier-1 targets** (four files since `sim-rpi5`, RFC-0013) while the target list stays closed (Q-77; `test_boards.py`), and the reference board for `esp32s3` is strictly Box-3 (invariant 6) | Used for internal experimentation; not publishable yet. From I2c (`planned`), community boards outside the repo are loaded via `--board <path>`, self-certified via `board validate`, and never serve as reference boards (TSK-I2c-05) |
-| **New target** (`stm32`, `rp2350`, `jetson`) | **No**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` (Q-77) | RFC-0002 is approved but its code was removed from the roadmap ([`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §6) |
+| **New target** (`stm32`, `rp2350`, `jetson`) | **No**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` (Q-77) | RFC-0002 is approved but its code was removed from the roadmap ([`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6) |
 | **Tier 3 self-tested by community** (Q-13) | No process: the porting kit (I13) was removed from the roadmap (Q-77) | This chapter describes what code exists today and what will change |
 
 The remainder describes the **contract** — which does not change when the target list opens — and immediately reusable code.

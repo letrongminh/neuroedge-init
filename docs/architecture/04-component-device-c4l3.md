@@ -10,7 +10,7 @@
 
 ## 1. Component diagram
 
-![E-04 · Firmware](../assets/svg/E-04-firmware.svg)
+![E-04 · Firmware](assets/svg/E-04-firmware.svg)
 *Figure E-04 — Firmware components, build-time generated data, and boot sequence.*
 
 **How to read the diagram:** Boxes represent firmware components and memory partitions on the ESP32-S3 chip; solid arrows show boot flow and direct function calls, dashed arrows show data generated at build time or emitted externally. Core takeaway: firmware executes sequentially in `app_main`, and self-tests must pass 100% before any physical action is permitted.
@@ -23,7 +23,8 @@ Stated upfront so nobody reads diagrams as more than reality:
   Q-79 exist: serial console (`ne_console`, 4 KB stack) and boot counter clearing task after the
   stability window (`ne_boot`). No queues or core pinning yet.
 - **No audio.** No I2S, codec, AEC, VAD, Opus, or ESP-SR — only a `TODO(TSK-S1-10)`
-  in `main/main.c`. On-chip voice (I5) was removed from the roadmap (Q-77), roadmap §6.
+  in `main/main.c`. The I5 voice pipeline is removed (Q-77); voice returns only as a channel of
+  NeuroClaw-ESP on the all-in-one chip (Q-93, DP-B-20, TSK-I2f-19).
 - **No GPIO control.** Agent pin tables hold pin **names**, not GPIO numbers; on-chip HAL
   is TSK-S4-01.
 - **Wi-Fi initializes but never connects** (no `esp_wifi_connect`): networking is initialized
@@ -54,10 +55,10 @@ Stated upfront so nobody reads diagrams as more than reality:
 |:---|:---|:---|:---|
 | `targets/esp32s3/hal/` | TSK-S4-01 | Implementation of 5 HAL primitives on ESP-IDF; needed to control physical hardware instead of simulation | [`15`](15-target-architecture.md) §2.1 |
 | `targets/esp32s3/drivers/` | TSK-S4-03 | `digital.out` and `sensor.read` drivers on real pins; needed to pulse actuators and read sensors on Box-3 board | [`15`](15-target-architecture.md) §2.1 |
-| *On-chip audio, voice FSM, actuator abort, provider client* (TSK-S5-01 → S5-07, including the local fallback) | | Removed from the roadmap (Q-77), roadmap §6 | |
+| *On-chip audio, voice FSM, actuator abort, provider client* (TSK-S5-01 → S5-07, including the local fallback) | | Removed (Q-77), roadmap §6; voice as a NeuroClaw-ESP channel is TSK-I2f-19 (DP-B-20) | |
 | `targets/esp32s3/security/` | TSK-S6-05 | Secure Boot, flash encryption, physical microphone disconnect button; needed to protect firmware integrity and privacy | [`15`](15-target-architecture.md) §2.1 |
 
-Currently firmware has only a sequential `app_main`; FreeRTOS task models (task counts, priorities, queues, and core pinning) for a voice path remain undesigned, since on-chip voice left the roadmap (→ [`15`](15-target-architecture.md) §2.2). The RP2350 robot node (TSK-W3-07) was removed too (Q-77, roadmap §6).
+Currently firmware has only a sequential `app_main`; the task model of the all-in-one chip (gate task on its own core at the highest application priority, brain and voice buffers in PSRAM) is set by DP-B-22 (TSK-I2f-20).
 
 ### 3.1 `ne_gate` — walker and token ledger
 
@@ -196,7 +197,7 @@ by the application, never resident in components.
 
 **Q-3 Budget** (SRAM ≥ 120 KB and PSRAM ≥ 2 MB for application, firmware ≤ 3.5 MB) is checked incrementally
 in CI: image size, remaining static RAM of board configs, boot-time heap on QEMU. Measurements
-and conditions are in [`memory_spike_report.md`](../../reports/memory_spike_report.md) §4.1 — this represents a
+and conditions are in [`memory_spike_report.md`](../reports/memory_spike_report.md) §4.1 — this represents a
 **floor**, not a final Q-3 verdict, pending boards and audio hardware.
 
 ## 6. `ne_ota` — signed updates
@@ -229,7 +230,7 @@ stateDiagram-v2
   the written slot, ensuring no subsequent boot falls into a rejected image.
 - **Limitations:** pre-Secure Boot and no eFuse anti-rollback (TSK-S6-05); OTA does not update the
   bootloader; frozen images without auto-restart revert only on power cycle. Procedures and
-  definitions for each `NE_OTA` line: [`docs/user/nap-firmware.md`](../../user/nap-firmware.md) §6.
+  definitions for each `NE_OTA` line: [`docs/user/nap-firmware.md`](../user/nap-firmware.md) §6.
 
 ## 7. `ne_ui` — device UI (unlinked)
 
@@ -238,7 +239,7 @@ Nine screens (`ne_ui_show_boot`, `idle`, `voice`, `confirm`, `verdict`, `degrade
 to build on computers for **golden image** comparison on each PR (33 cases × 2 languages, test harness under
 ASan/UBSan). Deterministic rendering: no clocks, no randomness, no animations. Agent text is data:
 strictly validated UTF-8, truncated with ellipsis `…`. Languages: `ne_ui_init` returns `false` and renders nothing if the language
-lacks a font table. Specification: [`docs/spec/ui.md`](../../spec/ui.md). Connecting the interface into firmware awaits display
+lacks a font table. Specification: [`docs/spec/ui.md`](../spec/ui.md). Connecting the interface into firmware awaits display
 drivers (TSK-S4-01); projects generated for agents today do not copy `ui/`.
 
 ## 8. Build and verification
@@ -258,4 +259,4 @@ drivers (TSK-S4-01); projects generated for agents today do not copy `ui/`.
 | UI golden images | `scripts/run_ui_golden.sh` | job `ui-golden` |
 | UART traces to `trace.v1`, on-chip `verify` | `neuroedge record --port`, `verify --targets esp32s3` | job `uart-trace` |
 
-Full list and trigger conditions for each job: `CHANGELOG.md` §2.5.
+Full list and trigger conditions for each job: `docs/reference/cli.md` §5.

@@ -1,14 +1,11 @@
 # NeuroEdge: product proposal
 
-**Status:** current as of Q-92 (2026-10-19). **Owner of this page:** the product owner. This is a
+**Status:** current as of Q-93 (2026-10-19). **Owner of this page:** the product owner. This is a
 synthesis for a partner, investor or new team member; it is read in about 15 minutes. It **references**
 the documents that own each truth and does not copy them (`CONTRIBUTING.md` §8.1): requirements live in
 the SRS, dates and progress in `roadmap/neuroedge-roadmap.md` §0.2, business requirements and KPIs in
 the BRD, decisions in `roadmap/neuroedge-prd.md` §15 (`Q-N`). Where this page and a source differ, the
 source wins; the newest decision wins over an older one. Symbols are decoded in `docs/user/thuat-ngu.md`.
-
-It replaces the historical proposal `docs/business/proposal-blueprint-2026-10-11.md` (Q-72), kept only as
-a record of the reasoning at the time (Q-90).
 
 ---
 
@@ -38,8 +35,7 @@ The BRD lists five pains P-1 to P-5 (alert fatigue, context blindness, hand-buil
 LLM driving devices, makers unable to turn DIY devices into products), with the evidence found by the
 2026-10-15 market research (BRD §2.1).
 
-**All of them are hypotheses of the team.** No interview has confirmed any pain yet (BRD §2.1, premise P1
-of `docs/business/cong-nhu-cau-2026-10-25/README.md`). Only P-4 carries a "high" confidence, because the
+**All of them are hypotheses of the team.** No interview has confirmed any pain yet (BRD §2.1). Only P-4 carries a "high" confidence, because the
 market itself has seen the problem; P-5 (makers will pay) is "low". There is no demand gate (Q-92 (1)):
 the first adoption signal is the launch's anonymous telemetry (§9; BRD §11 risk 1).
 
@@ -48,15 +44,14 @@ the first adoption signal is the launch's anonymous telemetry (§9; BRD §11 ris
 | Segment | Role | Order | Source |
 |:---|:---|:---|:---|
 | **Families** with several smart devices and no time to configure scenes | Target of the experience | Second, through a maker's Blueprint | BRD §4; Q-85 (2) |
-| **Makers and micro-OEMs** of niche devices (fish tanks, incubators, mushroom houses, produce dryers) | Build and sell Blueprints to families | **First**; the launch and, later, a maker asking to sell (§7) show this group's interest | Q-72; Q-85 (2) |
+| **Makers and micro-OEMs** of niche devices (fish tanks, incubators, mushroom houses, produce dryers) | Build and sell Blueprints to families | **First**; the launch and, later, a maker asking to sell (BRD §9 H2) show this group's interest | Q-72; Q-85 (2) |
 | Smart-glasses users | - | Deferred (BRD Appendix A) | Q-85 (4) |
 
 Consequence accepted in Q-85 and kept by Q-92: families reach the product through makers' Blueprints,
-and a family cannot yet install without a command line (BRD §11 risk 10). The Home Assistant add-on, the
-Pi SD-card image with QR pairing and the affiliate BOM page were cut from I2e (Q-92 (2), archived in
-`roadmap/archive/removed-tasks.md`); installing the box uses the CLI until the home web exists.
+and a family cannot install without a command line until the home web exists (BRD §11 risk 10; the
+easier install routes were cut by Q-92 (2)).
 
-The family's way in comes after the public launch (`docs/app-di-dong/`, Q-91, Q-92 (8)): first the **box
+The family's way in comes after the public launch (`docs/business/app-di-dong/`, Q-91, Q-92 (8)): first the **box
 API and a home web** in a browser on the home network (increment I2g: device views, approval cards signed
 with a passkey, replay; the same web serves makers as Studio), then a **native iOS and Android app**
 (React Native, increment I2h) on the same box API, with approval cards signed with Face ID or a
@@ -111,11 +106,8 @@ flowchart LR
 - **Brain versus box (Q-83 (4)).** The box decides, acts and proves (gate, tokens, confirmation, HAL,
   traces, grammar, System 1). The brain thinks, talks and remembers (LLM loop, memory, retrieval,
   channels, reminders, LLM budget). The brain touches the world only through the box (Q-76).
-- **Two deployment profiles, one contract (Q-83).** **Profile A, full:** brain and box in separate trust
-  domains (one machine under separate OS users, two machines, or the brain on a future cloud), MCP over
-  HTTPS with mutual TLS. **Profile B, one chip:** brain and `ne_gate` share one ESP32-S3 image, labelled
-  `risk=single_chip` because one chip has no isolation boundary (Q-79). The tool list and `tool-result.v1`
-  are identical; only the transport differs. Specification: `docs/spec/deployment_profiles.md`.
+- **Two deployment profiles, one contract (Q-83).** Profile A keeps brain and box in separate trust domains;
+  Profile B is the all-in-one chip, labelled `risk=single_chip` (Q-79, Q-93). Detail: `docs/spec/deployment_profiles.md`.
 - **Approvals never pass through the brain (Q-83 (5), Q-89).** In Profile A the box has its own approval
   bot and signs a record the owner answers; a reply that is not tied to the exact request id confirms
   nothing. Pairing is by a one-time code shown only on the home machine; remote approvals are capped per
@@ -129,7 +121,7 @@ flowchart LR
 - **Open with transparency (Q-73).** The product labels a risk instead of blocking a flow the user chose
   (for example `risk=single_chip`, `risk=virtual_board`, `risk=remote_approval`).
 
-Further reading: `docs/architecture/README.md`, `docs/architecture/vi/00-overview.md`.
+Further reading: `docs/architecture/README.md`, `docs/architecture/00-overview.md`.
 
 ## 6. Why it is hard to copy
 
@@ -149,24 +141,16 @@ add-on itself was cut from the pre-launch scope (Q-92 (2)). Q-85 records head-on
 
 ## 7. Business model: hypotheses
 
-No price is stated before launch data (BRD §9). Each revenue line opens on a recorded condition:
-
-| Hypothesis | Opens when | Constraint |
-|:---|:---|:---|
-| **H1** kit commission (affiliate BOM) | Cut from I2e (Q-92 (2)); returns only by a new `Q-N` | FR-BP-07; would sit on a separate page outside the kit |
-| **H2** paid Blueprint Hub | When a maker asks to sell (Q-92 (10), FR-BP-10) | A free static index comes first (FR-BP-05); signed evidence (`TODOS.md` #1) before the Hub takes money |
-| **H3** NeuroEdge Cloud (brain run for people who do not want to operate it) | On launch data showing people stuck installing the box (Q-74 step 2, Q-92 (8)) | Gate, approvals and trace always stay at home; keys never leave the box |
-| **H4** commercial licence for companies embedding the core | When the first business asks (Q-92 (10), `TODOS.md` #44) | The core stays **PolyForm Noncommercial 1.0.0** (Q-45); the launch is free for non-commercial use; selling Blueprints or devices is commercial use and needs a licence. Specs and schemas are Apache-2.0 (`LICENSING.md`) |
-
-**Tokens (Q-90 (5)).** Bring-your-own-key is the default. NeuroEdge Cloud may bundle tokens only if Q-74
-step 2 opens **and** a new `Q-N` amends N4; until then nothing in this proposal resells tokens.
-**Deferred (Q-85 (4), Q-92):** wearables, the paid Hub, NeuroEdge Cloud, commercial licence terms; each
-opens on the trigger in its row. No revenue line sits on the safety path (Q-72).
+No price is stated before launch data. Four revenue hypotheses (H1 kit commission, H2 paid Blueprint Hub,
+H3 NeuroEdge Cloud, H4 commercial licence) each open on a recorded trigger; triggers and constraints live
+in BRD §9 only. The core stays PolyForm Noncommercial 1.0.0 (Q-45): the launch is free for non-commercial
+use, and selling Blueprints or devices needs a commercial licence (Q-92 (10)). Bring-your-own-key is the
+default and nothing resells tokens (Q-90 (5)). No revenue line sits on the safety path (Q-72).
 
 ## 8. What exists today and what is planned
 
 What works is listed in `README.md` ("Working today") and, in the words of a person using it, in
-`docs/architecture/vi/00-overview.md` §6.1. In short: rules on a laptop with virtual devices, on Linux
+`docs/architecture/00-overview.md` §6.1. In short: rules on a laptop with virtual devices, on Linux
 with emulated pins and on an emulated ESP32-S3 (QEMU); chat through Telegram to NeuroClaw to switch a
 light or open a door with owner confirmation, shown in a live demo; a virtual board with a pin map and
 two extra demo scenarios (a greenhouse and a fuller fish tank) on `sim-virtual`.
@@ -184,36 +168,23 @@ fish tank agent (TSK-I2d-28); the I2d mission core is part of the public launch,
 
 ## 9. Launch path and adoption signal
 
-**There is no demand gate** (Q-92 (1)). The 2026-12-06 milestone and the conditions B6, B7 and B8 were
-deleted, and the BRD's K1 to K3 went with them. What replaces it:
-
-- **Public launch (I6, PyPI 0.6)** needs I2d with its mission core, the trimmed I2e, and I3 and I3a
-  verified on Espressif's **esp-emulator** in place of a board. It does not wait for boards or licence
-  terms (Q-92 (4)). Before launch the runtime runs 3 days continuously without error plus a stress test on
-  simulation (Q-92 (6)). Firmware of the 0.6 line is labelled "verified on esp-emulator" and has no secure
-  boot (Q-92 consequences).
-- **v1.0 (I7)** keeps the real-board checks an emulator cannot prove: secure boot, flash encryption, the
-  24-hour and two-week runs, the camera, physical pins and power loss (Q-92 (5)).
-- **First adoption signal** is the launch's anonymous telemetry, on by default with a first-run notice and
-  a one-command opt-out (FR-TEL-01; Q-92 (1)).
-- **KPIs kept:** **K4**, LLM cost under 2 USD for a 30-day fish tank scenario (NFR-COST-01), and **K5**,
-  non-urgent messages inside the budget and no action reaching a device without the gate (NFR-COST-02).
-- **Accepted consequences:** no demand signal before the launch; hardware demand cannot be measured until
-  boards exist (Q-92).
+- **No demand gate** (Q-92 (1)); the first adoption signal is the launch's anonymous telemetry (FR-TEL-01).
+- **Public launch (I6, PyPI 0.6)** is verified on esp-emulator and waits for no board (Q-92 (4), (6)).
+- **v1.0 (I7)** keeps the real-board checks (Q-92 (5)).
+- **KPIs kept:** K4 and K5 (BRD §3.1).
 
 The positioning line is a check, not a gate: if fewer than 3 of 5 maker interviews retell it in their own
 words, it is revisited (Q-82); interviews are handled outside the roadmap.
 
 ## 10. Out of scope and removed
 
-Removed from the roadmap by Q-77 (voice code on the host stays): **voice** (I4, I5), **NeuroEdge Lab**
-(I4a, I5a; replaced by the MCP tool set, Q-88), opening the target list to third parties, **Fleet OS** and
-self-hosted provider (I9, I10), robots (I14), **Jetson** (I16), multimodal and the device ecosystem, and all
-post-Beta increments. Deferred (Q-85 (4), Q-84, Q-92): **wearables**, the **paid Hub**,
-**NeuroEdge Cloud** and the ESP32 cloud tier (I2f, with exceptions Q-79 and Q-83), commercial licence
-terms, and the virtual-parts **canvas**, each on its trigger (§7). Cut from I2e by Q-92 (2): the affiliate
-BOM page, the Home Assistant add-on, the Pi SD image and the Pi + ESP32 scaffold. The home web (I2g) and
-the native app (I2h) follow the public launch (§3).
+Removed from the roadmap by Q-77 (voice code on the host stays): **voice** (I4, I5), except on the Profile B
+all-in-one chip, where it returns as a NeuroClaw-ESP channel (Q-93); **NeuroEdge Lab** (I4a, I5a; replaced
+by the MCP tool set, Q-88); opening the target list to third parties; **Fleet OS** and self-hosted provider
+(I9, I10); robots (I14); **Jetson** (I16); multimodal and the device ecosystem; all post-Beta increments.
+Deferred, each on its trigger (Q-84, Q-85 (4), Q-92; BRD §9): wearables, the paid Hub, NeuroEdge Cloud
+(I2f, with exceptions Q-79, Q-83, Q-93), commercial licence terms, the virtual-parts canvas. Cut from I2e:
+Q-92 (2).
 
 **Each of these reopens only by a new `Q-N` with data** (Q-77; roadmap §6; PRD §14). Studio (TSK-I1-04)
 remains paused, not removed.
@@ -243,22 +214,21 @@ is a hard fork with its own CI (BRD §11 #8, Q-78).
 | **Conditional safety for shipped boards** | An RFC (TSK-I2d-02) must define `safe_state` and interlocks before a Blueprint may carry a board profile (Q-86 (2)) |
 | **Home web and app** | Decided (Q-91, Q-92): I2g (box API and home web) after the launch, then I2h (native app); four RFCs to write (pairing and biometric approval source, `board.v1` value limits, the yellow zone, locking app-generated gates) |
 | **Local-only approval gates** | Wait for TSK-I2d-20; today every `ask` may be answered remotely within the cap (Q-89 (3)) |
-| **Cloud, paid Hub, licence terms, wearables** | On the triggers in §7, by a new `Q-N` where one is needed (Q-85 (4), Q-92) |
+| **Cloud, paid Hub, licence terms, wearables** | On the triggers in BRD §9, by a new `Q-N` where one is needed (Q-85 (4), Q-92) |
 | **Positioning line** | A check against interviews, not a gate (Q-82) |
 
 ## 13. Sources
 
 | Topic | Owner |
 |:---|:---|
-| Decisions, requirements, risks, out of scope | `roadmap/neuroedge-prd.md` §15 (Q-72 to Q-92), §11.2, §13, §14 |
+| Decisions, requirements, risks, out of scope | `roadmap/neuroedge-prd.md` §15 (Q-72 to Q-93), §11.2, §13, §14 |
 | Progress, dates, increments | `roadmap/neuroedge-roadmap.md` §0.2, §0.3, §6 |
-| Business requirements, competitors, KPIs, hypotheses | `docs/business/brd-ambient-intelligence.md` |
+| Business requirements, competitors, KPIs, revenue hypotheses H1–H4 | `docs/business/brd-ambient-intelligence.md` |
 | Missions | `docs/spec/missions.md` |
 | Blueprint | `docs/spec/blueprint.md` |
 | Two deployment profiles | `docs/spec/deployment_profiles.md` |
 | Virtual parts and pin map | `docs/spec/virtual_parts.md` |
 | Signed approval records | `docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md` |
-| What works today | `README.md`; `docs/architecture/vi/00-overview.md` §6.1 |
+| What works today | `README.md`; `docs/architecture/00-overview.md` §6.1 |
 | Licence | `LICENSING.md`, Q-45 |
-| Home web and app (Q-91, Q-92; I2g, I2h) | `docs/app-di-dong/README.md` |
-| Historical proposal (superseded) | `docs/business/proposal-blueprint-2026-10-11.md` |
+| Home web and app (Q-91, Q-92; I2g, I2h) | `docs/business/app-di-dong/README.md` |

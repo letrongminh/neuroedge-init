@@ -74,7 +74,7 @@ change to `allow_when` is a breaking change, requiring a MAJOR version bump.
 ## 3. Agent — `agent.toml`
 
 Each table has its own parser; code does not reject unknown top-level tables, but provider tables reject
-unknown keys. CLI syntax uses these tables: `CHANGELOG.md` §2.3.
+unknown keys. CLI syntax uses these tables: `docs/reference/cli.md` §3.
 
 | Table | Parser | Primary Keys and Rules |
 |:---|:---|:---|
@@ -109,7 +109,7 @@ is rejected, and for `[system_one]`, `http://` to other machines is rejected in 
 The five core primitives form a closed set for v1.x (FR-HAL-01); new primitives enter only via RFC, and four board-optional extension packs (FR-HAL-08, Q-53) enter v1.0 in I2a and I3a: RFC-0007 (`digital.in`, read-only I2C, `analog.in`), RFC-0009 (`numeric` criteria), RFC-0010 (PWM), RFC-0011 (`motion.*`), RFC-0012 (`vision.in`), RFC-0013 (board options). Today there are exactly three tier-1 profiles (Q-53 adds `sim-rpi5` and an ESP32-S3 board with camera): `sim-default` (exact replica of Box-3, never richer — Invariant 7), `linux-rpi5` (`aec = false` until benchmark passes), `esp32s3-box-3`. Application code only uses pin **names**; GPIO numbers belong to HAL.
 
 **Symmetric `safe_state` (`planned · Q-72`, I2d, pending RFC for conditional safety).** Today `safe_state`
-only exists on `motion.*` channels (`stop` or `hold`, RFC-0011, `hal/board.py`). Under [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log),
+only exists on `motion.*` channels (`stop` or `hold`, RFC-0011, `hal/board.py`). Under [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log),
 all actuators will have a `safe_state` declared in `board.v1`, default `off`; duration, `max_continuous_ms`, lease,
 levels L0–L3 (RFC-0018), and Q-62 gate exemptions all refer to "returning to `safe_state`", while the direction of *leaving*
 `safe_state` is subject to gates and limits. A `safe_state` other than `off` may only be declared here — not in mission
@@ -153,7 +153,7 @@ The shapes are defined in `schemas/tool-call.v1.json` (envelope `ToolCall { id, 
 
 An empty `id` is assigned `call_1`, `call_2`… per session. `source` is assigned by the runtime based
 on the connection, not declared by the caller. Result consumers do not branch on `reason` (an open
-string): `status` decides. Full normative spec: [`docs/spec/tool_calling.md`](../../spec/tool_calling.md).
+string): `status` decides. Full normative spec: [`docs/spec/tool_calling.md`](../spec/tool_calling.md).
 
 ## 7. Trace — `trace.v1`
 
@@ -195,7 +195,7 @@ The invariant "one session, one trace" is reinterpreted as "one session, one tra
 replayable"; missing segments are detected because the digest chain breaks. Appended sequentially, flushed on
 a timer (around 10 seconds, configurable) and immediately upon a block verdict or approval; a power outage loses
 at most the trailing normal events, and `replay` reports a truncated segment. Retention and size limits:
-[PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements) Modifying the canonical trace envelope
+[PRD §9](../../roadmap/neuroedge-prd.md#9-non-functional-requirements) Modifying the canonical trace envelope
 is an RFC-level change (`CONTRIBUTING.md` §3).
 
 ## 8. UART Format
@@ -216,7 +216,7 @@ NE_TRACE DONE sessions=4
   events before `device_info`, reboots mid-session, miscounts, and unclosed sessions.
 - Other lines: `NE_SELFTEST PASS|FAIL`, `NE_TRACE DONE`, `NEUROEDGE_HEAP_JSON {…}`,
   `NEUROEDGE_MEMORY_JSON {…}`, and `NE_OTA <event> …` — list and meanings in
-  [`docs/user/nap-firmware.md`](../../user/nap-firmware.md) §6.4; individual line formats are defined by
+  [`docs/user/nap-firmware.md`](../user/nap-firmware.md) §6.4; individual line formats are defined by
   `components/ne_ota/src/ne_ota_policy.c`.
 
 ## 9. Bidirectional Closed-World Corpus
@@ -266,8 +266,8 @@ Blocking due to timeout or lost fact source is **not an error**: it is a `BLOCK`
 
 ## 12. Planned Contracts Under Q-72 (`planned · Q-72`)
 
-There are no schemas or code yet in this section. Target designs follow [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log);
-each contract is a **planned RFC** (unnumbered, listed in [PRD §15](../../../roadmap/neuroedge-prd.md#15-decision-log)),
+There are no schemas or code yet in this section. Target designs follow [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log);
+each contract is a **planned RFC** (unnumbered, listed in [PRD §15](../../roadmap/neuroedge-prd.md#15-decision-log)),
 because introducing a new schema to `schemas/` or modifying `trace.v1`, `board.v1` requires an RFC (`CONTRIBUTING.md` §3).
 
 ### 12.1 Mission Contract — `mission.v1` (I2d)
@@ -282,7 +282,7 @@ synced time and are then treated as missing facts. Flow: [`06`](06-runtime-flows
 
 ### 12.2 NeuroEdge Blueprint — `blueprint.v1` (I2e)
 
-Requirements: `docs/spec/blueprint.md`; packing and install choices: Q-86 (manifest `blueprint.toml`, package digest taken over the canonical manifest and each file's SHA-256 so a directory, a git checkout and a `.tar.gz` give one digest, BL-PK-02; `contract` and `detectors` sections reserved and refused in v1, BL-FMT-05). Distribution is by URL (git or HTTPS) plus digest; the Hub is a static index repository listing URLs, digests and evidence, with no NeuroEdge-operated server. Evidence traces are marked "unsigned" (signing deferred, `TODOS.md` #1). The OCI Registry (Gate Registry, `manifest.v1`) was removed from the roadmap (Q-77). A NeuroEdge Blueprint is declarative only, carrying no executable code in the runtime. It differs from a Home Assistant Blueprint (an automation template) and may bundle an HA blueprint.
+Requirements: `docs/spec/blueprint.md`; packing and install choices: Q-86 (manifest `blueprint.toml`, package digest taken over the canonical manifest and each file's SHA-256 so a directory, a git checkout and a `.tar.gz` give one digest, BL-PK-02; `contract` and `detectors` sections validated and locked on approval once `mission.v1` exists, refused before, BL-FMT-05, Q-92 (7)). Distribution is by URL (git or HTTPS) plus digest; the Hub is a static index repository listing URLs, digests and evidence, with no NeuroEdge-operated server. Evidence traces are marked "unsigned" (signing deferred, `TODOS.md` #1). The OCI Registry (Gate Registry, `manifest.v1`) was removed from the roadmap (Q-77). A NeuroEdge Blueprint is declarative only, carrying no executable code in the runtime. It differs from a Home Assistant Blueprint (an automation template) and may bundle an HA blueprint.
 
 ### 12.3 Data Destination Declarations (I2d)
 
@@ -292,7 +292,7 @@ webhook — includes fields allowed to be sent to it, including images to the LL
 The runtime decides what the LLM worker *sees* and only transmits to declared destinations; sending to
 undeclared destinations is blocked and traced. Content rules (e.g. "images do not leave the home") are
 optional user flags in the contract, not defaults. Network-level enforcement:
-[PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements)
+[PRD §9](../../roadmap/neuroedge-prd.md#9-non-functional-requirements)
 
 ### 12.4 Chat Events and Approval Records (I2d)
 

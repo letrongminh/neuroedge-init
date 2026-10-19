@@ -44,7 +44,7 @@ the NeuroClaw repository `letrongminh/neuroclaw`, not in this one).
 
 PRD §15 Q-27, Q-72, Q-73, Q-76, Q-79, Q-80, Q-81, Q-83; NFR-RES-02, NFR-RES-03 (Q-3 budgets) ·
 `schemas/tool-result.v1.json` · `docs/spec/tool_calling.md` §7 (trace events) ·
-`docs/spec/threat_model.md` §2k, §2l · `docs/architecture/vi/15-target-architecture.md` §6.10 ·
+`docs/spec/threat_model.md` §2k, §2l · `docs/architecture/15-target-architecture.md` §6.10 ·
 `targets/esp32s3/components/ne_gate/include/ne_walker.h`, `ne_token.h` ·
 NeuroClaw `esp32/components/neuroclaw/include/neuroclaw.h` (`nc_gate`).
 

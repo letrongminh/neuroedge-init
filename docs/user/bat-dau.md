@@ -54,7 +54,7 @@ This is not yet a certified safety product: rules do not replace emergency stop 
 | Try rules on a laptop in a few minutes | [`python/README.md`](../../python/README.md), then [`huong-dan.md`](huong-dan.md) §6 |
 | Message to control home using NeuroClaw | [`chat-voi-nha.md`](chat-voi-nha.md) |
 | Flash onto ESP32-S3 chip | [`nap-firmware.md`](nap-firmware.md); brain and box on one chip: [`esp32-mot-chip.md`](esp32-mot-chip.md) |
-| Understand architecture | [`00-overview.md`](../architecture/vi/00-overview.md) |
+| Understand architecture | [`00-overview.md`](../architecture/00-overview.md) |
 | View progress | [`trang-thai.md`](trang-thai.md) |
 
 ## 5. Five terms to know

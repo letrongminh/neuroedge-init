@@ -16,7 +16,7 @@ Keys:
 - `journey` — the eight release milestones on a timeline, then as cards, then what is waiting
   on a person;
 - `inc-<ID>` — the bare progress of one increment, e.g. `11 / 20`, for use inside a sentence;
-- `today` — what a person can do today, from `docs/architecture/vi/00-overview.md` §6.1: works now,
+- `today` — what a person can do today, from `docs/architecture/00-overview.md` §6.1: works now,
   works in part, next; each with the command to try it, where it runs and its evidence.
 
 Never edit a generated block by hand. The date comes from the roadmap's "Last updated", not the
@@ -39,7 +39,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"
 TARGET = ROOT / "docs" / "business" / "kien-truc-tong-the.html"
-OVERVIEW = ROOT / "docs" / "architecture" / "vi" / "00-overview.md"
+OVERVIEW = ROOT / "docs" / "architecture" / "00-overview.md"
 
 DATE = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
 LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")

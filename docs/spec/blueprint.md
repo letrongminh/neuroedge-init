@@ -1,6 +1,6 @@
 # NeuroEdge Blueprint — Software Requirements Specification
 
-**Status:** approved for TSK-I2e-01 → I2e-09 (Q-72, Q-81, Q-84, Q-85; decisions of §7 are Q-86; amended by Q-92: contracts and detectors allowed, affiliate page cut). Structure follows ISO/IEC/IEEE
+**Status:** approved for TSK-I2e-01 → I2e-09 (Q-86; current through Q-92). Structure follows ISO/IEC/IEEE
 29148:2018 §9.6. This file is the one place for what a NeuroEdge Blueprint is and what `blueprint
 pack`, `blueprint install` and the static index must do (CONTRIBUTING.md §8.1); PRD FR-BP-01 → 10,
 FR-CLI-13 and NFR-SEC-14 state the product promise, this file states how each part of it is built
@@ -58,7 +58,7 @@ A14 · `docs/spec/virtual_parts.md` (parts, `sim-virtual`, pin maps) ·
 `docs/spec/deployment_profiles.md` (box + NeuroClaw, DP-COM-06 risk labels) ·
 `docs/spec/core_contracts.md` (gate digests) · `python/neuroedge/engine/canonical.py` (RFC 8785) ·
 `digests.lock` and `gate publish` (the digest discipline this package reuses) ·
-`docs/business/brd-ambient-intelligence.md` BR-5 · `docs/business/proposal-blueprint-2026-10-11.md`.
+`docs/business/brd-ambient-intelligence.md` BR-5 · `docs/business/product-proposal.md`.
 
 ---
 

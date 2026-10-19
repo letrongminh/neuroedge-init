@@ -56,7 +56,7 @@ def plan_part(
     """
     The files `add part` writes, planned in memory; raises `AgentManifestError` if it cannot.
     The catalogue (`kinds`), what a board lacks and the virtual board's id come from the caller:
-    a template reads no board itself (the layers of docs/architecture/vi/03-component-host-c4l3.md).
+    a template reads no board itself (the layers of docs/architecture/03-component-host-c4l3.md).
     """
     where = f"neuroedge add part {part_kind} {name}"
     kind = kinds.get(part_kind)

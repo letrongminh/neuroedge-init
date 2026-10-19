@@ -9,7 +9,7 @@ the gate decides, and actions requiring owner confirmation are asked on the home
 > (Q-83 Profile A, checked on CI in job `install-full`); brain tokens live at most 7 days and nothing renews them
 > on its own yet (section 1). Brain on another machine: the demo script suite. NeuroEdge Cloud is not yet open
 > (Q-74). Requirements: [`deployment_profiles.md`](../spec/deployment_profiles.md); architecture:
-> [`15-target-architecture.md`](../architecture/vi/15-target-architecture.md) §6.10.
+> [`15-target-architecture.md`](../architecture/15-target-architecture.md) §6.10.
 
 ## Choose how to run the brain
 

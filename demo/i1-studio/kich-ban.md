@@ -8,7 +8,7 @@
 
 Studio is a **single page** for all capabilities runnable on a laptop, opened only at `127.0.0.1`, downloading nothing from the network.
 Server–page contract: [`docs/spec/studio.md`](../../docs/spec/studio.md). What not to say: table in
-[`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../../docs/business/cong-nhu-cau-2026-10-25/demo.md) §0.1.
+[`demo/README.md`](../README.md#what-not-to-say-in-any-demo).
 
 ## 0. Preparation
 

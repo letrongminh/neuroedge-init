@@ -23,7 +23,7 @@ nút "Xem chi tiết".
 | 4 | [`prototype/index.html`](prototype/index.html) | Bấm thử 8 màn hình mẫu MH-1 → MH-8 (MH để không nhầm với mục tiêu sản phẩm M1–M9) | — |
 
 Mỗi tầng truy vết về tầng trước: SRS §4 nối `BR-APP` và `US-APP` với từng yêu cầu `AP`. Ý nghĩa các
-mã ở [`docs/user/thuat-ngu.md`](../user/thuat-ngu.md).
+mã ở [`docs/user/thuat-ngu.md`](../../user/thuat-ngu.md).
 
 **Mở prototype:** mở thẳng file `prototype/index.html` trong trình duyệt. File tự chứa, không tải gì
 từ mạng, dữ liệu là giả, không nối với hộp.
@@ -33,12 +33,12 @@ từ mạng, dữ liệu là giả, không nối với hộp.
 App là lớp trình bày, không đổi lõi. Những gì đã có quy định ở nơi khác thì SRS tham chiếu mã, không
 chép lại:
 
-* Contract, thẻ duyệt ≤ 5 dòng, approval record, detector, cảnh báo khẩn: [`docs/spec/missions.md`](../spec/missions.md) (Q-87).
-* Cài Blueprint, tham số cài đặt: [`docs/spec/blueprint.md`](../spec/blueprint.md) (Q-86).
-* Hai cách triển khai A và B: [`docs/spec/deployment_profiles.md`](../spec/deployment_profiles.md) (Q-83).
-* Yêu cầu kinh doanh của trợ lý nhà: [`docs/business/brd-ambient-intelligence.md`](../business/brd-ambient-intelligence.md) (Q-85).
-* Bản ghi duyệt có chữ ký, bot duyệt riêng của hộp, ghép chủ hộp: [`docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md`](../rfc/0019-ban-ghi-duyet-co-chu-ky.md) (Q-89).
-* Linh kiện ảo và canvas hoãn: [`docs/spec/virtual_parts.md`](../spec/virtual_parts.md) (Q-84). Đường soạn hợp đồng qua MCP: TSK-I2d-23 (Q-88).
+* Contract, thẻ duyệt ≤ 5 dòng, approval record, detector, cảnh báo khẩn: [`docs/spec/missions.md`](../../spec/missions.md) (Q-87).
+* Cài Blueprint, tham số cài đặt: [`docs/spec/blueprint.md`](../../spec/blueprint.md) (Q-86).
+* Hai cách triển khai A và B: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md) (Q-83).
+* Yêu cầu kinh doanh của trợ lý nhà: [`docs/business/brd-ambient-intelligence.md`](../brd-ambient-intelligence.md) (Q-85).
+* Bản ghi duyệt có chữ ký, bot duyệt riêng của hộp, ghép chủ hộp: [`docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md`](../../rfc/0019-ban-ghi-duyet-co-chu-ky.md) (Q-89).
+* Linh kiện ảo và canvas hoãn: [`docs/spec/virtual_parts.md`](../../spec/virtual_parts.md) (Q-84). Đường soạn hợp đồng qua MCP: TSK-I2d-23 (Q-88).
 
 Phần chăm sóc người cao tuổi ("Nhà bố mẹ") trong các tài liệu này là hướng sau ra mắt (không thuộc I2g, I2h): PRD §14
 đang hoãn mảng này (Q-72) và R-19 xếp rủi ro pháp lý ở mức cao. App chỉ báo người thân về thay đổi
@@ -56,7 +56,7 @@ và không có task. Đã sửa:
 * Cài Blueprint theo BL-IN-01 → BL-IN-06; bằng chứng ghi "unsigned" (BL-EV-03); bỏ câu "đã qua Action CI".
 * Trang cục bộ hiện chỉ nghe 127.0.0.1: việc phục vụ cho điện thoại là câu hỏi mở (AP-D-12), không phải điều
   đã có. Vùng khóa chỉ lấy từ những gì `board.v1` khai (AP-D-13).
-* Gia đình tới sản phẩm qua Blueprint của maker trước cổng nhu cầu, chỉ số trước cổng là K1–K5 (Q-85):
+* Gia đình tới sản phẩm qua Blueprint của maker (Q-85; không còn cổng nhu cầu, Q-92 (1)):
   BR-APP-10 tạm dừng (AP-D-16). Trình hướng dẫn thiết bị chỉ trên `sim`; board thật là canvas giai đoạn C,
   hoãn (Q-84).
 * Câu hỏi mở `AP-D-nn`: các câu đã có quyết định được đánh dấu kèm mã, phần còn lại giữ mở; thêm
@@ -69,16 +69,14 @@ Q-92 bỏ cổng nhu cầu 2026-12-06 và tách increment I2g của Q-91 làm ha
 * **I2g, API hộp + web nhà**, mở đầu tiên sau ra mắt công khai (I6): TSK-I2g-01 → TSK-I2g-05 (bốn RFC, API hộp
   dùng chung, web nhà cho gia đình và Studio cho maker) và TSK-I2f-08 (ký duyệt bằng passkey trong web).
 * **I2h, app gốc** (React Native) trên cùng API hộp, sau I2g: TSK-I2g-06 → TSK-I2g-13.
-* Không gì chờ cổng nhu cầu; chỉ số của app đặt bằng dữ liệu ra mắt (TSK-I2g-12). TSK-I2e-13 (ảnh SD cho Pi)
+* Chỉ số của app đặt bằng dữ liệu ra mắt (TSK-I2g-12). TSK-I2e-13 (ảnh SD cho Pi)
   đã cắt (Q-92 (2); lưu ở `roadmap/archive/removed-tasks.md`): cài hộp bằng CLI đến khi có web nhà.
 * Truy cập ngoài nhà qua relay/cloud (I2f) mở theo dữ liệu ra mắt cho thấy người kẹt ở bước cài hộp (Q-74, Q-92 (8)).
 
-Các mục "Thay đổi" bên dưới là bản ghi theo ngày; câu nói về cổng nhu cầu trong đó đã bị Q-92 thay.
-
 ## Thay đổi 2026-10-19 (Q-91)
 
-Q-91 chuyển bản nháp thành SRS đã duyệt cho increment I2g (Home app), chờ sau cổng nhu cầu 2026-12-06; K1–K5
-trước cổng không đổi (Q-85). Đã sửa:
+Q-91 chuyển bản nháp thành SRS đã duyệt cho increment I2g (Home app); Q-92 sau đó tách I2g làm hai (mục trên).
+Đã sửa:
 
 * Trạng thái ở cả bốn tài liệu; mười bảy câu hỏi `AP-D-01` → `AP-D-17` đều ghi "Đã quyết (Q-91 (n))".
 * Dạng app là app gốc iOS và Android bằng React Native (Q-91 (2)); không còn "web di động". Hộp phục vụ API

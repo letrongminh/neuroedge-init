@@ -12,7 +12,7 @@ It answers five questions, in this exact order:
 For troubleshooting, see §7.
 
 This document describes **capabilities**, without repeating full syntax for every command. Syntax, all options, and
-expected outputs reside in a single place: [`CHANGELOG.md`](../../CHANGELOG.md) §2.3. Task-by-task
+expected outputs reside in a single place: [`docs/reference/cli.md`](../reference/cli.md) §3. Task-by-task
 progress is in [`trang-thai.md`](trang-thai.md). If you encounter an unfamiliar abbreviation (`FR-*`, `Q-N`, `TSK-*`, `I3`…),
 look it up in [`thuat-ngu.md`](thuat-ngu.md).
 
@@ -56,12 +56,12 @@ document describes only what currently exists. Progress: [`trang-thai.md`](trang
 
 | Flywheel | What user does | Grounded in existing work |
 |:---|:---|:---|
-| ① **Build** | Tell Claude (or another MCP client) "tôi muốn trông bể cá" ("I want to monitor the aquarium"); receive kit suggestion, generate firmware, test in `sim` before buying, flash, connect chat channel | Gate, `sim`, sample kits; NeuroEdge Lab flywheel ① (I2d, not yet available) |
+| ① **Build** | Tell Claude (or another MCP client) "tôi muốn trông bể cá" ("I want to monitor the aquarium"); receive kit suggestion, generate firmware, test in `sim` before buying, flash, connect chat channel | Gate, `sim`, sample kits; the standard MCP tool set (TSK-I2d-23, I2d, not yet available) |
 | ② **Run** | Delegate a *mission contract* verbally; *operator agent* runs continuously on home machine, local reflexes, proactive trend alerts and proposals via Telegram; human approves directly in chat | Gate, envelopes, traces; user's LLM (BYOK) |
 | ③ **Share, sell** | Package into a **NeuroEdge Blueprint** (kit, firmware, contract templates, detectors, traces as evidence); others install with one command | `digests.lock`, traces, and `replay` |
 
-Terminology (operator agent, mission contract, Blueprint…): [`thuat-ngu.md`](thuat-ngu.md) §4. Full proposal:
-[`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md).
+Terminology (operator agent, mission contract, Blueprint…): [`thuat-ngu.md`](thuat-ngu.md) §4. Product proposal (direction, launch path):
+[`product-proposal.md`](../business/product-proposal.md).
 
 > **NeuroEdge is not a certified safety function** — it has no SIL (IEC 61508) or PL
 > (ISO 13849) ratings, the two functional safety certification standards. The gate does not replace
@@ -531,7 +531,7 @@ neuroedge run --voice-file cau-noi.wav --voice-out tra-loi.wav
 
 You will see `turn 1 · … · heard: “bật đèn”`, `✓ ALLOW light_on@1.0.0`, and summary line `voice: …`.
 For real speech: replace `[stt]` / `[tts]` with real providers (`base_url`, `model`, `api_key_env`) — configuration
-details in `CHANGELOG.md` §2.3 (`run` command).
+details in `docs/reference/cli.md` §3 (`run` command).
 
 ### 6.7 Real LLMs for freeform queries
 
@@ -593,7 +593,7 @@ Zero setup required: open PNG images in `targets/esp32s3/ui/golden/vi/` (Vietnam
 ## 7. Troubleshooting
 
 **All error messages contain three parts**: location · cause · remediation. Reading error messages and meanings
-of each `NE…` code: `CHANGELOG.md` §2.4.
+of each `NE…` code: `docs/reference/cli.md` §4.
 
 **Exit codes** across all commands adhere to a contract: `0` verified and passed · `1` verified and failed · `2` feature
 not yet implemented. Exit code `2` honestly conveys that a feature does not exist — NeuroEdge never fakes passing.
@@ -614,7 +614,7 @@ Firmware and OTA troubleshooting table: [`nap-firmware.md`](nap-firmware.md) §7
 
 | Goal | Read |
 |:---|:---|
-| Complete syntax for all commands | [`CHANGELOG.md`](../../CHANGELOG.md) §2.3 |
+| Complete syntax for all commands | [`docs/reference/cli.md`](../reference/cli.md) §3 |
 | Progress by task and increment | [`trang-thai.md`](trang-thai.md) |
 | Firmware flashing, QEMU, OTA | [`nap-firmware.md`](nap-firmware.md) |
 | How each hardware primitive runs across environments | [`simulation_coverage.md`](../spec/simulation_coverage.md) |

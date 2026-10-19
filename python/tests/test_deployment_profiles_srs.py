@@ -131,7 +131,7 @@ CITING = [
     REPO_ROOT / "docs" / "spec" / "studio.md",
     REPO_ROOT / "docs" / "user" / "thuat-ngu.md",
     REPO_ROOT / "docs" / "business" / "kien-truc-tong-the.html",
-    *sorted((REPO_ROOT / "docs" / "architecture" / "vi").glob("*.md")),
+    *sorted((REPO_ROOT / "docs" / "architecture").glob("*.md")),
 ]
 
 

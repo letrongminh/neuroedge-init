@@ -9,7 +9,7 @@
 
 ## 1. Backbone pipeline
 
-![E-05 · Gate spine](../assets/svg/E-05-gate-spine.svg)
+![E-05 · Gate spine](assets/svg/E-05-gate-spine.svg)
 *Figure E-05 — From gate file to pins: build-time resolution and compilation, runtime evaluation and tokens, with identical semantics on host and chip.*
 
 **How to read the diagram:** Boxes represent stages transforming YAML policies into hardware commands; solid arrows show sequential processing flow through each step, dashed arrows link auxiliary data. Core takeaway: there is only one path from intent to hardware pins (`dispatch()` → gate → token → HAL), with no shortcuts bypassing the gate.
@@ -80,7 +80,7 @@ flowchart LR
 File size equals exactly `80 + 24·n + 48·m + 32·a + 16·e + strings` (`m` `numeric` criteria); limits: maximum 32 nodes, domain of 32
 values, 32 numeric criteria, 16 arguments, 64 enums, 16,384 string bytes (approx. 21 KB). Gates exceeding limits are rejected **at build time**
 (`NE2002`), never reaching chips. Changing layout requires an RFC and increments `layout_version`; v2 walker rejects v1
-files. Full byte table: [`docs/rfc/0009-tieu-chi-so-numeric.md`](../../rfc/0009-tieu-chi-so-numeric.md) §3d (v1: RFC-0003).
+files. Full byte table: [`docs/rfc/0009-tieu-chi-so-numeric.md`](../rfc/0009-tieu-chi-so-numeric.md) §3d (v1: RFC-0003).
 
 `ne_tree_load` rejects corrupt files before traversal: invalid magic, version mismatch, CRC error, out-of-bounds fields, structural
 errors (offsets outside file, `bool` domain not 2, NaN thresholds, `confirm_mask` when not `ask`…). Failure to
@@ -206,7 +206,7 @@ A `safe_state` differing from `off` can only be declared in `board.v1`, not in c
 when hardware guarantees it: `safe_state: on` is implemented via normally-on wiring (normally-closed relays) declared as
 hardware interlocks, not by software actively driving it on. No external bypasses around gates are added. Existing profiles
 (`off`; `motion.*` `stop`/`hold`) retain their behavior. `TODOS.md` #58 must be fixed first (older `board.v1`
-parsers silently dropped unknown keys, including safety keys). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
+parsers silently dropped unknown keys, including safety keys). Decision: [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log).
 
 ```mermaid
 stateDiagram-v2

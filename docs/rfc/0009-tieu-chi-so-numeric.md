@@ -13,7 +13,7 @@
 
 > **When an RFC is required:** `CONTRIBUTING.md` §3 — modifying `schemas/*.json`, modifying gate resolution
 > semantics (`engine/gate_resolver.py`, `engine/constraints.py`), changing `NETR` layout. Task: TSK-W1-02.
-> Sources: `TODOS.md` #30; FOFOCA robot draft (`docs/architecture/vi/15-target-architecture.md` §4.3), now consolidated into this RFC. Context:
+> Sources: `TODOS.md` #30; FOFOCA robot draft (`docs/architecture/15-target-architecture.md` §4.3), now consolidated into this RFC. Context:
 > `neuroedge-prd.md` §15 Q-52, Q-54 (RFC-0012 relies on this criterion to lock confidence thresholds), Q-55, Q-57.
 
 ## 1. Problem

@@ -4,12 +4,12 @@ All notable changes to this project are documented here, in the spirit of
 [Keep a Changelog](https://keepachangelog.com/) and
 [Semantic Versioning](https://semver.org/lang/vi/).
 
-> **This file has three parts, read as needed:**
+> **This file has two parts, read as needed:**
 >
 > | What you need | Section to read |
 > |:---|:---|
 > | Know what has changed | [§1 Version Log](#1-version-log) |
-> | Run the system immediately | [§2 Operating Guide](#2-operating-guide) |
+> | Run the system immediately | [`docs/reference/cli.md`](docs/reference/cli.md) |
 > | Take over to continue building | [§3 Product Context Handoff](#3-product-context-handoff) |
 >
 > **The source of truth for progress** remains [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md)
@@ -30,15 +30,20 @@ The package has not yet released any public versions; before going public there 
 
 #### Added
 
+- **Product documentation trimmed and reorganised.** Three read-only audits (stale content after Q-77, Q-92 and Q-93; truths restated in several places; structure by reader) led to:
+  - **New entry points:** `docs/README.md` (one router per reader), `docs/business/README.md`, `docs/reports/README.md`, and `docs/user/an-toan.md` (the safety model in plain words). The root README links all three.
+  - **Moves:** `docs/architecture/vi/` (written in English) flattened into `docs/architecture/`; `docs/app-di-dong/` → `docs/business/app-di-dong/`; CHANGELOG §2 → [`docs/reference/cli.md`](docs/reference/cli.md).
+  - **Deleted** (git history keeps them): the demand-gate kit `docs/business/cong-nhu-cau-2026-10-25/` (Q-92) and `docs/business/proposal-blueprint-2026-10-11.md`. The interview guide moves to `docs/business/doi-tac/phong-van.md`, and an updated "what not to say in any demo" table moves to `demo/README.md`. `docs/spec/lab_mcp.md` is cut to the sections still cited (§2, §7, §8, §12).
+  - **Content:** statements contradicting Q-92 and Q-93 fixed (Home Assistant add-on, affiliate revenue, "voice removed"); Profile A/B, Q-92 and the cloud trigger now explained once and cited elsewhere; session logs removed from roadmap §0.1 and §0.3, the BRD and `TODOS.md`; chapter 15 §1 reduced to current scope; PRD §3.1 points to roadmap §0.5. No requirement, task or decision code changed.
 - **The all-in-one chip (Q-93).** An engineering review after Q-92 kept Profile B, the Box-3 screen and the voice code instead of archiving them: one ESP32-S3 with a screen, microphone and speaker runs the gate, NeuroClaw-ESP, the screen and voice together (`risk=single_chip`). Voice is a channel of NeuroClaw-ESP, not a second brain; a spoken approval comes only from an on-chip command word while the card is on screen, never from speech-to-text. New requirements DP-B-18 → DP-B-22 with planned test cases in [`docs/spec/deployment_profiles.md`](docs/spec/deployment_profiles.md), protections and residual risk in `docs/spec/threat_model.md` §2l; FR-PER reopens for Profile B only. Roadmap: TSK-I2f-18 → I2f-20 without a board (screen, voice channel, memory and flash budget on esp-emulator), TSK-I7-03 on a Box-3 in v1.0; no board is bought now and the public launch is unchanged.
 - **Lean path to the public launch (Q-92).** A CEO review of the roadmap (scope reduction) settled Q-91 (12). The 2026-12-06 demand gate and B6 → B8 are removed; the first adoption signal is the launch telemetry (opt-out, first-run notice). The public launch (I6) now needs I2d with its mission core, a trimmed I2e (affiliate page, Home Assistant add-on, Pi SD image and Pi + ESP32 scaffold cut) and I3/I3a verified on esp-emulator; it no longer waits for boards, the gate or licence terms. The esp-emulator spike (TSK-I3-02, `docs/reports/esp-emulator-spike-2026-10-19.md`) booted both firmware images on esp-emulator 0.49.0: gate self-test passes and the 93 trace events equal QEMU's. Real-board checks move to I7; the runtime needs a 3-day run plus a simulation stress test before launch and the two-week run for v1.0. Blueprints may carry mission contracts and detectors (BL-FMT-05 amended). I2g becomes the box API and home web, I2h the native app on the same backend; the web passkey (TSK-I2f-08) moves into I2g; Cloud opens on launch data. Removed-task tables move to `roadmap/archive/removed-tasks.md`, read by `test_plan_contract.py`; the architecture page and poster drop the gate.
-- **Home app approved as increment I2g (Q-91).** The product owner settled the open questions AP-D-01 → AP-D-17 of the phone-app draft: a native iOS and Android app in React Native, the first increment after the 2026-12-06 demand gate; the box serves an authenticated API on the home network with one-time-code phone pairing; approvals signed with Face ID or a fingerprint; chat with NeuroClaw through its own channel; content-free APNs/FCM push plus the box's Telegram bot; Studio reopened as the makers' desktop web on the same API; the yellow and lock zones; families may change contract parameters and wizard-generated gates and parts. Roadmap §4.3.7 lists 13 tasks, four of them RFCs; milestone 8 now includes I2g; `docs/app-di-dong/` is the approved SRS. Restructuring the roadmap to remove redundant parts waits for the product owner's review.
+- **Home app approved as increment I2g (Q-91).** The product owner settled the open questions AP-D-01 → AP-D-17 of the phone-app draft: a native iOS and Android app in React Native, the first increment after the 2026-12-06 demand gate; the box serves an authenticated API on the home network with one-time-code phone pairing; approvals signed with Face ID or a fingerprint; chat with NeuroClaw through its own channel; content-free APNs/FCM push plus the box's Telegram bot; Studio reopened as the makers' desktop web on the same API; the yellow and lock zones; families may change contract parameters and wizard-generated gates and parts. Roadmap §4.3.7 lists 13 tasks, four of them RFCs; milestone 8 now includes I2g; `docs/business/app-di-dong/` is the approved SRS. Restructuring the roadmap to remove redundant parts waits for the product owner's review.
 - **RFC-0019 approved: signed approval records and the box's own approval bot (Q-89).** [`docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md`](docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md), lead engineer signed on PR #133. The product owner's answers to §9 (Q-89, PRD §15; closes the decisions of `TODOS.md` #62): pairing by a one-time code shown on the box and sent to the bot; `[approvals] remote_per_hour`, default 10, at most 30; every `ask` may be answered remotely; revocation on the box or by `/revoke` on the bot. No code yet: TSK-I2d-11, I2d-12 are unblocked (roadmap §8, RFC catalog, missions spec updated).
 - **TSK-I2d-33 — The use cases on universal parts (Q-84).** The 14 samples in `fixtures/agents/` describe their devices as parts, so the live page names them ("Quạt thông gió", "Mô-tơ cổng", "Kẹp") instead of the board's `gate_relay` or `door_lock`; the page now draws motion channels as devices with their buttons and input lines and analog channels as rows a person can change, and no longer lists board pins an agent does not drive (VP-PT-06, TC-PT-06-3). Two use cases only the virtual board can hold: `fixtures/agents/greenhouse/` and `fixtures/agents/aquarium-full/`, with demos in `demo/i2d-nha-kinh/` and `demo/i2d-be-ca-day-du/`; a user page with screenshots of every step, [`docs/user/vi-du-linh-kien-ao.md`](docs/user/vi-du-linh-kien-ao.md). factory-monitor's probe is a plain `sensor` part so its broken-probe tests still reach the gate. Fixed on the way: factory-monitor's page answered nothing (its banded fact broke `describe_agent`); `test_sim_ui.py` now describes every sample; servo states read in Vietnamese ("GIỮ ở 90° (hết lease)"). Verify: `pytest tests/test_parts.py tests/test_greenhouse.py tests/test_aquarium_full.py`.
 - **Docs synced with Q-77 and new decision Q-88 (Lab after Q-77).** Q-88 (PRD §15): the MCP tool set TSK-I2d-23 is the only contract-authoring route; TSK-I2d-18 and nine Lab-only N-tasks move to roadmap §6, I2d goes from 46 to 36 tasks. Voice, Lab and post-Beta increments are shown as removed across the architecture, specs, user guides, demos, CONTRIBUTING, TODOS and PRD; Studio as paused (Q-72). Deleted (in git history): three stale `.vi.md` guides, the Lab wireframes, `demo/i4-thoai-laptop/`, and the draft node RFC.
-- **Phone app draft: user stories, BRD, SRS and a clickable prototype (no decision yet).** [`docs/app-di-dong/`](docs/app-di-dong/README.md): a family member chats with the AI, changes numbers on sliders with three zones (maker's range, outside it with a risk label, the board's hardware limit locked), approves every change on one card the brain can never answer, previews a change by replaying yesterday's trace, adds devices through a wizard and reads the trace as a diary; gates and contracts stay underneath behind "Xem chi tiết". 18 stories `US-APP-*`, 10 business requirements `BR-APP-*`, 103 requirements `AP-*` that cite MS-, BL- and FR- codes instead of restating them, 11 open questions `AP-D-*` for the owner, and `prototype/index.html` (8 screens MH-1 → MH-8, self-contained, fake data). The eldercare example is a later vertical (Q-72, R-19). No roadmap task or status changes.
+- **Phone app draft: user stories, BRD, SRS and a clickable prototype (no decision yet).** [`docs/business/app-di-dong/`](docs/business/app-di-dong/README.md): a family member chats with the AI, changes numbers on sliders with three zones (maker's range, outside it with a risk label, the board's hardware limit locked), approves every change on one card the brain can never answer, previews a change by replaying yesterday's trace, adds devices through a wizard and reads the trace as a diary; gates and contracts stay underneath behind "Xem chi tiết". 18 stories `US-APP-*`, 10 business requirements `BR-APP-*`, 103 requirements `AP-*` that cite MS-, BL- and FR- codes instead of restating them, 11 open questions `AP-D-*` for the owner, and `prototype/index.html` (8 screens MH-1 → MH-8, self-contained, fake data). The eldercare example is a later vertical (Q-72, R-19). No roadmap task or status changes.
 - **Missions specification (TSK-I2d-01 → I2d-21; FR-MSN, FR-AGT, FR-CH, FR-EGR, FR-TRC-11 → 13, A15 → A22).** [`docs/spec/missions.md`](docs/spec/missions.md): how a mission contract (`mission.v1`) is written, compiled (tighten only, one tier per term), checked for conflicts, shown on a ≤ 5-line card, approved and locked (`missions.lock`), and run by the box's 24/7 runtime with monotonic clocks, bounded watchdogs, conditional `safe_state`, detectors, budgets, template alerts, chat approval records, egress and segmented traces, proven on the fish tank at G1 and G2: 65 requirements `MS-*`, 65 planned test cases, closed by `python/tests/test_missions_srs.py`. Its four decisions are Q-87.
-- **What the product can do today, on the architecture page.** Chapter 12 of [`docs/business/kien-truc-tong-the.html`](docs/business/kien-truc-tong-the.html) opens with a reach map (each capability against laptop, Linux on CI, chip emulator and real board; today nothing runs on a real board) and then shows each capability with the command to try it, where it runs and its evidence (works now, in part, next), generated by `scripts/gen_architecture_progress.py` from the new table `docs/architecture/vi/00-overview.md` §6.1; a missing evidence file, a reach that contradicts the status, or a stale page fails `test_architecture_progress.py`. CONTRIBUTING.md §8 asks for the row in the same PR that changes a capability.
+- **What the product can do today, on the architecture page.** Chapter 12 of [`docs/business/kien-truc-tong-the.html`](docs/business/kien-truc-tong-the.html) opens with a reach map (each capability against laptop, Linux on CI, chip emulator and real board; today nothing runs on a real board) and then shows each capability with the command to try it, where it runs and its evidence (works now, in part, next), generated by `scripts/gen_architecture_progress.py` from the new table `docs/architecture/00-overview.md` §6.1; a missing evidence file, a reach that contradicts the status, or a stale page fails `test_architecture_progress.py`. CONTRIBUTING.md §8 asks for the row in the same PR that changes a capability.
 - **Blueprint specification (TSK-I2e-01 → I2e-08; FR-BP-01 → 08, FR-CLI-13, NFR-SEC-14).** [`docs/spec/blueprint.md`](docs/spec/blueprint.md) states what a Blueprint package holds (`blueprint.toml` plus listed files, an agent project on reference boards with pin maps), the package digest over files, what `blueprint pack` refuses (draft or changed gates, failing evidence replay, secrets), what `blueprint install` checks before any file is written or any package code runs, the approval summary, install parameters that never touch a gate, the static index and the fish tank kit: 33 requirements `BL-*`, 33 test cases all planned against I2e tasks, kept closed by `python/tests/test_blueprint_srs.py`. It resolves FR-BP-01 (no code at install) against FR-BP-03 (replay at install): replay runs only after approval (BL-IN-05). Its four decisions `BL-D-01 → 04` are Q-86.
 - **Business requirements of the calm home assistant approved (Q-85).** [`docs/business/brd-ambient-intelligence.md`](docs/business/brd-ambient-intelligence.md) v1.1, after a review of v1.0 and market research on 2026-10-15 (competitors, aquarium controllers, LLM prices, maker channels; sources in its appendix B): whether to ask a person is decided by the gate, not the brain; families are the target of the experience and makers launch first (Q-72 unchanged); KPIs K1–K5 are the demand gate's conditions and the cost NFRs; wearables, the paid Hub, Cloud and commercial licence terms wait for the gate; the name "Blueprint" is decided before the Hub. v1.0 had entered the repository with commit `c0b5b9e`, an unrelated QEMU fix.
 - **Universal parts and the per-board pin map (TSK-I2d-30, TSK-I2d-32; Q-84 phases B and A+).** `[sim.parts.<name>]` in agent.toml declares a part of one of 17 kinds (relay, light, heater, pump, fan, lock, button, contact, temperature, humidity, level, ph, sensor, knob, motor, servo, display — `python/neuroedge/hal/parts.toml`, each on an existing primitive): its word, icon, unit and range on the page, and on `sim-virtual` its envelope preset, which a part can only make stricter. A reading outside a sensor part's range is refused from `:sensor` and the page; losing the signal stays possible. `neuroedge add part <kind> <name>` writes the part, its `[requires]` and, for an output (or an input with `--drives <pin>`), an action, a fail-closed gate and a two-way test; a pin the board lacks changes nothing and names `--board sim-virtual` or a pin map; `--list` prints the catalogue. The aquarium declares its heater, air pump, light and probe as parts on its existing pins. `[targets.<board>.pins] heater = "gate_relay"` keeps an agent's pin names on a real board, as a Zephyr overlay does: the board's pins are renamed before anything reads them, so the real pin's envelope and line apply while gates, traces and the chip's pin table say `heater`; ambiguous maps are refused at load, the map in force is printed at every build and start and recorded as `pin_map`, and replay on the same board refuses another map (`python/neuroedge/hal/pin_map.py`). `threat_model.md` §2m states the misrouting risk and its mitigations, approved by the lead engineer on 2026-10-16 (VP-PM-06); the chip's GPIO table and a chip recording's `pin_map` are obligations of TSK-S4-01. `test_parts.py`, `test_pin_map.py`, `tests_linux/test_pin_map_linux.py`. Fixed on the way: `test_cli_examples.py` left agent modules imported after restoring the action registry, so `test_sim_ui.py` failed when run after it.
@@ -64,7 +69,7 @@ The package has not yet released any public versions; before going public there 
 - **Q-78 — NeuroClaw, the NeuroEdge brain.** Hard-forked PicoClaw v0.3.1 into NeuroClaw, separate repo [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw), MIT. Three patches extracted from demo: mTLS for MCP over HTTP (removes bridge), hard-locking all command execution and hardware access paths (lifted in Q-80, replaced with risk labels), and explicitly informing LLM when the box asks the owner; `neuroclaw update` downloads NeuroClaw releases, not PicoClaw releases. Capabilities per component, risk labels, and known vulnerabilities: `docs/reference/capabilities.md` in that repo. Demo `demo/i2f-chat-den-cua/` switched to NeuroClaw (`neuroclaw/config.json`, `chay-nao.sh`); `cau-noi.py` retained for workers unable to present certificates. Real run on laptop: light ALLOW, door asks owner and brain reports waiting, shell commands rejected.
 - **Internal demo: chat controls light and door via NeuroEdge Cloud** (`demo/i2f-chat-den-cua/`, TSK-I2d-22). `neuroedge mcp serve --http --ui` now works: remote brain calls tools over mTLS and tokens, while the page on 127.0.0.1 is the person at home, the sole place capable of answering `ask` questions (`tool_calling.md` §8.1). Agent `chat-den-cua`: light toggles freely, door asks owner then opens for 30 seconds; at night or over 30 seconds it blocks without asking. The demo suite includes a stripped-down PicoClaw v0.3.1 config (no shell including via cron and hooks; no i2c, spi, serial; no skill installation; one MCP server is the box), `tao-khoa.py` (CA, certificates, certificate-bound tokens), `cau-noi.py` (mTLS bridge, because PicoClaw's MCP client cannot present certificates), and three scripts to run the demo from `.env.txt`: `chay-hop.sh` (box), `chay-nao.sh` (brain, on VPS or laptop), `dung-vps.sh` (one-command VPS bring-up, copying only the brain's keys). Tests: door does not open from cloud without home approval, even if claiming `call_source` or facts; brain config has no outbound path to the world other than the box's tools; a client sending only headers goes through the bridge to the box and trace replay matches. Completed all six scenarios via Telegram on 2026-10-13, with an OrbStack machine acting as cloud: light responded in 3.0–4.7 s, door opened only after on-page approval, replay matched 18 verdicts; tests K1–K5, C1–C2 passed. Tunnel VPS and video deferred in `TODOS.md` #69.
 - **Q-77 — streamlined roadmap.** Removed voice from roadmap (I4, I5), NeuroEdge Lab (I4a, I5a), opening target lists to third parties, and all increments after Beta (I9, I10, I13, I14, I16, I17, I18, Block 4, Block 5). Their tasks are reduced to one line per task in roadmap §6 with reopen criteria; existing voice code remains intact. MVP v1.0 rewritten: A6 measures without voice, A11 dropped. Release milestones reduced to eight; Appendix A (old sprint mapping) dropped. Figures E-01, E-02, E-04, E-07, E-09, E-10, E-11 redrawn.
-- **Architecture streamlined from 17 down to 10 chapters (Q-77).** Context merged into `00` §9, deployment into `02` §6, porting guide into `10` §7, variation points and architectural debt into `15` §8–§9; dropped three chapters that duplicated PRD §9, PRD §15, and `python/README.md`. Chapter 15 condensed removed sections into one-line pointers. Old version: `git show f7278fc:docs/architecture/vi/<tệp>`.
+- **Architecture streamlined from 17 down to 10 chapters (Q-77).** Context merged into `00` §9, deployment into `02` §6, porting guide into `10` §7, variation points and architectural debt into `15` §8–§9; dropped three chapters that duplicated PRD §9, PRD §15, and `python/README.md`. Chapter 15 condensed removed sections into one-line pointers. Old version: `git show f7278fc:docs/architecture/<tệp>`.
 - **Q-76 — NeuroEdge brain: self-hosted or NeuroEdge Cloud.** LLM worker PicoClaw-style (chat, LLM, memory, schedule; shell and hardware tools per config, with risk labels — Q-80), touching home devices only via MCP to runtime. Same software runs self-hosted on inexpensive Linux boards or on NeuroEdge Cloud, one isolated instance per user. Irreversible action approvals signed by passkey on phone, verified by box locally (FR-CH-08). Tasks: TSK-I2d-22 → I2d-24, TSK-I2f-02, TSK-I2f-07 → I2f-09; FR-AGT-12. Positioning statement was deferred; settled by Q-82.
 - **Maximize porting from open-source code per task (roadmap §3.11).** Each uncompleted task in I2d, I2e, I2f, I3a has candidate libraries or projects to borrow, with verified licenses: PicoClaw, aiogram, APScheduler, Frigate, pi-gen, wifi-connect, copier, NATS, Firecracker/gVisor, py_webauthn, nanopb, esp-dl, C code from zclaw/MimiClaw. Excluded python-telegram-bot (LGPL) and Ultralytics (AGPL).
 - **Testing positioning message with makers.** Positioning review on 2026-10-12 selected hybrid direction: NeuroEdge is the runtime for any agent controlling physical hardware, users see the outcome narrative. Three test messages ("Runtime cho AI điều khiển đồ thật" (Runtime for AI controlling physical hardware), "AI nói hay. Thiết bị phải làm đúng" (AI speaks well. Devices must act right), "Thử thiết bị AI trên giả lập trước khi nó chạm vào đời thật" (Test AI devices in simulation before they touch the real world)) added to the Maker interview kit (`phong-van.md` §5c) with selection rule `M-MSG`; finalized by Q-82. Gate tap points in ESP-Claw need verification before mentioning (`TODOS.md` #68).
@@ -122,7 +127,7 @@ The package has not yet released any public versions; before going public there 
 #### Changed
 
 - **Roadmap, PRD and product proposal reconciled with every product document (Q-90).** Four read-only audits (136 findings) compared the roadmap, PRD and the 2026-10-11 proposal with the four SRS, BRD v1.1, RFC-0019 and the phone-app draft; the product owner settled six conflicts as [Q-90](roadmap/neuroedge-prd.md#15-decision-log). New current proposal: [`docs/business/product-proposal.md`](docs/business/product-proposal.md); the 2026-10-11 one is kept as history. Roadmap: TSK-I2d-11 done (RFC-0019), TSK-I2d-12 carries the Q-89 scope, I2e starts without I2d's mission core, the demand gate is its own milestone (§5.7, TSK-I2e-10/11 moved), Blueprint is not an OCI artifact in I2e, B7 measured by TSK-I2d-16, missing dependencies and SRS codes added, "Proposed, not approved" section for the phone app. PRD: voice, NeuroEdge Lab and Fleet OS wording follows Q-77/Q-88, licence terms wait for the gate, families as the target of the experience (§2.1, J12), K1–K5 mapped to B6–B8, R-21, §14 rows for wearables, Cloud and licence terms. Missions SRS: MS-RT-09 traces BR-3; pairing command is `neuroedge pair owner` (Q-89). BRD: token rule follows Q-74, BNFR-2 is a per-period cost ceiling. Phone-app draft aligned with Q-84 → Q-89 (still no Q-N); demand-gate docs updated.
-- **Poster E-10 matches chapter 15 §1 after Q-77.** `scripts/gen_architecture_diagrams.py` (`e10_horizons`): four bands — main, horizon 1, the Q-72 band (I2d, I2e) and the Q-73 / Q-74 / Q-83 band, which gains a "Deployment profiles A / B" block (Q-83); planned blocks restated from Q-86 (Blueprint: `blueprint.toml`, digest over manifest and files, nothing runs before consent), Q-87 (missions: YAML locked by an approved digest, skill tier in v1, `risk=simulated_interlock`) and Q-88 (authoring through TSK-I2d-23 instead of "Brain over MCP"); the poster height follows its bands. Caption and "How to read" in [`15-target-architecture.md`](docs/architecture/vi/15-target-architecture.md) no longer describe removed horizons or say the figure is stale.
+- **Poster E-10 matches chapter 15 §1 after Q-77.** `scripts/gen_architecture_diagrams.py` (`e10_horizons`): four bands — main, horizon 1, the Q-72 band (I2d, I2e) and the Q-73 / Q-74 / Q-83 band, which gains a "Deployment profiles A / B" block (Q-83); planned blocks restated from Q-86 (Blueprint: `blueprint.toml`, digest over manifest and files, nothing runs before consent), Q-87 (missions: YAML locked by an approved digest, skill tier in v1, `risk=simulated_interlock`) and Q-88 (authoring through TSK-I2d-23 instead of "Brain over MCP"); the poster height follows its bands. Caption and "How to read" in [`15-target-architecture.md`](docs/architecture/15-target-architecture.md) no longer describe removed horizons or say the figure is stale.
 - **CPO dashboard folded into the architecture page: progress now shows on the architecture itself.** `docs/business/cpo-dashboard.html` is gone. `scripts/gen_cpo_dashboard.py` became `scripts/gen_architecture_progress.py`, which writes only the blocks between `GENERATED` markers in `docs/business/kien-truc-tong-the.html`, from roadmap §0: a status strip under the headline (date of the figures, current milestone, days to the demand gate, tests, items waiting on a person), one progress bar per increment on the architecture layer it builds (chapter 2), and chapter 11 "Where the product is today" (the eight release milestones on a timeline and as cards, then what is waiting on a person). The rest of the page stays hand-drawn. `test_architecture_progress.py` replaces `test_cpo_dashboard.py`: the blocks must match the roadmap, every increment sits on exactly one layer, every increment belongs to exactly one release milestone. Test count 4910 → 4908.
 - **Business architecture page redrawn as a visual overview, Blueprint proposal catches up with NeuroClaw (Q-76 → Q-82).** `docs/business/kien-truc-tong-the.html` is now mostly diagrams (inline SVG), written in English: the big picture with the trust boundary (brain asks, box decides), the five end-to-end layers of `00` §2.1 (code layers L0–L4 folded), the execution backbone, three outcomes of one message (ALLOW, ASK, BLOCK), where the brain runs (self-hosted, Cloud, one chip), one gate on three targets with a capability matrix from `00` §6, the evidence loop, the open platform plug points, the three product loops of Q-72 and the roadmap after Q-77. Each figure links to its E-xx engineering diagram. The page reads like a field guide: a chapter list on the left that marks where you are, serif type, one coral accent for the gate, and a Day / Dusk / automatic theme switch. `proposal-blueprint-2026-10-11.md` keeps its text and gains a status box: Lab left the roadmap (Q-77), the operator agent's LLM worker is NeuroClaw, Q-81, Q-82.
 - **Q-82 — positioning: "The Physical AI that really does things, safely by design."** *Really does things*: built to drive relays, valves and door latches, not text on a screen. *Safely by design*: gate, one-time token, fail-closed and envelope, not the model behaving well. The line opens `README.md`, the PRD (header, §1.2), `docs/user/bat-dau.md` and architecture `00` §1; closes `TODOS.md` #67. Interviews still record `M-MSG` as a check.
@@ -152,135 +157,7 @@ Phase 1 (2026-09-21 to 2026-09-23) froze three core schemas (`gate.v1`, `trace.v
 
 ## 2. Operating Guide
 
-### 2.1 Environment Setup
-
-Requires **Python 3.11+** (uses standard library `tomllib`, no external TOML dependency).
-
-```bash
-cd python
-python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m pytest -q          # expected: 0 failed, 0 skipped
-```
-
-Reproducible build (roadmap §3.9):
-
-```bash
-.venv/bin/python -m pip install -r requirements-lock.txt
-```
-
-Optional: System 2 with real models requires `.venv/bin/python -m pip install -e '.[cloud]'`, configure `[system_two]` in `agent.toml`, and export corresponding API keys. System 1 with Jev configured via `[system_one]` and `OPENROUTER_API_KEY`.
-
-### 2.2 Quick Verification of All Artifacts
-
-Commands run from the **repo root** (`paths.py` self-locates monorepo root):
-
-```bash
-V=python/.venv/bin
-
-$V/neuroedge verify                      # expected: all gates resolve, traces validate, tool corpus matches, replay matches; 0 artifacts ⇒ NE4004 (code 1)
-$V/neuroedge gate lint                   # expected: ✓ all gates resolved, code 0
-$V/neuroedge trace validate fixtures/traces/*.json   # expected: each file VALID
-$V/neuroedge board list                  # expected: lists profiles in boards/
-python3 scripts/gen_cpo_dashboard.py     # regenerates CPO dashboard (docs/business/cpo-dashboard.html) after source change
-$V/python scripts/check_digests.py --check   # expected: ✓ files match digests.lock
-```
-
-Inverse assertion — negative corpus **must** continue to fail:
-
-```bash
-$V/neuroedge gate lint fixtures/gates/invalid --registry fixtures/gates/registry
-# expected: all files in invalid/ failed to resolve · exit code 1
-```
-
-### 2.3 CLI Command Reference
-
-**Exit code contract** — CI and Action CI anchor to it:
-
-| Code | Meaning |
-|:---:|:---|
-| `0` | Check ran and **passed** |
-| `1` | Check ran and **failed** |
-| `2` | Command (or that specific `--target` of the command) **not implemented yet** |
-
-Code `2` is distinguished from `1` so CI separates "broken" from "not yet present". Currently exiting with code 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run --ui --target linux` (`mcp serve --ui` runs on `linux`, where the person at home answers `ask`: DP-A-05), `run` / `record --voice-file` along with `--ui`, `replay --target esp32s3` (TSK-S4-04). Unknown target is an error (code 1).
-
-All commands loading gates accept `--registry <dir>` (`-r`), default `gates/`. `--agent` defaults to `./agent.toml` or sample agent `villa-concierge`.
-
-| Command | Primary Function |
-|:---|:---|
-| `gate resolve <file\|URI>` | Resolve `extends` chain, print effective policy and digest. `--json` for machine reading |
-| `gate lint [dir]` | Resolve all gates in directory (default `gates/`, `--registry`) |
-| `gate publish <file>` | RFC 8785 canonicalize and print SHA-256 digest (stops at digest, not yet digitally signed) |
-| `gate add <URI>` | Add gate from registry and analyze inheritance constraints |
-| `gate explain <file\|URI>` | Explain gate for reviewers (criteria, tightening clauses, budget, `on_block`) |
-| `trace validate <file…>` | Validate traces against `trace.v1.json` schema |
-| `trace show <file>` | Print event timeline of trace |
-| `trace view <file>` | Export self-contained HTML visualizing devices, sensors, verdicts, and scrubber bar |
-| `trace export <file>` | Export Chrome Trace Event format for Perfetto (`--format chrome`) |
-| `board list` / `board show <id>` | List or inspect board capabilities and supported primitives |
-| `verify [--targets t]` | Comprehensive verification: gates, tool corpus, normative traces, and replay on each target |
-| `build --target <t>` | Check agent ↔ board compatibility, compile gates to `NETR` tree, and generate ESP-IDF firmware |
-| `replay <file> [--target t]` | Recompute verdicts and pin commands on real HAL and match against golden |
-| `record [--target t]` | Record interactive session to validated trace; defaults to hashing raw text (`--raw` keeps verbatim) |
-| `test [dir]` | Run agent's Action CI suite (pytest) |
-| `run [--target t]` | Interactive CLI REPL (`-c` one-shot command, `--ui` local web, `--voice-file`, `--mic`); a page started by a script: `--exit-with-parent`, `--idle-timeout <s>`; leftovers: `bash scripts/kill-ui.sh` |
-| `mcp tools` | Export schemas of `@action`s for MCP or OpenAI function-calling |
-| `mcp serve` | MCP server over stdio or network (`--http` mTLS/OAuth 2.1) on `sim` or `linux` |
-| `mcp desktop-config` | Generate or write connection configuration for Claude Desktop (`--write`) |
-| `new <name> [--template T]` | Scaffold new project from template (`minimal`, `villa-concierge`, `home-voice`, etc.) |
-| `add action\|sensor\|device\|gate` | Scaffold code component with default-block gate and bidirectional tests |
-
-`python -m neuroedge …` is equivalent to `neuroedge …`. Detailed instructions and usage examples for each command can be found in [`docs/user/huong-dan.md`](docs/user/huong-dan.md).
-
-### 2.4 Reading an Error Message
-
-All errors have exactly three parts (FR-DX-04): **where** (`where`) · **why** (`why`) · **remediation** (`fix`). Inheritance errors include an additional `rule` line indicating the violated principle.
-
-```
-[NE2003] loosens-level@1.0.0 (fixtures/gates/invalid/loosens_level.yaml) -> allow_when.risk_level
-  why: loosens the inherited condition: base admits {low}, this gate admits {high, low, medium}
-  rule: Appendix B.5 principle 2
-  fix: narrow allow_when.risk_level to a subset of the base condition (base clause: {'lte': 'low'}), …
-```
-
-List of `NE…` codes, error taxonomy, and occurrence contexts can be found in PRD [Appendix B](roadmap/neuroedge-prd.md#appendix-b--standard-error-code-catalog).
-
-### 2.5 CI
-
-List of workflows and jobs in the continuous integration system:
-
-| Workflow | When | Jobs |
-|:---|:---|:---|
-| `ci-sim-linux.yml` | Every PR and push to `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` · `ui-golden` (LVGL on host, TSK-S4-10) |
-| `firmware-qemu.yml` | PR/push touching firmware sources (`targets/**`), generator, scripts, or nightly | `firmware-qemu` (boot ESP-IDF 5.4 on Espressif QEMU) · `firmware-size` (check flash budget, SRAM Q-3) · `ota-rollback` (phases a–g, RSA-3072) · `agent-firmware` (build and boot agent firmware) · `uart-trace` (read UART, validate and verify) |
-| `release-pypi.yml` | Tag `v*.*.*` or manual dispatch | `build` · `sbom` · `smoke` · `attest` · `publish-testpypi` · `publish-pypi` · `github-release` (procedure in [`docs/release.md`](docs/release.md)) |
-| `nightly-hardware.yml` | Nightly or manual dispatch | `firmware-build` (ESP-IDF 5.2.1) · `upstream-drift` · `drift-issue` · `memory-spike` · `report` |
-| `security.yml` | Every PR/push, weekly, or manual dispatch | `pip-audit` · `gitleaks` (full history) · `actionlint` · `codeql` (Python, Actions) · `firmware-changed` + `codeql-c` |
-
-Five required green CI gates before merge:
-- **Skip test blocking gate:** Fails if any test is skipped (`CONTRIBUTING.md` §5).
-- **Inverse assertion:** Entire negative corpus must continue to fail with exact exit code 1 (§2.2).
-- **`digests.lock`:** Modifying normative gates without an RFC fails the build (`CONTRIBUTING.md` §3).
-- **License gate:** `licence-obligations` checks entire core dependency tree; `cloud-extra` checks Q-11 policy.
-- **Format check:** `ruff check .` and `ruff format --check .` in the `lint` job.
-
-### 2.6 Firmware (When Hardware Boards Are Available)
-
-Firmware flashing instructions for agents can be found in [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Build sample `home-voice` firmware on device:
-
-```bash
-cd targets/esp32s3
-idf.py set-target esp32s3
-idf.py build
-idf.py size --format json2 --output-file build/size.json
-idf.py size-components --format json2 --output-file build/size-components.json
-python ../../scripts/check_firmware_size.py build/neuroedge-esp32s3-box3.bin \
-  --size-json build/size.json --components-json build/size-components.json   # Q-3 budget
-idf.py -p /dev/ttyUSB0 flash monitor
-```
-
-Look for `NEUROEDGE_MEMORY_JSON` line in the monitor output to record metrics into `docs/reports/memory_spike_report.md`. When physical boards are not yet available, C walker runs on host (`make -C targets/esp32s3/components/ne_gate check-static`) and firmware boots on QEMU per `firmware-qemu.yml`.
+Moved to [`docs/reference/cli.md`](docs/reference/cli.md): set-up, quick checks, every command, error messages, CI jobs and firmware.
 
 ---
 
@@ -294,16 +171,16 @@ Map of "what to read when" for developers or agents taking over:
 
 | Document | Main Content | When to Read |
 |:---|:---|:---|
-| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Sole source of truth on progress:** four phases (§0.5), increments I0–I8 and I2a–I2f (Q-77; removed items: roadmap §6), task statuses, exit criteria, dependencies, handoff card (§0.3). | **Always read first** |
+| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Sole source of truth on progress:** phases and release milestones (§0.5), increments I0–I8 and I2a–I2h (removed items: roadmap §6), task statuses, exit criteria, dependencies, handoff card (§0.3). | **Always read first** |
 | [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Requirements `FR-*` / `NFR-*`, **§15 is the sole decision log** (`Q-N`), Appendix B catalog of `NE…` error codes. | When needing to know *what must be done* and what was decided |
 | [`docs/architecture/`](docs/architecture/README.md) · [`core_contracts.md`](docs/spec/core_contracts.md) | Current and target architectures; API specifications, gates (Appendix B), HAL, traces. | When needing to know *why* and *what format* |
 | [`TODOS.md`](TODOS.md) | Catalog of intentionally deferred work with explicit trigger milestones. | Before proposing "missing" work |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution conventions; §3 work requiring RFCs; §6 repository structure; §8 task completion steps. | Before modifying code or structure |
-| [`docs/spec/`](docs/spec/) | Normative specifications: `core_contracts.md`, `tool_calling.md`, `threat_model.md`, `missions.md`, `blueprint.md`, `deployment_profiles.md`, `virtual_parts.md`, `extension_sdk.md`, `python_api.md`, `camera.md`, `vision.md`, `studio.md`, `ui.md`, `simulation_coverage.md`, `hal_mcu_review.md`, `voice_fsm.md` (host-only; voice left the roadmap, Q-77), `lab_mcp.md` (**historical**: Lab removed, Q-77, Q-88). | When changing behavior in corresponding layers |
-| [`docs/business/`](docs/business/) | BRD `brd-ambient-intelligence.md` (Q-85), demand-gate kit `cong-nhu-cau-2026-10-25/` (Q-72), partner guides `doi-tac/`, proposal `proposal-blueprint-2026-10-11.md` (history only). | Before business or demand-gate work |
-| [`docs/app-di-dong/`](docs/app-di-dong/) | Phone app draft (user stories, BRD, SRS, prototype); **no decision yet**, no Q-N. | Only if the phone app is raised |
+| [`docs/spec/`](docs/spec/) | Normative specifications: `core_contracts.md`, `tool_calling.md`, `threat_model.md`, `missions.md`, `blueprint.md`, `deployment_profiles.md`, `virtual_parts.md`, `extension_sdk.md`, `python_api.md`, `camera.md`, `vision.md`, `studio.md`, `ui.md`, `simulation_coverage.md`, `hal_mcu_review.md`, `voice_fsm.md` (host voice removed, Q-77; on-chip voice follows it, TSK-I2f-19, Q-93), `lab_mcp.md` (**historical**: Lab removed, Q-77, Q-88). | When changing behavior in corresponding layers |
+| [`docs/business/`](docs/business/README.md) | Product proposal `product-proposal.md`, BRD `brd-ambient-intelligence.md` (Q-85), partner material `doi-tac/` (interview guide `doi-tac/phong-van.md`). | Before business work |
+| [`docs/business/app-di-dong/`](docs/business/app-di-dong/) | Home web and native app (user stories, BRD, SRS, prototype); approved by Q-91, split into I2g and I2h by Q-92. | Before I2g or I2h work |
 
-Documents deleted during minimalism (old proposal, design notes, `docs/archive/`, `en/` architecture): `git show 7626b62:<path>`.
+Deleted documents (old proposals, design notes, review minutes, the demand-gate kit): git history (`CONTRIBUTING.md` §6).
 
 **Order of precedence on divergence:** PRD (requirements, decisions) and `schemas/` + accepted RFCs → roadmap (progress, schedule) → architecture and `docs/spec/` → source code → this file. If code diverges from contract, code is wrong. If design documents say anything about schedule, status, or exit criteria, the roadmap is authoritative (R1).
 
@@ -333,7 +210,7 @@ Detailed structure of the source repository can be found in `CONTRIBUTING.md` §
 
 | Item | Blocked by | Needs Whom | Unlocks What |
 |:---|:---|:---|:---|
-| **TSK-S1-10** (I3 criterion 1) | ESP32-S3-BOX-3 board | Hardware purchase | On-chip benchmarking → I3 (voice removed from the roadmap, Q-77) |
+| **TSK-S1-10** (I7, moved from I3 by Q-92 (5)) | ESP32-S3-BOX-3 board | Hardware purchase | On-chip benchmarking → I7 |
 | **TSK-I2-01** (I2 criterion 4) | RPi 5 for nightly `linux` | Hardware purchase | Nightly on real hardware → I2 |
 | **V6 — second embedded engineer** | Position vacant | Recruiting (Q-39) | Parallel work with HAL (TSK-S5-01…07) → I7 |
 | **`TODOS.md` #43** (CLA) | No CLA text yet | Legal / CPO | Accept external PR contributions (Q-45) |
@@ -342,7 +219,7 @@ Detailed structure of the source repository can be found in `CONTRIBUTING.md` §
 | **I6 criterion 7** | Needs two machines for network MCP test | Operator (Q-60) | Close network MCP criteria |
 | **TC-COM-07-2, TC-NF-01-1, TC-BP-01-1** (Q-83 Profile B) | ESP32-S3 DevKitC N16R8 board | Hardware purchase | One image flashed and chatting on a board, bridge latency, the B+ decision note → TSK-I2f-13, I2f-15, I2f-17 |
 
-**TSK-S1-10 once board arrives:** vendoring `esp-sr` (AEC/AFE + VAD) and `opus` with license review, patch into `TODO(TSK-S1-10, V2)` in `main.c`, fill out report. Voice left the roadmap (Q-77, Q-44 no longer applies to a roadmap item); the benchmark is evidence for reopening it. Reopen triggers: roadmap §6.
+**TSK-S1-10 once board arrives:** vendoring `esp-sr` (AEC/AFE + VAD) and `opus` with license review, patch into `TODO(TSK-S1-10, V2)` in `main.c`, fill out report. On-chip voice is planned in TSK-I2f-19 and checked on a Box-3 in TSK-I7-03 (Q-93); host voice stays removed (Q-77, roadmap §6).
 
 ### 3.5 Next Steps
 

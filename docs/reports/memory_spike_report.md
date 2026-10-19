@@ -135,7 +135,7 @@ favorably:
 | Measurement result | Mandatory action |
 |:---|:---|
 | Passes all three Q-3 thresholds | Keep Block 1b scope unchanged. Record measurements as baseline for Sprint 5 Criterion 4 (memory remaining after 4 hours runtime) |
-| Fails any **single** threshold | **Do not cut voice** (Q-44): immediately open a `Q-N` to re-plan I5 (TSK-S5-05 memory optimization, TSK-S5-07 fallback backend selection) and postpone v1.0 forecast |
+| Fails any **single** threshold | **Do not cut voice** (Q-44): immediately open a `Q-N` to re-plan on-chip voice (TSK-I2f-19 memory budget with TSK-I2f-20, Box-3 checks in TSK-I7-03; Q-93) and postpone v1.0 forecast |
 
 Rule decided prior to measurement (Q-44): failing a single threshold triggers immediate re-planning without delay. The value of
 running an early spike is having sufficient time to adapt plans; delaying decisions eliminates that value completely.

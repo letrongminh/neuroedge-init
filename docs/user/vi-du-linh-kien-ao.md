@@ -163,7 +163,7 @@ neuroedge add part temperature air_temp --sensor air_temp --label "Nhiệt độ
 neuroedge test && neuroedge run --ui
 ```
 
-Full command reference: [`CHANGELOG.md`](../../CHANGELOG.md) §2.
+Full command reference: [`docs/reference/cli.md`](../reference/cli.md).
 
 ## Limits
 

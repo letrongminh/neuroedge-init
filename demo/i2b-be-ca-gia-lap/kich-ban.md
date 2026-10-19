@@ -37,7 +37,7 @@ For D4, the chat demo's keys and `.env.txt` as in
 
 > [!IMPORTANT]
 > **What not to say** (and the general table in
-> [`docs/business/cong-nhu-cau-2026-10-25/demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md)):
+> [`demo/README.md`](../README.md#what-not-to-say-in-any-demo)):
 > - **No physics model of the tank:** the temperature is what the presenter types or what
 >   `mot-ngay.txt` sets, not water warming over time (that is TSK-I2d-15).
 > - **No mission contract, no Blueprint:** "trông bể cá giúp tôi" does not yet become a contract

@@ -9,7 +9,7 @@ This document explains how to submit changes, which changes require special proc
 ## 1. Environment Setup
 
 Commands for environment setup, reproducible builds, and quick artifact verification: `CHANGELOG.md`
-[§2.1–§2.2](CHANGELOG.md#2-operating-guide). Before making any changes, `pytest -q` must be green:
+[`docs/reference/cli.md` §1–§2](docs/reference/cli.md). Before making any changes, `pytest -q` must be green:
 0 failed, 0 skipped.
 
 ## 2. Standard Contribution Cycle
@@ -56,7 +56,7 @@ entire negative corpus. Error codes (`NE…`) are allocated in PRD
 ### Do Not Print Results You Have Not Computed
 
 Commands (or `--target`s) without an engine exit with **code 2** and name which task will implement
-them — invariant `CHANGELOG.md` §3.3 #10; exit code table in §2.3.
+them — invariant `CHANGELOG.md` §3.3 #10; exit code table in `docs/reference/cli.md` §3.
 
 ## 3. Changes Requiring an RFC
 
@@ -166,6 +166,8 @@ When reading test results, check the skip column as well.
 
 This is the **sole map** of the repository; other locations refer here.
 
+**Naming and language.** Content is written in English unless a document is Vietnamese by audience (user guides in `docs/user/`, business and partner material in `docs/business/`). Existing Vietnamese file and folder names (`thuat-ngu.md`, `app-di-dong/`, `kien-truc-tong-the.html`…) are kept: tests, CLI strings and generator scripts reference them.
+
 | Path | Contents | Modification Procedure |
 |:---|:---|:---|
 | `schemas/` | Seven frozen schemas: `gate.v1` · `trace.v1` · `board.v1` · `tool-call.v1` · `tool-result.v1` · `error.v1` · `error-codes.v1` (error code catalog, source of `NE…` structure; RFC-0015) | **RFC** (§3) |
@@ -213,29 +215,31 @@ This is the **sole map** of the repository; other locations refer here.
 | `targets/esp32s3/components/ne_trace/` | `NE1` trace stream over UART — C99 format, no global variables ([`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4) | Regular PR; `firmware-qemu` job |
 | `targets/esp32s3/ui/` | Device LVGL interface: screens (`ne_ui.h`), vi/en character tables, pre-rendered Be Vietnam Pro fonts, golden images and dedicated host harness; UI language rules in [`docs/spec/ui.md`](docs/spec/ui.md) | Regular PR; modifying screens, character tables, fonts, or golden cases ⇒ `bash scripts/run_ui_golden.sh --update`; `ui-golden` job |
 | `scripts/` | CI and release tooling | Regular PR |
-| `.github/` | Five workflows in `workflows/` — job list in `CHANGELOG.md` §2.5; `dependabot.yml` (pins Actions SHAs), `actionlint.yaml` | Regular PR |
+| `.github/` | Five workflows in `workflows/` — job list in `docs/reference/cli.md` §5; `dependabot.yml` (pins Actions SHAs), `actionlint.yaml` | Regular PR |
 | `docs/rfc/`, `docs/spec/` | RFCs, normative specifications (`lab_mcp.md` is historical: Lab removed, Q-77, Q-88) | Regular PR |
-| `docs/reports/` | Reports: memory benchmark, market snapshot, MVP estimate (superseded by Q-72/Q-77 for I3–I8; see banner) | Regular PR |
-| `docs/app-di-dong/` | Home app (increment I2h, the native app after the I2g box API and home web; Q-91, Q-92): user stories, BRD, SRS, clickable prototype | Regular PR |
+| `docs/reports/` | Dated spikes and studies (`README.md` lists them): memory benchmark, esp-emulator spike, market snapshot, MVP estimate (superseded by Q-72/Q-77 for I3–I8; see banner) | Regular PR |
+| `docs/business/app-di-dong/` | Home web and app (I2g box API and home web, I2h native app; Q-91, Q-92): user stories, BRD, SRS, clickable prototype | Regular PR |
 | `LICENSES/`, `NOTICE`, `LICENSING.md` | License texts of ported code (zclaw, MimiClaw, Apache-2.0, OFL) · third-party component matrix (Q-11) · licensing summary | Regular PR; license policy per Q-11 |
 | `CLAUDE.md` | Instructions for coding agents | Regular PR |
-| `docs/architecture/` | Bilingual product architecture: `README.md` · `vi/` (10 chapters, `00`–`16` with gaps after Q-77, in English; the `en/` tree was retired, see git history) · `assets/svg/` + `assets/excalidraw/` (posters **generated** from `scripts/gen_architecture_diagrams.py`, do not edit manually) | Regular PR — update poster models then re-run script; mermaid blocks verified by `scripts/check_architecture_mermaid.py`; new inter-package import edges declared in `python/tests/test_architecture_layers.py`; content references code, does not duplicate (§8.1) |
-| *(git history)* | Closed documents not retained in working tree: `docs/archive/` (plans, Phase 1 review minutes, RFC-0002), `docs/architecture/en/`, old proposals, and merged design notes. Retrieve via `git show 7626b62:<path>` | Do not restore into tree; reference current truth from PRD, roadmap, architecture |
-| `docs/business/` | BRD `brd-ambient-intelligence.md` (Q-85) · interview material `cong-nhu-cau-2026-10-25/` (written for the demand gate of Q-72, removed by Q-92; folder keeps the Q-20 date) · `proposal-blueprint-2026-10-11.md` (history only, banner at top) · `kien-truc-tong-the.html` — overall architecture page for non-technical stakeholders: diagrams hand-drawn (source of truth remains `docs/architecture/`), progress blocks between `GENERATED` markers written from roadmap §0 | Regular PR — re-run `python3 scripts/gen_architecture_progress.py` when the roadmap changes; never edit a generated block by hand |
+| `docs/architecture/` | Product architecture: `README.md` · 10 chapters `00`–`16` (gaps after Q-77, in English; the `vi/` folder was flattened and the `en/` tree retired, see git history) · `assets/svg/` + `assets/excalidraw/` (posters **generated** from `scripts/gen_architecture_diagrams.py`, do not edit manually) | Regular PR — update poster models then re-run script; mermaid blocks verified by `scripts/check_architecture_mermaid.py`; new inter-package import edges declared in `python/tests/test_architecture_layers.py`; content references code, does not duplicate (§8.1) |
+| *(git history)* | Closed documents not retained in working tree: plans, Phase 1 review minutes, old proposals, the demand-gate interview kit and merged design notes. Retrieve with `git log --all -- <path>` then `git show <commit>:<path>` | Do not restore into tree; reference current truth from PRD, roadmap, architecture |
+| `docs/business/` | Router `README.md` · product proposal `product-proposal.md` · BRD `brd-ambient-intelligence.md` (Q-85) · `app-di-dong/` (row above) · `doi-tac/` (row below; interview guide `doi-tac/phong-van.md`) · `kien-truc-tong-the.html` — overall architecture page for non-technical stakeholders: diagrams hand-drawn (source of truth remains `docs/architecture/`), progress blocks between `GENERATED` markers written from roadmap §0 | Regular PR — re-run `python3 scripts/gen_architecture_progress.py` when the roadmap changes; never edit a generated block by hand |
 | `wireframe/` | Reference HTML wireframes for UI (snapshot `ui.css`, unpackaged) — currently only the Studio wireframe (`studio-v1.html`; Lab wireframes removed, Q-77) | Regular PR |
 | `demo/` | Per-increment demo scenarios (`demo/<increment>/`): narrative script, commands, real outputs, verified replay commit; catalog in `demo/README.md` (Q-49) | Regular PR; reviewer replays scenario |
 | `docs/user/` | User documentation; `thuat-ngu.md` is the sole symbol decoder; `trang-thai.md` generated from roadmap §0 | Regular PR — `python3 scripts/gen_user_status.py` |
 | `docs/user/doi-tac/` · `docs/business/doi-tac/` · `fixtures/ha_mcp_double/` | Partner trial package (Q-70): three runnable guides, limitations page, feedback form · agreements list, feedback channels, benchmark sessions · Home Assistant MCP Server **mock** for guides | Regular PR — all command blocks in guides are marked (`scripts/guide_runner.py`, `test_partner_guides.py`); run `scripts/partner_guides_check.sh <wheel>` when guides change |
+| `docs/README.md` | Docs router: where to start by reader, what lives in each `docs/` folder | Regular PR |
+| `docs/reference/cli.md` | The one place for commands: every command, expected output, exit codes, error messages, CI jobs | Regular PR — update in the same PR as a CLI or CI change |
 | `docs/release.md` | Release procedure: internal tags before I6, PyPI from I6 | Regular PR |
 | `README.md` | Landing page and PyPI page (absolute links) | Regular PR — `tests/test_readme_quickstart.py` |
 | `roadmap/` | Two product documents: roadmap (progress) and PRD (requirements, decisions) | Per file in rows below |
-| `roadmap/neuroedge-roadmap.md` | Single roadmap (Q-39): four phases (§0.5, Q-52), increments I0–I8 and I2a–I2f (removed items: §6), task statuses, exit criteria, forecasts, dependencies, release tags, scope cut ladder | Regular PR, per §8; divergence prevention rules R1–R12 in roadmap §2.4 |
+| `roadmap/neuroedge-roadmap.md` | Single roadmap (Q-39): phases and release milestones (§0.5), increments I0–I8 and I2a–I2h (removed items: §6), task statuses, exit criteria, forecasts, dependencies, release tags, scope cut ladder | Regular PR, per §8; divergence prevention rules R1–R12 in roadmap §2.4 |
 | `docs/spec/lab_mcp.md` | NeuroEdge Lab design, **historical** (Lab removed, Q-77, Q-88; the draft robot node protocol RFC was deleted, see git history). No schedule, no status, no exit criteria (R1, R8) | Regular PR; mergeable even during Beta freeze (R12) |
 | `TODOS.md` | Evaluated and intentionally deferred items, with trigger milestones | Regular PR |
 
 ## 7. CI
 
-Workflows, jobs, and gates: `CHANGELOG.md` §2.5. `ci-sim-linux.yml` must be green prior to
+Workflows, jobs, and gates: `docs/reference/cli.md` §5. `ci-sim-linux.yml` must be green prior to
 merge.
 
 ## 8. Completing a Task — Updating Documentation, Progress, Changelog
@@ -255,14 +259,14 @@ A task is **not done** until the updates below are included **in the same PR** a
 | Schedule: forecast date, dependencies, release tag | Roadmap §0.2 (increment table) | Reference increment code; do not copy dates or tags |
 | Progress overview, current test count, blocked items | Roadmap §0.1–§0.2 | Do not copy numbers |
 | User release milestones and per-milestone increments | Roadmap §0.5 ("User Release Milestones" table) | The architecture page progress blocks and poster E-09 read this table at generation; other places reference milestone name or number |
-| What a person can do today: capability, how to try it, where it runs, evidence | `docs/architecture/vi/00-overview.md` §6.1 | Chapter 12 of the architecture page reads it at generation; other places reference the section |
+| What a person can do today: capability, how to try it, where it runs, evidence | `docs/architecture/00-overview.md` §6.1 | Chapter 12 of the architecture page reads it at generation; other places reference the section |
 | Next steps, what is currently underway | Roadmap §0.3 (Handoff Card) | None |
 | Scope cut ladder | Roadmap §9 | Reference tier or increment |
 | Measurement values B1–B5 (and full A1 measurement) | Roadmap §5.5 | Thresholds in PRD §11; other places reference code |
 | Design (no schedule, no status) | `docs/spec/` (`lab_mcp.md` is historical) · `docs/rfc/` | Roadmap links to it; design notes reference TSK codes, do not state status (R1) |
 | Product risks (`R-n`) | PRD §13.2 | Reference code |
 | What has changed | `CHANGELOG.md` §1 | None |
-| How to run, commands, expected output, CI workflows and jobs | `CHANGELOG.md` §2 | Root `README.md` (also PyPI landing page, so all links absolute): max 3 quickstart commands, linking §2 — `tests/test_readme_quickstart.py` runs those exact commands |
+| How to run, commands, expected output, CI workflows and jobs | `docs/reference/cli.md` | Root `README.md` (also PyPI landing page, so all links absolute): max 3 quickstart commands, linking §2 — `tests/test_readme_quickstart.py` runs those exact commands |
 | Invariants that must not be broken | `CHANGELOG.md` §3.3 | Reference invariant number |
 | Which changes require an RFC | §3 | Reference §3 |
 | Repository structure | §6 | Reference §6 |
@@ -282,7 +286,7 @@ content. When copying a sentence feels necessary for readability, that is a sign
 
 1. **Green build.** `pytest -q` → 0 failed, 0 skipped · `ruff check .` and
    `ruff format --check .` (in `python/`) clean · `neuroedge gate lint` green. CI also executes
-   gates in `CHANGELOG.md` §2.5 (digest, negative corpus, licensing, wheel).
+   gates in `docs/reference/cli.md` §5 (digest, negative corpus, licensing, wheel).
 2. **Progress, in roadmap.**
    - Task rows: status cell has **exactly one** glyph (R9) — ✅ done · 🟡 in progress or partially
      completed · ⏳ not started · ⏸ deferred · 🔴 blocked. Done: `✅ Done (YYYY-MM-DD)` +
@@ -300,7 +304,7 @@ content. When copying a sentence feels necessary for readability, that is a sign
      with evidence** driving the change, shifting all dependent increments simultaneously (R5).
    - §0.1: update metrics (test count, blocked items).
    - Capabilities: when a task changes what a person can do (a command starts working, a target moves
-     from QEMU to a board, `planned` becomes `partial`), update its row in `docs/architecture/vi/00-overview.md`
+     from QEMU to a board, `planned` becomes `partial`), update its row in `docs/architecture/00-overview.md`
      §6.1 and run `python3 scripts/gen_architecture_progress.py`; `test_architecture_progress.py` fails otherwise.
    - §0.3: **replace** stale entries, do not append. See §8.3.
 3. **Changelog.** One entry in `### [Unreleased]` at top of `CHANGELOG.md` §1,
@@ -316,7 +320,7 @@ content. When copying a sentence feels necessary for readability, that is a sign
    followed by location and verification method. **One feature per entry:** if task already has
    an entry in `[Unreleased]`, edit it to reflect final state, do not add a
    new entry. Decisions only reference `Q-N` codes — details live in PRD §15. Extended rationale and context
-   belong in PR or RFC. If commands or expected output change, update `CHANGELOG.md` §2. If
+   belong in PR or RFC. If commands or expected output change, update `docs/reference/cli.md`. If
    adding an invariant, update §3.3.
 4. **Specifications, only when behavior differs from spec.** Update FR/NFR or Appendices to match. Changes
    listed in §3 **require an RFC**. New decisions receive a `Q-N` code in PRD §15.

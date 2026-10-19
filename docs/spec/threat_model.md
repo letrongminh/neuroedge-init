@@ -273,7 +273,7 @@ The core today considers **safety = off** (§1: Q-62 exception, auto-turn-off, L
 
 **Asset:** all homes and nodes connected to an account. **Attacker:** compromises NeuroEdge Cloud, or user account on it. **Their objective:** a single command opening all locks, disabling all alarms.
 
-**Protections (design, no code yet — `docs/architecture/vi/15-target-architecture.md` §6.10):**
+**Protections (design, no code yet — `docs/architecture/15-target-architecture.md` §6.10):**
 - Cloud runs only LLM workers and conversational frontends; **holds no hardware privileges**. Each node enforces solely signed policies and node-verified approvals (FR-CH-04, FR-AGT-10).
 - Irreversible actions in any home require human confirmation; verification steps selected by users (Q-73) can never be answered by LLMs or automated sources.
 - Per-command rate and scope ceilings; exceeding ceilings or anomalies causes node to self-lock and alert (FR-AGT-11).

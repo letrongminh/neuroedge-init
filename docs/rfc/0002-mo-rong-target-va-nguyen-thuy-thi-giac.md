@@ -8,7 +8,7 @@
 | **Author** | V1 — Platform Core Engineer |
 | **Date Opened** | 2026-09-22 · scope narrowed 2026-09-23 after review (minutes: `docs/archive/rfc-0002-review-record.md` (deleted; `git show 7626b62:docs/archive/rfc-0002-review-record.md`)) |
 | **Status** | ✅ Approved · ⏸ implementation removed from roadmap (Q-77, TSK-V1a-02) |
-| **Approver** | **Lead Architect — mandatory.** RFC does not make gates more lax, but touches three test invariants protecting target equivalence (§5), and Block V1a Exit Criterion 1 requires lead architect sign-off (`docs/architecture/vi/15-target-architecture.md` §4.4) |
+| **Approver** | **Lead Architect — mandatory.** RFC does not make gates more lax, but touches three test invariants protecting target equivalence (§5), and Block V1a Exit Criterion 1 requires lead architect sign-off (`docs/architecture/15-target-architecture.md` §4.4) |
 | **Verification** | *(none yet — belongs to the second pull request, now in increment I2c (Q-67; previously I11 after Developer Beta per Q-40), see §8 and §10)* |
 
 > **Scope of this pull request:** RFC file only, **no schema edits yet**, following
@@ -30,9 +30,9 @@
 
 ## 1. Problem
 
-Phase 2 (`docs/architecture/vi/15-target-architecture.md` §4.4) expands the hardware catalog
+Phase 2 (`docs/architecture/15-target-architecture.md` §4.4) expands the hardware catalog
 to Jetson (Tier 2), STM32, and RP2350 (Tier 3). Tier stratification is documented in
-prose — `docs/architecture/vi/00-overview.md` §5.2, PRD FR-TGT-08, and Q-13 — but frozen
+prose — `docs/architecture/00-overview.md` §5.2, PRD FR-TGT-08, and Q-13 — but frozen
 schemas do not recognize the three new targets, and source code is unaware of tiers.
 
 ### 1a. Target List Is a Closed Enum in Two Schemas
@@ -262,9 +262,9 @@ that the core team guarantees quality for all six. That is not the case:
 - **Tier 1** (`sim`, `linux`, `esp32s3`): `neuroedge verify` 100%, nightly hardware, maintained by core team.
 - **Tier 2** (`jetson`): maintained by core team, verify on verdict domain.
 - **Tier 3** (`stm32`, `rp2350`): community ports, verified via Conformance Test Suite
-  (`docs/architecture/vi/16-ecosystem-landscape.md` §6 pillar 2). **No core team commitment.**
+  (`docs/architecture/16-ecosystem-landscape.md` §6 pillar 2). **No core team commitment.**
 
-This stratification **has been recorded** in `docs/architecture/vi/00-overview.md` §5.2
+This stratification **has been recorded** in `docs/architecture/00-overview.md` §5.2
 and PRD FR-TGT-08 (commit `eddfc59`), satisfying the "docs first, schema second" rule.
 `TARGET_TIERS` (§3b) brings that exact table into code.
 
@@ -308,14 +308,14 @@ to Phase 2 to avoid adding work to the v1.0 critical path). Sole exception: earl
 
 Completed prior to this RFC (commit `eddfc59`):
 
-- [x] Three-tier stratification in `docs/architecture/vi/00-overview.md` §5.2
+- [x] Three-tier stratification in `docs/architecture/00-overview.md` §5.2
 - [x] FR-TGT-08 in `neuroedge-prd.md` §4.2; Q-13
 - [x] Proposal KPI: 100% `verify` threshold applies only to Tier 1
 
 Documentation (same pull request as this RFC):
 
 - [x] Reword FR-TGT-08 acceptance criteria: tier resides in core code `TARGET_TIERS`, `board.toml` does not self-declare tier
-- [x] `docs/architecture/vi/15-target-architecture.md` §4.4 Block V1a: remove `vision_in` and `vision_ref` from tasks and exit criteria; move to V1b
+- [x] `docs/architecture/15-target-architecture.md` §4.4 Block V1a: remove `vision_in` and `vision_ref` from tasks and exit criteria; move to V1b
 - [x] `CONTRIBUTING.md`: Tier 2/3 profiles require physical hardware
 
 Second pull request:

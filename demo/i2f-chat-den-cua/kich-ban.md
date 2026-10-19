@@ -32,7 +32,7 @@ clients); the run on 2026-10-13 in §6b used that route, before NeuroClaw was av
 > **What not to say:** system already controls real locks (this is `sim`; real LED lights only
 > if time permits), NeuroEdge Cloud is already open to users (this is one VPS, one user), or
 > approval via passkey (real build, FR-CH-08). See also
-> [`docs/business/cong-nhu-cau-2026-10-25/demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md#01-điều-không-được-nói-trong-bất-kỳ-demo-nào).
+> [`demo/README.md`](../README.md#what-not-to-say-in-any-demo).
 
 ---
 

@@ -312,7 +312,7 @@ The automated testing flow turns safety commitments into executable automated te
 
 ### 1.8 Command-Line Interface (CLI Surface)
 
-Canonical command surface — command groups, exit code contract, acceptance criteria: **[PRD §7.2](../../roadmap/neuroedge-prd.md#72-command-line-interface-fr-cli)** (FR-CLI). Concrete commands and expected outputs: [`CHANGELOG.md`](../../CHANGELOG.md) §2. This section addresses design choices only.
+Canonical command surface — command groups, exit code contract, acceptance criteria: **[PRD §7.2](../../roadmap/neuroedge-prd.md#72-command-line-interface-fr-cli)** (FR-CLI). Concrete commands and expected outputs: [`docs/reference/cli.md`](../reference/cli.md). This section addresses design choices only.
 
 **CLI implementation basis:** built on **Typer** for command definitions, **Rich** for display and structured error reporting. Project template in `neuroedge new` is a **pure Python generator** in package — avoiding Copier because it pulls in `jinja2-ansible-filters` GPL3 (TSK-S3-07).
 
@@ -497,7 +497,7 @@ Concrete event names per HAL primitive (`sensor_read`, `display_frame`, `audio_i
 
 | # | Property | Engineering Objective |
 |:---:|:---|:---|
-| 1 | **Independent replayability across all environments** | Foundation ensuring cross-target equivalence ([`10-target-equivalence.md`](../architecture/vi/10-target-equivalence.md)). |
+| 1 | **Independent replayability across all environments** | Foundation ensuring cross-target equivalence ([`10-target-equivalence.md`](../architecture/10-target-equivalence.md)). |
 | 2 | **Stable cross-version compatibility** | Traces recorded today replay accurately 12 months later, preserving test asset value. |
 | 3 | **Transparent, standard JSON format** | Standard JSON with clear schemas, inspectable directly using common tools (`jq`, IDEs, browsers) without proprietary decoders. |
 | 4 | **Source-level data redaction** | Provides option to hash sensitive content while preserving decision validity. |

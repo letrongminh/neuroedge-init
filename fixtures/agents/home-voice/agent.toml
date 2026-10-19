@@ -1,4 +1,4 @@
-# Sample agent: an in-home voice assistant (docs/architecture/vi/00-overview.md §1, §1.6 #3).
+# Sample agent: an in-home voice assistant (docs/architecture/00-overview.md §1, §1.6 #3).
 #
 # One agent, three kinds of behaviour, each with its own contract:
 #   * answers from a local knowledge base — System 2 phrases them from the

@@ -71,9 +71,12 @@ No path to GPIO pins bypasses the gate.
 
 ## Further Reading
 
+- [Documentation map](https://github.com/letrongminh/neuroedge-init/blob/main/docs/README.md): where to start, by reader
+  · [how NeuroEdge stays safe, in plain words](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/an-toan.md)
+  · [for business readers](https://github.com/letrongminh/neuroedge-init/blob/main/docs/business/README.md)
 - [User Guide](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/README.md)
   · [five hardware kits](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/kit-phan-cung.md)
-  · [all commands and expected output](https://github.com/letrongminh/neuroedge-init/blob/main/CHANGELOG.md#2-operating-guide)
+  · [all commands and expected output](https://github.com/letrongminh/neuroedge-init/blob/main/docs/reference/cli.md)
 - [Tool calling via gates and MCP](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/tool_calling.md)
   · [threat model](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/threat_model.md)
 - [Architecture](https://github.com/letrongminh/neuroedge-init/blob/main/docs/architecture/README.md)

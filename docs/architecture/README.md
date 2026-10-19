@@ -5,11 +5,11 @@ from the big picture down to each byte: context (C4 L1) → container (L2) → c
 (L4), followed by runtime flows, data contracts, non-functional requirements, architecture decisions, and
 how the system will grow.
 
-Designs without code are also recorded in place within each viewpoint, but always carry the `planned` label — the
-Blueprint positioning section records `planned · Q-72` with increments (I2d, I2e) — and are drawn with dashed lines in diagrams, so
-readers can always separate what currently exists on `main` from what is newly planned.
+Designs without code are also recorded in place within each viewpoint, but always carry the `planned` label (for example
+`planned · Q-72`, I2d) and are drawn with dashed lines in diagrams, so readers can always separate what exists on `main`
+from what is planned.
 
-> This documentation is located in `vi/`. Diagram labels are written in English.
+> Chapters are written in English, as are diagram labels.
 
 ## Where to start reading
 
@@ -25,22 +25,21 @@ readers can always separate what currently exists on `main` from what is newly p
 
 ## File map
 
-Q-77 (2026-10-12) consolidated this suite from 17 down to 10 chapters: context into `00`, deployment into `02`, porting guide into
-`10`, variation points and architecture debt into `15`; removed chapters that duplicate PRD §9 (NFR), PRD §15 (ADR), and
-`python/README.md` (day one). Old version: `git show f7278fc:docs/architecture/vi/<file>`.
+Chapter numbers have gaps on purpose: non-functional requirements live in PRD §9, decisions in PRD §15, and day one in
+`python/README.md`.
 
 | File | Content | Viewpoint |
 |:---|:---|:---|
-| [`00-overview.md`](vi/00-overview.md) | What NeuroEdge is, six promises, principles, architecture characteristics, status; §9 context: users, external systems, trust boundaries | Overview · C4 L1 |
-| [`02-container-c4l2.md`](vi/02-container-c4l2.md) | Processes, libraries, firmware, file stores, and how they communicate; §6 where it runs (dev machine, CI, gpio-sim, QEMU, Pi, Box-3) | C4 L2 · Deployment |
-| [`03-component-host-c4l3.md`](vi/03-component-host-c4l3.md) | Python packages, real dependencies between them, package responsibilities | C4 L3 · host |
-| [`04-component-device-c4l3.md`](vi/04-component-device-c4l3.md) | ESP32-S3 firmware components, boot sequence, memory | C4 L3 · device |
-| [`05-code-gate-hal-c4l4.md`](vi/05-code-gate-hal-c4l4.md) | Gates from YAML to pins: resolution, decision tree, NETR, tokens, HAL | C4 L4 · Code |
-| [`06-runtime-flows.md`](vi/06-runtime-flows.md) | Runtime flows: keystroke turns, confirmation, MCP, models, replay, boot, OTA | Dynamic |
-| [`07-data-contracts.md`](vi/07-data-contracts.md) | All file formats and wire formats, versioning scheme | Data |
-| [`10-target-equivalence.md`](vi/10-target-equivalence.md) | Why the same gate yields the same verdict on `sim`, `linux`, `esp32s3`; §7 porting HAL to a new board | Cross-cutting · Guide |
-| [`15-target-architecture.md`](vi/15-target-architecture.md) | Target architecture: v1.0, range Q-72 → Q-88 (operator agent, Blueprint, brain, optional cloud, two deployment profiles, missions, Blueprint packaging), variation points, architecture debt | To-be |
-| [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Participating parties, shared assets, platforms, and commercial boundaries | System Landscape |
+| [`00-overview.md`](00-overview.md) | What NeuroEdge is, six promises, principles, architecture characteristics, status; §9 context: users, external systems, trust boundaries | Overview · C4 L1 |
+| [`02-container-c4l2.md`](02-container-c4l2.md) | Processes, libraries, firmware, file stores, and how they communicate; §6 where it runs (dev machine, CI, gpio-sim, QEMU, Pi, Box-3) | C4 L2 · Deployment |
+| [`03-component-host-c4l3.md`](03-component-host-c4l3.md) | Python packages, real dependencies between them, package responsibilities | C4 L3 · host |
+| [`04-component-device-c4l3.md`](04-component-device-c4l3.md) | ESP32-S3 firmware components, boot sequence, memory | C4 L3 · device |
+| [`05-code-gate-hal-c4l4.md`](05-code-gate-hal-c4l4.md) | Gates from YAML to pins: resolution, decision tree, NETR, tokens, HAL | C4 L4 · Code |
+| [`06-runtime-flows.md`](06-runtime-flows.md) | Runtime flows: keystroke turns, confirmation, MCP, models, replay, boot, OTA | Dynamic |
+| [`07-data-contracts.md`](07-data-contracts.md) | All file formats and wire formats, versioning scheme | Data |
+| [`10-target-equivalence.md`](10-target-equivalence.md) | Why the same gate yields the same verdict on `sim`, `linux`, `esp32s3`; §7 porting HAL to a new board | Cross-cutting · Guide |
+| [`15-target-architecture.md`](15-target-architecture.md) | Target architecture: v1.0 and the planned bands (operator agent, Blueprint, brain, optional cloud, two deployment profiles, missions), variation points, architecture debt | To-be |
+| [`16-ecosystem-landscape.md`](16-ecosystem-landscape.md) | Participating parties, shared assets, platforms, and commercial boundaries | System Landscape |
 
 ## Conventions
 
@@ -56,7 +55,7 @@ Q-77 (2026-10-12) consolidated this suite from 17 down to 10 chapters: context i
    tests, or planning documents stating it.
 2. **Single source of truth** (`CONTRIBUTING.md` §8.1). This suite describes structure and behavior. Requirements cite
    `FR-*`/`NFR-*` codes to PRD; decisions cite `Q-N` to PRD §15; progress and dates cite increment `I-N`
-   to roadmap §0.2; command syntax cites `CHANGELOG.md` §2.3; notation cites
+   to roadmap §0.2; command syntax cites `docs/reference/cli.md` §3; notation cites
    [`docs/user/thuat-ngu.md`](../user/thuat-ngu.md). Do not duplicate, do not record test counts.
 3. **Reference by name**, not by line numbers: `engine/gate.py` · `ActionContractEngine.evaluate`.
 4. **Two kinds of diagrams.** Mermaid diagrams live directly on the page, precise down to function names, edited alongside prose.
