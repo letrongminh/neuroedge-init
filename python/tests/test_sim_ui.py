@@ -6,10 +6,18 @@ The server is started for real on 127.0.0.1 and driven over HTTP, as the page do
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import re
+import shlex
+import signal
+import subprocess
+import sys
+import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 import pytest
 
@@ -18,6 +26,8 @@ from neuroedge.sim import SimSession
 from neuroedge.sim.ui import SessionServer, describe_agent
 
 from .ui_support import page_headers
+
+TIMEOUT = 10.0
 
 
 @pytest.fixture
@@ -255,3 +265,127 @@ def test_the_page_can_describe_every_sample_agent(sample):
         session.hal.close()
     json.dumps(described)  # the page embeds it as JSON
     assert described["actions"], sample.name
+
+
+# --- a page started in the background stops on its own (2026-10-19: 44 orphaned pages) ---------
+
+
+def test_idle_timeout_counts_requests_not_the_open_stream(server):
+    from neuroedge.sim.ui import stop_reason
+
+    parent = os.getppid()
+    assert stop_reason(server, parent, exit_with_parent=False, idle_timeout=None) is None
+    server.last_request -= 30
+    assert "--idle-timeout" in stop_reason(server, parent, False, idle_timeout=20)
+    get(server, "/state")  # any request resets it
+    assert stop_reason(server, parent, False, idle_timeout=20) is None
+
+
+def test_exit_with_parent_stops_once_the_parent_is_gone(server):
+    from neuroedge.sim.ui import stop_reason
+
+    assert stop_reason(server, os.getppid(), exit_with_parent=True, idle_timeout=None) is None
+    assert "--exit-with-parent" in stop_reason(server, os.getppid() + 1, True, None)
+    assert "--exit-with-parent" in stop_reason(server, 1, True, None)  # orphaned from the start
+    assert stop_reason(server, os.getppid() + 1, exit_with_parent=False, idle_timeout=None) is None
+
+
+@pytest.mark.parametrize("flag", [["--exit-with-parent"], ["--idle-timeout", "5"]])
+def test_the_stop_options_need_the_page(root, flag):
+    from typer.testing import CliRunner
+
+    from neuroedge.cli.main import app
+
+    agent = root / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
+    result = CliRunner().invoke(app, ["run", "--agent", str(agent), "-c", "bật đèn", *flag])
+    assert result.exit_code != 0
+    assert "add --ui" in result.output
+
+
+def _run_ui(root, *extra: str) -> list[str]:
+    agent = root / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
+    return [sys.executable, "-m", "neuroedge.cli.main", "run", "--agent", str(agent), "--ui"] + [
+        "--no-browser",
+        "--port",
+        "0",
+        *extra,
+    ]
+
+
+def _child_env() -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if k != "FORCE_COLOR"}
+    env.update({"PYTHONPATH": str(repo_root() / "python"), "NO_COLOR": "1"})
+    return env
+
+
+def _gone(pid: int, within: float) -> bool:
+    deadline = time.monotonic() + within
+    while time.monotonic() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return True
+        time.sleep(0.1)
+    return False
+
+
+def test_a_page_backgrounded_by_a_shell_that_exits_stops_with_it(root, tmp_path):
+    """The leak's shape: `cmd &` in a script that then exits leaves the page to PID 1."""
+    command = " ".join(shlex.quote(part) for part in _run_ui(root, "--exit-with-parent"))
+    started = subprocess.run(
+        ["sh", "-c", f"{command} >{shlex.quote(str(tmp_path / 'ui.log'))} 2>&1 & echo $!"],
+        capture_output=True,
+        text=True,
+        env=_child_env(),
+        timeout=TIMEOUT,
+    )
+    pid = int(started.stdout.strip())
+    try:
+        assert _gone(pid, within=3 * TIMEOUT), (tmp_path / "ui.log").read_text()
+        assert "--exit-with-parent" in (tmp_path / "ui.log").read_text()
+    finally:
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
+
+
+def test_an_idle_page_stops_and_removes_its_link_file(root, tmp_path):
+    link = Path(os.environ["XDG_STATE_HOME"]) / "neuroedge" / "ui.json"
+    process = subprocess.Popen(
+        _run_ui(root, "--idle-timeout", "1"),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=_child_env(),
+        start_new_session=True,
+    )
+    try:
+        output, _ = process.communicate(timeout=3 * TIMEOUT)
+        assert process.returncode == 0, output.decode()
+        assert "--idle-timeout" in output.decode()
+        assert not link.exists()
+    finally:
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+
+
+def test_sigterm_stops_the_page_like_ctrl_c(root):
+    link = Path(os.environ["XDG_STATE_HOME"]) / "neuroedge" / "ui.json"
+    process = subprocess.Popen(
+        _run_ui(root),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=_child_env(),
+        start_new_session=True,
+    )
+    try:
+        deadline = time.monotonic() + 3 * TIMEOUT
+        while not link.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert link.exists()
+        process.terminate()
+        assert process.wait(3 * TIMEOUT) == 128 + signal.SIGTERM
+        assert not link.exists()  # the `finally` ran: with Python's default it would stay
+    finally:
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()

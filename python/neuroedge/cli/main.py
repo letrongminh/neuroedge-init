@@ -2599,6 +2599,17 @@ def run(
     ),
     port: int = typer.Option(8765, "--port", help="Port for --ui"),
     no_browser: bool = typer.Option(False, "--no-browser", help="With --ui, do not open a browser"),
+    exit_with_parent: bool = typer.Option(
+        False,
+        "--exit-with-parent",
+        help="With --ui, stop when the process that started it exits (scripts, checks)",
+    ),
+    idle_timeout: int = typer.Option(
+        None,
+        "--idle-timeout",
+        min=1,
+        help="With --ui, stop after this many seconds with no request to the page",
+    ),
     voice_file: Path = VOICE_FILE_OPTION,
     voice_out: Path = VOICE_OUT_OPTION,
     mic: bool = typer.Option(
@@ -2636,7 +2647,18 @@ def run(
     Replies play through the speaker. With --half-duplex, the microphone is muted
     while the agent speaks so it does not hear itself through loudspeakers
     (barge-in is disabled in that mode).
+
+    A page started in the background by a script or a check outlives that
+    script: add --exit-with-parent and/or --idle-timeout so it stops on its own.
     """
+    if (exit_with_parent or idle_timeout is not None) and not ui:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge run --exit-with-parent / --idle-timeout",
+                why="both stop the live page, and without --ui there is no page",
+                how="add --ui, or drop them (a terminal session ends at end of input)",
+            )
+        )
     if half_duplex and not mic:
         _fail(
             NeuroEdgeError(
@@ -2722,6 +2744,9 @@ def run(
         raise typer.Exit(code=code)
     from .run import run_session
 
+    if ui and target != "linux":
+        # SIGTERM / SIGHUP stop the page like Ctrl-C: the trace is written and `ui.json` removed.
+        _exit_on_signals()
     session = _start_session(
         "run", agent, target, board, registry, events=_trace_log(trace_out, raw), ui=ui
     )
@@ -2729,7 +2754,14 @@ def run(
         from ..sim.ui import serve
 
         try:
-            serve(session, port, console, open_browser=not no_browser)
+            serve(
+                session,
+                port,
+                console,
+                open_browser=not no_browser,
+                exit_with_parent=exit_with_parent,
+                idle_timeout=idle_timeout,
+            )
         except NeuroEdgeError as error:
             _fail(error)  # e.g. the port is taken
         finally:

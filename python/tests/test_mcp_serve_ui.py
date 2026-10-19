@@ -595,7 +595,12 @@ def test_under_a_service_manager_the_link_goes_to_a_private_file_and_ui_link_ren
         assert pair("", "/pair/new", {"X-NeuroEdge-UI-Control": "guess"}) == 403
     finally:
         process.terminate()
-        _, stderr = process.communicate(timeout=3 * TIMEOUT)
+        try:
+            _, stderr = process.communicate(timeout=3 * TIMEOUT)
+        except subprocess.TimeoutExpired:
+            process.kill()  # never leave the page behind, even when the test fails
+            process.communicate()
+            raise
     journal = stderr.decode()
     assert "#c=" not in journal and "ui.json" in journal and "neuroedge ui-link" in journal
     assert not link.exists()  # the page that wrote it removed it on the way out
