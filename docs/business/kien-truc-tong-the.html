@@ -346,11 +346,13 @@ details .tbl { margin-top: 10px; border: 0 }
     <a href="#s4"><span>04</span>One message, three outcomes</a>
     <a href="#s4b"><span>4b</span>From install to a running home</a>
     <a href="#s5"><span>05</span>Two ways to deploy</a>
+    <a href="#s5b"><span>5b</span>The family's way in</a>
     <a href="#s6"><span>06</span>One gate, three targets</a>
     <a href="#s7"><span>07</span>The evidence loop</a>
     <a href="#s8"><span>08</span>Three guarantees</a>
     <a href="#s9"><span>09</span>Plug in, leave the core alone</a>
     <a href="#s10"><span>10</span>Build → Run → Share</a>
+    <a href="#s10b"><span>10b</span>A calm home: the product</a>
     <a href="#s11"><span>11</span>Where the product is today</a>
     <a href="#s12"><span>12</span>What it can do today</a>
     <a href="#s13"><span>13</span>Common misconceptions</a>
@@ -661,7 +663,7 @@ details .tbl { margin-top: 10px; border: 0 }
       <dl class="facts">
         <dt>Install</dt><dd><code>neuroedge install --profile full</code> <span class="chip plan">TSK-I2d-25</span></dd>
         <dt>For</dt><dd>integrators, homes that want the strongest isolation</dd>
-        <dt>Approvals</dt><dd>local page with a per-run key, or the box's own bot; never through the brain</dd>
+        <dt>Approvals</dt><dd>local page with a per-run key, the box's own bot, later the home web (passkey) and the app (Face ID); never through the brain</dd>
       </dl>
     </div>
     <div class="prof">
@@ -688,6 +690,48 @@ details .tbl { margin-top: 10px; border: 0 }
     </div>
   </div>
   <p class="cap">Same tools and the same <code>tool-result.v1</code> in both: over MCP with mTLS in Profile A, as function calls inside the chip in Profile B. A live demo of Profile A ran on 2026-10-13.</p>
+</section>
+
+<!-- ============ 5b. HOME WEB AND APP ============ -->
+<section id="s5b">
+  <div class="head"><div><div class="eyebrow">Chapter 5b · Home web and app · Q-91, Q-92 · planned</div><h2>The family's way in</h2></div>
+    <span class="more">details: <a href="app-di-dong/README.md">app</a> · <a href="app-di-dong/03-srs.md">SRS</a> · <a href="app-di-dong/prototype/index.html">prototype</a> · <a href="../../roadmap/neuroedge-roadmap.md">roadmap §4.3.7–§4.3.8</a></span></div>
+  <p class="cap">A family member sees the home, chats, adjusts a number, approves a change, adds a device, reads the log and gets alerts, without writing YAML, gates or contracts.
+    The app stands in front of the existing core and never replaces it. <b>I2g</b> (box API and home web, 6 tasks) opens first after the public launch; <b>I2h</b> (native app on the same API, 8 tasks) follows.</p>
+  <div class="fig">
+    <svg viewBox="0 0 680 570" role="img" aria-label="A family member uses the home web or the phone app; both talk only to the box API on the home network, paired by a one-time code shown on the box; the box checks every signed approval itself before a device moves; the app chats with NeuroClaw through its own channel, and NeuroClaw reaches the box only over MCP; push notifications carry no content; away from home, approvals come only from the box's own approval bot"><text x="60" y="18" class="zl c-muted">AT HOME · HOME NETWORK</text><text x="450" y="18" class="zl c-muted">OUTSIDE THE BOX</text><rect x="240" y="28" width="200" height="50" rx="8" class="box"/><text x="340" y="44" text-anchor="middle" dominant-baseline="central" class="t">👪 Family</text><text x="340" y="63" text-anchor="middle" dominant-baseline="central" class="s">look, chat, adjust, approve</text><path d="M290 78 L290 96 L180 96 L180 118" class="ln" marker-end="url(#am)"/><path d="M390 78 L390 96 L500 96 L500 118" class="ln" marker-end="url(#am)"/><rect x="60" y="120" width="240" height="56" rx="8" class="box-plan"/><text x="180" y="139" text-anchor="middle" dominant-baseline="central" class="t">🌐 Home web · I2g</text><text x="180" y="158" text-anchor="middle" dominant-baseline="central" class="s">browser · passkey signing</text><rect x="380" y="120" width="240" height="56" rx="8" class="box-plan"/><text x="500" y="139" text-anchor="middle" dominant-baseline="central" class="t">📱 Phone app · I2h</text><text x="500" y="158" text-anchor="middle" dominant-baseline="central" class="s">iOS, Android · Face ID, fingerprint</text><path d="M180 176 L180 218" class="ln" marker-end="url(#am)"/><path d="M400 176 L400 218" class="ln" marker-end="url(#am)"/><path d="M560 176 L560 218" class="ln-blk" marker-end="url(#am)"/><rect x="60" y="220" width="360" height="56" rx="8" class="box-plan"/><text x="240" y="239" text-anchor="middle" dominant-baseline="central" class="t">🔐 Box API on the home network</text><text x="240" y="258" text-anchor="middle" dominant-baseline="central" class="s">one-time code shown on the box · TSK-I2g-01, I2g-05</text><rect x="450" y="220" width="170" height="56" rx="8" class="box-blk"/><text x="535" y="239" text-anchor="middle" dominant-baseline="central" class="t">🧠 NeuroClaw</text><text x="535" y="258" text-anchor="middle" dominant-baseline="central" class="s">chat only · I2g-11</text><path d="M240 276 L240 318" class="ln-gate" marker-end="url(#ag)"/><path d="M535 276 L535 340 L422 340" class="ln-blk" marker-end="url(#am)"/><rect x="60" y="320" width="360" height="56" rx="8" class="box-gate"/><text x="240" y="339" text-anchor="middle" dominant-baseline="central" class="t">🛡️ NeuroEdge box</text><text x="240" y="358" text-anchor="middle" dominant-baseline="central" class="s">gate, contracts, trace; checks each signature itself</text><path d="M240 376 L240 418" class="ln-ok" marker-end="url(#ao)"/><rect x="60" y="420" width="360" height="50" rx="8" class="box"/><text x="240" y="436" text-anchor="middle" dominant-baseline="central" class="t">💡🚪💧 Devices</text><text x="240" y="455" text-anchor="middle" dominant-baseline="central" class="s">move only with a token</text><path d="M400 376 L400 398 L535 398 L535 418" class="ln" marker-end="url(#am)"/><rect x="450" y="420" width="170" height="50" rx="8" class="box-plan"/><text x="535" y="436" text-anchor="middle" dominant-baseline="central" class="t">📲 Push</text><text x="535" y="455" text-anchor="middle" dominant-baseline="central" class="s">no content · I2g-10</text><rect x="450" y="500" width="170" height="56" rx="8" class="box-plan"/><text x="535" y="519" text-anchor="middle" dominant-baseline="central" class="t">🤖 Approval bot</text><text x="535" y="538" text-anchor="middle" dominant-baseline="central" class="s">box's own · RFC-0019</text><path d="M450 528 L436 528 L436 362 L422 362" class="ln-gate" stroke-dasharray="5 4" marker-end="url(#ag)"/></svg>
+  </div>
+  <p class="cap">Red lines carry only chat and requests; the dashed approval line from outside goes straight to the box. The app and the web only show and pass on a person's answer: the box recomputes every verdict and zone itself (AP-ZN-07).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Who approves, and how</th><th>Where</th><th>Proof the box checks</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Local page</td><td>at home</td><td>a key for each run, the page's own origin (DP-A-02)</td><td><span class="chip ok">on sim</span></td></tr>
+      <tr><td>Home web</td><td>at home</td><td>passkey signature, verified on the box (TSK-I2f-08)</td><td><span class="chip plan">I2g</span></td></tr>
+      <tr><td>Phone app</td><td>at home</td><td>device key opened by Face ID or a fingerprint (AP-AV-04, TSK-I2g-01)</td><td><span class="chip plan">I2h</span></td></tr>
+      <tr><td>The box's own approval bot</td><td>away</td><td>a button from the paired owner only, at most <code>remote_per_hour</code> (default 10), label <code>risk=remote_approval</code> (RFC-0019, TSK-I2d-12)</td><td><span class="chip plan">I2d</span></td></tr>
+      <tr><td>Board button, touch, command word</td><td>on the chip</td><td>Profile B human sources (DP-B-07, DP-B-19, DP-B-21)</td><td><span class="chip plan">Q-93</span></td></tr>
+      <tr><td colspan="4">Never: the brain, an MCP client, a chat group, or text from cloud speech recognition (DP-COM-04, AP-AV-01).</td></tr>
+    </tbody></table></div>
+  <div class="guarantees">
+    <div class="g"><span class="big">🟢</span><h3>Green zone</h3>
+      <ul><li>Inside the range the maker declared</li><li>Adjust freely; the card shows what changes</li><li>MS-CT-06, BL-IN-04</li></ul></div>
+    <div class="g"><span class="big">🟡</span><h3>Yellow zone</h3>
+      <ul><li>Outside the maker's range, inside the board's limits</li><li>Allowed after explicit acceptance, with a risk label</li><li>RFC: TSK-I2g-03</li></ul></div>
+    <div class="g"><span class="big">🔒</span><h3>Locked zone</h3>
+      <ul><li>Beyond the limits in <code>board.v1</code> (on-time, safe state, values such as °C)</li><li>Cannot be changed from the app</li><li>RFC: TSK-I2g-02</li></ul></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Screen</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td>MH-1 Home</td><td>urgent banner, one card per place ("Aquarium · 26.8 °C · fine"), changes waiting for you</td></tr>
+      <tr><td>MH-2 Chat</td><td>ask NeuroClaw; a proposal arrives as an approval card with its zone and "had this applied yesterday: blocked once more"</td></tr>
+      <tr><td>MH-3 Devices · MH-4 Device detail</td><td>devices by place; a 24-hour chart with the threshold, rules as sentences, the locked hardware limit, a three-zone slider</td></tr>
+      <tr><td>MH-5 Activity</td><td>filters (all, blocked, alerts, approved) and "replay yesterday with today's rules", read-only</td></tr>
+      <tr><td>MH-6 Add a device</td><td>a five-step wizard that generates gates and parts; step 3 "try it now" on <code>sim</code> or a real board</td></tr>
+      <tr><td>MH-7 Settings · MH-8 Approve a Blueprint</td><td>family roles, alert channels, the AI budget, risks in force; "the aquarium box will:" in three lines, the package digest, tap to approve</td></tr>
+    </tbody></table></div>
+  <p class="cap">An approval card is at most five lines, built from the compiled contract, not from the brain's words (MS-AP-01). Push only says "something needs you"; the app fetches the details on the home network (Q-91 (7)).
+    The app does not detect illness or falls; the elderly-care vertical is deferred (R-19).</p>
 </section>
 
 <!-- ============ 6. ONE CONTRACT EVERYWHERE ============ -->
@@ -856,6 +900,41 @@ details .tbl { margin-top: 10px; border: 0 }
   <p class="cap">The gate and the contract are the shared trust layer of all three loops. First Blueprint: an aquarium, running on the simulator, shipped with the public launch (Q-92).</p>
 </section>
 
+<!-- ============ 10b. THE PRODUCT ============ -->
+<section id="s10b">
+  <div class="head"><div><div class="eyebrow">Chapter 10b · The product · BRD, Q-85</div><h2>A calm home: one product, two parts</h2></div>
+    <span class="more">details: <a href="brd-ambient-intelligence.md">BRD</a> · <a href="product-proposal.md">product proposal</a> · <a href="README.md">for business readers</a></span></div>
+  <p class="cap">AI talks well but is not yet trusted to do real work at home, for two opposite reasons: rigid automation that misses context, or an assistant that acts wrongly or asks so often that people mute it.
+    The product splits the work: <b>NeuroClaw</b> understands, remembers and talks; the <b>NeuroEdge box</b> lets an action through a gate, asks a real person when it matters, and records every decision.</p>
+  <div class="guarantees">
+    <div class="g"><span class="big">🏠</span><h3>Families: the experience</h3>
+      <ul><li>Want the home to look after itself (aquarium, plants, air) without being disturbed</li><li>Only chat, no configuration</li><li>Arrive second, through a maker's Blueprint; install without a CLI through the home web, then the app</li></ul></div>
+    <div class="g"><span class="big">🛠️</span><h3>Makers: the supply</h3>
+      <ul><li>Niche makers and micro-OEMs: aquariums, incubators, mushroom rooms, crop dryers</li><li>Pack a device, its rules and the brain's setup into a Blueprint families install once</li><li>Come first (Q-72): kits, <code>neuroedge add</code>, simulation, <code>blueprint pack</code></li></ul></div>
+    <div class="g"><span class="big">🤫</span><h3>Calm by declaration</h3>
+      <ul><li>Each action is declared as one of three: do it silently, do it then tell, ask first</li><li>Ask first is <code>ask</code> in the gate; do then tell is a <code>notify</code> duty in the mission contract</li><li>A daily message budget keeps the home quiet (BR-3)</li></ul></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Business requirement</th><th>Who does it</th><th>Specified in</th></tr></thead>
+    <tbody>
+      <tr><td><b>BR-1</b> Context from many sensors and daily rhythm</td><td>NeuroClaw reasons; the box supplies facts to gates</td><td>NeuroClaw repo · FR-AGT-03</td></tr>
+      <tr><td><b>BR-2</b> Memory in layers: now, today, long term</td><td>NeuroClaw</td><td>NeuroClaw repo (Q-83)</td></tr>
+      <tr><td><b>BR-3</b> Calm interaction: silent, do then tell, ask first</td><td>The box decides; NeuroClaw words the message</td><td><a href="../spec/missions.md">missions.md</a></td></tr>
+      <tr><td><b>BR-4</b> Missions by goal ("keep the tank stable"): limits and watchdogs</td><td>The box compiles; NeuroClaw proposes changes</td><td>FR-MSN-01 → 14 · I2d</td></tr>
+      <tr><td><b>BR-5</b> One-command packages for makers, with a digest of the whole package</td><td>The box</td><td>FR-BP-01 → 07 · <a href="../spec/blueprint.md">blueprint.md</a> · I2e</td></tr>
+    </tbody></table></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Revenue hypothesis</th><th>Opens when</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>H1 Kit commissions (affiliate BOM)</td><td>only by a new decision</td><td><span class="chip plan">cut, Q-92 (2)</span></td></tr>
+      <tr><td>H2 Paid Blueprint Hub</td><td>a maker asks to sell; the free static Hub comes first</td><td><span class="chip plan">Q-92 (10)</span></td></tr>
+      <tr><td>H3 NeuroEdge Cloud, a ready-made brain</td><td>launch data shows people stuck installing the box; bring your own key by default, no token resale</td><td><span class="chip plan">Q-74 step 2</span></td></tr>
+      <tr><td>H4 Commercial licence for companies that embed it</td><td>the first business asks; the core is PolyForm Noncommercial</td><td><span class="chip plan">Q-45, Q-92 (10)</span></td></tr>
+    </tbody></table></div>
+  <p class="cap">Measured before launch: an LLM cost under 2 USD for 30 days of the aquarium scenario (K4), and 100% of non-urgent messages inside the daily budget with no device action outside a gate (K5).
+    After launch, from anonymous telemetry: 90-day retention, questions to a person per household per day, Blueprints sold. Deferred: wearables (BRD appendix A) and the elderly-care vertical.</p>
+</section>
+
 <!-- ============ 11. PROGRESS ============ -->
 <section id="s11">
   <div class="head"><div><div class="eyebrow">Chapter 11 · Progress · generated from roadmap §0</div><h2>Where the product is today</h2></div>
@@ -883,6 +962,9 @@ details .tbl { margin-top: 10px; border: 0 }
     <div class="myth"><span class="wrong">A token is a cryptographic signature</span><span>It is a random nonce in the process's ledger, used once per pin.</span></div>
     <div class="myth"><span class="wrong">Network down → instant BLOCK</span><span>It falls back to the local command grammar first; it blocks only when no fallback exists.</span></div>
     <div class="myth"><span class="wrong">esp32s3 already drives devices</span><span>The gate runs on QEMU and esp-emulator (Q-92 (4)); it does not drive pins yet (TSK-S4-01).</span></div>
+    <div class="myth"><span class="wrong">The app is a cloud service</span><span>The app and the home web talk to the box on the home network; push carries no content, and away from home only the box's own approval bot can approve (Q-91, RFC-0019).</span></div>
+    <div class="myth"><span class="wrong">You can approve by telling NeuroClaw "yes"</span><span>The brain has no path to approve: approvals are signed by a person's device or come from the box's own channels, and the box checks them itself (DP-COM-04).</span></div>
+    <div class="myth"><span class="wrong">The app watches over elderly parents</span><span>That vertical is deferred (R-19); the app does not detect illness or falls.</span></div>
     <div class="myth"><span class="wrong">Muse Bridge and a plugin marketplace exist</span><span>Muse left the roadmap (Q-77). The only plugin so far is an Actuator: Home Assistant.</span></div>
   </div>
 </section>
@@ -890,7 +972,7 @@ details .tbl { margin-top: 10px; border: 0 }
 <footer class="sources">
   <div class="eyebrow">Sources in the repo</div>
   <span><code>docs/architecture/00-overview.md</code> §1, §2.1–§2.3, §5.1, §6 · <code>15-target-architecture.md</code> §6.10 · <code>16-ecosystem-landscape.md</code> §4 · figures E-01 → E-11 in <code>docs/architecture/assets/svg/</code></span>
-  <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-93 · <code>docs/spec/deployment_profiles.md</code> · <code>docs/spec/threat_model.md</code> · repo <code>letrongminh/neuroclaw</code></span>
+  <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-93 · <code>docs/spec/deployment_profiles.md</code> · <code>docs/spec/threat_model.md</code> · <code>docs/business/app-di-dong/03-srs.md</code> (Q-91) · <code>docs/business/brd-ambient-intelligence.md</code> (Q-85) · repo <code>letrongminh/neuroclaw</code></span>
 </footer>
 
 </div>
