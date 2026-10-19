@@ -1,16 +1,16 @@
 # App nhà trên điện thoại: từ user story đến prototype
 
-> **Trạng thái:** bản nháp đề xuất, 16/10/2026. **Chưa có quyết định `Q-N`, chưa có task trong
-> roadmap; thư mục này không đổi tiến độ hay phạm vi nào.** Muốn đưa vào làm cần một `Q-N` mới ở
-> `roadmap/neuroedge-prd.md` §15, sau khi chủ sản phẩm trả lời các câu hỏi mở `AP-D-nn` của SRS §6.
+> **Trạng thái:** Đã duyệt bởi Q-91 (2026-10-19); **đồng bộ theo Q-92 (2026-10-19):** kế hoạch tách làm hai increment sau ra mắt công khai: **I2g = API hộp + web nhà** (đầu tiên) và **I2h = app gốc React Native** trên cùng backend. Cổng nhu cầu đã bỏ, không gì chờ nó.
+> Q-91 (`roadmap/neuroedge-prd.md` §15) đã trả lời các câu hỏi mở `AP-D-01` → `AP-D-17`; SRS là bản đã duyệt
+> cho I2g (SRS §7: `TSK-I2g-01` → `TSK-I2g-05` và `TSK-I2f-08` thuộc I2g; `TSK-I2g-06` → `TSK-I2g-13` thuộc I2h). Ký duyệt có hai đường, cả hai giữ: passkey trong web nhà (TSK-I2f-08, nay thuộc I2g) và Face ID/vân tay trong app.
 
 ## Vì sao có thư mục này
 
 Người dùng không muốn viết YAML, gate hay contract, nhưng mỗi nhà một khác nên vẫn phải cấu hình.
-Thư mục này đề xuất một app trên điện thoại: chat với AI, chỉnh con số bằng thanh trượt có ba vùng
-màu, duyệt mọi thay đổi qua hộp (trang cục bộ, hoặc nút trên bot duyệt riêng của hộp với bản ghi có chữ ký,
-RFC-0019; vân tay là phương thức sau, FR-CH-08), xem trước bằng cách chạy lại trace hôm qua, thêm thiết bị qua
-trình hướng dẫn. Gate và contract vẫn ở bên dưới, không biến mất: chúng được sinh ra và chỉ hiện sau
+Thư mục này đặc tả một app gốc iOS và Android (React Native, Q-91 (2)): chat với AI, chỉnh con số bằng thanh
+trượt có ba vùng màu, duyệt mọi thay đổi qua hộp (ký bằng vân tay hoặc Face ID trong nhà; ngoài nhà qua bot
+duyệt riêng của hộp với bản ghi có chữ ký, RFC-0019; Q-91 (3), (5)), xem trước bằng cách chạy lại trace hôm
+qua, thêm thiết bị qua trình hướng dẫn. Gate và contract vẫn ở bên dưới, không biến mất: chúng được sinh ra và chỉ hiện sau
 nút "Xem chi tiết".
 
 ## Đọc theo thứ tự
@@ -20,7 +20,7 @@ nút "Xem chi tiết".
 | 1 | [`01-user-stories.md`](01-user-stories.md) | Ai dùng, muốn gì, xong thì trông thế nào | `US-APP-nn` |
 | 2 | [`02-brd.md`](02-brd.md) | Vì sao đáng làm, thị trường, phạm vi, chỉ số | `BR-APP-nn` |
 | 3 | [`03-srs.md`](03-srs.md) | App phải làm gì, dựa trên phần nào đã có, kiểm chứng ra sao | `AP-xxx-nn`, `AP-D-nn` |
-| 4 | [`prototype/index.html`](prototype/index.html) | Bấm thử 8 màn hình MH-1 → MH-8 (MH để không nhầm với mục tiêu sản phẩm M1–M9) | — |
+| 4 | [`prototype/index.html`](prototype/index.html) | Bấm thử 8 màn hình mẫu MH-1 → MH-8 (MH để không nhầm với mục tiêu sản phẩm M1–M9) | — |
 
 Mỗi tầng truy vết về tầng trước: SRS §4 nối `BR-APP` và `US-APP` với từng yêu cầu `AP`. Ý nghĩa các
 mã ở [`docs/user/thuat-ngu.md`](../user/thuat-ngu.md).
@@ -40,7 +40,7 @@ chép lại:
 * Bản ghi duyệt có chữ ký, bot duyệt riêng của hộp, ghép chủ hộp: [`docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md`](../rfc/0019-ban-ghi-duyet-co-chu-ky.md) (Q-89).
 * Linh kiện ảo và canvas hoãn: [`docs/spec/virtual_parts.md`](../spec/virtual_parts.md) (Q-84). Đường soạn hợp đồng qua MCP: TSK-I2d-23 (Q-88).
 
-Phần chăm sóc người cao tuổi ("Nhà bố mẹ") trong các tài liệu này là hướng sau cổng nhu cầu: PRD §14
+Phần chăm sóc người cao tuổi ("Nhà bố mẹ") trong các tài liệu này là hướng sau ra mắt (không thuộc I2g, I2h): PRD §14
 đang hoãn mảng này (Q-72) và R-19 xếp rủi ro pháp lý ở mức cao. App chỉ báo người thân về thay đổi
 thói quen, không chẩn đoán, không phát hiện bệnh.
 
@@ -61,3 +61,34 @@ và không có task. Đã sửa:
   hoãn (Q-84).
 * Câu hỏi mở `AP-D-nn`: các câu đã có quyết định được đánh dấu kèm mã, phần còn lại giữ mở; thêm
   AP-D-12 → AP-D-17. SRS §7 liệt kê thêm các task đã có trong roadmap.
+
+## Thay đổi 2026-10-19 (Q-92)
+
+Q-92 bỏ cổng nhu cầu 2026-12-06 và tách increment I2g của Q-91 làm hai (roadmap §4.3.7, §4.3.8):
+
+* **I2g, API hộp + web nhà**, mở đầu tiên sau ra mắt công khai (I6): TSK-I2g-01 → TSK-I2g-05 (bốn RFC, API hộp
+  dùng chung, web nhà cho gia đình và Studio cho maker) và TSK-I2f-08 (ký duyệt bằng passkey trong web).
+* **I2h, app gốc** (React Native) trên cùng API hộp, sau I2g: TSK-I2g-06 → TSK-I2g-13.
+* Không gì chờ cổng nhu cầu; chỉ số của app đặt bằng dữ liệu ra mắt (TSK-I2g-12). TSK-I2e-13 (ảnh SD cho Pi)
+  đã cắt (Q-92 (2); lưu ở `roadmap/archive/removed-tasks.md`): cài hộp bằng CLI đến khi có web nhà.
+* Truy cập ngoài nhà qua relay/cloud (I2f) mở theo dữ liệu ra mắt cho thấy người kẹt ở bước cài hộp (Q-74, Q-92 (8)).
+
+Các mục "Thay đổi" bên dưới là bản ghi theo ngày; câu nói về cổng nhu cầu trong đó đã bị Q-92 thay.
+
+## Thay đổi 2026-10-19 (Q-91)
+
+Q-91 chuyển bản nháp thành SRS đã duyệt cho increment I2g (Home app), chờ sau cổng nhu cầu 2026-12-06; K1–K5
+trước cổng không đổi (Q-85). Đã sửa:
+
+* Trạng thái ở cả bốn tài liệu; mười bảy câu hỏi `AP-D-01` → `AP-D-17` đều ghi "Đã quyết (Q-91 (n))".
+* Dạng app là app gốc iOS và Android bằng React Native (Q-91 (2)); không còn "web di động". Hộp phục vụ API
+  có xác thực trong mạng nhà, điện thoại ghép một lần bằng mã dùng một lần hiện trên hộp; ngoài nhà duyệt qua
+  bot của hộp (Q-91 (3)). Studio mở lại làm trang web máy tính cho maker, dùng chung API hộp với app (Q-91 (4)).
+* Duyệt bằng vân tay hoặc Face ID là nguồn người mới, sớm hơn FR-CH-08, chờ RFC (Q-91 (5)). Chat với bộ não qua
+  kênh riêng của NeuroClaw (Q-91 (6)). Báo qua push không nội dung (APNs, FCM) và bot Telegram; Zalo P1; chuỗi
+  leo thang hoãn cùng ngành dọc người cao tuổi (Q-91 (7)).
+* Vùng vàng được phép khi chấp nhận rõ ràng và có nhãn rủi ro, trong giới hạn giá trị của `board.v1`; hai điều
+  này chờ RFC. Thẻ duyệt ≤ 5 dòng, phần bổ sung bên dưới không tính. Gia đình đổi được tham số hợp đồng và gate,
+  linh kiện do trình hướng dẫn sinh (qua `neuroedge gate lint`, khóa bằng duyệt ký sinh trắc tại nhà, chờ RFC);
+  chỉ số của app và ngưỡng hiệu năng là tiêu chí thoát của I2g (Q-91 (8)–(10)).
+* SRS §7 liệt kê `TSK-I2g-01` → `TSK-I2g-13`. Prototype chỉ sửa vài chuỗi cho khớp (Zalo, thông báo không nội dung).

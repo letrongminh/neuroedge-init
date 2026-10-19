@@ -414,7 +414,7 @@ chip occurs solely via authenticated ports from TSK-P2-04, or via UART.
 
 ## 14. Demand gate and milestones
 
-→ Q-72 restored a single general demand gate (PRD §11.2), reversing Q-56. Q-77 removed Lab, so Lab is not measured at that gate; mission contracts reach testers through TSK-I2d-23 (Q-88). Lab's re-opening trigger: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
+→ Q-72 restored a single general demand gate (PRD §11.2), reversing Q-56, and Q-92 removed it. Q-77 removed Lab, so Lab was never measured at that gate; mission contracts reach testers through TSK-I2d-23 (Q-88). Lab's re-opening trigger: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
 
 ---
 

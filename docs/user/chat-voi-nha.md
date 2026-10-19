@@ -17,7 +17,7 @@ the gate decides, and actions requiring owner confirmation are asked on the home
 |:---|:---|:---|
 | Self-hosted | NeuroClaw (Go) on VPS, Linux board, Pi, Mac or Windows | Sections 1 → 3 below |
 | Single chip | NeuroClaw-ESP on the same ESP32-S3 as the gate | [`esp32-mot-chip.md`](esp32-mot-chip.md) (awaiting board) |
-| NeuroEdge Cloud | Instance operated by NeuroEdge | Not yet available — conditional after demand gate (Q-74) |
+| NeuroEdge Cloud | Instance operated by NeuroEdge | Not yet available — opens on launch data showing people stuck installing the box (Q-74, Q-92) |
 
 ## 1. Set up the box
 

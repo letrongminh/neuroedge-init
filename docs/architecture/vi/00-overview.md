@@ -163,7 +163,7 @@ flowchart TD
 
 Not drawn: robot bridges (ROS 2, Nav2) left the roadmap with Q-77; an ESPHome component has no task yet.
 
-### 2.2 Two parts, two deployment profiles (Q-83)
+### 2.2 Two parts, two deployment profiles (Q-83, Q-93)
 
 The user messages the **brain** — [NeuroClaw](https://github.com/letrongminh/neuroclaw),
 a separate repository (Q-76, Q-80). The **box** is this repository. The split follows one rule:
@@ -177,11 +177,20 @@ The product ships two ways, one contract (the tool list and `tool-result.v1`), t
 
 ```text
  Profile A — Full                                    Profile B — One chip (risk=single_chip)
- 📱 chat ─► NeuroClaw (brain, own OS user,           📱 Telegram ─► [ ESP32-S3, one image:
-            other machine, or Cloud)                                 NeuroClaw-ESP ─ nc_gate ─►
-            ══ MCP · HTTPS · mTLS ══►                                ne_brain_bridge ─► ne_gate
-            NeuroEdge box: gate ─► pins                              ─► token ─► pins ]
+ 📱 chat ─► NeuroClaw (brain, own OS user,           📱 Telegram ─┐
+            other machine, or Cloud)                  🎙 voice ───┼─► [ ESP32-S3, one image:
+            ══ MCP · HTTPS · mTLS ══►                 🖐 screen ──┘     NeuroClaw-ESP ─ nc_gate ─►
+            NeuroEdge box: gate ─► pins                                ne_brain_bridge ─► ne_gate
+                                                                       ─► token ─► pins ]
 ```
+
+On a board with a screen, microphone and speaker, Profile B is the **all-in-one chip** (Q-93): the
+gate, NeuroClaw-ESP, the LVGL screen and voice in one image, with no NeuroEdge cloud. Voice is a
+channel of NeuroClaw-ESP like Telegram, not a second brain; speech-to-text and text-to-speech stay
+at the provider the owner configures. An `ask` is answered by the board button, a touch on the
+approval card, an on-chip command word while that card is shown, or the owner's Telegram callback;
+cloud speech-to-text never answers one (DP-B-18 → DP-B-22). Built without a board in
+TSK-I2f-18 → I2f-20; checked on a Box-3 in v1.0 (TSK-I7-03).
 
 Requirements, interfaces and test cases of both profiles: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md).
 How the profiles fit the target architecture: [`15`](15-target-architecture.md) §6.10.
@@ -370,7 +379,7 @@ roadmap task — `test_architecture_progress.py` checks both.
   no servers operated by NeuroEdge. *Will change under Q-72 (`planned · Q-72`):* two optional exceptions,
   never on the safety path — relays only pass TLS by SNI without decrypting; Hub index is a
   static git repository ([PRD §15](../../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
-  LLMs), unlocked after demand gates if metrics require; rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
+  LLMs), opens on launch data showing people stuck installing the box (Q-92); rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
 - **Does not resell inference tokens** (`docs/architecture/vi/15-target-architecture.md` §3.4; PRD §1.4 N4). The provider abstraction layer is self-hosted in core; users operate and pay model providers directly.
 - **Does not implement SLAM or navigation**; robot bridges (ROS 2, Nav2) left the roadmap with Q-77 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14).
 - **No paid marketplace** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).

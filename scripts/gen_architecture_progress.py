@@ -5,11 +5,11 @@ The architecture page is hand-drawn; only the blocks between
 `<!-- GENERATED:<key> -->` and `<!-- /GENERATED:<key> -->` are written here, so progress shows
 on the architecture itself and never goes stale. Every figure comes from
 `roadmap/neuroedge-roadmap.md`: the status table §0.1, the increment table §0.2, the
-user-facing release milestones §0.5, and the demand gate date.
+user-facing release milestones §0.5. There is no demand gate (Q-92).
 
 Keys:
 
-- `pulse` — the strip under the headline: date of the figures, current milestone, demand gate,
+- `pulse` — the strip under the headline: date of the figures, current milestone, next milestone,
   tests, items waiting on a person;
 - `layer-1` … `layer-5` — one progress bar per increment, on the architecture layer it builds
   (`LAYERS` below; every increment sits on exactly one layer);
@@ -68,7 +68,7 @@ LAYERS = {
     2: ("I2c",),
     3: ("I0", "I1", "I2a"),
     4: ("I2", "I2b", "I3", "I3a"),
-    5: ("I2e", "I2f", "I6", "I7", "I8"),
+    5: ("I2e", "I2f", "I2g", "I2h", "I6", "I7", "I8"),
 }
 
 
@@ -165,15 +165,6 @@ def roadmap_matrix(lines: list[str]) -> list[Increment]:
         milestone = plain(cells[0]) or milestone
         out.append(Increment(milestone, *cells[1:8]))
     return out
-
-
-def gate_date(lines: list[str]) -> str:
-    """The date of the 8-week demand gate (roadmap decision table, Q-74)."""
-    for line in lines:
-        m = re.search(r"(20\d\d-\d\d-\d\d) demand gate outcome", line)
-        if m:
-            return m.group(1)
-    raise SystemExit("The roadmap no longer names the date of the demand gate outcome")
 
 
 @dataclass
@@ -342,15 +333,15 @@ def layer(n: int, by_id: dict[str, Increment]) -> str:
     return f'<div class="incs">{rows}</div>'
 
 
-def pulse(status: dict[str, str], ms: list[Milestone], gate: str, today: date) -> str:
+def pulse(status: dict[str, str], ms: list[Milestone], today: date) -> str:
     current = next((m for m in ms if m.state != "done"), ms[-1])
     ci = re.search(r"PASS (\d+)/(\d+) · SKIP (\d+)", plain(status["Core CI status"]))
     waiting = re.search(r"(\d+) blocking", plain(status["Non-technical blockers"]))
-    days = (date.fromisoformat(gate) - today).days
+    nxt = plain(status["Next milestone"]).split(" — ")[0].split(" (")[0].strip()
     cells = [
         ("Figures as of", en_date(today.isoformat()), "roadmap §0"),
         ("Now", f"{current.n} · {current.name}", f"{current.pct}% done"),
-        ("8-week demand gate", en_date(gate), f"{days} days away"),
+        ("Next", nxt, "roadmap §0.1"),
         (
             "Tests",
             f"{int(ci.group(1)):,} passing" if ci else "?",
@@ -372,10 +363,10 @@ def pulse(status: dict[str, str], ms: list[Milestone], gate: str, today: date) -
     )
 
 
-def timeline(ms: list[Milestone], gate: str, today: str) -> str:
-    """Dated milestones, today and the demand gate on one time axis."""
+def timeline(ms: list[Milestone], today: str) -> str:
+    """Dated milestones and today on one time axis."""
     points = [(m.date, f"{m.n} · {m.name}", m.state) for m in ms if m.date]
-    every = sorted([d for d, _, _ in points] + [gate, today])
+    every = sorted([d for d, _, _ in points] + [today])
     first, last = date.fromisoformat(every[0]), date.fromisoformat(every[-1])
     span = max((last - first).days, 1)
     width, left, right, axis = 900, 70, 70, 74
@@ -384,10 +375,7 @@ def timeline(ms: list[Milestone], gate: str, today: str) -> str:
         return left + (date.fromisoformat(d) - first).days / span * (width - left - right)
 
     out = [f'<line x1="20" y1="{axis}" x2="{width - 20}" y2="{axis}" class="ax"/>']
-    for d, label, cls, y in (
-        (today, "today", "now", axis + 34),
-        (gate, "demand gate", "gate", axis + 34),
-    ):
+    for d, label, cls, y in ((today, "today", "now", axis + 34),):
         out.append(
             f'<line x1="{x(d):.1f}" y1="{axis - 16}" x2="{x(d):.1f}" y2="{axis + 16}" class="{cls}"/>'
             f'<text x="{x(d):.1f}" y="{y}" text-anchor="middle" class="tl-{cls}">{label}</text>'
@@ -412,11 +400,11 @@ def timeline(ms: list[Milestone], gate: str, today: str) -> str:
         )
     return (
         f'<div class="fig"><svg viewBox="0 0 {width} 140" role="img" '
-        f'aria-label="Dated release milestones, today and the demand gate">{"".join(out)}</svg></div>'
+        f'aria-label="Dated release milestones and today">{"".join(out)}</svg></div>'
     )
 
 
-def journey(status: dict[str, str], ms: list[Milestone], gate: str, today: str) -> str:
+def journey(status: dict[str, str], ms: list[Milestone], today: str) -> str:
     cards = "".join(
         f'<article class="ms {m.state}"><div class="ms-top"><span class="num">{m.n}</span>'
         f'<span class="when">{html.escape(m.when)}</span></div>'
@@ -431,7 +419,7 @@ def journey(status: dict[str, str], ms: list[Milestone], gate: str, today: str) 
     ]
     waiting = "".join(f"<li>{html.escape(b[:1].upper() + b[1:])}</li>" for b in asks if b)
     return (
-        f"{timeline(ms, gate, today)}"
+        f"{timeline(ms, today)}"
         f'<div class="ms-grid">{cards}</div>'
         f'<div class="panel waiting"><h3>Waiting on a person</h3><ul>{waiting}</ul></div>'
     )
@@ -536,10 +524,9 @@ def blocks() -> dict[str, str]:
         )
     ms = milestones(lines, matrix)
     updated = DATE.search(status["Last updated"]).group(1)
-    gate = gate_date(lines)
     out = {
-        "pulse": pulse(status, ms, gate, date.fromisoformat(updated)),
-        "journey": journey(status, ms, gate, updated),
+        "pulse": pulse(status, ms, date.fromisoformat(updated)),
+        "journey": journey(status, ms, updated),
         "today": today_block(capabilities("\n".join(lines)), updated),
     }
     out.update({f"layer-{n}": layer(n, by_id) for n in LAYERS})

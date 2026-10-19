@@ -1,6 +1,6 @@
 # NeuroEdge Blueprint — Software Requirements Specification
 
-**Status:** approved for TSK-I2e-01 → I2e-09 (Q-72, Q-81, Q-84, Q-85; decisions of §7 are Q-86). Structure follows ISO/IEC/IEEE
+**Status:** approved for TSK-I2e-01 → I2e-09 (Q-72, Q-81, Q-84, Q-85; decisions of §7 are Q-86; amended by Q-92: contracts and detectors allowed, affiliate page cut). Structure follows ISO/IEC/IEEE
 29148:2018 §9.6. This file is the one place for what a NeuroEdge Blueprint is and what `blueprint
 pack`, `blueprint install` and the static index must do (CONTRIBUTING.md §8.1); PRD FR-BP-01 → 10,
 FR-CLI-13 and NFR-SEC-14 state the product promise, this file states how each part of it is built
@@ -19,8 +19,8 @@ A maker who has made a device work with NeuroEdge — an agent, its gates, its p
 recordings that prove what it does — packs it once; someone else installs it with one command and
 runs it on `sim` in under ten minutes (A14), then on the real kit. This specification states what
 the package holds, what packing refuses, what installing checks before anything runs, and how the
-static index lists packages, so that loop ③ of Q-72 can be built and measured at the demand gate
-(B6: three outsiders install a Blueprint and run it).
+static index lists packages, so that loop ③ of Q-72 can be built and measured: the install session
+with three testers (A14, TSK-I2e-09) and, after the public launch, installs in its telemetry (Q-92).
 
 ### 1.2 Scope
 
@@ -29,12 +29,15 @@ digest, `neuroedge blueprint pack`, `neuroedge blueprint show`, `neuroedge bluep
 evidence (recorded traces) and how they are checked, install parameters, the approval summary, the
 kit and its bill of materials, the static index, and the first Blueprint (the fish tank).
 
-Out of scope until their own decisions: mission contracts and detectors inside a package (sections
-reserved: BL-FMT-05; they enter with the `mission.v1` RFC, TSK-I2d-04), board profiles
-shipped inside a package (BL-FMT-04; they wait for the conditional-safety RFC, TSK-I2d-02),
-signed evidence (`TODOS.md` #1, before the Hub takes money), the paid Hub, payments and OCI
-distribution (FR-BP-10, after the demand gate), consented data sharing (FR-BP-09), Home Assistant
-add-on and Pi SD image (TSK-I2e-12, I2e-13: they install a Blueprint, they are not one).
+Mission contracts and detectors inside a package are in scope from the public launch (Q-92 (7)): the
+sections are accepted once the `mission.v1` RFC (TSK-I2d-04) and the detector work (TSK-I2d-09)
+exist, and refused before (BL-FMT-05).
+
+Out of scope until their own decisions: board profiles shipped inside a package (BL-FMT-04; they
+wait for the conditional-safety RFC, TSK-I2d-02), signed evidence (`TODOS.md` #1, before the Hub
+takes money), the paid Hub, payments and OCI distribution (FR-BP-10, when a maker asks to sell,
+Q-92 (10)), consented data sharing (FR-BP-09). The Home Assistant add-on, the Pi SD image and the
+affiliate page were cut by Q-92 (2).
 
 ### 1.3 Definitions
 
@@ -50,8 +53,8 @@ add-on and Pi SD image (TSK-I2e-12, I2e-13: they install a Blueprint, they are n
 
 ### 1.4 References
 
-PRD §15 Q-45, Q-72, Q-81, Q-84, Q-85; FR-BP-01 → 10, FR-CLI-13, FR-DX-09, FR-TEL-07, NFR-SEC-14,
-A14, B6 · `docs/spec/virtual_parts.md` (parts, `sim-virtual`, pin maps) ·
+PRD §15 Q-45, Q-72, Q-81, Q-84, Q-85, Q-92; FR-BP-01 → 10, FR-CLI-13, FR-DX-09, FR-TEL-07, NFR-SEC-14,
+A14 · `docs/spec/virtual_parts.md` (parts, `sim-virtual`, pin maps) ·
 `docs/spec/deployment_profiles.md` (box + NeuroClaw, DP-COM-06 risk labels) ·
 `docs/spec/core_contracts.md` (gate digests) · `python/neuroedge/engine/canonical.py` (RFC 8785) ·
 `digests.lock` and `gate publish` (the digest discipline this package reuses) ·
@@ -108,8 +111,9 @@ imports a package's actions itself. The index is an external repository (TSK-I2e
 - The fish tank (`fixtures/agents/aquarium`, TSK-I2d-28) is the first Blueprint; its evidence is
   the recorded demo day on `sim` and the chip sessions from QEMU (tiers G1/G3 once G1 exists;
   `sim` traces are labelled `sim` until then).
-- Mission contracts (I2d-04), detectors (I2d-09) and conditional safety (I2d-02) are not built; a
-  Blueprint v1 works without them (BL-FMT-05).
+- Mission contracts (I2d-04), detectors (I2d-09) and conditional safety (I2d-02) are not built yet;
+  a Blueprint v1 works without them and carries contracts and detectors once they exist (BL-FMT-05,
+  Q-92 (7)).
 
 ---
 
@@ -125,7 +129,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | BL-FMT-02 | A file in the package not listed in the manifest, a listed file that is missing, a path that is absolute, contains `..`, or is a symlink, device or hard link shall make the package invalid (three-part error naming the path). | Nothing rides along unseen; no path escapes the install directory. | FR-BP-01, NFR-SEC-14 | T |
 | BL-FMT-03 | The `agent` directory shall be a NeuroEdge agent project (`agent.toml`, `commands.toml`, `actions/`, `gates/`, optional tests) that builds for `sim` on the board it declares (`[sim] board`, else `sim-default`). | The package is the maker's working project, not a new format to learn. | FR-BP-01, Q-72 | T |
 | BL-FMT-04 | A package shall target reference boards only: its agent runs on `sim-default`, `sim-rpi5` or `sim-virtual` on `sim`, and names real boards through `[targets.<board>.pins]` (VP-PM-01). A package carrying a `board.v1` profile shall be refused until the conditional-safety RFC (TSK-I2d-02) says how a shipped profile declares `safe_state` and interlocks. | Bundled boards are where `safe_state ≠ off` lives (FR-BP-06); the pin map already covers wiring a reference board. | FR-BP-06, Q-84 | T |
-| BL-FMT-05 | The manifest shall reserve `contract` and `detectors` sections; v1 shall refuse a package that fills them, naming the RFC each waits for (`mission.v1`, TSK-I2d-04; detectors, TSK-I2d-09). | The fish tank ships now; contracts enter with their schema, not before. | Q-72 | T |
+| BL-FMT-05 | The manifest shall allow `contract` and `detectors` sections: they are validated against `mission.v1` (TSK-I2d-04) and the detector format (TSK-I2d-09), shown in the approval summary and locked only when the person approves (BL-IN-05); before those exist, a package that fills them is refused, naming what it waits for. | A maker shares the mission with the device, and nothing a stranger wrote runs or locks without approval (Q-92 (7)). | Q-72 | T |
 | BL-FMT-06 | The optional `brain` section shall hold NeuroClaw settings that are text only (skills, the tested NeuroClaw version) and no secret, no tool switch that Q-80 labels as a risk turned on; install shows it and never installs or reconfigures NeuroClaw itself. | Box + NeuroClaw counts as a Blueprint (Q-81) without the package reaching into the brain's install. | Q-81, Q-83 | T |
 
 ### 3.2 Pack (BL-PK)
@@ -156,7 +160,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | BL-IN-04 | Install parameters declared in the manifest (name, type, default, range, where written: a `[sim.facts]` key, a `[sim.sensor_facts]` threshold, a part attribute) shall be asked for, validated, and written into the installed copy; a parameter that targets a gate file shall make the package invalid. | Tune the device without changing the proven rules. | FR-BP-03 | T |
 | BL-IN-05 | No file of the package shall be imported or executed before the person approves the summary (`--yes` only with `--digest`, for scripts); activation then builds for `sim` and replays the evidence in a child process, and refuses activation (files kept, agent marked not activated) when replay fails. | FR-BP-01 forbids code during install, FR-BP-03 asks for replay: replay is code (`@action` bodies), so it runs after consent, not before. | FR-BP-01, FR-BP-03 | T |
 | BL-IN-06 | Install shall write into a new directory (`--into`, else `./<name>`), never into an existing non-empty one, and print the next command (`cd <name> && neuroedge run --ui`). | No overwrite; a first run in one line. | FR-BP-03 | T |
-| BL-IN-07 | From a clean machine with the wheel installed, `blueprint install` of the fish tank followed by `neuroedge run` on `sim` shall take under 10 minutes with no account (A14). | The demand gate measures it (B6). | A14, B6 | D |
+| BL-IN-07 | From a clean machine with the wheel installed, `blueprint install` of the fish tank followed by `neuroedge run` on `sim` shall take under 10 minutes with no account (A14). | The install session with three testers measures it (TSK-I2e-09). | A14 | D |
 
 ### 3.5 Index (BL-IX)
 
@@ -171,7 +175,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | ID | Requirement | Rationale | Source | Verification |
 |:---|:---|:---|:---|:---|
 | BL-KT-01 | The optional `kit` section shall hold `kit/bom.toml` (each item: part name of `[sim.parts]` or a board, quantity, part number, at least one purchase link) and a wiring drawing; every output, input and sensor the agent's parts declare shall have a BOM item, and every BOM item a part or the board. | A buyer gets what the agent needs, nothing it does not. | FR-BP-07, FR-DX-09 | T |
-| BL-KT-02 | Affiliate links shall live on a page outside the package (TSK-I2e-06); `bom.toml` holds plain links; `show` prints them. | Commissions never sit on the safety path (Q-72). | FR-BP-07 | I |
+| BL-KT-02 | `bom.toml` shall hold plain links with no affiliate tag; `show` prints them. Q-92 (2) cut the affiliate page. | Commissions never sit on the safety path (Q-72). | FR-BP-07 | I |
 | BL-KT-03 | The fish tank Blueprint shall ship with kit, BOM, wiring, its agent on parts (VP-PT-08), its demo-day `sim` trace and chip sessions as evidence, and pass BL-PK-01 → 05. | The first Blueprint is the reference. | FR-DX-09, TSK-I2d-28 | T |
 
 ### 3.7 Security (BL-SC)
@@ -188,7 +192,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | ID | Requirement | Rationale | Source | Verification |
 |:---|:---|:---|:---|:---|
 | BL-NF-01 | Pack and install shall work offline for a local package; only fetching needs the network. | `sim` needs no account or network (FR-DX-02). | FR-DX-02 | T |
-| BL-NF-02 | Install shall record the "installed a Blueprint" milestone only under the opt-out policy of FR-TEL-01 (no package name, no digest, no URL). | The gate counts installs without tracking anyone. | FR-TEL-07 | T |
+| BL-NF-02 | Install shall record the "installed a Blueprint" milestone only under the opt-out policy of FR-TEL-01 (no package name, no digest, no URL). | Launch telemetry counts installs without tracking anyone (Q-92 (1)). | FR-TEL-07 | T |
 
 ---
 
@@ -241,7 +245,7 @@ neuroedge blueprint index-entry <package>
 ```
 
 Exit codes: `0` done; `1` refused (invalid package, digest mismatch, failing evidence, secret
-found); `2` a section this version reserves (BL-FMT-05).
+found); `2` a `contract` or `detectors` section whose format does not exist yet (BL-FMT-05).
 
 ---
 
@@ -257,7 +261,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-FMT-02-1 | BL-FMT-02 | unit | Unlisted file, missing file, absolute path, `..`, symlink → each refused naming the path | planned — TSK-I2e-01 |
 | TC-FMT-03-1 | BL-FMT-03 | integration | Package whose agent does not build for `sim` → refused with the build's problems | planned — TSK-I2e-02 |
 | TC-FMT-04-1 | BL-FMT-04 | unit | Agent on `sim-virtual` with a pin map for `esp32s3-box-3` → accepted; package with a `board.v1` file → refused naming TSK-I2d-02 | planned — TSK-I2e-01 |
-| TC-FMT-05-1 | BL-FMT-05 | unit | `contract` or `detectors` filled → exit 2 naming the RFC it waits for | planned — TSK-I2e-01 |
+| TC-FMT-05-1 | BL-FMT-05 | unit | `contract` filled with a valid `mission.v1` contract → listed in the approval summary and locked only on approval; before the format exists → exit 2 naming what it waits for | planned — TSK-I2e-01 |
 | TC-FMT-06-1 | BL-FMT-06 | unit | Brain section with a secret or a Q-80 risk tool on → refused; text-only settings shown in the summary | planned — TSK-I2e-03 |
 | TC-PK-01-1 | BL-PK-01 | integration | `pack` of the fish tank → package directory, `.tar.gz`, printed digest | planned — TSK-I2e-02 |
 | TC-PK-02-1 | BL-PK-02 | unit | Two packs → same digest and identical `.tar.gz` bytes; one byte changed in any file → different digest | planned — TSK-I2e-02 |
@@ -278,7 +282,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-IX-02-1 | BL-IX-02 | integration | Install by name from a local index checkout verifies the entry's digest; tampered package → refused | planned — TSK-I2e-04 |
 | TC-IX-03-1 | BL-IX-03 | unit | `index-entry` of a package → entry whose digest, license, evidence and `unsigned` match the package | planned — TSK-I2e-04 |
 | TC-KT-01-1 | BL-KT-01 | unit | BOM missing an item for a part, or an item with no part and no link → refused naming it | planned — TSK-I2e-05 |
-| TC-KT-02-1 | BL-KT-02 | inspection | `bom.toml` links carry no affiliate tag; the affiliate page lives outside the package | planned — TSK-I2e-06 |
+| TC-KT-02-1 | BL-KT-02 | inspection | `bom.toml` links carry no affiliate tag | planned — TSK-I2e-05 |
 | TC-KT-03-1 | BL-KT-03 | integration | The fish tank Blueprint packs, shows and installs, and its evidence replays | planned — TSK-I2e-05 |
 | TC-SC-01-1 | BL-SC-01 | unit | Archives with `../x`, `/etc/x`, a symlink, a device, 51 MB, 2 001 files → each refused, nothing outside the temp directory | planned — TSK-I2e-03 |
 | TC-SC-02-1 | BL-SC-02 | integration | Self-signed HTTPS → refused; 6 redirects → refused; body over the limit → stopped | planned — TSK-I2e-03 |
@@ -304,7 +308,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | FR-CLI-13 | BL-PK-01, BL-IN-01, §4.2 |
 | NFR-SEC-14 | BL-FMT-02, BL-IN-02, BL-IN-03, BL-SC-01 → 04 |
 | FR-TEL-07 | BL-NF-02 |
-| A14, B6 | BL-IN-07, BL-KT-03 |
+| A14 | BL-IN-07, BL-KT-03 |
 | FR-BP-09, FR-BP-10 | out of scope (§1.2) |
 
 ## 7. Decisions this specification takes (Q-86, product owner, 2026-10-16)
@@ -313,5 +317,5 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 |:---|:---|:---|:---|
 | BL-D-01 | Package code runs only after approval; replay is part of activation (BL-IN-05) | FR-BP-01 and FR-BP-03 conflict: replay executes `@action` bodies | Replay before approval in a sandbox (a sandbox per OS is new work and still runs seller code) |
 | BL-D-02 | Blueprints v1 target reference boards and use pin maps; no shipped board profiles (BL-FMT-04) | Shipped profiles carry `safe_state ≠ off`, which waits for the conditional-safety RFC | Allow shipped profiles now with `safe_state = off` only |
-| BL-D-03 | Mission contracts and detectors are reserved sections, refused in v1 (BL-FMT-05) | The fish tank ships at I2e; `mission.v1` does not exist yet | Hold the first Blueprint until `mission.v1` |
+| BL-D-03 | Mission contracts and detectors are accepted in a package once their formats exist, shown and locked only on approval (BL-FMT-05; reserved and refused under Q-86, amended by Q-92 (7)) | The mission core ships with the public launch, so the fish tank can share its mission | Keep them refused in v1 and open them in a `blueprint.v2` |
 | BL-D-04 | Manifest in TOML (`blueprint.toml`); digest over files, not over the archive (BL-PK-02) | Same language as `agent.toml`; git and `.tar.gz` give the same digest | YAML like gates; digest of the archive bytes |

@@ -16,6 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "roadmap"
 ROADMAP = DOCS / "neuroedge-roadmap.md"
+ARCHIVE = DOCS / "archive" / "removed-tasks.md"
 DESIGN_NOTES = ("docs/spec/lab_mcp.md",)
 GLYPHS = "✅🟡⏳⏸🔴"
 DATE = re.compile(r"\b20\d\d-\d\d-\d\d\b")
@@ -77,6 +78,9 @@ def task_rows() -> dict[str | None, list[list[str]]]:
 
 TASKS = task_rows()
 ALL_TASKS = [row for rows in TASKS.values() for row in rows]
+ARCHIVED = [
+    cells(line) for line in ARCHIVE.read_text(encoding="utf-8").splitlines() if TASK_ROW.match(line)
+]
 
 
 # --- R1: plan data lives only in the roadmap ------------------------------------------------
@@ -131,16 +135,17 @@ def test_every_increment_has_exactly_one_forecast() -> None:
 
 
 def test_every_task_code_has_exactly_one_row() -> None:
-    codes = [row[0].strip("*") for row in ALL_TASKS]
+    codes = [row[0].strip("*") for row in ALL_TASKS + ARCHIVED]
     dupes = sorted({c for c in codes if codes.count(c) > 1})
     assert not dupes, f"codes with more than one task row (R8): {dupes}"
     assert None not in TASKS or all("⏸" in row[4] for row in TASKS[None]), (
         "a task outside an increment may only be a deferred task (§8.2)"
     )
+    assert all("⏸" in row[4] for row in ARCHIVED), "an archived task is never planned (R8, Q-92)"
 
 
 def test_every_cited_task_code_exists_in_the_roadmap() -> None:
-    known = {row[0].strip("*") for row in ALL_TASKS}
+    known = {row[0].strip("*") for row in ALL_TASKS + ARCHIVED}
     places = [
         ROOT / p for p in (*DESIGN_NOTES, "roadmap/neuroedge-prd.md", "TODOS.md", "CONTRIBUTING.md")
     ]
@@ -163,7 +168,7 @@ def test_every_cited_task_code_exists_in_the_roadmap() -> None:
 
 
 def test_every_status_cell_has_exactly_one_glyph() -> None:
-    for row in ALL_TASKS:
+    for row in ALL_TASKS + ARCHIVED:
         assert glyphs(row[4]) == 1, f"{row[0]}: status cell {row[4][:60]!r} (R9)"
     for inc, row in INCREMENTS:
         assert glyphs(row[5]) == 1, f"{inc}: §0.2 status cell {row[5]!r} (R9)"
