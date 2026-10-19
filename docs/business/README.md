@@ -10,6 +10,7 @@ own truths and the others cite it (`CONTRIBUTING.md` §8.1).
 | 3 | [`app-di-dong/`](app-di-dong/README.md) | How does a family use it without a command line? The home web and native app (I2g, I2h). |
 | 4 | [`kien-truc-tong-the.html`](kien-truc-tong-the.html) | How do the parts fit, and how far along is each? The visual architecture. |
 | 5 | [`doi-tac/`](doi-tac/) | How do we run a partner session or a customer interview? Session flow, agreement, feedback channel, [interview guide](doi-tac/phong-van.md). |
+| 6 | [`neuroedge-dev.md`](neuroedge-dev.md) | What is the `neuroedge dev` experiment (Q-94): an idea on a simulated ESP32 before the board, then the same firmware on it? |
 
 ## Where the other truths live
 
