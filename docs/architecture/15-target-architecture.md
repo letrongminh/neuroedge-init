@@ -1,6 +1,6 @@
-# 15 · Target Architecture by Horizon
+# 15 · Target Architecture
 
-> **Scope:** to-be architecture of NeuroEdge across three development horizons. **Source of truth:**
+> **Scope:** to-be architecture of NeuroEdge up to v1.0 and the planned bands of §6. **Source of truth:**
 > [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §2.1, §3, §4.3–§4.8, §5, §6, §7, Appendix D;
 > [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §15, Appendix D.2;
 > `docs/architecture/00-overview.md` §5.1;
@@ -8,54 +8,22 @@
 > Q-72 band: [`product-proposal.md`](../business/product-proposal.md) and Q-72 in PRD §15.
 > **Status conventions:** `done` / `partial` / `planned`.
 
-**Why read this chapter:** For software architects, embedded engineers, and systems engineers who need to understand the target architecture (to-be architecture) of NeuroEdge across each stage of completion. This document answers: *Which components, drivers, protocols, and services does each horizon introduce? How are safety boundaries and fail-closed mechanisms ([fail-closed](../user/thuat-ngu.md): if a gate cannot be evaluated, block; if network is lost, the gate still evaluates via local fallback, blocking only when fallback is absent or fails to run — Q-14) preserved when scaling from a single chip to multi-node robot systems and cloud computing?* Before reading, readers should understand the high-level picture in [`00`](00-overview.md) and the current evolution status in roadmap §0.5. After this chapter, continue to [`16`](16-ecosystem-landscape.md) for the complete picture of participants across the extended ecosystem.
+**Why read this chapter:** For software architects, embedded engineers, and systems engineers who need to understand the target architecture (to-be architecture) of NeuroEdge across each stage of completion. This document answers: *Which components, drivers, protocols, and services does each planned band introduce? How are safety boundaries and fail-closed mechanisms ([fail-closed](../user/thuat-ngu.md): if a gate cannot be evaluated, block; if network is lost, the gate still evaluates via local fallback, blocking only when fallback is absent or fails to run — Q-14) preserved when scaling from a single chip to a home box and an optional cloud brain?* Before reading, readers should understand the high-level picture in [`00`](00-overview.md) and the current evolution status in roadmap §0.5. After this chapter, continue to [`16`](16-ecosystem-landscape.md) for the complete picture of participants across the extended ecosystem.
 
 ---
 
-## 1. Three Horizons
+## 1. Current Scope
 
-> **Q-77 (2026-10-12):** horizons 2 and 3 have been dropped from the roadmap; their sections remain as single-line placeholders. Current plan: horizon 1 (v1.0) and the Q-72 → Q-76 band in §6.
+Two planned bands sit on top of `main`; milestones and dates are in roadmap §0.5 and §0.2, removed items
+(Q-77: Fleet OS, Gate Registry, robots, Jetson, voice, Lab) in roadmap [§6](../../roadmap/neuroedge-roadmap.md#6-removed-from-roadmap-q-77).
 
-NeuroEdge's architectural evolution roadmap is divided into three **horizons** (architectural development stages with defined capability boundaries and execution environments):
-
-| Horizon | Increments | Architectural Changes (What & Why Needed) | Design Location |
+| Band | Increments | What it adds | Design |
 |:---|:---|:---|:---|
-| **Q-72 band** — run and share (`planned · Q-72`) | I2d, I2e | Blueprint positioning ([`Q-72`](../../roadmap/neuroedge-prd.md#15-decision-log)) placed **before** the rest of H1: mission contracts, operator agents running 24/7 on a home machine (trusted runtime + untrusted LLM worker), chat channels with approval records, leak-proof data flows, segmented traces (I2d); then minimal NeuroEdge Blueprint — `blueprint pack`/`install`, full-package digest, static Hub index (I2e). Optional relay lies outside these two increments. Simulation first (G1–G4), real hardware purchased later. Voice, Studio, and `jetson` paused; the demand gate was removed by Q-92: public launch (I6) comes after I2d, the trimmed I2e and I3/I3a verified on esp-emulator, real boards for v1.0 (I7). Needed for loop ② run and loop ③ share, selling with a safety architecture before code exists. | §6 below; [`product-proposal.md`](../business/product-proposal.md); roadmap [§0.2](../../roadmap/neuroedge-roadmap.md#02-increment-matrix) |
-| **Horizon 1 (H1)** — v1.0 = on-device MVP | I2a–I7 | Firmware on ESP32-S3: the 5 HAL primitives on real silicon, hardware drivers (ST7789 LCD, GPIO), hardware security (Secure Boot, flash encryption, anti-rollback eFuse), LVGL interface bound to display drivers. On-chip voice (AEC, VAD, Opus, voice state machine, actuator abort, offline command fallback) left the roadmap with Q-77. In the same horizon are four mandatory extension primitive packs across all three tier-1 targets — sensors, PWM, vision, motion ([`Q-53`](../../roadmap/neuroedge-prd.md#15-decision-log), I2a and I3a) — and the **open platform** ([`Q-67`](../../roadmap/neuroedge-prd.md#15-decision-log), I2c: standalone core, Extension SDK, proxy, remote actuators, community index; the tiered open target list left the roadmap, Q-77). Contract authoring through MCP is the standard tool set TSK-I2d-23 (Q-77, Q-88); NeuroEdge Lab was removed. Launch on esp-emulator, real-board checks in v1.0 ([`Q-92`](../../roadmap/neuroedge-prd.md#15-decision-log)). | Roadmap [§4.3.1](../../roadmap/neuroedge-roadmap.md#431-i2a--extended-primitives-on-sim-and-linux), [§4.3.3](../../roadmap/neuroedge-roadmap.md#433-i2c--open-platform), [§4.4–§4.8](../../roadmap/neuroedge-roadmap.md#44-i3--gate-on-real-box-3), [`04`](04-component-device-c4l3.md) |
-| **Horizon 2 (H2)** — Service tier v1.1 | I9–I10 | Removed from the roadmap (Q-77): Fleet OS, Gate Registry, self-hosted provider layer. See roadmap [§6](../../roadmap/neuroedge-roadmap.md#6-removed-from-roadmap-q-77). | Roadmap §6 |
-| **Horizon 3 (H3)** — Post-Beta extensions | I13, I14, I16–I18 | Removed from the roadmap (Q-77): community port kit, layered robot, Jetson, multimodal, device ecosystem. Vision on `sim`, `linux` and `esp32s3` stays in v1.0 (§4.4). See roadmap [§6](../../roadmap/neuroedge-roadmap.md#6-removed-from-roadmap-q-77). | Roadmap §6, §4.4 |
+| **Run and share** (`planned · Q-72`) | I2d, I2e | Mission contracts, 24/7 operator agent (trusted runtime + untrusted LLM worker), chat approval records, segmented traces (I2d); minimal NeuroEdge Blueprint with static Hub index (I2e). Runs before the rest of v1.0 (roadmap §0.2); public launch (I6) verified on esp-emulator (Q-92) | §6 |
+| **v1.0 = MVP** | I2a–I7 | On-chip HAL and drivers, hardware security, LVGL bound to the display, four extension packs (Q-53), open platform (Q-67); real-board checks (Q-92 (5)) | §2, §4.4; [`04`](04-component-device-c4l3.md) |
 
 ![E-10 · Target architecture by horizon](assets/svg/E-10-target-horizons.svg)
-*Figure E-10 — Four bands: current status on main, horizon 1 (v1.0 = MVP, I2a–I7), the Q-72 band (I2d, I2e) and the Q-73 / Q-74 / Q-83 band (deployment profiles A/B, verification steps, cloud brain, multi-node mesh — I2d, I2f, §6.10); horizons 2 and 3 left the roadmap (Q-77, roadmap §6) and are not drawn. Planned blocks follow Q-83 (profiles), Q-86 (Blueprint), Q-87 (missions) and Q-88 (authoring through TSK-I2d-23). Generated by scripts/gen_architecture_diagrams.py.*
-
-*How to read Figure E-10:* Each horizontal band is one row of the table above, without the two removed horizons: the top band is what exists on the `main` branch, the others are planned. Solid blocks have existing code (◐ indicates partial), dashed blocks are planned. The Q-72 band is drawn below horizon 1 but runs before the rest of it (roadmap §0.2). The connector label *same walker + ledger* shows that the on-chip work reuses the walker and token ledger already running on QEMU.
-
-Evolution relationship diagram across three horizons:
-
-```mermaid
-flowchart LR
-    subgraph H1["Horizon 1: On-Device v1.0 = MVP (I2a-I7)"]
-        H1_HAL["On-chip HAL and Drivers (TSK-S4-01, S4-03)"]
-        H1_SEC["Hardware Security (TSK-S6-05) and Signed OTA (TSK-S6-03)"]
-        H1_PACKS["Extension Packs: Sensors, PWM, Vision, Motion (I2a, I3a)"]
-        H1_OPEN["Open Platform: SDK, Proxies, Remote Actuators (I2c)"]
-    end
-
-    subgraph Q72["Q-72 band, planned: Run and Share (I2d, I2e)"]
-        Q_MSN["Mission contracts and operating agent: runtime + LLM worker (I2d)"]
-        Q_CH["Chat channel and approval records (I2d)"]
-        Q_BP["NeuroEdge Blueprint: pack, install, static Hub index (I2e)"]
-        Q_RELAY["Optional relay: TLS pass-through, no decryption (Q-72)"]
-    end
-
-    subgraph H2["Horizons 2 and 3: removed (Q-77), roadmap section 6"]
-        H23["Fleet OS, Gate Registry, robots, Jetson, port kit"]
-    end
-
-    H1 --> H2
-```
-
-*How to read the diagram:* The Q-72 band (dashed, `planned · Q-72`) builds upon the H1 foundation up to I2c and precedes the remainder of H1; the Hub stays a static index (§6.4). The right-hand block records the removed horizons (Q-77); reopening any item needs a new decision in PRD §15. The core takeaway: any later management service or robot work must keep the safety guarantees packaged on the H1 device.
+*Figure E-10 — Current status on `main`, v1.0 (I2a–I7), the Q-72 band (I2d, I2e) and the Q-73 / Q-74 / Q-83 band (deployment profiles, verification steps, cloud brain, mesh — §6.10). Solid blocks have code (◐ partial), dashed blocks are planned; the Q-72 band is drawn below v1.0 but runs before the rest of it. Generated by scripts/gen_architecture_diagrams.py.*
 
 ---
 
@@ -66,7 +34,7 @@ flowchart LR
 
 ### 2.1 Planned Firmware Components
 
-On the ESP32-S3 microcontroller, components with existing code on `main` include the `components/ne_gate/` walker, the `components/ne_trace/` trace formatter, the agent-specific generator `components/ne_agent/`, and the update module `components/ne_ota/` (already running on Espressif QEMU, details in [`04`](04-component-device-c4l3.md) §3). The table below plans the components that need to be added and completed on real hardware from tasks I3–I7 (extension primitive packs and NeuroEdge Lab: I2a, I3a, I4a, I5a):
+On the ESP32-S3 microcontroller, components with existing code on `main` include the `components/ne_gate/` walker, the `components/ne_trace/` trace formatter, the agent-specific generator `components/ne_agent/`, and the update module `components/ne_ota/` (already running on Espressif QEMU, details in [`04`](04-component-device-c4l3.md) §3). The table below plans the components that need to be added and completed on real hardware from tasks I3–I7 (extension primitive packs: I2a, I3a):
 
 | Component (Planned Path) | What & Why Needed | Governing Task | Open Source Reuse (Roadmap §3) | Status |
 |:---|:---|:---|:---|:---:|
@@ -79,7 +47,7 @@ On the ESP32-S3 microcontroller, components with existing code on `main` include
 
 ### 2.2 On-Chip Voice Pipeline — Dropped from v1.0 (Q-77)
 
-Q-77 dropped voice from the roadmap (roadmap §6). Host voice code remains intact; for on-chip voice design refer to pre-Q-77 revisions (`git show f7278fc:docs/architecture/15-target-architecture.md`).
+The standalone voice pipeline (I5) is removed (Q-77, roadmap §6); host voice code remains. On-chip voice exists only as a channel of NeuroClaw-ESP on the all-in-one chip (Q-93, DP-B-20 → DP-B-22, §6.10).
 
 ### 2.3 Planned Protocols
 
@@ -87,7 +55,7 @@ Transport protocols are planned according to open standards and optimized for mi
 
 1. **Wi-Fi / LAN Network Protocol:**
    - **Transport channel:** Secure `WebSocket` (WSS).
-   - **Binary Frame:** *(on-chip voice was removed from the roadmap, Q-77; kept as the historical design)* transports Opus Voice Mode audio stream (16 kbps, 16 kHz mono, frame size 20 ms = 320 samples). All targets adhere to this exact format. `sim` replays WAV files through this exact encoding path to preserve equivalence with real silicon. Status: `planned`.
+   - **Binary Frame:** none planned; the Opus voice stream left with the I5 voice pipeline (Q-77).
    - **Text Frame:** transports JSON trace events (PRD Appendix D.2). Status: `planned`.
 2. **UART Serial Port Protocol:**
    - **Baud rate:** **not yet decided** — PRD Appendix D.2 states 921600, but `sdkconfig.defaults` does not specify it (ESP-IDF defaults to 115200) and Box-3 can route console over USB-Serial-JTAG; to be decided when hardware arrives ([`TODOS.md`](../../TODOS.md) #35, [`TSK-S4-12`](../../roadmap/neuroedge-roadmap.md#44-i3--gate-on-real-box-3)).
@@ -155,7 +123,7 @@ The standard MCP toolset (TSK-I2d-23) and the user's existing brain or MCP clien
 
 ### 4.3 Layered Robot — Dropped (Q-77)
 
-Minimal Pi ↔ ESP32 link (heartbeat, `safe_state` on loss of comms) in I3a (Q-75); multi-node home mesh in §6.10. The draft RFC for multi-node coordination was deleted on 2026-10-16 (recoverable from git history).
+Minimal Pi ↔ ESP32 link (heartbeat, `safe_state` on loss of comms) in I3a (Q-75); multi-node home mesh in §6.10.
 
 ### 4.4 Vision (I2a, I3a)
 
@@ -357,22 +325,22 @@ Simulation does not catch wiring errors, electrical noise, or Wi-Fi flakiness (a
 
 ### 6.9 Demand Gate (removed)
 
-Q-92 removed the 8-week demand gate of Q-72. The first adoption signal is the launch's anonymous telemetry (FR-TEL-01); the paid Hub, paid relay and other monetization open on request or on launch data, not on a gate (PRD §8, Q-85 as amended by Q-92).
+There is no demand gate (Q-92 (1)). The first adoption signal is the launch's anonymous telemetry (FR-TEL-01); the paid Hub, paid relay and other monetization open on request or on launch data, not on a gate (PRD §8, Q-85 as amended by Q-92).
 
 ---
 
 ### 6.10 Two Deployment Profiles, Optional Cloud Brain, Multi-Node Mesh, and Verification Steps (`planned · Q-73, Q-74, Q-76, Q-83`)
 
 [`Q-74`](../../roadmap/neuroedge-prd.md#15-decision-log) leverages the exact boundary of §6.1 to move the **LLM worker** (chat, suggestions, mission
-contract compilation) to the **optional NeuroEdge Cloud**; the **trusted runtime always stays at home**. No code yet; phase 2 of Q-74 opens on
-launch data showing people stuck installing the box (Q-92).
+contract compilation) to the **optional NeuroEdge Cloud**; the **trusted runtime always stays at home**. No code yet; the cloud opens on
+launch data showing people stuck installing the box (Q-74 step 2, Q-92 (8)).
 
 ```
  📱 single chat box (multi-user, role-based — FR-CH-07)
         │
  ☁️ NeuroEdge Cloud (optional): LLM worker, conversation, planning, rule compilation
         │  home box opens outbound connection; no home network ports opened
- 🏠 home box — trusted runtime (Pi / Home Assistant add-on) or ESP32-S3 for single tasks
+ 🏠 home box — trusted runtime (Pi, mini PC or NAS) or ESP32-S3 for single tasks
         │  signed rules; approvals verified at the node
  ESP32 with `ne_gate` · Pi · devices via Home Assistant — each node holds rules locally, autonomously reverts to `safe_state`
 ```
@@ -380,7 +348,7 @@ launch data showing people stuck installing the box (Q-92).
 - **Cloud coordinates, never sovereign.** Each node only enforces signed rules; approvals (FR-CH-04) are verified
   at the node; irreversible actions in any home always require human confirmation; a single command cannot exceed pre-declared ceilings
   on device counts or homes touched (FR-AGT-11). If the cloud is compromised, doors still do not open.
-- **Two tiers of home boxes.** *Full* — Pi or Home Assistant add-on (cameras, multi-vendor, 30-day traces §6.7, optional
+- **Two tiers of home boxes.** *Full* — Pi, mini PC or NAS (cameras, multi-vendor, 30-day traces §6.7, optional
   local LLMs). *Small* — ESP32-S3: `NETR` walker, token ledger, reflexes, on-chip approval verification; rules compiled in
   the cloud and loaded with signatures (requires real Wi-Fi, `TODOS.md` #50); traces pushed to cloud encrypted or stored on SD card.
 - **Cloud disconnection** ⇒ reflexes, gates, and local alerts continue running; only chat and summarization are lost.
@@ -401,10 +369,8 @@ launch data showing people stuck installing the box (Q-92).
     hardware privileges, TSK-I2d-24). Speaks MCP over HTTP with TLS 1.3, mTLS, and tokens to `neuroedge mcp serve --http`.
   - *NeuroEdge Cloud* (conditional, I2f) — same NeuroClaw, isolated instance per user, communicating with the box over the box's
     outbound connection.
-  - **Profile B — One chip** — **NeuroClaw-ESP**, ESP-IDF component inside `esp32/` of that repo, built into one ESP32-S3 image
-    with the gate by `neuroedge build --target esp32s3 --brain neuroclaw`; tool calls pass through `nc_gate` into the box's
-    `ne_brain_bridge` and `ne_gate` (function calls, no MCP or TLS between them: they share memory), labeled `risk=single_chip`
-    (`threat_model.md` §2l, TSK-I2f-10 → I2f-20). On a board with a screen, microphone and speaker it is the **all-in-one chip** (Q-93): the LVGL screen and a voice channel of NeuroClaw-ESP join the same image (DP-B-18 → DP-B-22). *Profile B+* — real isolation on one board — is under evaluation (TSK-I2f-17).
+  - **Profile B — One chip** — NeuroClaw-ESP and the gate in one ESP32-S3 image, `risk=single_chip`; with screen and voice
+    the **all-in-one chip** (Q-93). Profile B+ (real isolation on one board) is under evaluation (TSK-I2f-17). Details below.
 
   Other workers (upstream PicoClaw, Claude Desktop, OpenClaw) plug into the same MCP toolset; workers unable to present certificates
   use demo mTLS bridges. Capabilities per run mode, risk labels, and feature gap vs. zclaw, MimiClaw:
@@ -428,36 +394,23 @@ launch data showing people stuck installing the box (Q-92).
  approval:    📱 approve button ── passkey signature on phone ───────────────────────────────► box verifies signature locally
 ```
 
-- **Profile B in detail ([`Q-79`](../../roadmap/neuroedge-prd.md#15-decision-log), [`Q-83`](../../roadmap/neuroedge-prd.md#15-decision-log), risk-labeled).** Brain
-  (Telegram client, LLM loop) and gates co-exist on a single multi-dollar chip, no Linux board, no cloud. Microcontrollers lack
-  process isolation, so §6.1 boundaries between untrusted brain and gates **do not exist** here; instead: all LLM
-  tool calls pass through a typed queue into `ne_gate`, with zero direct LLM → GPIO paths; irreversible actions require on-board
-  buttons, a touch on the approval card or an on-chip command word while that card is shown (Q-93), or Telegram callbacks from the verified owner ID (chip talks directly to Telegram API, without relays); chip carries label
-  `risk=single_chip`. Phase 1 already running on QEMU: boot guard and safe mode, secrets in isolated NVS partition (encrypted
-  under `sdkconfig.secure`), serial console, stack guard ([`04`](04-component-device-c4l3.md) §3). The chip's
-  brain, NeuroClaw-ESP (Telegram, LLM loop, memory, scheduler), runs on QEMU with mock gates. Joining them into one image is
-  specified in `docs/spec/deployment_profiles.md` §3.3: the bridge and its host-C tests (TSK-I2f-12), one build command,
-  merged partitions and secrets (TSK-I2f-14), QEMU budgets (TSK-I2f-15), run-time traces (TSK-I2f-16); real Wi-Fi and
-  provisioning await DevKitC hardware (TSK-I2f-11, TSK-I2f-13).
-
-```
- single-chip: 📱 Telegram ──TLS──► ESP32-S3 [ brain ─nc_gate─► ne_brain_bridge ─► ne_gate ] ──► pins
-              approving irreversible actions: on-board button, or callback from owner ID
- all-in-one:  🎙 voice / 🖐 screen ──► same ESP32-S3: voice is a channel of the brain; card drawn from the bridge,
-              touch or on-chip command word answers it; speech-to-text never does (Q-93)
-```
+- **Profile B ([`Q-79`](../../roadmap/neuroedge-prd.md#15-decision-log), [`Q-83`](../../roadmap/neuroedge-prd.md#15-decision-log), [`Q-93`](../../roadmap/neuroedge-prd.md#15-decision-log)).**
+  Brain and gate share one chip with no process isolation, so the §6.1 boundary is replaced by a typed queue into `ne_gate`
+  and the label `risk=single_chip` (`threat_model.md` §2l). An `ask` is answered only by a human source on the chip or the
+  owner's Telegram callback; a spoken answer only by the on-chip command word (DP-B-21). Requirements, build steps and
+  tests: [`deployment_profiles.md`](../spec/deployment_profiles.md) §3.3 (DP-B-*); firmware: [`04`](04-component-device-c4l3.md) §3.
 
 - **Approvals never route through the brain** (FR-CH-08): irreversible actions are approved via passkey signatures on phone
   or locally within the home network; the cloud's shared channel gateway forwards messages but cannot forge approvals.
-- **Follow-up tasks:** easy-install box TSK-I2e-12, TSK-I2e-13; verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, passkey approvals, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); Profile B (Q-79, Q-83): TSK-I2f-10 → I2f-17; all-in-one chip (Q-93): TSK-I2f-18 → I2f-20, TSK-I7-03; Profile A contract and legacy System 2: TSK-I2d-26, TSK-I2d-27.
+- **Follow-up tasks:** verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); passkey approvals: I2g (Q-92 (9)); Profile B (Q-79, Q-83): TSK-I2f-10 → I2f-17; all-in-one chip (Q-93): TSK-I2f-18 → I2f-20, TSK-I7-03; Profile A contract and legacy System 2: TSK-I2d-26, TSK-I2d-27.
 
 ## 7. Sources
 
 1. **Development Roadmap:**
-   - [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) (§2.1 Dependency Graph, §3 OSS Reuse Strategy, §3.8 Preserving Target Equivalence, §4.4–§4.8 Task Tables I3–I7, §5 I8 Developer Beta, §4.3.3 I2c Open Platform, §6 I9–I10 Service Tier v1.1, §7 I13–I18 Post-Beta Extensions, Appendix D Wire Protocol).
+   - [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) (§2.1 Dependency Graph, §3 OSS Reuse Strategy, §3.8 Preserving Target Equivalence, §4.4–§4.8 Task Tables I3–I7, §5 I8 Developer Beta, §4.3.3 I2c Open Platform, §6 Removed from Roadmap, Appendix D Wire Protocol).
 2. **Product Requirements Document:**
    - [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Non-functional Requirements; §15 Decision Log: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`, `Q-52`, `Q-53`, `Q-54`, `Q-55`, `Q-62`, `Q-71`, `Q-72`; Appendix D.2 Wire protocol).
-   - [`product-proposal.md`](../business/product-proposal.md) (Blueprint positioning, three loops; its demand gate was removed by Q-92 — source for §6).
+   - [`product-proposal.md`](../business/product-proposal.md) (Blueprint positioning, three loops — source for §6).
 3. **Format Specifications:**
    - [`core_contracts.md`](../spec/core_contracts.md) (APIs, `board.toml`, `agent.toml`, gates, HAL, traces)
 4. **Detailed Design Notes:**

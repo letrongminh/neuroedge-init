@@ -86,7 +86,7 @@ Only technologies stated in planning documents are listed; everything else is "u
 | *Fleet OS, Gate Registry, robotics node* | removed (Q-77) | — | — | roadmap §6 | — |
 | **Vision Pipeline** | I2a, I3a (basic); `jetson` and multimodal removed (Q-77) | `vision.in` HAL on `sim`, `linux`, and `esp32s3` (RFC-0012, TSK-V1b-07; Q-53); maker declares `bool`/`level`/`choice` facts with numeric confidence from model labels, gate bounds threshold via `numeric` criteria (Q-54; `docs/architecture/15-target-architecture.md` §4.4), dedicated gate semantics for vision evidence left open (TSK-V3-04); traces do not embed raw frames, raw storage requires explicit opt-in (phase2 §2.3) | Concrete framework choice (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) and models | `docs/architecture/15-target-architecture.md` §4.4, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
 
-Q-72 adds the planned containers below (`planned · Q-72`; decision: [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log)):
+Planned containers of Q-72 (`planned · Q-72`; decision: [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log)):
 
 | Container | Increment | Stated technology | Undecided | Source | Target architecture |
 |:---|:---:|:---|:---|:---|:---|
@@ -107,13 +107,12 @@ What current architecture has already prepared for these containers is in [`15`]
 ![E-08 · Deployment](assets/svg/E-08-deployment.svg)
 *Figure E-08 — Three areas: engineer machine, GitHub CI runner machine, device; plus dashed area "home box" (Pi, mini PC, or NAS) running operator agent, alongside chat platforms, relay, and Hub index — `planned · Q-72`. Bottom band: optional NeuroEdge Cloud and small ESP32-S3 home box — conditional, `planned · Q-74`, I2f. Boxes labeled `○ planned` lack hardware or code.*
 
-NeuroEdge has **no server-side services** prior to the v1.1 service tier (I0–I8): no accounts, no brokers, no
-backends. Everything runs on the user's machine or on devices. Fleet OS, the first planned server-side
-service, was removed from the roadmap (Q-77; roadmap §6).
+NeuroEdge has **no server-side services**: no accounts, no brokers, no backends. Everything runs on the user's
+machine or on devices (Fleet OS removed, Q-77; roadmap §6).
 
-`planned · Q-72` ([Q-72](../../roadmap/neuroedge-prd.md#15-decision-log)): Blueprint positioning adds a **home box** node running 24/7 and two items external to user
+`planned · Q-72` ([Q-72](../../roadmap/neuroedge-prd.md#15-decision-log)): a **home box** node running 24/7 and two items external to user
 machines, both optional and **never on the safety path**: Hub index (a static git repository, not a
-service, I2e) and relay (the only NeuroEdge-operated service prior to v1.1, passing TLS packets only, without
+service, I2e) and relay (the only NeuroEdge-operated service, passing TLS packets only, without
 decryption). Design: [`15`](15-target-architecture.md) §6.
 
 ### 6.2 Deployment nodes
@@ -128,7 +127,7 @@ decryption). Design: [`15`](15-target-architecture.md) §6.
 | **Self-hosted runner with Box-3** | label `[self-hosted, esp32s3-box-3]` | `memory-spike` job in `nightly-hardware.yml` | ○ planned (TSK-S1-10, TSK-S4-05) |
 | **Raspberry Pi 5 + I2S HAT** | Linux, profile `boards/linux-rpi5.toml` | `neuroedge --target linux`: libgpiod, hwmon, audio | ○ planned (TSK-I2-01) |
 | **ESP32-S3-BOX-3** | firmware from `neuroedge build --target esp32s3` | on-chip gate, UART traces to host, OTA | ○ planned (TSK-S4-12) — runs on QEMU and esp-emulator; real board for v1.0 (Q-92) |
-| **ESP32-S3, one image** (Profile B, Q-83) | firmware from `neuroedge build --target esp32s3 --brain neuroclaw` | NeuroClaw-ESP, `ne_brain_bridge`, `ne_gate`, tokens and HAL in one image; `risk=single_chip`; on a board with screen, microphone and speaker also the LVGL screen and a voice channel of NeuroClaw-ESP (the all-in-one chip, Q-93); requirements DP-B-* of `docs/spec/deployment_profiles.md` | ✅ on QEMU (TSK-I2f-14, I2f-16, job `brain-firmware`); on a board with TSK-I2f-13; screen and voice ○ planned (TSK-I2f-18 → I2f-20, Box-3 checks TSK-I7-03) |
+| **ESP32-S3, one image** (Profile B, Q-83) | firmware from `neuroedge build --target esp32s3 --brain neuroclaw` | brain and gate in one image, `risk=single_chip`; all-in-one chip with screen and voice (Q-93) — DP-B-* of `docs/spec/deployment_profiles.md` | ✅ on QEMU (TSK-I2f-14, I2f-16); board TSK-I2f-13; screen and voice ○ TSK-I2f-18 → I2f-20, TSK-I7-03 |
 | **OTA image server** | any static HTTP(S) server | serves signed application images | ✅ on QEMU (`qemu_ota.sh` uses `python3 -m http.server` on 127.0.0.1) |
 | **Model and voice providers** | external services via HTTPS | language models, STT, TTS, Jev | ✅ optional; no network calls by default |
 | **Home box** (Pi, mini PC, or NAS) | Linux, systemd; runs G1 `sim` or G2 `linux` on `gpio-sim` simulation before physical hardware arrives | **trusted 24/7 runtime** (systemd service, restarts on crash): HAL, gates, mission contract execution, scheduler, deterministic detectors, chat channel adapter and approval record verification, egress portal, segmented traces | ○ planned · Q-72 · I2d |
@@ -194,9 +193,9 @@ Concrete steps are in the workflow files themselves. Current green/red status: r
 
 ### 6.6 Not yet deployed
 
-- **No NeuroEdge servers prior to v1.1** — except the optional relay of Q-72 (`planned`, limited exception of Q-10: no decryption, not on the safety path). Q-74 (conditional, opens on launch data, Q-92) adds optional NeuroEdge Cloud running LLM workers; trusted runtime remains on the home box ([`15`](15-target-architecture.md) §6.10). Fleet OS, Gate Registry, a tiered robot cluster and a Jetson vision node were removed from the roadmap (Q-77): see roadmap §6.
-- **NeuroEdge Lab was removed from the roadmap (Q-77, Q-88).** MCP clients author contracts through the standard tool set (TSK-I2d-23); privilege separation of `mcp serve` is in [`15`](15-target-architecture.md) §4.2 and `docs/spec/threat_model.md` §2c.
-- **24/7 Home box not yet deployed (`planned · Q-72`, I2d, I2e).** Today no background processes run continuously ([`02`](02-container-c4l2.md) §3). The 24/7 runtime, LLM worker, chat platforms, Hub index, and relay above are design: [`15`](15-target-architecture.md) §6. Runs in simulation first (G1 `sim`, G2 `linux` on `gpio-sim`, G3 ESP32 firmware on Espressif QEMU — Wokwi, Velxio pending Q-21, Q-69 reconciliation, G4 ESPHome host), physical hardware purchased later.
+- **No NeuroEdge servers** — except the optional relay of Q-72 (`planned`, limited exception of Q-10: no decryption, not on the safety path). Optional NeuroEdge Cloud running LLM workers is conditional (Q-74 step 2, Q-92 (8)); trusted runtime remains on the home box ([`15`](15-target-architecture.md) §6.10). Items removed by Q-77: roadmap §6.
+- **No authoring service.** MCP clients author contracts through the standard tool set (TSK-I2d-23); privilege separation of `mcp serve` is in [`15`](15-target-architecture.md) §4.2 and `docs/spec/threat_model.md` §2c.
+- **24/7 Home box not yet deployed (`planned · Q-72`, I2d, I2e).** Today no background processes run continuously ([`02`](02-container-c4l2.md) §3). The 24/7 runtime, LLM worker, chat platforms, Hub index, and relay above are design: [`15`](15-target-architecture.md) §6. Runs in simulation first (G1 `sim`, G2 `linux` on `gpio-sim`, G3 ESP32 firmware on Espressif QEMU — Wokwi, Velxio pending Q-21, Q-69 reconciliation, G4 ESPHome host), the public launch is verified on esp-emulator, real boards for v1.0 (Q-92).
 - **No real boards in CI.** All on-chip evidence today comes from QEMU and host C tests; silicon
   evidence awaits boards and self-hosted runners (`TODOS.md` #10).
 - **Not yet released to PyPI.** Workflows exist; real release at I6.

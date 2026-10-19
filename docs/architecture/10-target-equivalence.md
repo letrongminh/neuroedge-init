@@ -20,10 +20,9 @@ the board profile.
 Equivalence is not promised equally across all hardware. NeuroEdge clearly defines commitments across three tiers (Q-13, FR-TGT-08, `simulation_coverage.md` §7):
 
 - **Tier 1 (`sim`, `linux`, `esp32s3`):** `neuroedge verify` achieves 100%; tested on every PR (`sim`, gpio-sim; QEMU for PRs touching `targets/**`) and nightly testing commitment on real boards (TSK-S4-05, TSK-I2-01 — not yet running).
-- **Tier 2 (maintained by the core team; `jetson`, its example, was removed from the roadmap by Q-77):** `neuroedge verify` on the verdict domain; hardware testing per release cycle, not nightly.
-- **Tier 3 (ported by community, e.g. `stm32`, `rp2350` ):** contributors self-verify via the Compliance Test Suite; the core team does not commit to quality and does not block releases for this tier.
+- **Tiers 2 and 3** (core-maintained; community-ported, Q-13) have no target: the target list is closed at tier 1 (Q-77, §7.1).
 
-Details on target tiering and expansion roadmap: [`15`](15-target-architecture.md) §4.1.
+Why the list stays closed: [`15`](15-target-architecture.md) §4.1.
 
 ## 2. Three Layers of Defense
 

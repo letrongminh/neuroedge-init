@@ -23,7 +23,8 @@ Stated upfront so nobody reads diagrams as more than reality:
   Q-79 exist: serial console (`ne_console`, 4 KB stack) and boot counter clearing task after the
   stability window (`ne_boot`). No queues or core pinning yet.
 - **No audio.** No I2S, codec, AEC, VAD, Opus, or ESP-SR — only a `TODO(TSK-S1-10)`
-  in `main/main.c`. On-chip voice (I5) was removed from the roadmap (Q-77), roadmap §6.
+  in `main/main.c`. The I5 voice pipeline is removed (Q-77); voice returns only as a channel of
+  NeuroClaw-ESP on the all-in-one chip (Q-93, DP-B-20, TSK-I2f-19).
 - **No GPIO control.** Agent pin tables hold pin **names**, not GPIO numbers; on-chip HAL
   is TSK-S4-01.
 - **Wi-Fi initializes but never connects** (no `esp_wifi_connect`): networking is initialized
@@ -54,10 +55,10 @@ Stated upfront so nobody reads diagrams as more than reality:
 |:---|:---|:---|:---|
 | `targets/esp32s3/hal/` | TSK-S4-01 | Implementation of 5 HAL primitives on ESP-IDF; needed to control physical hardware instead of simulation | [`15`](15-target-architecture.md) §2.1 |
 | `targets/esp32s3/drivers/` | TSK-S4-03 | `digital.out` and `sensor.read` drivers on real pins; needed to pulse actuators and read sensors on Box-3 board | [`15`](15-target-architecture.md) §2.1 |
-| *On-chip audio, voice FSM, actuator abort, provider client* (TSK-S5-01 → S5-07, including the local fallback) | | Removed from the roadmap (Q-77), roadmap §6 | |
+| *On-chip audio, voice FSM, actuator abort, provider client* (TSK-S5-01 → S5-07, including the local fallback) | | Removed (Q-77), roadmap §6; voice as a NeuroClaw-ESP channel is TSK-I2f-19 (DP-B-20) | |
 | `targets/esp32s3/security/` | TSK-S6-05 | Secure Boot, flash encryption, physical microphone disconnect button; needed to protect firmware integrity and privacy | [`15`](15-target-architecture.md) §2.1 |
 
-Currently firmware has only a sequential `app_main`; FreeRTOS task models (task counts, priorities, queues, and core pinning) for a voice path remain undesigned, since on-chip voice left the roadmap (→ [`15`](15-target-architecture.md) §2.2). The RP2350 robot node (TSK-W3-07) was removed too (Q-77, roadmap §6).
+Currently firmware has only a sequential `app_main`; the task model of the all-in-one chip (gate task on its own core at the highest application priority, brain and voice buffers in PSRAM) is set by DP-B-22 (TSK-I2f-20).
 
 ### 3.1 `ne_gate` — walker and token ledger
 

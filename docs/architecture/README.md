@@ -5,9 +5,9 @@ from the big picture down to each byte: context (C4 L1) → container (L2) → c
 (L4), followed by runtime flows, data contracts, non-functional requirements, architecture decisions, and
 how the system will grow.
 
-Designs without code are also recorded in place within each viewpoint, but always carry the `planned` label — the
-Blueprint positioning section records `planned · Q-72` with increments (I2d, I2e) — and are drawn with dashed lines in diagrams, so
-readers can always separate what currently exists on `main` from what is newly planned.
+Designs without code are also recorded in place within each viewpoint, but always carry the `planned` label (for example
+`planned · Q-72`, I2d) and are drawn with dashed lines in diagrams, so readers can always separate what exists on `main`
+from what is planned.
 
 > Chapters are written in English, as are diagram labels.
 
@@ -25,9 +25,8 @@ readers can always separate what currently exists on `main` from what is newly p
 
 ## File map
 
-Q-77 (2026-10-12) consolidated this suite from 17 down to 10 chapters: context into `00`, deployment into `02`, porting guide into
-`10`, variation points and architecture debt into `15`; removed chapters that duplicate PRD §9 (NFR), PRD §15 (ADR), and
-`python/README.md` (day one). Old version: `git show f7278fc:docs/architecture/<file>`.
+Chapter numbers have gaps on purpose: non-functional requirements live in PRD §9, decisions in PRD §15, and day one in
+`python/README.md`.
 
 | File | Content | Viewpoint |
 |:---|:---|:---|
@@ -39,7 +38,7 @@ Q-77 (2026-10-12) consolidated this suite from 17 down to 10 chapters: context i
 | [`06-runtime-flows.md`](06-runtime-flows.md) | Runtime flows: keystroke turns, confirmation, MCP, models, replay, boot, OTA | Dynamic |
 | [`07-data-contracts.md`](07-data-contracts.md) | All file formats and wire formats, versioning scheme | Data |
 | [`10-target-equivalence.md`](10-target-equivalence.md) | Why the same gate yields the same verdict on `sim`, `linux`, `esp32s3`; §7 porting HAL to a new board | Cross-cutting · Guide |
-| [`15-target-architecture.md`](15-target-architecture.md) | Target architecture: v1.0, range Q-72 → Q-88 (operator agent, Blueprint, brain, optional cloud, two deployment profiles, missions, Blueprint packaging), variation points, architecture debt | To-be |
+| [`15-target-architecture.md`](15-target-architecture.md) | Target architecture: v1.0 and the planned bands (operator agent, Blueprint, brain, optional cloud, two deployment profiles, missions), variation points, architecture debt | To-be |
 | [`16-ecosystem-landscape.md`](16-ecosystem-landscape.md) | Participating parties, shared assets, platforms, and commercial boundaries | System Landscape |
 
 ## Conventions

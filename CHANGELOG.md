@@ -30,6 +30,11 @@ The package has not yet released any public versions; before going public there 
 
 #### Added
 
+- **Product documentation trimmed and reorganised.** Three read-only audits (stale content after Q-77, Q-92 and Q-93; truths restated in several places; structure by reader) led to:
+  - **New entry points:** `docs/README.md` (one router per reader), `docs/business/README.md`, `docs/reports/README.md`, and `docs/user/an-toan.md` (the safety model in plain words). The root README links all three.
+  - **Moves:** `docs/architecture/vi/` (written in English) flattened into `docs/architecture/`; `docs/app-di-dong/` → `docs/business/app-di-dong/`; CHANGELOG §2 → [`docs/reference/cli.md`](docs/reference/cli.md).
+  - **Deleted** (git history keeps them): the demand-gate kit `docs/business/cong-nhu-cau-2026-10-25/` (Q-92) and `docs/business/proposal-blueprint-2026-10-11.md`. The interview guide moves to `docs/business/doi-tac/phong-van.md`, and an updated "what not to say in any demo" table moves to `demo/README.md`. `docs/spec/lab_mcp.md` is cut to the sections still cited (§2, §7, §8, §12).
+  - **Content:** statements contradicting Q-92 and Q-93 fixed (Home Assistant add-on, affiliate revenue, "voice removed"); Profile A/B, Q-92 and the cloud trigger now explained once and cited elsewhere; session logs removed from roadmap §0.1 and §0.3, the BRD and `TODOS.md`; chapter 15 §1 reduced to current scope; PRD §3.1 points to roadmap §0.5. No requirement, task or decision code changed.
 - **The all-in-one chip (Q-93).** An engineering review after Q-92 kept Profile B, the Box-3 screen and the voice code instead of archiving them: one ESP32-S3 with a screen, microphone and speaker runs the gate, NeuroClaw-ESP, the screen and voice together (`risk=single_chip`). Voice is a channel of NeuroClaw-ESP, not a second brain; a spoken approval comes only from an on-chip command word while the card is on screen, never from speech-to-text. New requirements DP-B-18 → DP-B-22 with planned test cases in [`docs/spec/deployment_profiles.md`](docs/spec/deployment_profiles.md), protections and residual risk in `docs/spec/threat_model.md` §2l; FR-PER reopens for Profile B only. Roadmap: TSK-I2f-18 → I2f-20 without a board (screen, voice channel, memory and flash budget on esp-emulator), TSK-I7-03 on a Box-3 in v1.0; no board is bought now and the public launch is unchanged.
 - **Lean path to the public launch (Q-92).** A CEO review of the roadmap (scope reduction) settled Q-91 (12). The 2026-12-06 demand gate and B6 → B8 are removed; the first adoption signal is the launch telemetry (opt-out, first-run notice). The public launch (I6) now needs I2d with its mission core, a trimmed I2e (affiliate page, Home Assistant add-on, Pi SD image and Pi + ESP32 scaffold cut) and I3/I3a verified on esp-emulator; it no longer waits for boards, the gate or licence terms. The esp-emulator spike (TSK-I3-02, `docs/reports/esp-emulator-spike-2026-10-19.md`) booted both firmware images on esp-emulator 0.49.0: gate self-test passes and the 93 trace events equal QEMU's. Real-board checks move to I7; the runtime needs a 3-day run plus a simulation stress test before launch and the two-week run for v1.0. Blueprints may carry mission contracts and detectors (BL-FMT-05 amended). I2g becomes the box API and home web, I2h the native app on the same backend; the web passkey (TSK-I2f-08) moves into I2g; Cloud opens on launch data. Removed-task tables move to `roadmap/archive/removed-tasks.md`, read by `test_plan_contract.py`; the architecture page and poster drop the gate.
 - **Home app approved as increment I2g (Q-91).** The product owner settled the open questions AP-D-01 → AP-D-17 of the phone-app draft: a native iOS and Android app in React Native, the first increment after the 2026-12-06 demand gate; the box serves an authenticated API on the home network with one-time-code phone pairing; approvals signed with Face ID or a fingerprint; chat with NeuroClaw through its own channel; content-free APNs/FCM push plus the box's Telegram bot; Studio reopened as the makers' desktop web on the same API; the yellow and lock zones; families may change contract parameters and wizard-generated gates and parts. Roadmap §4.3.7 lists 13 tasks, four of them RFCs; milestone 8 now includes I2g; `docs/business/app-di-dong/` is the approved SRS. Restructuring the roadmap to remove redundant parts waits for the product owner's review.
@@ -166,16 +171,16 @@ Map of "what to read when" for developers or agents taking over:
 
 | Document | Main Content | When to Read |
 |:---|:---|:---|
-| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Sole source of truth on progress:** four phases (§0.5), increments I0–I8 and I2a–I2f (Q-77; removed items: roadmap §6), task statuses, exit criteria, dependencies, handoff card (§0.3). | **Always read first** |
+| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Sole source of truth on progress:** phases and release milestones (§0.5), increments I0–I8 and I2a–I2h (removed items: roadmap §6), task statuses, exit criteria, dependencies, handoff card (§0.3). | **Always read first** |
 | [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Requirements `FR-*` / `NFR-*`, **§15 is the sole decision log** (`Q-N`), Appendix B catalog of `NE…` error codes. | When needing to know *what must be done* and what was decided |
 | [`docs/architecture/`](docs/architecture/README.md) · [`core_contracts.md`](docs/spec/core_contracts.md) | Current and target architectures; API specifications, gates (Appendix B), HAL, traces. | When needing to know *why* and *what format* |
 | [`TODOS.md`](TODOS.md) | Catalog of intentionally deferred work with explicit trigger milestones. | Before proposing "missing" work |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution conventions; §3 work requiring RFCs; §6 repository structure; §8 task completion steps. | Before modifying code or structure |
-| [`docs/spec/`](docs/spec/) | Normative specifications: `core_contracts.md`, `tool_calling.md`, `threat_model.md`, `missions.md`, `blueprint.md`, `deployment_profiles.md`, `virtual_parts.md`, `extension_sdk.md`, `python_api.md`, `camera.md`, `vision.md`, `studio.md`, `ui.md`, `simulation_coverage.md`, `hal_mcu_review.md`, `voice_fsm.md` (host-only; voice left the roadmap, Q-77), `lab_mcp.md` (**historical**: Lab removed, Q-77, Q-88). | When changing behavior in corresponding layers |
-| [`docs/business/`](docs/business/) | BRD `brd-ambient-intelligence.md` (Q-85), demand-gate kit `cong-nhu-cau-2026-10-25/` (Q-72), partner guides `doi-tac/`, proposal `proposal-blueprint-2026-10-11.md` (history only). | Before business or demand-gate work |
-| [`docs/business/app-di-dong/`](docs/business/app-di-dong/) | Phone app draft (user stories, BRD, SRS, prototype); **no decision yet**, no Q-N. | Only if the phone app is raised |
+| [`docs/spec/`](docs/spec/) | Normative specifications: `core_contracts.md`, `tool_calling.md`, `threat_model.md`, `missions.md`, `blueprint.md`, `deployment_profiles.md`, `virtual_parts.md`, `extension_sdk.md`, `python_api.md`, `camera.md`, `vision.md`, `studio.md`, `ui.md`, `simulation_coverage.md`, `hal_mcu_review.md`, `voice_fsm.md` (host voice removed, Q-77; on-chip voice follows it, TSK-I2f-19, Q-93), `lab_mcp.md` (**historical**: Lab removed, Q-77, Q-88). | When changing behavior in corresponding layers |
+| [`docs/business/`](docs/business/README.md) | Product proposal `product-proposal.md`, BRD `brd-ambient-intelligence.md` (Q-85), partner material `doi-tac/` (interview guide `doi-tac/phong-van.md`). | Before business work |
+| [`docs/business/app-di-dong/`](docs/business/app-di-dong/) | Home web and native app (user stories, BRD, SRS, prototype); approved by Q-91, split into I2g and I2h by Q-92. | Before I2g or I2h work |
 
-Documents deleted during minimalism (old proposal, design notes, `docs/archive/`, `en/` architecture): `git show 7626b62:<path>`.
+Deleted documents (old proposals, design notes, review minutes, the demand-gate kit): git history (`CONTRIBUTING.md` §6).
 
 **Order of precedence on divergence:** PRD (requirements, decisions) and `schemas/` + accepted RFCs → roadmap (progress, schedule) → architecture and `docs/spec/` → source code → this file. If code diverges from contract, code is wrong. If design documents say anything about schedule, status, or exit criteria, the roadmap is authoritative (R1).
 
@@ -205,7 +210,7 @@ Detailed structure of the source repository can be found in `CONTRIBUTING.md` §
 
 | Item | Blocked by | Needs Whom | Unlocks What |
 |:---|:---|:---|:---|
-| **TSK-S1-10** (I3 criterion 1) | ESP32-S3-BOX-3 board | Hardware purchase | On-chip benchmarking → I3 (voice removed from the roadmap, Q-77) |
+| **TSK-S1-10** (I7, moved from I3 by Q-92 (5)) | ESP32-S3-BOX-3 board | Hardware purchase | On-chip benchmarking → I7 |
 | **TSK-I2-01** (I2 criterion 4) | RPi 5 for nightly `linux` | Hardware purchase | Nightly on real hardware → I2 |
 | **V6 — second embedded engineer** | Position vacant | Recruiting (Q-39) | Parallel work with HAL (TSK-S5-01…07) → I7 |
 | **`TODOS.md` #43** (CLA) | No CLA text yet | Legal / CPO | Accept external PR contributions (Q-45) |
@@ -214,7 +219,7 @@ Detailed structure of the source repository can be found in `CONTRIBUTING.md` §
 | **I6 criterion 7** | Needs two machines for network MCP test | Operator (Q-60) | Close network MCP criteria |
 | **TC-COM-07-2, TC-NF-01-1, TC-BP-01-1** (Q-83 Profile B) | ESP32-S3 DevKitC N16R8 board | Hardware purchase | One image flashed and chatting on a board, bridge latency, the B+ decision note → TSK-I2f-13, I2f-15, I2f-17 |
 
-**TSK-S1-10 once board arrives:** vendoring `esp-sr` (AEC/AFE + VAD) and `opus` with license review, patch into `TODO(TSK-S1-10, V2)` in `main.c`, fill out report. Voice left the roadmap (Q-77, Q-44 no longer applies to a roadmap item); the benchmark is evidence for reopening it. Reopen triggers: roadmap §6.
+**TSK-S1-10 once board arrives:** vendoring `esp-sr` (AEC/AFE + VAD) and `opus` with license review, patch into `TODO(TSK-S1-10, V2)` in `main.c`, fill out report. On-chip voice is planned in TSK-I2f-19 and checked on a Box-3 in TSK-I7-03 (Q-93); host voice stays removed (Q-77, roadmap §6).
 
 ### 3.5 Next Steps
 

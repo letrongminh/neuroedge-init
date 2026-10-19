@@ -1,8 +1,8 @@
 # Hướng dẫn phỏng vấn khách hàng
 
 Kiểu **The Mom Test**: hỏi về chuyện đã xảy ra và cái giá thật, không hỏi ý kiến về sản phẩm. Không
-nói về NeuroEdge trước khi xong phần câu hỏi vấn đề. Viết cho cổng nhu cầu của Q-72 (đã bỏ bởi Q-92); câu hỏi vẫn dùng cho mọi buổi
-phỏng vấn khách hàng.
+nói về NeuroEdge trước khi xong phần câu hỏi vấn đề. Dùng cho mọi buổi phỏng vấn khách hàng; phỏng vấn
+nằm ngoài roadmap (Q-92).
 
 ## 0. Luật cho người phỏng vấn
 
@@ -19,7 +19,7 @@ phỏng vấn khách hàng.
 trước** (người được phỏng vấn hay người hỏi). Đó là điều kiện "không gợi ý" của C1
 (`git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Success Criteria).
 
-Thời lượng: 45 phút. Mở đầu 5' · câu hỏi phân khúc 25' · kết 5' · demo 10' (tuỳ chọn, `demo.md`).
+Thời lượng: 45 phút. Mở đầu 5' · câu hỏi phân khúc 25' · kết 5' · demo 10' (tuỳ chọn, ví dụ Blueprint bể cá trên `sim`).
 Không cần hỏi hết; ưu tiên các câu có dấu ★.
 
 Quy ước cột:
@@ -27,9 +27,9 @@ Quy ước cột:
 - **Mã** — giả thuyết câu hỏi kiểm: `P1` (có nỗi đau có số) · `CEO-X2` (quy mô + trả theo thiết bị) ·
   `CEO-X4` (A / C / E) · `CEO-X5` (ai trả, qua đường nào) · `CEO-T1` (P3: offline, đổi chip) ·
   `CEO-T2` (chứng nhận) · `CEO-T3` (đối thủ thật) · `G-e` (chuyến đi hiện trường) · `G-d` (dùng lại
-  chính sách). Phần Maker (§5b, Q-72) thêm `M-SELL` (đã làm và bán/chia sẻ thiết bị cho người khác) ·
-  `M-PROACT` (thông báo chủ động có ích hay bị tắt) · `M-BYOK` (đang tự trả LLM API) · `M-KIT` (đã mua kit
-  hay BOM theo hướng dẫn).
+  chính sách). Phần Maker (§5b, Q-72) ghi giả thuyết bằng lời: *làm cho người khác* (đã làm và bán/chia
+  sẻ thiết bị cho người khác) · *thông báo* (thông báo chủ động có ích hay bị tắt) · *tự trả LLM* (đang
+  tự trả LLM API) · *mua kit* (đã mua kit hay BOM theo hướng dẫn) · *thông điệp* (thẻ ở §5c).
 - **Mạnh** / **Yếu** — tín hiệu nghe thấy.
 
 ## 1. Mở đầu chung (mọi phân khúc)
@@ -126,20 +126,20 @@ Người: kỹ sư tự động hóa, trưởng bảo trì, người phụ trác
 ## 5b. Maker, Home Assistant, ESPHome (Q-72)
 
 Người: maker tự dựng thiết bị bằng Home Assistant, ESPHome, ESP32 hay Raspberry Pi; ưu tiên người **đã từng
-làm thiết bị cho người khác**. Đây là phân khúc người dùng đầu của Q-72, và là nguồn dữ liệu cho điều kiện
-③ ("≥ 1 maker muốn đóng gói và bán"). Vẫn luật §0: hỏi chuyện đã xảy ra,
+làm thiết bị cho người khác**. Đây là phân khúc người dùng đầu của Q-72; một maker muốn bán là điều mở Hub
+thu phí (Q-92 (10)). Vẫn luật §0: hỏi chuyện đã xảy ra,
 **không** nhắc NeuroEdge Blueprint, agent vận hành hay Telegram trước phần kết.
 
 | # | Câu hỏi | Mã | Mạnh | Yếu |
 |:---:|:---|:---|:---|:---|
 | MK1 | Hôm nay bạn đang chạy những gì bằng Home Assistant, ESPHome hay mạch tự làm? Bao nhiêu thiết bị là tự dựng? | — (phân loại) | Đếm được, kể tên: "3 node ESPHome đo nhiệt, 1 bơm tưới" | "Vài cái linh tinh" |
-| MK2 ★ | Thiết bị gần nhất bạn làm **cho người khác** (bạn bè, gia đình, khách) là gì? Kể lại từ lúc họ nhờ tới lúc giao. | `M-SELL` | Người cụ thể, thiết bị cụ thể, ngày giao | "Chưa, nhưng chắc sẽ làm" |
-| MK3 ★ | Bạn đã bán hay chia sẻ YAML, firmware, kit hay bản thiết kế đó chưa? Qua kênh nào (forum, GitHub, nhóm Facebook, chợ online)? Có ai trả tiền không, bao nhiêu? | `M-SELL` | Kênh cụ thể, số người nhận, tự nêu số tiền | "Định đăng lên GitHub" |
-| MK4 ★ | Sau khi giao, thiết bị hỏng thì ai sửa? Lần gần nhất bạn phải sửa một thiết bị đã giao là khi nào, mất bao lâu, có phải tới tận nơi không? | `M-SELL` | Một lần sửa thật, thời gian, chuyến đi | "Chưa hỏng bao giờ" |
-| MK5 ★ | Thông báo gần nhất từ thiết bị trong nhà mà **thật sự có ích** là gì? Còn thông báo gây phiền nhất? Bạn đã tắt kênh hay automation nào vì quá ồn chưa? | `M-PROACT` | Một thông báo cụ thể đã khiến họ làm gì đó; một kênh đã tắt và lý do | "Thông báo thì cũng tiện" |
-| MK6 | Bạn nhận cảnh báo từ thiết bị qua đâu (app Home Assistant, Telegram, Zalo, Discord, email)? Vì sao chọn nó? | `M-PROACT` (phân loại kênh) | Tên kênh, lý do đã cân nhắc | — |
-| MK7 ★ | Hôm nay bạn có đang trả tiền API LLM (OpenAI, Anthropic, Gemini…) hay chạy mô hình tại chỗ không? Tháng trước hết bao nhiêu, dùng vào việc gì? | `M-BYOK` | Tự nêu số tiền tháng trước và việc dùng | "Có tài khoản nhưng ít dùng" |
-| MK8 ★ | Lần gần nhất bạn mua một kit, hay mua linh kiện theo danh sách (BOM) từ một hướng dẫn, blog hay video, là khi nào? Mua ở đâu? Có món nào thiếu, sai hay phải mua lại không? | `M-KIT` | Ngày, nơi mua, một món sai hay thiếu | "Toàn tự chọn linh kiện" |
+| MK2 ★ | Thiết bị gần nhất bạn làm **cho người khác** (bạn bè, gia đình, khách) là gì? Kể lại từ lúc họ nhờ tới lúc giao. | làm cho người khác | Người cụ thể, thiết bị cụ thể, ngày giao | "Chưa, nhưng chắc sẽ làm" |
+| MK3 ★ | Bạn đã bán hay chia sẻ YAML, firmware, kit hay bản thiết kế đó chưa? Qua kênh nào (forum, GitHub, nhóm Facebook, chợ online)? Có ai trả tiền không, bao nhiêu? | làm cho người khác | Kênh cụ thể, số người nhận, tự nêu số tiền | "Định đăng lên GitHub" |
+| MK4 ★ | Sau khi giao, thiết bị hỏng thì ai sửa? Lần gần nhất bạn phải sửa một thiết bị đã giao là khi nào, mất bao lâu, có phải tới tận nơi không? | làm cho người khác | Một lần sửa thật, thời gian, chuyến đi | "Chưa hỏng bao giờ" |
+| MK5 ★ | Thông báo gần nhất từ thiết bị trong nhà mà **thật sự có ích** là gì? Còn thông báo gây phiền nhất? Bạn đã tắt kênh hay automation nào vì quá ồn chưa? | thông báo | Một thông báo cụ thể đã khiến họ làm gì đó; một kênh đã tắt và lý do | "Thông báo thì cũng tiện" |
+| MK6 | Bạn nhận cảnh báo từ thiết bị qua đâu (app Home Assistant, Telegram, Zalo, Discord, email)? Vì sao chọn nó? | thông báo (phân loại kênh) | Tên kênh, lý do đã cân nhắc | — |
+| MK7 ★ | Hôm nay bạn có đang trả tiền API LLM (OpenAI, Anthropic, Gemini…) hay chạy mô hình tại chỗ không? Tháng trước hết bao nhiêu, dùng vào việc gì? | tự trả LLM | Tự nêu số tiền tháng trước và việc dùng | "Có tài khoản nhưng ít dùng" |
+| MK8 ★ | Lần gần nhất bạn mua một kit, hay mua linh kiện theo danh sách (BOM) từ một hướng dẫn, blog hay video, là khi nào? Mua ở đâu? Có món nào thiếu, sai hay phải mua lại không? | mua kit | Ngày, nơi mua, một món sai hay thiếu | "Toàn tự chọn linh kiện" |
 | MK9 | Bạn đã cho LLM hay trợ lý giọng nói điều khiển thiết bị nào chưa? Có lần nào nó làm sai một việc vật lý không? | `P1` · `CEO-X4` | Một lần sai cụ thể, hậu quả | "Chưa thử" |
 | MK10 | Có thiết bị nào mà **tắt** thì nguy hiểm hơn bật (sục khí bể cá, bơm, sưởi vật nuôi)? Khi mất mạng hay mất điện, hôm nay nó làm gì? Đã có chuyện gì vì thế chưa? | `CEO-T1` | Sự cố có ngày, có hậu quả (cá chết, cây héo) | "Chưa nghĩ tới" |
 
@@ -147,8 +147,8 @@ làm thiết bị cho người khác**. Đây là phân khúc người dùng đ�
 
 Đây là lúc đầu tiên được nhắc tới NeuroEdge. Đặt bốn thẻ lên bàn (thẻ D thêm theo Q-81), mỗi thẻ đúng một câu; **không** giải thích
 thêm, **không** nói thẻ nào là của mình. Thứ tự thẻ xoay vòng giữa các cuộc (cuộc 1: A-B-C-D, cuộc 2: B-C-D-A…)
-để thứ tự không quyết thay người nghe. Câu chữ là bản thử của review định vị 2026-10-12; quyết định cuối
-sau cổng: `TODOS.md` #67.
+để thứ tự không quyết thay người nghe. Câu chữ là bản thử của review định vị 2026-10-12; câu định vị đã
+chốt ở Q-82.
 
 | Thẻ | Câu | Góc |
 |:---:|:---|:---|
@@ -159,8 +159,8 @@ sau cổng: `TODOS.md` #67.
 
 | # | Hỏi | Mã | Mạnh | Yếu |
 |:---:|:---|:---|:---|:---|
-| MS1 | "Câu nào khiến bạn muốn thử ngay? Vì sao?" | `M-MSG` (chọn) | Chọn một thẻ và nối nó với một chuyện đã kể ở MK9 hay MK10 | "Câu nào cũng hay" |
-| MS2 | Cuối buổi, sau E4: "Nếu kể cho một người bạn, bạn sẽ nói NeuroEdge là gì?" | `M-MSG` (kể lại) | Kể lại đúng ý một thẻ bằng lời của họ | Lặp lại nguyên văn, hoặc kể sai |
+| MS1 | "Câu nào khiến bạn muốn thử ngay? Vì sao?" | thông điệp (chọn) | Chọn một thẻ và nối nó với một chuyện đã kể ở MK9 hay MK10 | "Câu nào cũng hay" |
+| MS2 | Cuối buổi, sau E4: "Nếu kể cho một người bạn, bạn sẽ nói NeuroEdge là gì?" | thông điệp (kể lại) | Kể lại đúng ý một thẻ bằng lời của họ | Lặp lại nguyên văn, hoặc kể sai |
 
 ## 6. Kết chung (mọi phân khúc)
 
@@ -168,17 +168,16 @@ sau cổng: `TODOS.md` #67.
 |:---:|:---|:---|:---|:---|
 | E1 | "Có điều gì tôi nên hỏi mà chưa hỏi không?" | — | Họ tự mở một vấn đề mới | — |
 | E2 ★ | "Ai khác tôi nên nói chuyện, trong hoặc ngoài công ty anh/chị?" | cam kết | Giới thiệu tên và nhắn luôn | "Để tôi nghĩ" |
-| E3 | "Tôi có một thứ 5 phút liên quan tới chuyện anh/chị vừa kể. Anh/chị muốn xem không?" → `demo.md` phân khúc tương ứng | — | Muốn xem, hỏi tiếp chi tiết kỹ thuật | Lịch sự đồng ý rồi nhìn đồng hồ |
+| E3 | "Tôi có một thứ 5 phút liên quan tới chuyện anh/chị vừa kể. Anh/chị muốn xem không?" → demo hợp phân khúc | — | Muốn xem, hỏi tiếp chi tiết kỹ thuật | Lịch sự đồng ý rồi nhìn đồng hồ |
 | E4 ★ | Sau demo, xin **một** cam kết: buổi thứ hai với người kỹ thuật của họ · một nhật ký sự cố đã ẩn danh · thử trên 1 thiết bị của họ · giới thiệu người ký tiền | cam kết | Đồng ý có ngày, có người | "Gửi tài liệu cho tôi" |
 | E5 | "Tôi có thể liên hệ lại khi có bản chạy trên thiết bị thật không?" | — | Có, và cho kênh liên hệ trực tiếp | — |
 
-Sau demo, **không** hỏi "anh thấy thế nào?" hay "anh có mua không?". Chỉ hỏi hai câu cuối của kịch bản
-demo tương ứng (`demo.md`, mục "Hỏi sau demo") và E4.
+Sau demo, **không** hỏi "anh thấy thế nào?" hay "anh có mua không?". Chỉ hỏi E4.
 
 ## 7. Sau mỗi cuộc (trong 24 giờ)
 
 1. Người ghi làm sạch bản ghi: trích nguyên văn mọi câu có số, ghi thời điểm và ai nói trước.
-2. Trưởng nhóm chấm sơ bộ; người chấm thứ hai chấm độc lập.
+2. Trưởng nhóm đánh dấu tín hiệu **Mạnh** / **Yếu** cho từng câu đã hỏi; người thứ hai đánh dấu độc lập.
 3. Điền một dòng vào bảng tổng hợp (mã ẩn danh `HS-01`, `FL-01`, `SH-01`, `IN-01`, `MK-01`…), **không** tên
    người, không tên công ty.
 4. Nếu người đó điền khảo sát, nối mã khảo sát với mã phỏng vấn trong bảng tiếp cận (ngoài kho).

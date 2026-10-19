@@ -56,7 +56,7 @@ và không có task. Đã sửa:
 * Cài Blueprint theo BL-IN-01 → BL-IN-06; bằng chứng ghi "unsigned" (BL-EV-03); bỏ câu "đã qua Action CI".
 * Trang cục bộ hiện chỉ nghe 127.0.0.1: việc phục vụ cho điện thoại là câu hỏi mở (AP-D-12), không phải điều
   đã có. Vùng khóa chỉ lấy từ những gì `board.v1` khai (AP-D-13).
-* Gia đình tới sản phẩm qua Blueprint của maker trước cổng nhu cầu, chỉ số trước cổng là K1–K5 (Q-85):
+* Gia đình tới sản phẩm qua Blueprint của maker (Q-85; không còn cổng nhu cầu, Q-92 (1)):
   BR-APP-10 tạm dừng (AP-D-16). Trình hướng dẫn thiết bị chỉ trên `sim`; board thật là canvas giai đoạn C,
   hoãn (Q-84).
 * Câu hỏi mở `AP-D-nn`: các câu đã có quyết định được đánh dấu kèm mã, phần còn lại giữ mở; thêm
@@ -69,16 +69,14 @@ Q-92 bỏ cổng nhu cầu 2026-12-06 và tách increment I2g của Q-91 làm ha
 * **I2g, API hộp + web nhà**, mở đầu tiên sau ra mắt công khai (I6): TSK-I2g-01 → TSK-I2g-05 (bốn RFC, API hộp
   dùng chung, web nhà cho gia đình và Studio cho maker) và TSK-I2f-08 (ký duyệt bằng passkey trong web).
 * **I2h, app gốc** (React Native) trên cùng API hộp, sau I2g: TSK-I2g-06 → TSK-I2g-13.
-* Không gì chờ cổng nhu cầu; chỉ số của app đặt bằng dữ liệu ra mắt (TSK-I2g-12). TSK-I2e-13 (ảnh SD cho Pi)
+* Chỉ số của app đặt bằng dữ liệu ra mắt (TSK-I2g-12). TSK-I2e-13 (ảnh SD cho Pi)
   đã cắt (Q-92 (2); lưu ở `roadmap/archive/removed-tasks.md`): cài hộp bằng CLI đến khi có web nhà.
 * Truy cập ngoài nhà qua relay/cloud (I2f) mở theo dữ liệu ra mắt cho thấy người kẹt ở bước cài hộp (Q-74, Q-92 (8)).
 
-Các mục "Thay đổi" bên dưới là bản ghi theo ngày; câu nói về cổng nhu cầu trong đó đã bị Q-92 thay.
-
 ## Thay đổi 2026-10-19 (Q-91)
 
-Q-91 chuyển bản nháp thành SRS đã duyệt cho increment I2g (Home app), chờ sau cổng nhu cầu 2026-12-06; K1–K5
-trước cổng không đổi (Q-85). Đã sửa:
+Q-91 chuyển bản nháp thành SRS đã duyệt cho increment I2g (Home app); Q-92 sau đó tách I2g làm hai (mục trên).
+Đã sửa:
 
 * Trạng thái ở cả bốn tài liệu; mười bảy câu hỏi `AP-D-01` → `AP-D-17` đều ghi "Đã quyết (Q-91 (n))".
 * Dạng app là app gốc iOS và Android bằng React Native (Q-91 (2)); không còn "web di động". Hộp phục vụ API

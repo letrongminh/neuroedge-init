@@ -166,6 +166,8 @@ When reading test results, check the skip column as well.
 
 This is the **sole map** of the repository; other locations refer here.
 
+**Naming and language.** Content is written in English unless a document is Vietnamese by audience (user guides in `docs/user/`, business and partner material in `docs/business/`). Existing Vietnamese file and folder names (`thuat-ngu.md`, `app-di-dong/`, `kien-truc-tong-the.html`…) are kept: tests, CLI strings and generator scripts reference them.
+
 | Path | Contents | Modification Procedure |
 |:---|:---|:---|
 | `schemas/` | Seven frozen schemas: `gate.v1` · `trace.v1` · `board.v1` · `tool-call.v1` · `tool-result.v1` · `error.v1` · `error-codes.v1` (error code catalog, source of `NE…` structure; RFC-0015) | **RFC** (§3) |
@@ -215,21 +217,23 @@ This is the **sole map** of the repository; other locations refer here.
 | `scripts/` | CI and release tooling | Regular PR |
 | `.github/` | Five workflows in `workflows/` — job list in `docs/reference/cli.md` §5; `dependabot.yml` (pins Actions SHAs), `actionlint.yaml` | Regular PR |
 | `docs/rfc/`, `docs/spec/` | RFCs, normative specifications (`lab_mcp.md` is historical: Lab removed, Q-77, Q-88) | Regular PR |
-| `docs/reports/` | Reports: memory benchmark, market snapshot, MVP estimate (superseded by Q-72/Q-77 for I3–I8; see banner) | Regular PR |
-| `docs/business/app-di-dong/` | Home app (increment I2h, the native app after the I2g box API and home web; Q-91, Q-92): user stories, BRD, SRS, clickable prototype | Regular PR |
+| `docs/reports/` | Dated spikes and studies (`README.md` lists them): memory benchmark, esp-emulator spike, market snapshot, MVP estimate (superseded by Q-72/Q-77 for I3–I8; see banner) | Regular PR |
+| `docs/business/app-di-dong/` | Home web and app (I2g box API and home web, I2h native app; Q-91, Q-92): user stories, BRD, SRS, clickable prototype | Regular PR |
 | `LICENSES/`, `NOTICE`, `LICENSING.md` | License texts of ported code (zclaw, MimiClaw, Apache-2.0, OFL) · third-party component matrix (Q-11) · licensing summary | Regular PR; license policy per Q-11 |
 | `CLAUDE.md` | Instructions for coding agents | Regular PR |
 | `docs/architecture/` | Product architecture: `README.md` · 10 chapters `00`–`16` (gaps after Q-77, in English; the `vi/` folder was flattened and the `en/` tree retired, see git history) · `assets/svg/` + `assets/excalidraw/` (posters **generated** from `scripts/gen_architecture_diagrams.py`, do not edit manually) | Regular PR — update poster models then re-run script; mermaid blocks verified by `scripts/check_architecture_mermaid.py`; new inter-package import edges declared in `python/tests/test_architecture_layers.py`; content references code, does not duplicate (§8.1) |
-| *(git history)* | Closed documents not retained in working tree: `docs/archive/` (plans, Phase 1 review minutes, RFC-0002), `docs/architecture/en/`, old proposals, and merged design notes. Retrieve via `git show 7626b62:<path>` | Do not restore into tree; reference current truth from PRD, roadmap, architecture |
-| `docs/business/` | BRD `brd-ambient-intelligence.md` (Q-85) · interview material `cong-nhu-cau-2026-10-25/` (written for the demand gate of Q-72, removed by Q-92; folder keeps the Q-20 date) · `proposal-blueprint-2026-10-11.md` (history only, banner at top) · `kien-truc-tong-the.html` — overall architecture page for non-technical stakeholders: diagrams hand-drawn (source of truth remains `docs/architecture/`), progress blocks between `GENERATED` markers written from roadmap §0 | Regular PR — re-run `python3 scripts/gen_architecture_progress.py` when the roadmap changes; never edit a generated block by hand |
+| *(git history)* | Closed documents not retained in working tree: plans, Phase 1 review minutes, old proposals, the demand-gate interview kit and merged design notes. Retrieve with `git log --all -- <path>` then `git show <commit>:<path>` | Do not restore into tree; reference current truth from PRD, roadmap, architecture |
+| `docs/business/` | Router `README.md` · product proposal `product-proposal.md` · BRD `brd-ambient-intelligence.md` (Q-85) · `app-di-dong/` (row above) · `doi-tac/` (row below; interview guide `doi-tac/phong-van.md`) · `kien-truc-tong-the.html` — overall architecture page for non-technical stakeholders: diagrams hand-drawn (source of truth remains `docs/architecture/`), progress blocks between `GENERATED` markers written from roadmap §0 | Regular PR — re-run `python3 scripts/gen_architecture_progress.py` when the roadmap changes; never edit a generated block by hand |
 | `wireframe/` | Reference HTML wireframes for UI (snapshot `ui.css`, unpackaged) — currently only the Studio wireframe (`studio-v1.html`; Lab wireframes removed, Q-77) | Regular PR |
 | `demo/` | Per-increment demo scenarios (`demo/<increment>/`): narrative script, commands, real outputs, verified replay commit; catalog in `demo/README.md` (Q-49) | Regular PR; reviewer replays scenario |
 | `docs/user/` | User documentation; `thuat-ngu.md` is the sole symbol decoder; `trang-thai.md` generated from roadmap §0 | Regular PR — `python3 scripts/gen_user_status.py` |
 | `docs/user/doi-tac/` · `docs/business/doi-tac/` · `fixtures/ha_mcp_double/` | Partner trial package (Q-70): three runnable guides, limitations page, feedback form · agreements list, feedback channels, benchmark sessions · Home Assistant MCP Server **mock** for guides | Regular PR — all command blocks in guides are marked (`scripts/guide_runner.py`, `test_partner_guides.py`); run `scripts/partner_guides_check.sh <wheel>` when guides change |
+| `docs/README.md` | Docs router: where to start by reader, what lives in each `docs/` folder | Regular PR |
+| `docs/reference/cli.md` | The one place for commands: every command, expected output, exit codes, error messages, CI jobs | Regular PR — update in the same PR as a CLI or CI change |
 | `docs/release.md` | Release procedure: internal tags before I6, PyPI from I6 | Regular PR |
 | `README.md` | Landing page and PyPI page (absolute links) | Regular PR — `tests/test_readme_quickstart.py` |
 | `roadmap/` | Two product documents: roadmap (progress) and PRD (requirements, decisions) | Per file in rows below |
-| `roadmap/neuroedge-roadmap.md` | Single roadmap (Q-39): four phases (§0.5, Q-52), increments I0–I8 and I2a–I2f (removed items: §6), task statuses, exit criteria, forecasts, dependencies, release tags, scope cut ladder | Regular PR, per §8; divergence prevention rules R1–R12 in roadmap §2.4 |
+| `roadmap/neuroedge-roadmap.md` | Single roadmap (Q-39): phases and release milestones (§0.5), increments I0–I8 and I2a–I2h (removed items: §6), task statuses, exit criteria, forecasts, dependencies, release tags, scope cut ladder | Regular PR, per §8; divergence prevention rules R1–R12 in roadmap §2.4 |
 | `docs/spec/lab_mcp.md` | NeuroEdge Lab design, **historical** (Lab removed, Q-77, Q-88; the draft robot node protocol RFC was deleted, see git history). No schedule, no status, no exit criteria (R1, R8) | Regular PR; mergeable even during Beta freeze (R12) |
 | `TODOS.md` | Evaluated and intentionally deferred items, with trigger milestones | Regular PR |
 

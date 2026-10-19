@@ -98,7 +98,6 @@ flowchart TD
         PROXY_MCP["🔌 MCP proxy (proxy mcp · done)"]
         PROXY_HTTP["🌐 HTTP proxy (proxy http · done)"]
         HA_REMOTE["🏠 Home Assistant remote actuators (RFC-0018 · done)"]
-        HA_ADDON["🏠 Home Assistant add-on (planned I2e)"]
         GUARD_LIB["📦 Embedded library neuroedge.guard (FR-EXT-01 · done)"]
     end
 
@@ -175,25 +174,12 @@ other source.
 
 The product ships two ways, one contract (the tool list and `tool-result.v1`), two transports:
 
-```text
- Profile A — Full                                    Profile B — One chip (risk=single_chip)
- 📱 chat ─► NeuroClaw (brain, own OS user,           📱 Telegram ─┐
-            other machine, or Cloud)                  🎙 voice ───┼─► [ ESP32-S3, one image:
-            ══ MCP · HTTPS · mTLS ══►                 🖐 screen ──┘     NeuroClaw-ESP ─ nc_gate ─►
-            NeuroEdge box: gate ─► pins                                ne_brain_bridge ─► ne_gate
-                                                                       ─► token ─► pins ]
-```
+- **Profile A — Full:** chat ─► NeuroClaw (own OS user, another machine, or Cloud) ═ MCP · HTTPS · mTLS ═► box: gate ─► pins.
+- **Profile B — One chip** (`risk=single_chip`): NeuroClaw-ESP and the gate in one ESP32-S3 image, joined by
+  `ne_brain_bridge`; with a screen, microphone and speaker it is the **all-in-one chip** (Q-93, DP-B-18 → DP-B-22).
 
-On a board with a screen, microphone and speaker, Profile B is the **all-in-one chip** (Q-93): the
-gate, NeuroClaw-ESP, the LVGL screen and voice in one image, with no NeuroEdge cloud. Voice is a
-channel of NeuroClaw-ESP like Telegram, not a second brain; speech-to-text and text-to-speech stay
-at the provider the owner configures. An `ask` is answered by the board button, a touch on the
-approval card, an on-chip command word while that card is shown, or the owner's Telegram callback;
-cloud speech-to-text never answers one (DP-B-18 → DP-B-22). Built without a board in
-TSK-I2f-18 → I2f-20; checked on a Box-3 in v1.0 (TSK-I7-03).
-
-Requirements, interfaces and test cases of both profiles: [`docs/spec/deployment_profiles.md`](../spec/deployment_profiles.md).
-How the profiles fit the target architecture: [`15`](15-target-architecture.md) §6.10.
+Requirements and test cases: [`docs/spec/deployment_profiles.md`](../spec/deployment_profiles.md) §2, §3.2–§3.3;
+place in the target architecture: [`15`](15-target-architecture.md) §6.10.
 
 ### 2.3 The execution backbone
 
@@ -284,8 +270,8 @@ NeuroEdge has three parts, plus the CI pipeline that keeps them aligned:
 | **Operator agent** (home box) | Two processes: **trusted runtime** running 24/7 (HAL, gates, mission contracts, scheduler, deterministic detectors, chat channel adapter and approval check, data egress) and **untrusted LLM worker** (holds BYOK keys, calls runtime via local MCP, never approves) — [`02`](02-container-c4l2.md) §3 | Python | `planned · Q-72` (I2d) |
 | **NeuroEdge Blueprint** | Kit + firmware + template contracts + detectors + trace evidence bundle; `blueprint pack`/`install` downloads by URL and verifies full-bundle digest; Hub is static index repository | Files, git/HTTPS | `planned · Q-72` (I2e) |
 
-Q-72 adds three `planned` parts in the table above and external to the machine: operator agent (I2d), NeuroEdge
-Blueprint with Hub index (I2e), and optional cloud relay (`planned · Q-72`, outside I2d/I2e). Fleet OS, Gate Registry, NeuroEdge Lab, multi-node robotics and Jetson were removed from the roadmap (Q-77, Q-88); they are listed in roadmap §6.
+Beyond the table, an optional cloud relay is `planned · Q-72` (outside I2d/I2e). Items removed from the roadmap
+(Q-77, Q-88) are listed in roadmap §6.
 
 ### 5.1 Five-layer logical model
 
@@ -359,8 +345,8 @@ roadmap task — `test_architecture_progress.py` checks both.
 | Gate: resolution, evaluation, tokens | `done` | `done` | `done` on host and QEMU |
 | Pin control | `done` (virtual) | `done` on gpio-sim | `planned` (TSK-S4-01) |
 | Sensors, display | `done` (virtual) | `done` on `i2c-stub`, `vkms` | `planned`; LVGL interface built only on host |
-| Voice (from WAV files) | `done` | `done` | removed (Q-77), roadmap §6 |
-| Real-time voice (microphone) | `done` on laptop (`run --mic`, TSK-I4-04) | `partial` — device opening only | removed (Q-77), roadmap §6 |
+| Voice (from WAV files) | `done` | `done` | not applicable |
+| Real-time voice (microphone) | `done` on laptop (`run --mic`, TSK-I4-04) | `partial` — device opening only | `planned` — only as a NeuroClaw-ESP channel on the all-in-one chip (Q-93, TSK-I2f-19) |
 | Cloud models (System 1, System 2) | `done` | `done` | Profile B: NeuroClaw-ESP calls the LLM from the chip; the box side only evaluates gates |
 | MCP | `done` | `done` | not applicable |
 | Traces, replay, verify | `done` | `done` | `done` (UART, QEMU) |
@@ -378,8 +364,8 @@ roadmap task — `test_architecture_progress.py` checks both.
 - **Not a cloud service.** Today NeuroEdge is a library, a CLI, and firmware; there are
   no servers operated by NeuroEdge. *Will change under Q-72 (`planned · Q-72`):* two optional exceptions,
   never on the safety path — relays only pass TLS by SNI without decrypting; Hub index is a
-  static git repository ([PRD §15](../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
-  LLMs), opens on launch data showing people stuck installing the box (Q-92); rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
+  static git repository ([PRD §15](../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional (Q-74 step 2, Q-92 (8)):* optional NeuroEdge Cloud for the "brain" (chat,
+  LLMs); rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
 - **Does not resell inference tokens** (`docs/architecture/15-target-architecture.md` §3.4; PRD §1.4 N4). The provider abstraction layer is self-hosted in core; users operate and pay model providers directly.
 - **Does not implement SLAM or navigation**; robot bridges (ROS 2, Nav2) left the roadmap with Q-77 ([`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §14).
 - **No paid marketplace** ([`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §14, PF-3).

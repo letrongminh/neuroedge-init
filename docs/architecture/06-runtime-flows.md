@@ -294,7 +294,7 @@ sequenceDiagram
 
 ### 8.1 One command on Profile B: brain and gate in one image (on QEMU · Q-83)
 
-On the all-in-one chip (Q-93) the owner may also speak or touch the screen: speech enters NeuroClaw-ESP as one more channel, so the flow below is unchanged up to the gate; an `ask` is then answered by a touch on the card or an on-chip command word (DP-B-19, DP-B-21) in place of the Telegram button. Planned: TSK-I2f-18, TSK-I2f-19.
+On the all-in-one chip (Q-93) speech and touch are further channels into NeuroClaw-ESP; the flow is unchanged up to the gate, and an `ask` may also be answered by a touch or an on-chip command word (DP-B-19, DP-B-21; TSK-I2f-18, I2f-19).
 
 ```mermaid
 sequenceDiagram

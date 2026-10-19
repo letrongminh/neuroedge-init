@@ -1,6 +1,6 @@
 # NeuroEdge Missions and the operator runtime — Software Requirements Specification
 
-**Status:** approved for TSK-I2d-01 → I2d-21 (Q-71, Q-72, Q-73, Q-83; decisions of §7 are Q-87; MS-FT-04 amended by Q-92). Structure follows ISO/IEC/IEEE
+**Status:** approved for TSK-I2d-01 → I2d-21 (Q-87; current through Q-92). Structure follows ISO/IEC/IEEE
 29148:2018 §9.6. This file is the one place for how a mission contract is written, checked,
 approved and run, and for the box's 24/7 runtime that runs it (CONTRIBUTING.md §8.1). PRD FR-MSN-01
 → 14, FR-AGT-01 → 09, FR-CH-01 → 06, FR-EGR-01 → 04, FR-TRC-11 → 13, FR-TGT-07, FR-CLI-14, FR-CLI-15

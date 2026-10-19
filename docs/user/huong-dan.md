@@ -56,11 +56,11 @@ document describes only what currently exists. Progress: [`trang-thai.md`](trang
 
 | Flywheel | What user does | Grounded in existing work |
 |:---|:---|:---|
-| ① **Build** | Tell Claude (or another MCP client) "tôi muốn trông bể cá" ("I want to monitor the aquarium"); receive kit suggestion, generate firmware, test in `sim` before buying, flash, connect chat channel | Gate, `sim`, sample kits; NeuroEdge Lab flywheel ① (I2d, not yet available) |
+| ① **Build** | Tell Claude (or another MCP client) "tôi muốn trông bể cá" ("I want to monitor the aquarium"); receive kit suggestion, generate firmware, test in `sim` before buying, flash, connect chat channel | Gate, `sim`, sample kits; the standard MCP tool set (TSK-I2d-23, I2d, not yet available) |
 | ② **Run** | Delegate a *mission contract* verbally; *operator agent* runs continuously on home machine, local reflexes, proactive trend alerts and proposals via Telegram; human approves directly in chat | Gate, envelopes, traces; user's LLM (BYOK) |
 | ③ **Share, sell** | Package into a **NeuroEdge Blueprint** (kit, firmware, contract templates, detectors, traces as evidence); others install with one command | `digests.lock`, traces, and `replay` |
 
-Terminology (operator agent, mission contract, Blueprint…): [`thuat-ngu.md`](thuat-ngu.md) §4. Full proposal:
+Terminology (operator agent, mission contract, Blueprint…): [`thuat-ngu.md`](thuat-ngu.md) §4. Product proposal (direction, launch path):
 [`product-proposal.md`](../business/product-proposal.md).
 
 > **NeuroEdge is not a certified safety function** — it has no SIL (IEC 61508) or PL
