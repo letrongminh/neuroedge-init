@@ -5,7 +5,7 @@
 **Version:** 2.0
 
 
-**Created:** September 21, 2026 · **Updated:** October 17, 2026 (Q-90 sync; Q-89: RFC-0019 approved) · change log: `CHANGELOG.md`
+**Created:** September 21, 2026 · **Updated:** October 19, 2026 (Q-91: home app I2g; Q-90 sync) · change log: `CHANGELOG.md`
 
 **Source documents:** `neuroedge-prd.md` · [`TODOS.md`](../TODOS.md)
 
@@ -56,7 +56,7 @@ All codes and symbols used in this document (`I0`–`I8`, removed codes up to `I
 | **Current phase** | 🟡 **Phase MVP (§0.5)**, sequence per Q-72 — I2d and I2e (fish tank NeuroEdge Blueprint traversing all three loops on simulation; I2e starts without I2d's mission core, Q-90) before the 8-week demand gate (its own milestone after I2e, §5.7); remainder of I1, I2a, I2c interleaved; partner trial (Q-70) in parallel; voice (I4, I5) removed (Q-77, §6); Studio paused (Q-72) | Increments and forecast dates: §0.2 |
 | **Open increment** | 🟡 **I2d — Missions and operator agents** (Q-72) | I1 has TSK-I1-02 remaining (reactivated for the 8-week gate) and Studio (paused) · I0 completed 42 / 42 · details §0.2 |
 | **Next milestone** | **8-week demand gate (Q-72, B6–B8)** — thresholds in PRD §11.2; its own milestone on 2026-12-06, after I2e (Q-90, §5.7) | Dates: assumptions in §0.2 · branching by outcome: §5.6 · direct hand-off wheel, not on PyPI (Q-39) |
-| **Last updated** | **2026-10-17** | Session 2026-10-17: Q-90 reconciles the roadmap, PRD and product proposal with the product documents (I2e starts without I2d's mission core; the demand gate is its own milestone, §5.7; commercial licence terms wait for the gate); RFC-0019 approved and TSK-I2d-11 done (Q-89, PR #133). Session 2026-10-16: every sample describes its devices as parts and the page draws servos, motors, inputs and analog channels; greenhouse and full fish tank on the virtual board (TSK-I2d-33). Session 2026-10-16: missions SRS approved (Q-87, `docs/spec/missions.md`, TSK-I2d-01 → I2d-21); pin map approved by the lead engineer, TSK-I2d-32 done (Q-84 phases A, A+ and B complete; canvas C deferred); Blueprint SRS approved (Q-86); the architecture page gains chapter 12, what a person can do today; phone app draft in `docs/app-di-dong/` (proposed, not approved, §8.3); documents synced to Q-77, and Q-88 moves the Lab-only tasks out of I2d (§6). Earlier sessions: `CHANGELOG.md` |
+| **Last updated** | **2026-10-19** | Session 2026-10-19: Q-91 approves the home app as increment I2g (§4.3.7), first after the demand gate; native iOS/Android app in React Native, Studio reopened as the makers' desktop web, four RFCs planned. Session 2026-10-17: Q-90 reconciles the roadmap, PRD and product proposal with the product documents (I2e starts without I2d's mission core; the demand gate is its own milestone, §5.7; commercial licence terms wait for the gate); RFC-0019 approved and TSK-I2d-11 done (Q-89, PR #133). Session 2026-10-16: every sample describes its devices as parts and the page draws servos, motors, inputs and analog channels; greenhouse and full fish tank on the virtual board (TSK-I2d-33). Session 2026-10-16: missions SRS approved (Q-87, `docs/spec/missions.md`, TSK-I2d-01 → I2d-21); pin map approved by the lead engineer, TSK-I2d-32 done (Q-84 phases A, A+ and B complete; canvas C deferred); Blueprint SRS approved (Q-86); the architecture page gains chapter 12, what a person can do today; phone app draft in `docs/app-di-dong/` (proposed, not approved, §8.3); documents synced to Q-77, and Q-88 moves the Lab-only tasks out of I2d (§6). Earlier sessions: `CHANGELOG.md` |
 | **Core CI status** | ✅ **PASS 5083/5083 · SKIP 0** | `python/tests/` 128 test suites; `tests_linux/` 119/119 on kernel; `ui-golden` 66 images; `ota-rollback` phases a–g; `firmware-qemu` added stack guard and six boots via serial console (Q-79); security scanners |
 | **Non-technical blockers** | 🟡 **2 blocking items** | 🔴 Box-3 and RPi 5 have not arrived (TSK-S1-10 → I3; TSK-I2-01) · camera board selected is M5Stack CoreS3 but not yet ordered (Q-61, TSK-I3a-01). Not blocking I2d, I2e: simulation first, physical hardware purchased later (Q-72) |
 | **Deliberate deferrals** | 📋 [`TODOS.md`](../TODOS.md) | Each item includes activation trigger · demand gate reinstated by Q-72 (reversing Q-56); open business questions (`TODOS.md` #19) reviewed at 8-week gate |
@@ -79,6 +79,7 @@ Each row is an increment: a user-visible capability, ending with a release card 
 |  | **I2e — Minimal NeuroEdge Blueprint** | 2026-11-25 | Maker packages working device into NeuroEdge Blueprint (`blueprint pack`); others install with single command from URL + package-wide digest (`blueprint install`), runs on simulation; minimal Hub is static index; fish tank kit with BOM (affiliate links on a separate page); multi-chip project scaffolding (Q-75); community channels; starts without I2d's mission core (Q-90) | **0 / 13** | ⏳ Not started | I2d (only TSK-I2d-28, done; not the mission core, Q-90) | tag `v0.2.5` (internal) · direct hand-off wheel for external testers, no index (like Q-70); PyPI remains at I6 (Q-39) |
 |  | Demand gate 2026-12-06 (a milestone, not an increment — Q-72, Q-90) | 2026-12-06 | Interviews of ≥ 10 people (≥ 5 makers) and the B6–B8 measurement; a `Q-N` records the branch (§5.6, §5.7) | **0 / 2** | ⏸ Waiting for I2e and the gate date (TSK-I2e-10, I2e-11) | I2e; I2d criteria 2 → 7 (Q-90) | a `Q-N` recording the branch |
 |  | **I2f — NeuroEdge Cloud and ESP32 home box** | after 8-week gate (branch) | Conditional (Q-74 step 2): home watch agent needs only chat — NeuroEdge brain operates on NeuroEdge Cloud, isolated single instance per user (Q-76) coordinating multiple devices, multiple homes, multiple users; gate, reflexes, approval checks always reside on home box (Pi, Home Assistant add-on, or ESP32-S3 for single task); standalone ESP32-S3 serves as both brain and gate, with risk labels (Q-79) | **3 / 17** | ⏸ Waiting for demand gate outcome 2026-12-06 (Q-74); exceptions Q-79, Q-83: TSK-I2f-10, I2f-14, I2f-16 complete (I2f-14, I2f-16 on QEMU); I2f-12, I2f-15 host and QEMU parts done; I2f-11, I2f-13 and the board parts await a DevKitC; I2f-17 is a decision note and needs no board (DP-BP-01) | I2e | optional service + ESP32 box firmware |
+|  | **I2g — Home app** | after 8-week gate | A family runs the home from a native phone app (iOS, Android; React Native): home and device views, chat with NeuroClaw, approval cards signed with Face ID or a fingerprint, replay against yesterday, a device wizard that generates gates and parts, content-free push; Studio reopened as the makers' desktop web on the same box API (Q-91) | **0 / 13** | ⏸ Waiting for the demand gate 2026-12-06; opens under branch ① or ② (Q-91 (1)) | I2d, I2e | native app + box API + four RFCs |
 |  | **I3 — Gate on real Box-3** | after I2e | Gate runs on chip, controls real pins; user loads agent independently; `verify` three tier-1 targets for verdict domain | **6 / 16** | 🟡 Boardless portion complete (including firmware generated for agent on QEMU, LVGL interface with golden images); awaiting boards | I1 | tag `v0.3.0` + firmware (internal) |
 |  | **I3a — Extended primitives on `esp32s3`** | after I2e | Four packages on chip: Box-3 and M5Stack CoreS3 with camera (Q-53, Q-61); minimal Pi ↔ ESP32 link with heartbeat, commodity ESP32-S3 board, and Arduino library (Q-75) | **0 / 11** | ⏳ Not started | I2a, I3 | tag `v0.3.1` + firmware (internal) |
 | **Public** | **I6 — Public launch** | after I2e | Public repo, `pip install neuroedge` from PyPI, schemas at public URL, video demo of four packages and Blueprint on `sim`, `linux`, and `esp32s3`; network MCP with authentication, frozen integrator contract, public Python surface (Q-58, Q-63) | **7 / 11** | 🟡 Secret scanning, SBOM, public Python API, network MCP with authentication, integrator contracts in `schemas/` (RFC-0015) complete; RFC-0014 approved (Q-65); awaiting I3a | I2b, I2c, I3a | PyPI `v0.6.0` — first external release |
@@ -93,7 +94,7 @@ Each row is an increment: a user-visible capability, ending with a release card 
 
 ```text
 GOAL: Fish tank Blueprint traversing all three loops on simulator (Q-72) before 8-week gate (B6–B8).
-RECENTLY DONE: Q-89 (RFC-0019 approved, TSK-I2d-11 done, TSK-I2d-12 unblocked); Q-90 (roadmap, PRD and proposal reconciled: I2e starts without I2d's mission core, the demand gate is its own milestone, licence terms wait for the gate); Q-84 complete short of the deferred canvas (TSK-I2d-32 pin map done); Q-85, Q-86 (Blueprint SRS), Q-87 (missions SRS) approved; Q-88 moves Lab-only tasks out of I2d (§6); phone app draft in docs/app-di-dong/ (proposed, not approved, §8.3).
+RECENTLY DONE: Q-91 (home app approved as I2g, after the gate; roadmap restructuring awaits the product owner's review); Q-89 (RFC-0019 approved, TSK-I2d-11 done, TSK-I2d-12 unblocked); Q-90 (roadmap, PRD and proposal reconciled: I2e starts without I2d's mission core, the demand gate is its own milestone, licence terms wait for the gate); Q-84 complete short of the deferred canvas (TSK-I2d-32 pin map done); Q-85, Q-86 (Blueprint SRS), Q-87 (missions SRS) approved; Q-88 moves Lab-only tasks out of I2d (§6); phone app draft in docs/app-di-dong/ (proposed, not approved, §8.3).
 IN PROGRESS (🟡): TSK-I2d-22 (NeuroClaw), TSK-I2d-25 (box + NeuroClaw installer); TSK-I2f-11, I2f-12, I2f-15 (ESP32 Profile B, host and QEMU parts done); also I2a-05, I2a-07, W1-01; I2c-10 → I2c-12; S4-01, S4-04, S4-11; I3a-01; S3-14; S6-03 (rows in §4). Waiting: a DevKitC N16R8 board for TC-COM-07-2, TC-NF-01-1 (TSK-I2f-13, I2f-15); TSK-I2f-17 is a decision note and needs none. NEXT: TSK-I2d-12 (unblocked by RFC-0019, Q-89); the I2d core (missions, TSK-I2d-01 → I2d-21) — most of its tasks have not started; I2e needs only the `blueprint.v1` RFC (TSK-I2e-01) and the fish tank agent (TSK-I2d-28, done) to start (Q-90). The fish tank can already be shown on sim, linux and QEMU (demo/i2b-be-ca-gia-lap/, TSK-I2d-28); I2d forecast 2026-11-11 (§0.2). VPS, tunnel, demo video: TODOS #69.
 NOTE: Hardware commands via c.do() and gate. Untrusted LLM worker. Fail-closed.
 ```
@@ -127,7 +128,7 @@ Phases are how the team plans; **release milestones** are how users perceive the
 | 5 | **Public launch** | Anyone can `pip install neuroedge`; invoke devices from Claude, Home Assistant, or agent frameworks via authenticated MCP | **First time external users can use it** | I6 | Everyone (free non-commercial) |
 | 6 | **v1.0 — into production** | Signed firmware updates, lock device, 24-hour stable run; meets PRD §11.1 acceptance criteria | Reliable enough for product teams to ship in commercial devices | I7 | Everyone; enterprises via commercial license |
 | 7 | **Developer Beta** | 50–100 external developers use it for real on the `1.0.x` line | Real metrics determine commercial direction (branch point §5.6) | I8 | Invited developers |
-| 8 | **One chat box for multiple devices, multiple homes** | Chat with a single brain monitoring the entire mesh: multiple ESP32s, multiple Pis, multiple homes, multiple roles; self-hosted or NeuroEdge Cloud (Q-74, Q-76), or one chip doing both (Profile B, Q-83) | Cloud subscription provides recurring revenue (conditional, after 8-week gate); cloud coordinates without supreme authority — each node enforces its own rules | I2f | Families through makers' Blueprints (directly only if Q-74 step 2 opens, Q-85); homestay owners |
+| 8 | **One chat box for multiple devices, multiple homes** | Run the home from a native phone app — device views, approval cards signed with a fingerprint, replay, a device wizard (I2g, Q-91, first after the gate); chat with a single brain monitoring the entire mesh: multiple ESP32s, multiple Pis, multiple homes, multiple roles; self-hosted or NeuroEdge Cloud (Q-74, Q-76), or one chip doing both (Profile B, Q-83) | Cloud subscription provides recurring revenue (conditional, after 8-week gate); cloud coordinates without supreme authority — each node enforces its own rules | I2f, I2g | Families through makers' Blueprints (directly only if Q-74 step 2 opens, Q-85); homestay owners |
 
 
 ---
@@ -166,6 +167,7 @@ Read `A ◄ B, C` as: A depends on B and C (source: §0.2 Dependencies column).
 - MVP host: `I1 ◄ I0`, `I2 ◄ I1`, `I2a ◄ I2`, `I2b ◄ I2a`, `I2c ◄ I2b`.
 - Q-72, Q-90: `I2d ◄ I2c` (completed portion), `I2e ◄ I2d` (task TSK-I2d-28 only, not the mission core), 8-week demand gate `◄ I2e` and I2d criteria 2 → 7 (on G1, G2).
 - Q-74: `I2f ◄ I2e` and demand gate outcome (conditional).
+- Q-91: `I2g ◄ I2d, I2e` and the demand gate's `Q-N` (branch ① or ②); first increment after the gate.
 - MVP chip: `[boards] ► TSK-S1-10 ► I3 ◄ I1`, `I3a ◄ I2a, I3`.
 - Launch: `I6 ◄ I2b, I2c, I3a`, `I7 ◄ I6`, `I8 ◄ I7`.
 - Critical path: `I2c` (portion) ► `I2d` and `I2e` (I2e does not wait for the mission core, Q-90) ► 8-week gate (Q-72).
@@ -373,7 +375,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **TSK-I1-01** | Hash user PII at source in traces | FR-TRC-06, FR-TRC-07, NFR-PRIV-03 | V1 | ✅ 2026-09-27 | `python/neuroedge/testing/recorder.py` |
 | **TSK-I1-02** | On-site TTFV test suite (3 external developers) | FR-DX-01 | V3 | ⏳ Reactivated per Q-72 | `docs/reports/` |
 | **TSK-I1-03** | Examples in `--help`, scaffold pre-generating `traces/` | FR-CLI-07, FR-TRC-09 | V3 | ✅ 2026-09-26 | `python/neuroedge/cli/examples.py` |
-| **TSK-I1-04** | NeuroEdge Studio local web app | FR-TGT-06, FR-DX-06 | V3 | ⏸ Paused per Q-72 | `python/neuroedge/studio/` |
+| **TSK-I1-04** | NeuroEdge Studio local web app | FR-TGT-06, FR-DX-06 | V3 | ⏸ Paused per Q-72; reopened as the makers' desktop web by TSK-I2g-05 (Q-91) | `python/neuroedge/studio/` |
 
 **Exit criteria I1:**
 
@@ -653,7 +655,7 @@ The 8-week demand gate (interviews, B6–B8, the `Q-N` recording the branch) is 
 | **TSK-I2f-01** | RFC cloud ↔ box channel: signed rules, approval verified at node, command scope ceiling | FR-AGT-10, FR-AGT-11 | V1 + tech lead | ⏸ Awaiting demand gate (Q-74) | `docs/rfc/` |
 | **TSK-I2f-02** | Shared chat channel gateway and relay: chat ↔ instance, box ↔ instance, tier token caps (Q-76) | FR-AGT-10, NFR-COST-01 | V1 + V3 | ⏸ Awaiting TSK-I2f-01 | external service outside repo |
 | **TSK-I2f-07** | Per-user isolated brain instance (microVM), idle sleep, separately encrypted memory | FR-AGT-12, NFR-SEC-* | V1 | ⏸ Awaiting TSK-I2f-02 and TSK-I2d-22 | external service outside repo |
-| **TSK-I2f-08** | Approval signed on phone (passkey), home box independently verifies signature | FR-CH-08, FR-CH-04 | V1 + V3 | ⏸ Awaiting TSK-I2f-01 | `python/neuroedge/channels/` |
+| **TSK-I2f-08** | Approval signed on phone (passkey), home box independently verifies signature; the home app's biometric source comes earlier with TSK-I2g-01 (Q-91 (5)) | FR-CH-08, FR-CH-04 | V1 + V3 | ⏸ Awaiting TSK-I2f-01 | `python/neuroedge/channels/` |
 | **TSK-I2f-09** | Spike: RAM, wake-up latency, and cost per idle instance, before pricing | NFR-COST-01 | V1 | ⏸ Awaiting demand gate (Q-74) | `docs/reports/` |
 | **TSK-I2f-03** | ESP32-S3 box: physical Wi-Fi, receives signed compiled rules, verifies approvals on-chip | FR-AGT-10, FR-OTA-* | V2 | ⏸ Awaiting TSK-I2f-01 and board | `targets/esp32s3/` |
 | **TSK-I2f-04** | Multi-node, multi-home mesh: per-node identity, scope ceilings, auto-lock on anomalies | FR-AGT-11 | V1 | ⏸ Awaiting TSK-I2f-01 | `python/neuroedge/agent/` |
@@ -678,6 +680,42 @@ The 8-week demand gate (interviews, B6–B8, the `Q-N` recording the branch) is 
 - [ ] **Criterion 6:** Same brain implementation runs self-hosted on cheap Linux board and on NeuroEdge Cloud without code branching; two users' instances cannot read each other's memory (Q-76).
 - [ ] **Criterion 7:** `pytest` green, 0 skipped; security review leaves zero high-severity issues.
 - [ ] **Criterion 8 (Q-79):** On DevKitC board, standalone ESP32-S3 receives Telegram chat from owner, invokes tools via `ne_gate`; irreversible actions execute only after physical on-board button press or exact owner ID callback; messages from others discarded and logged.
+
+### 4.3.7 I2g — Home app
+
+**After the demand gate, the first increment it opens (Q-91).** Opens by the gate's `Q-N` under branch ① or ②; under branch ③ that `Q-N` decides again. **Goal:** a family runs the home from a native phone app without writing YAML, gates or contracts; the rules stay in the box and are shown in plain sentences, with details behind "Xem chi tiết". **Requirements:** `docs/app-di-dong/03-srs.md` (AP-*), approved by Q-91; user stories and business case in the same folder.
+
+| | |
+|:---|:---|
+| **Entry conditions** | The demand gate recorded branch ① or ② (§5.7); I2d's approval records running (TSK-I2d-12); I2e's install flow (TSK-I2e-03) |
+| **Design** | Q-91, Q-89, Q-85, Q-73 · `docs/app-di-dong/` · `docs/spec/studio.md` · RFC-0006, RFC-0019 |
+
+| Task code | Description | Requirement | Owner | Status | Evidence |
+|:---|:---|:---|:---|:---|:---|
+| **TSK-I2g-01** | RFC: phone pairing with a one-time code shown on the box, an authenticated API listener on the home network, and a biometric-signed approval source (amends RFC-0006, RFC-0019; `threat_model.md` entry approved by the lead engineer) (Q-91 (3), (5)) | FR-CH-03, FR-CH-04, FR-CH-08 | V1 + tech lead | ⏸ Awaiting demand gate (Q-91) | `docs/rfc/` |
+| **TSK-I2g-02** | RFC: value limits in `board.v1`, the app's lock zone (Q-91 (8)) | FR-ACE-03 | V1 + tech lead | ⏸ Awaiting demand gate (Q-91) | `docs/rfc/` |
+| **TSK-I2g-03** | RFC: the yellow zone in `blueprint.v1` — outside the maker's range, inside the value limits, after explicit acceptance with a risk label; amends BL-IN-04 (Q-91 (8), Q-73) | FR-BP-03 | V1 + tech lead | ⏸ Awaiting TSK-I2g-02 | `docs/rfc/` |
+| **TSK-I2g-04** | RFC: locking gates and parts generated by the app — `neuroedge gate lint` always, then a biometric-signed approval at home (Q-91 (9)) | FR-GATE-04, FR-DX-09 | V1 + tech lead | ⏸ Awaiting TSK-I2g-01 | `docs/rfc/` |
+| **TSK-I2g-05** | Box API shared by the app and Studio; Studio reopened as the makers' desktop web (TSK-I1-04) (Q-91 (4)) | FR-TGT-06, FR-DX-06 | V3 | ⏸ Awaiting TSK-I2g-01 | `python/neuroedge/studio/` |
+| **TSK-I2g-06** | React Native app shell: pairing, Home, Devices, Device detail, Settings (MH-1, MH-3, MH-4, MH-7) | FR-DX-02 | V3 | ⏸ Awaiting TSK-I2g-05 | separate app repository |
+| **TSK-I2g-07** | Approval cards in the app: at most 5 lines (MS-AP-01) plus a supplementary section, biometric signing, Blueprint install consent (BL-IN-05) (MH-2, MH-8) | FR-MSN-12, FR-BP-03 | V3 + V1 | ⏸ Awaiting TSK-I2g-01, TSK-I2g-06 | separate app repository |
+| **TSK-I2g-08** | Activity and replay against yesterday's trace (MH-5) | FR-TRC-01 | V3 | ⏸ Awaiting TSK-I2g-05 | separate app repository |
+| **TSK-I2g-09** | Device wizard generating gates and parts (MH-6), on `sim` and real boards | FR-DX-09 | V3 + V1 | ⏸ Awaiting TSK-I2g-04 | separate app repository · `python/neuroedge/` |
+| **TSK-I2g-10** | Content-free push through APNs and FCM: the box says "something needs you", the app fetches details on the home network (Q-91 (7)) | FR-AGT-06 | V3 | ⏸ Awaiting TSK-I2g-06 | separate app repository · `python/neuroedge/` |
+| **TSK-I2g-11** | App channel in NeuroClaw: the app chats with the brain through a channel of NeuroClaw's own; approvals never pass through it (Q-91 (6), Q-83 (4)) | FR-CH-01 | V1 | ⏸ Awaiting TSK-I2g-06 | `letrongminh/neuroclaw` |
+| **TSK-I2g-12** | App metrics, "blocked wrongly" and performance thresholds, set with gate data (Q-91 (2), (10)) | NFR-COST-02 | team lead + V3 | ⏸ Awaiting demand gate (Q-91) | `docs/reports/` |
+| **TSK-I2g-13** | Tester builds: TestFlight and Google Play internal testing | FR-DX-02 | V3 | ⏸ Awaiting TSK-I2g-07 | store consoles |
+
+**Exit criteria I2g:**
+
+- [ ] **Criterion 1:** the four RFCs (TSK-I2g-01 → I2g-04) approved; `threat_model.md` carries the phone pairing and biometric approval entries.
+- [ ] **Criterion 2:** a family member pairs a phone, approves a contract change with a fingerprint at home and through the box's bot away from home; the trace records the source of each approval.
+- [ ] **Criterion 3:** a gate generated by the device wizard is refused until `gate lint` passes and a biometric-signed approval locks it.
+- [ ] **Criterion 4:** a value in the yellow zone runs only after explicit acceptance and carries its risk label; a value beyond the `board.v1` limits is refused.
+- [ ] **Criterion 5:** push messages carry no content; with the internet cut, the app still works on the home network.
+- [ ] **Criterion 6:** the metrics and thresholds of TSK-I2g-12 are met on tester builds.
+
+Out of I2g: the chain of escalation and the elder-care vertical (Q-72, R-19); Zalo (P1, FR-CH-01); the app on a Profile B one-chip box is not decided.
 
 ### 4.4 I3 — Gate on real Box-3
 
@@ -1059,7 +1097,7 @@ None remaining (Q-77): Track 4 and Track 5 moved to §6.
 
 ### 8.3 Proposed, not approved
 
-- **Phone app for the home** (user stories, BRD, SRS, prototype): `docs/app-di-dong/`. A draft: no tasks, no dates, no scope or progress change here. Its open questions, including AP-D-07 (default escalation timeouts, silent-box threshold) and AP-D-11 (supported browsers, response-time threshold), are still open — `docs/app-di-dong/03-srs.md` §6. Approving it needs a new `Q-N` in PRD §15.
+None. The phone app proposed in `docs/app-di-dong/` was approved by Q-91 as increment I2g (§4.3.7). The restructuring of this roadmap to remove redundant parts, raised with Q-91, waits for the product owner's review (Q-91 (12)).
 
 ---
 

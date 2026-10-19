@@ -1,16 +1,16 @@
 # App nhà trên điện thoại: từ user story đến prototype
 
-> **Trạng thái:** bản nháp đề xuất, 16/10/2026. **Chưa có quyết định `Q-N`, chưa có task trong
-> roadmap; thư mục này không đổi tiến độ hay phạm vi nào.** Muốn đưa vào làm cần một `Q-N` mới ở
-> `roadmap/neuroedge-prd.md` §15, sau khi chủ sản phẩm trả lời các câu hỏi mở `AP-D-nn` của SRS §6.
+> **Trạng thái:** Đã duyệt bởi Q-91 (2026-10-19); increment I2g, chờ sau cổng nhu cầu 2026-12-06.
+> Q-91 (`roadmap/neuroedge-prd.md` §15) đã trả lời các câu hỏi mở `AP-D-01` → `AP-D-17`; SRS là bản đã duyệt
+> cho I2g (task `TSK-I2g-01` → `TSK-I2g-13`, SRS §7). Trước cổng nhu cầu thư mục này không đổi phạm vi nào.
 
 ## Vì sao có thư mục này
 
 Người dùng không muốn viết YAML, gate hay contract, nhưng mỗi nhà một khác nên vẫn phải cấu hình.
-Thư mục này đề xuất một app trên điện thoại: chat với AI, chỉnh con số bằng thanh trượt có ba vùng
-màu, duyệt mọi thay đổi qua hộp (trang cục bộ, hoặc nút trên bot duyệt riêng của hộp với bản ghi có chữ ký,
-RFC-0019; vân tay là phương thức sau, FR-CH-08), xem trước bằng cách chạy lại trace hôm qua, thêm thiết bị qua
-trình hướng dẫn. Gate và contract vẫn ở bên dưới, không biến mất: chúng được sinh ra và chỉ hiện sau
+Thư mục này đặc tả một app gốc iOS và Android (React Native, Q-91 (2)): chat với AI, chỉnh con số bằng thanh
+trượt có ba vùng màu, duyệt mọi thay đổi qua hộp (ký bằng vân tay hoặc Face ID trong nhà; ngoài nhà qua bot
+duyệt riêng của hộp với bản ghi có chữ ký, RFC-0019; Q-91 (3), (5)), xem trước bằng cách chạy lại trace hôm
+qua, thêm thiết bị qua trình hướng dẫn. Gate và contract vẫn ở bên dưới, không biến mất: chúng được sinh ra và chỉ hiện sau
 nút "Xem chi tiết".
 
 ## Đọc theo thứ tự
@@ -20,7 +20,7 @@ nút "Xem chi tiết".
 | 1 | [`01-user-stories.md`](01-user-stories.md) | Ai dùng, muốn gì, xong thì trông thế nào | `US-APP-nn` |
 | 2 | [`02-brd.md`](02-brd.md) | Vì sao đáng làm, thị trường, phạm vi, chỉ số | `BR-APP-nn` |
 | 3 | [`03-srs.md`](03-srs.md) | App phải làm gì, dựa trên phần nào đã có, kiểm chứng ra sao | `AP-xxx-nn`, `AP-D-nn` |
-| 4 | [`prototype/index.html`](prototype/index.html) | Bấm thử 8 màn hình MH-1 → MH-8 (MH để không nhầm với mục tiêu sản phẩm M1–M9) | — |
+| 4 | [`prototype/index.html`](prototype/index.html) | Bấm thử 8 màn hình mẫu MH-1 → MH-8 (MH để không nhầm với mục tiêu sản phẩm M1–M9) | — |
 
 Mỗi tầng truy vết về tầng trước: SRS §4 nối `BR-APP` và `US-APP` với từng yêu cầu `AP`. Ý nghĩa các
 mã ở [`docs/user/thuat-ngu.md`](../user/thuat-ngu.md).
@@ -61,3 +61,21 @@ và không có task. Đã sửa:
   hoãn (Q-84).
 * Câu hỏi mở `AP-D-nn`: các câu đã có quyết định được đánh dấu kèm mã, phần còn lại giữ mở; thêm
   AP-D-12 → AP-D-17. SRS §7 liệt kê thêm các task đã có trong roadmap.
+
+## Thay đổi 2026-10-19
+
+Q-91 chuyển bản nháp thành SRS đã duyệt cho increment I2g (Home app), chờ sau cổng nhu cầu 2026-12-06; K1–K5
+trước cổng không đổi (Q-85). Đã sửa:
+
+* Trạng thái ở cả bốn tài liệu; mười bảy câu hỏi `AP-D-01` → `AP-D-17` đều ghi "Đã quyết (Q-91 (n))".
+* Dạng app là app gốc iOS và Android bằng React Native (Q-91 (2)); không còn "web di động". Hộp phục vụ API
+  có xác thực trong mạng nhà, điện thoại ghép một lần bằng mã dùng một lần hiện trên hộp; ngoài nhà duyệt qua
+  bot của hộp (Q-91 (3)). Studio mở lại làm trang web máy tính cho maker, dùng chung API hộp với app (Q-91 (4)).
+* Duyệt bằng vân tay hoặc Face ID là nguồn người mới, sớm hơn FR-CH-08, chờ RFC (Q-91 (5)). Chat với bộ não qua
+  kênh riêng của NeuroClaw (Q-91 (6)). Báo qua push không nội dung (APNs, FCM) và bot Telegram; Zalo P1; chuỗi
+  leo thang hoãn cùng ngành dọc người cao tuổi (Q-91 (7)).
+* Vùng vàng được phép khi chấp nhận rõ ràng và có nhãn rủi ro, trong giới hạn giá trị của `board.v1`; hai điều
+  này chờ RFC. Thẻ duyệt ≤ 5 dòng, phần bổ sung bên dưới không tính. Gia đình đổi được tham số hợp đồng và gate,
+  linh kiện do trình hướng dẫn sinh (qua `neuroedge gate lint`, khóa bằng duyệt ký sinh trắc tại nhà, chờ RFC);
+  chỉ số của app và ngưỡng hiệu năng là tiêu chí thoát của I2g (Q-91 (8)–(10)).
+* SRS §7 liệt kê `TSK-I2g-01` → `TSK-I2g-13`. Prototype chỉ sửa vài chuỗi cho khớp (Zalo, thông báo không nội dung).

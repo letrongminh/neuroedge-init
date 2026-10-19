@@ -4,7 +4,7 @@
 # Project status
 
 > Generated from [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> the single source of truth for progress. Source last updated: **2026-10-17**.
+> the single source of truth for progress. Source last updated: **2026-10-19**.
 
 ## Executive status
 
@@ -15,7 +15,7 @@
 | Next milestone | **8-week demand gate (Q-72, B6–B8)** — thresholds in PRD §11.2; its own milestone on 2026-12-06, after I2e (Q-90, §5.7) |
 | Core CI status | ✅ **PASS 5083/5083 · SKIP 0** |
 | Non-technical blockers | 🟡 **2 blocking items** |
-| Last updated | **2026-10-17** |
+| Last updated | **2026-10-19** |
 
 ## Increments
 
@@ -31,6 +31,7 @@
 |  | **I2e — Minimal NeuroEdge Blueprint** | 2026-11-25 | **0 / 13** | ⏳ Not started | tag `v0.2.5` (internal) · direct hand-off wheel for external testers, no index (like Q-70); PyPI remains at I6 (Q-39) |
 |  | Demand gate 2026-12-06 (a milestone, not an increment — Q-72, Q-90) | 2026-12-06 | **0 / 2** | ⏸ Waiting for I2e and the gate date (TSK-I2e-10, I2e-11) | a `Q-N` recording the branch |
 |  | **I2f — NeuroEdge Cloud and ESP32 home box** | after 8-week gate (branch) | **3 / 17** | ⏸ Waiting for demand gate outcome 2026-12-06 (Q-74); exceptions Q-79, Q-83: TSK-I2f-10, I2f-14, I2f-16 complete (I2f-14, I2f-16 on QEMU); I2f-12, I2f-15 host and QEMU parts done; I2f-11, I2f-13 and the board parts await a DevKitC; I2f-17 is a decision note and needs no board (DP-BP-01) | optional service + ESP32 box firmware |
+|  | **I2g — Home app** | after 8-week gate | **0 / 13** | ⏸ Waiting for the demand gate 2026-12-06; opens under branch ① or ② (Q-91 (1)) | native app + box API + four RFCs |
 |  | **I3 — Gate on real Box-3** | after I2e | **6 / 16** | 🟡 Boardless portion complete (including firmware generated for agent on QEMU, LVGL interface with golden images); awaiting boards | tag `v0.3.0` + firmware (internal) |
 |  | **I3a — Extended primitives on `esp32s3`** | after I2e | **0 / 11** | ⏳ Not started | tag `v0.3.1` + firmware (internal) |
 | **Public** | **I6 — Public launch** | after I2e | **7 / 11** | 🟡 Secret scanning, SBOM, public Python API, network MCP with authentication, integrator contracts in `schemas/` (RFC-0015) complete; RFC-0014 approved (Q-65); awaiting I3a | PyPI `v0.6.0` — first external release |

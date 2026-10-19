@@ -1,6 +1,6 @@
 # NeuroEdge: product proposal
 
-**Status:** current as of Q-90 (2026-10-17). **Owner of this page:** the product owner. This is a
+**Status:** current as of Q-91 (2026-10-19). **Owner of this page:** the product owner. This is a
 synthesis for a partner, investor or new team member; it is read in about 15 minutes. It **references**
 the documents that own each truth and does not copy them (`CONTRIBUTING.md` §8.1): requirements live in
 the SRS, dates and progress in `roadmap/neuroedge-roadmap.md` §0.2, business requirements and KPIs in
@@ -56,8 +56,10 @@ Blueprints, and a family cannot yet install without a command line (BRD §11 ris
 for families (a Home Assistant add-on, an SD-card image for a Pi, QR pairing) is planned in
 TSK-I2e-12 and TSK-I2e-13 (Q-74 step 1; schedule in roadmap §0.2).
 
-The phone app in `docs/app-di-dong/` is a **draft**: no `Q-N`, no tasks, no change of scope. It becomes
-real only through a new `Q-N` after the product owner answers its open questions `AP-D-nn` (Q-90 (6)).
+The **home app** (`docs/app-di-dong/`) is the family's way in after the gate: a native iOS and Android app
+(React Native) with device views, approval cards signed with a fingerprint, replay and a device wizard; Studio
+reopens as the makers' desktop web on the same box API. It is increment I2g, the first one the gate opens
+(Q-91; roadmap §4.3.7).
 
 ## 4. What the product does: three loops
 
@@ -210,7 +212,7 @@ Removed from the roadmap by Q-77 (voice code on the host stays): **voice** (I4, 
 self-hosted provider (I9, I10), robots (I14), **Jetson** (I16), multimodal and the device ecosystem, and all
 post-Beta increments. Deferred past the gate (Q-85 (4), Q-84): **wearables**, the **paid Hub**,
 **NeuroEdge Cloud** and the ESP32 cloud tier (I2f, with exceptions Q-79 and Q-83), commercial licence
-terms, and the virtual-parts **canvas**. Phone app: draft only (§3).
+terms, and the virtual-parts **canvas**. The home app waits for the gate too, as its first increment (§3).
 
 **Each of these reopens only by a new `Q-N` with data** (Q-77; roadmap §6; PRD §14). Studio (TSK-I1-04)
 remains paused, not removed.
@@ -238,7 +240,7 @@ is a hard fork with its own CI (BRD §11 #8, Q-78).
 | **Name "Blueprint"**: keep or rename | Kept through I2e; decided before the Hub is published, on maker feedback (Q-85 (5)) |
 | **Reflex tier on the chip** | Needs an RFC on the `NETR` layout; until then skill tier only (Q-87 (2)) |
 | **Conditional safety for shipped boards** | An RFC (TSK-I2d-02) must define `safe_state` and interlocks before a Blueprint may carry a board profile (Q-86 (2)) |
-| **Phone app** | Draft; open questions `AP-D-nn` (for example form of the app, passkey earlier than I2f, out-of-home access) wait for the product owner; needs a new `Q-N` (`docs/app-di-dong/README.md`, Q-90 (6)) |
+| **Home app** | Decided (Q-91): I2g after the gate; four RFCs to write (biometric approval source, `board.v1` value limits, the yellow zone, locking app-generated gates) |
 | **Local-only approval gates** | Wait for TSK-I2d-20; today every `ask` may be answered remotely within the cap (Q-89 (3)) |
 | **Cloud, paid Hub, licence terms, wearables** | After the gate, by a new `Q-N` (Q-85 (4)) |
 | **Positioning line** | A check against interviews, not a gate (Q-82) |
@@ -257,5 +259,5 @@ is a hard fork with its own CI (BRD §11 #8, Q-78).
 | Signed approval records | `docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md` |
 | What works today | `README.md`; `docs/architecture/vi/00-overview.md` §6.1 |
 | Licence | `LICENSING.md`, Q-45 |
-| Phone app (draft, no decision) | `docs/app-di-dong/README.md` |
+| Home app (Q-91, I2g) | `docs/app-di-dong/README.md` |
 | Historical proposal (superseded) | `docs/business/proposal-blueprint-2026-10-11.md` |

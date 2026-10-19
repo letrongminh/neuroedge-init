@@ -554,6 +554,7 @@ INCREMENTS = {
     "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I2c": "Open platform: plug-in SDK",
     "I2d": "Missions and operating agent", "I2e": "NeuroEdge Blueprint MVP",
     "I2f": "Cloud brain · one-chip profile",
+    "I2g": "Home app on the phone",
     "I3": "Gate on a real Box-3",
     "I3a": "New primitives on esp32s3", "I6": "Public release", "I7": "v1.0 = MVP",
     "I8": "Developer Beta",
@@ -582,7 +583,7 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
 MILESTONES = {
     1: "Try it on a laptop", 2: "Real devices on a Raspberry Pi", 3: "The gate on a $5 chip",
     4: "Build and run by chat, share a Blueprint", 5: "Public launch: first outside users",
-    6: "v1.0: ready to ship in products", 7: "Developer Beta", 8: "One chat for many devices and homes",
+    6: "v1.0: ready to ship in products", 7: "Developer Beta", 8: "One chat and a home app for many devices",
 }
 
 

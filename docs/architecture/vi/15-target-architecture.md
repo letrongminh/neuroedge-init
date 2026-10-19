@@ -60,7 +60,7 @@ flowchart LR
 ---
 
 ![E-09 · Evolution milestones](../assets/svg/E-09-evolution.svg)
-*Figure E-09 — Eight release milestones post-Q-77 (milestone 8 is conditional I2f, Q-74), each milestone grouping its increments; status, progress, and forecast date.*
+*Figure E-09 — Eight release milestones post-Q-77 (milestone 8: the home app I2g first after the gate, Q-91, and the conditional I2f, Q-74), each milestone grouping its increments; status, progress, and forecast date.*
 
 ## 2. Horizon 1 — On-Device v1.0 (I2a–I7)
 

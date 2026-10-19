@@ -216,7 +216,7 @@ This is the **sole map** of the repository; other locations refer here.
 | `.github/` | Five workflows in `workflows/` — job list in `CHANGELOG.md` §2.5; `dependabot.yml` (pins Actions SHAs), `actionlint.yaml` | Regular PR |
 | `docs/rfc/`, `docs/spec/` | RFCs, normative specifications (`lab_mcp.md` is historical: Lab removed, Q-77, Q-88) | Regular PR |
 | `docs/reports/` | Reports: memory benchmark, market snapshot, MVP estimate (superseded by Q-72/Q-77 for I3–I8; see banner) | Regular PR |
-| `docs/app-di-dong/` | Phone app draft: user stories, BRD, SRS, clickable prototype. Draft, no decision (no Q-N) | Regular PR |
+| `docs/app-di-dong/` | Home app (increment I2g, Q-91): user stories, BRD, SRS, clickable prototype | Regular PR |
 | `LICENSES/`, `NOTICE`, `LICENSING.md` | License texts of ported code (zclaw, MimiClaw, Apache-2.0, OFL) · third-party component matrix (Q-11) · licensing summary | Regular PR; license policy per Q-11 |
 | `CLAUDE.md` | Instructions for coding agents | Regular PR |
 | `docs/architecture/` | Bilingual product architecture: `README.md` · `vi/` (10 chapters, `00`–`16` with gaps after Q-77, in English; the `en/` tree was retired, see git history) · `assets/svg/` + `assets/excalidraw/` (posters **generated** from `scripts/gen_architecture_diagrams.py`, do not edit manually) | Regular PR — update poster models then re-run script; mermaid blocks verified by `scripts/check_architecture_mermaid.py`; new inter-package import edges declared in `python/tests/test_architecture_layers.py`; content references code, does not duplicate (§8.1) |
