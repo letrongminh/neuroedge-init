@@ -53,12 +53,12 @@ All codes and symbols used in this document (`I0`–`I8`, removed codes up to `I
 
 | Indicator | Current status | Notes & Links |
 |:---|:---|:---|
-| **Current phase** | 🟡 **Phase MVP (§0.5)**, lean path of Q-92 — I2d (with its mission core) and I2e lead to the public launch (I6), with `esp32s3` verified on esp-emulator in I3, I3a; no demand gate; remainder of I1, I2a, I2c and Profile B in parallel; partner trial (Q-70) in parallel; voice (I4, I5) removed (Q-77, §6) | Increments and forecast dates: §0.2 |
+| **Current phase** | 🟡 **Phase MVP (§0.5)**, lean path of Q-92 — I2d (with its mission core) and I2e lead to the public launch (I6), with `esp32s3` verified on esp-emulator in I3, I3a; no demand gate; remainder of I1, I2a, I2c and Profile B in parallel; the neurosim experiment (I3b, Q-94, own repository) beside the launch path; partner trial (Q-70) in parallel; voice (I4, I5) removed (Q-77, §6) | Increments and forecast dates: §0.2 |
 | **Open increment** | 🟡 **I2d — Missions and operator agents** (Q-72) | I1 has TSK-I1-02 remaining and Studio (paused until I2g, Q-92) · I0 completed 42 / 42 · details §0.2 |
 | **Next milestone** | **Public launch (I6, PyPI 0.6, free for non-commercial use)** — after I2d, I2e and I3a on esp-emulator (Q-92) | Dates: assumptions in §0.2 · no demand gate (Q-92 (1)); the first adoption signal is launch telemetry (FR-TEL-01) |
 | **Last updated** | **2026-10-19** | Changes: `CHANGELOG.md` §1 |
 | **Core CI status** | ✅ **PASS 5083/5083 · SKIP 0** | `python/tests/` 128 test suites; `tests_linux/` 119/119 on kernel; `ui-golden` 66 images; `ota-rollback` phases a–g; `firmware-qemu` added stack guard and six boots via serial console (Q-79); security scanners |
-| **Non-technical blockers** | 🟡 **1 blocking item, for v1.0 only** | 🔴 Box-3, RPi 5 and the CoreS3 camera board are not ordered; they block I7's real-board checks (TSK-S1-10, TSK-I3a-01 and others moved by Q-92) and TSK-I2-01, not the launch: `esp32s3` is verified on esp-emulator (Q-92 (4)) |
+| **Non-technical blockers** | 🟡 **1 blocking item, for v1.0 only** | 🔴 One Box-3 is bought now for I3b (Q-94 (3), TSK-I3b-06); the other Box-3 units, RPi 5 and the CoreS3 camera board are not ordered; they block I7's real-board checks (TSK-S1-10, TSK-I3a-01 and others moved by Q-92) and TSK-I2-01, not the launch: `esp32s3` is verified on esp-emulator (Q-92 (4)) |
 | **Deliberate deferrals** | 📋 [`TODOS.md`](../TODOS.md) | Each item includes activation trigger · demand gate removed by Q-92; open business questions (`TODOS.md` #19) reviewed with launch data |
 
 ---
@@ -82,11 +82,12 @@ Each row is an increment: a user-visible capability, ending with a release card 
 |  | **I2h — Native home app** | after I2g | The same home in a native iOS and Android app (React Native) on I2g's box API: chat with NeuroClaw, approval cards signed with Face ID or a fingerprint, a device wizard that generates gates and parts, content-free push (Q-91, Q-92 (8)) | **0 / 8** | ⏸ Opens after I2g (Q-92 (8)) | I2g | native app + NeuroClaw app channel |
 |  | **I3 — Gate on `esp32s3`** | after I2e | Gate runs on the chip and decides on emulated pins; user loads agent independently; `verify` three tier-1 targets for verdict domain, `esp32s3` on esp-emulator (Q-92 (4)) | **7 / 12** | 🟡 Boardless portion complete (firmware generated for agent on QEMU, LVGL interface with golden images); esp-emulator spike done (TSK-I3-02): same gate verdicts as QEMU; CI job next (TSK-I3-04); board tasks moved to I7 (Q-92 (5)) | I1 | tag `v0.3.0` + firmware (internal) |
 |  | **I3a — Extended primitives on `esp32s3`** | after I2e | Sensors, PWM and motion on the chip, verified on esp-emulator; minimal Pi ↔ ESP32 link with heartbeat, commodity ESP32-S3 board, and Arduino library (Q-75); camera and physical checks in I7 (Q-92 (5)) | **0 / 9** | ⏳ Not started | I2a, I3 | tag `v0.3.1` + firmware (internal) |
+|  | **I3b — Sim-to-Silicon (neurosim stage 1)** | after Q-94 | Experiment of Q-94 in its own repository `letrongminh/neurosim` (MIT): `neurosim new` → `neurosim sim` on a simulated ESP32-S3-BOX-3 (pinned esp32sim, pre-built image configured at run time, no Docker or ESP-IDF) → `neurosim flash` of the same image to a real Box-3; this repository builds the image | **0 / 8** | ⏳ Not started; spikes done (esp32sim runs the image with QEMU's trace, Box-3 board prototype) | I3 (boardless part); pulls TSK-S4-01, TSK-I3a-02, I3a-03, TSK-I2f-18, I2f-20 forward | Box-3 image as a release asset here; `neurosim-esp` on PyPI from its repository |
 | **Public** | **I6 — Public launch** | after I2d, I2e, I3a | Public repo, `pip install neuroedge` from PyPI, schemas at public URL, video demo of four packages and Blueprint on `sim`, `linux`, and `esp32s3` on esp-emulator; network MCP with authentication, frozen integrator contract, public Python surface (Q-58, Q-63); free for non-commercial use (Q-92 (10)) | **7 / 11** | 🟡 Secret scanning, SBOM, public Python API, network MCP with authentication, integrator contracts in `schemas/` (RFC-0015) complete; RFC-0014 approved (Q-65); awaiting I2d, I2e, I3a | I2b, I2c, I2d, I2e, I3a | PyPI `v0.6.0` — first external release |
 | **v1.0 = MVP** | **I7 — v1.0** | after I6 | MVP launch (Q-52): signed A/B OTA, device security, 24-hour on-chip stability and the two-week runtime run; the real-board checks of I3, I3a (Q-92 (5)); the all-in-one chip on a Box-3 (Q-93); meets PRD §11.1 criteria | **4 / 20** | 🟡 Action pinning, attestation complete; signed A/B OTA + rollback complete on QEMU; awaiting I6 and boards | I6 | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | after I7 | 50–100 external developers on `1.0.x` line; measure B1–B5, select branch | **0 / 1** | ⏳ Not started | I7 | `1.0.x` (patches only) |
 
-**Forecast Assumptions (Q-39, Q-72, Q-92):** I2d only requires the completed portion of I2c (`neuroedge.guard`, half (a) of RFC-0017), so its forecast is earlier than I2c. I2e does not wait for I2d's mission core (Q-90). There is no demand gate (Q-92 (1)): I3 → I7 are open, I3 and I3a verify `esp32s3` on esp-emulator, and the public launch (I6) follows I2d, I2e and I3a; their dates are set in the PR with the evidence (R5). I2f, I2g and I2h follow the launch. Voice, Lab, and all post-Beta increments have been dropped per Q-77 (§6), except on-chip voice for the Profile B all-in-one (Q-93). Simulation and emulation first, physical hardware for v1.0 (Q-92 (5)). One engineer + AI agent (Q-60, §1.1). Q-92 replaces Q-52's "dates shift, scope is not cut": scope is cut when a cut shortens the path to the first external user.
+**Forecast Assumptions (Q-39, Q-72, Q-92):** I2d only requires the completed portion of I2c (`neuroedge.guard`, half (a) of RFC-0017), so its forecast is earlier than I2c. I2e does not wait for I2d's mission core (Q-90). There is no demand gate (Q-92 (1)): I3 → I7 are open, I3 and I3a verify `esp32s3` on esp-emulator, and the public launch (I6) follows I2d, I2e and I3a; their dates are set in the PR with the evidence (R5). I2f, I2g and I2h follow the launch. I3b is the Q-94 experiment beside the launch path, about three weeks of agent time (its date is set with evidence, R5); it pulls five chip tasks forward and its checkpoint decides the positioning, not the launch. Voice, Lab, and all post-Beta increments have been dropped per Q-77 (§6), except on-chip voice for the Profile B all-in-one (Q-93). Simulation and emulation first, physical hardware for v1.0 (Q-92 (5)). One engineer + AI agent (Q-60, §1.1). Q-92 replaces Q-52's "dates shift, scope is not cut": scope is cut when a cut shortens the path to the first external user.
 
 ---
 
@@ -94,8 +95,8 @@ Each row is an increment: a user-visible capability, ending with a release card 
 
 ```text
 GOAL: Public launch (I6, PyPI 0.6) on the lean path of Q-92: I2d with its mission core, the trimmed I2e (9 tasks), I3/I3a verified on esp-emulator.
-RECENTLY DONE: see CHANGELOG.md §1 (latest decision: Q-93).
-IN PROGRESS (🟡): TSK-I2d-22 (NeuroClaw), TSK-I2d-25 (box + NeuroClaw installer); TSK-I2f-11, I2f-12, I2f-15 (ESP32 Profile B, continues in parallel, Q-92 (3)); also I2a-05, I2a-07, W1-01; I2c-10 → I2c-12; S4-01, S4-04, S4-11; S3-14; S6-03 (rows in §4). NEXT: TSK-I3-04 (esp-emulator job in CI); TSK-I2d-12 (unblocked by RFC-0019, Q-89); the I2d mission core (TSK-I2d-01 → I2d-21, six RFCs await the tech lead); I2e needs only the `blueprint.v1` RFC (TSK-I2e-01, now also carrying contracts and detectors, Q-92 (7)) and the fish tank agent (TSK-I2d-28, done). Before launch the runtime runs 3 days without error plus a simulation stress test (I2d criterion 8, Q-92 (6)). VPS, tunnel, demo video: TODOS #69.
+RECENTLY DONE: see CHANGELOG.md §1 (latest decision: Q-94).
+IN PROGRESS (🟡): TSK-I2d-22 (NeuroClaw), TSK-I2d-25 (box + NeuroClaw installer); TSK-I2f-11, I2f-12, I2f-15 (ESP32 Profile B, continues in parallel, Q-92 (3)); also I2a-05, I2a-07, W1-01; I2c-10 → I2c-12; S4-01, S4-04, S4-11; S3-14; S6-03 (rows in §4). NEXT: TSK-I3-04 (esp-emulator job in CI); TSK-I2d-12 (unblocked by RFC-0019, Q-89); the I2d mission core (TSK-I2d-01 → I2d-21, six RFCs await the tech lead); I2e needs only the `blueprint.v1` RFC (TSK-I2e-01, now also carrying contracts and detectors, Q-92 (7)) and the fish tank agent (TSK-I2d-28, done). Before launch the runtime runs 3 days without error plus a simulation stress test (I2d criterion 8, Q-92 (6)). VPS, tunnel, demo video: TODOS #69. EXPERIMENT (Q-94): I3b, neurosim (own repo) `new` → `sim` → `flash` on a Box-3; first TSK-I3b-08 (baseline log), then TSK-I3b-01, I3b-02.
 NOTE: Hardware commands via c.do() and gate. Untrusted LLM worker. Fail-closed.
 ```
 
@@ -123,7 +124,7 @@ Phases are how the team plans; **release milestones** are how users perceive the
 |:---:|:---|:---|:---|:---|:---|
 | 1 | **Try on laptop** | Install a single package, run a gated agent on the simulator in under 10 minutes; no hardware, account, or API key needed | Product entry point: anyone can try without spending money on hardware | I0, I1 | Team and internal testers |
 | 2 | **Physical device on Raspberry Pi** | Wire a kit (light, door, fan, sensors, camera, motor) to Pi 5; same agent, same gate as on laptop; connect third-party products (Muse, Home Assistant, existing MCP servers) via plugins and proxies | First time an AI command touches physical hardware while passing through contracts — even commands from other ecosystems | I2, I2a, I2b, I2c | Team, internal testers, and one partner team (proxy portion, `neuroedge.guard`, `sim` — Q-70) |
-| 3 | **Gate running on a $5 chip** | Build an agent's ESP32-S3 firmware and run it on esp-emulator; the gate decides on the chip, blocking correctly even when offline; flashing a real Box-3 or CoreS3 is verified in v1.0 (Q-92 (5)) (the all-in-one image with the brain inside is Profile B of Q-83, built in I2f) | Safety without cloud dependence; same contract from laptop to microcontroller | I3, I3a | Team and internal testers; everyone from the public launch |
+| 3 | **Gate running on a $5 chip** | Build an agent's ESP32-S3 firmware and run it on esp-emulator; the gate decides on the chip, blocking correctly even when offline; flashing a real Box-3 or CoreS3 is verified in v1.0 (Q-92 (5)) (the all-in-one image with the brain inside is Profile B of Q-83, built in I2f). Q-94 experiment, the separate product neurosim: run an idea on a simulated Box-3 with `neurosim sim`, then `neurosim flash` the same image to a real one (I3b) | Safety without cloud dependence; same contract from laptop to microcontroller; an idea no longer waits for a board | I3, I3a, I3b | Team and internal testers; everyone from the public launch |
 | 4 | **Assemble and run via conversation, share Blueprints** | Describe device in words to current AI (Claude Code, Claude Desktop); AI writes actions, gates, envelopes, and mission contracts via NeuroEdge MCP tools; NeuroEdge grades, human approves before locking; operator agent monitors device all day, proactively reporting and requesting approval via Telegram; package device into NeuroEdge Blueprint for others to install with a single command | Shrinks building a contracted device from a day to minutes; contracts and traces serve as proof for strangers to install and makers to sell (Q-72); ships in the public launch (Q-92) | I2d, I2e | Team, internal testers, and external testers trying Blueprints on simulation via direct hand-off wheel (Q-72); everyone from the public launch |
 | 5 | **Public launch** | Anyone can `pip install neuroedge`, with milestones 3 and 4 inside it; invoke devices from Claude, Home Assistant, or agent frameworks via authenticated MCP | **First time external users can use it**; its telemetry is the first adoption signal (Q-92 (1)) | I6 | Everyone (free non-commercial) |
 | 6 | **v1.0 — into production** | Signed firmware updates, lock device, 24-hour stable run and the two-week runtime run; real Box-3 and CoreS3 boards, camera on the chip; meets PRD §11.1 acceptance criteria | Reliable enough for product teams to ship in commercial devices | I7 | Everyone; enterprises via commercial license |
@@ -167,6 +168,7 @@ Read `A ◄ B, C` as: A depends on B and C (source: §0.2 Dependencies column).
 - MVP host: `I1 ◄ I0`, `I2 ◄ I1`, `I2a ◄ I2`, `I2b ◄ I2a`, `I2c ◄ I2b`.
 - Q-72, Q-90: `I2d ◄ I2c` (completed portion), `I2e ◄ I2d` (task TSK-I2d-28 only, not the mission core).
 - MVP chip (Q-92): `I3 ◄ I1` on esp-emulator (TSK-I3-02, TSK-I3-04), `I3a ◄ I2a, I3`; boards only for I7.
+- Experiment (Q-94): `I3b ◄ I3` (boardless part) plus five tasks pulled forward (TSK-S4-01, TSK-I3a-02, I3a-03, TSK-I2f-18, I2f-20); off the launch critical path; one Box-3.
 - Launch (Q-92): `I6 ◄ I2b, I2c, I2d, I2e, I3a`, `I7 ◄ I6` plus `[boards]`, `I8 ◄ I7`.
 - After the launch (Q-92 (8)): `I2f ◄ I2e` opens on launch data (Q-74); `I2g ◄ I2d, I2e` opens after I6 (forecast); `I2h ◄ I2g`.
 - Critical path: six I2d mission RFCs (tech lead) ► I2d mission core ► `I6`; in parallel `I2e` and `I3a` on esp-emulator.
@@ -794,6 +796,39 @@ The memory spike on a real Box-3, the nightly runner on a board, physical `digit
 - [ ] **Criterion 5:** Serial wire cut between host and ESP32 ⇒ all mechanisms return to `safe_state` within declared timeout, with trace; verified on two-process `sim` and on `sim` ↔ esp-emulator over UART (Q-75); the physical wire cut is in I7.
 - [ ] **Criterion 6:** Commodity ESP32-S3 WROOM board runs locked gate and correctly rejects corpus, without requiring Box-3, from both ESP-IDF firmware and Arduino sketch (Q-75).
 
+### 4.4.2 I3b — Sim-to-Silicon (neurosim stage 1)
+
+**Experiment of Q-94, beside the launch path of Q-92, as a separate product.** The CLI and its view live in `letrongminh/neurosim` (MIT, `pip install neurosim-esp`); the image, the gate and the checks live here, and this table tracks both. A maker without a board picks a Blueprint or parts, runs the idea on a simulated ESP32-S3-BOX-3 and flashes the same image to a real Box-3. Q-94 (7) decides from this increment's result whether the positioning changes; stage 2 is `TODOS.md` #71.
+
+| | |
+|:---|:---|
+| **Goal** | `neurosim new` → `neurosim sim` → `neurosim flash` (PRD goal M10): one pre-built Box-3 image, configured at run time, in a pinned esp32sim and on the board; no Docker or ESP-IDF on the user's machine |
+| **Entry conditions** | I3's boardless part (done); pulled forward from other increments: TSK-S4-01 (pin writer), TSK-I3a-02, TSK-I3a-03 (`digital.in`, `analog.in`, PWM), TSK-I2f-18 (screen in the image), TSK-I2f-20 (flash and memory budget, screen without audio) |
+| **Design** | Q-94 · `docs/design.md` of `letrongminh/neurosim` · `docs/reports/esp32sim-velxio-spike-2026-10-19.md`, `docs/reports/esp32sim-box3-feasibility-2026-10-19.md` |
+| **Assignee** | V2 (lead), V1, V3, product owner |
+
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-I3b-01** | Pinned esp32sim fork: `box3` board (screen on `SPI2_HOST`, GT911 touch, ES8311 speaker, ES7210 microphones with the full-duplex I2S fix and WAV input), non-zero exit on a panic loop, per-platform binaries with checksums as release assets | FR-TGT-03, FR-CI-06 | V2 | ⏳ Not started; the board prototype is in the feasibility report | esp32sim fork · `docs/reports/` |
+| **TSK-I3b-02** | Spike: networking from esp32sim to a cloud LLM and Telegram (joining the virtual AP, DHCP, DNS, TLS); a host bridge if NAT fails, with the parity it loses written down | FR-CH-01, FR-TGT-04 | V2 | ⏳ Not started | `docs/reports/` |
+| **TSK-I3b-03** | Pre-built Box-3 image configured at run time: a fail-closed parser for the pins, PWM and ADC of `board.toml` and `agent.toml` (conflicts refused) written to NVS; re-estimated first with a one-PWM, one-ADC spike; published as a release asset | FR-HAL-02, FR-TGT-03 | V2 | ⏳ Not started | `targets/esp32s3/` |
+| **TSK-I3b-04** | `neurosim new` part picker, `neurosim sim`, `neurosim flash`; secrets in the OS keychain (fallback `.neurosim/secrets`, mode 0600) into NVS or `ne_config`; defined behaviour when a TOML file changes while `sim` runs | FR-DX-04, FR-TGT-03 | V1 | ⏳ Not started | `letrongminh/neurosim` |
+| **TSK-I3b-05** | neurosim's own view for `neurosim sim`: pins and the simulated screen (Studio stays paused) | FR-HAL-01 | V3 | ⏳ Not started | `letrongminh/neurosim` |
+| **TSK-I3b-06** | One ESP32-S3-BOX-3 (breadboard dock checked before buying, Q-94 (3)); verification report: `flash`, a deliberately failed flash and its recovery, the same masked NE1 trace for the normative trace sessions on board and in simulation, with what esp32sim does not model listed | FR-TGT-04 | V2 + product owner | ⏳ Not started | `docs/reports/` |
+| **TSK-I3b-07** | Hidden-gate RFC, writing only: a part that can cause real harm, or is unclassified, is gated; harmless parts run without a prompt; `neuroedge gate lint` invariants kept (code in stage 2) | FR-GOV-04 | V1 + tech lead | ⏳ Not started | `docs/rfc/` |
+| **TSK-I3b-08** | Checkpoint measurement (Q-94 (7)): the founder's baseline log taken before I3b opens (setup minutes, idea-to-running minutes); signal 2 measured from `new` → first `sim` run (FR-TEL-01) or a written manual protocol | FR-TEL-01 | product owner | ⏳ Not started | `docs/reports/` |
+
+**Exit criteria I3b:**
+
+- [ ] **Criterion 1:** Cold path measured on a clean machine: `pip install neurosim-esp`, `neurosim new`, `neurosim sim` runs a Blueprint in under 15 minutes with no board, Docker or ESP-IDF.
+- [ ] **Criterion 2:** `neurosim flash` puts the same image on the Box-3 and reads `NE_SELFTEST PASS`; a deliberately failed flash recovers through download mode.
+- [ ] **Criterion 3:** The normative trace sessions give the same NE1 trace on board and in simulation, with `offset_ms`, `boot_id` and `device_id` masked (TSK-I3b-06).
+- [ ] **Criterion 4:** A user of any shipped Blueprint sees no gate prompt for its harmless parts.
+- [ ] **Criterion 5:** A panicking image makes `neurosim sim` exit non-zero; a checksum mismatch on download is refused.
+- [ ] **Criterion 6:** `pytest` green, 0 skipped, here and in `letrongminh/neurosim`.
+
+Out of I3b: voice in firmware (TSK-I2f-19, Q-93), bus parts other than the Box-3's own (through `neuroedge build`), other boards, replacing QEMU in the repository's CI.
+
 ### 4.7 I6 — Public launch
 
 | | |
@@ -1042,6 +1077,8 @@ All decided architectural decisions (`Q-N`) are maintained in detail at [PRD §1
 | Before the Hub is published | Q-85 (5) | Decide the name "Blueprint", kept through I2e | Q-85 fixes the date: after I2e, before publication | Product owner | ⏳ Open |
 | Before TSK-I2d-11, I2d-12 code | RFC-0019 (PR #133) | Approve the draft RFC for box-signed approval records and the box's own approval bot (Q-83, `docs/spec/missions.md` MS-CH-02, MS-CH-03) | Unblocks TSK-I2d-11, I2d-12 and TC-A-06-1, TC-A-06-2 | Lead engineer | ✅ Approved 2026-10-16 (Q-89) |
 | Before TSK-I2d-12 | `TODOS.md` #62 | Chat channel pairing lifecycle: local pairing, revocation, approval ceiling — decided by Q-89 (RFC-0019 §9) | Compromised chat account could approve on owner's behalf | Product owner | ✅ Decided 2026-10-16 (Q-89) |
+| Four weeks after I3b closes | Q-94 (7) | Adopt the neurosim positioning (both signals), run one more four-week cycle (one signal), or close the experiment (neither) | Signals: idea-to-running time halved in the founder's log; one person other than the founder reaches a running simulation without help | Product owner | ⏳ Open |
+| Before TSK-I3b-07 is built (stage 2) | Q-94 (4) | Approve the hidden-gate RFC (TSK-I3b-07) | Changes gate resolution semantics (`CONTRIBUTING.md` §3) | Tech lead | ⏳ Open |
 | Before G3 used for A16 | Q-21, Q-69, Q-92 | Select G3 tier (emulated ESP32 firmware): Wokwi, QEMU, `esp-emulator` | esp-emulator chosen as the `esp32s3` release target by Q-92 (4) after TSK-I3-02 | Tech lead | ✅ Decided 2026-10-19 (Q-92) |
 
 *Transitive dependency policy (Q-11):* Copyleft (GPL) dependencies forbidden in core; `licence-obligations` job runs `pip-licenses --fail-on` checking full dependency tree on every PR.
@@ -1101,11 +1138,11 @@ Yellow thresholds discussed in weekly review. Red thresholds trigger immediate a
 
 ## Appendix B — Procurement and infrastructure bill of materials
 
-I2d, I2e run on G1, G2 simulation (Q-72); `esp32s3` runs on esp-emulator until v1.0 (Q-92); boards are needed for I7.
+I2d, I2e run on G1, G2 simulation (Q-72); `esp32s3` runs on esp-emulator until v1.0 (Q-92); boards are needed for I7, except one Box-3 for I3b (Q-94 (3)).
 
 | Item | Quantity | Needed before | Notes |
 |:---|:---:|:---:|:---|
-| **ESP32-S3-Box-3** (official reference board) | 2 + 3–6 | I7 | Memory spike (TSK-S1-10); nightly runner |
+| **ESP32-S3-Box-3** (official reference board) | 2 + 3–6 | I3b (one) / I7 | One now for sim-vs-board checks (TSK-I3b-06, Q-94); memory spike (TSK-S1-10); nightly runner |
 | **Raspberry Pi 5** (nightly `linux`, Q-16) | 1 + 2 | Order immediately / I2 | TSK-I2-01, `linux` ARM64 |
 | x86-64 Linux machine | 1 | I2 | `linux` target on x86 |
 | Flasher and JTAG cables | 2 sets | I7 | Register-level debugging |

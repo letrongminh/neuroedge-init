@@ -1,6 +1,6 @@
 # NeuroEdge: product proposal
 
-**Status:** current as of Q-93 (2026-10-19). **Owner of this page:** the product owner. This is a
+**Status:** current as of Q-94 (2026-10-19). **Owner of this page:** the product owner. This is a
 synthesis for a partner, investor or new team member; it is read in about 15 minutes. It **references**
 the documents that own each truth and does not copy them (`CONTRIBUTING.md` §8.1): requirements live in
 the SRS, dates and progress in `roadmap/neuroedge-roadmap.md` §0.2, business requirements and KPIs in
@@ -24,6 +24,11 @@ The experience we are building is a **calm home assistant**: the home looks afte
 greenhouse, the air), asks a person only when a rule says so, and is run through chat, with no
 configuration (BRD §1, §4). Makers launch first by packaging a device with its rules and brain settings
 as a **Blueprint**; families receive the experience through those Blueprints (Q-72, Q-85 (2)).
+
+**Experiment (Q-94).** A second way in is being tested for makers who stall waiting for a board, as a
+separate MIT product, **neurosim** (`letrongminh/neurosim`): build a smart AI thing on a simulated
+ESP32-S3-BOX-3, then flash the same firmware, NeuroClaw-ESP and the gate inside, to the real one (increment I3b). A
+checkpoint after I3b decides whether it becomes the positioning; until then this page stands.
 
 > Alpha. NeuroEdge is not a certified safety function (no SIL, no PL); gates do not replace emergency
 > stops or hardware interlocks (`README.md`). Claims stay honest: most hardware is emulated today, so

@@ -86,7 +86,7 @@ They await nightly runners on real hardware (TSK-S4-05, TSK-I2-01).
 |:---|:---|:---|
 | `sim` | `TracePlayer` on `SimHAL` | nothing |
 | `linux` | `TracePlayer` on `LinuxHAL`, real GPIO line | real line or gpio-sim (`scripts/setup_gpio_sim.sh`) |
-| `esp32s3` | **Firmware itself** replays three canonical traces at boot (`trace_vectors.c`) and sends results over UART; host reads (`--port`) and compares against golden | running firmware, on QEMU or real board |
+| `esp32s3` | **Firmware itself** replays three canonical traces at boot (`trace_vectors.c`) and sends results over UART; host reads (`--port`) and compares against golden | running firmware, on QEMU, esp-emulator, esp32sim (Q-94) or a real board |
 
 Firmware replaying a trace or gate **older than** checkout ⇒ `NE4003` (outdated firmware), no comparison.
 On `sim`/`linux`, a canonical trace recording a `gate_digest` different from what checkout gate compiles to also
@@ -104,6 +104,8 @@ An artifact type matching 0 files ⇒ `NE4004`, exit code 1: no empty "PASS".
 - **Operations and duration on-chip.** On `esp32s3`, `operation` and `duration_ms` of pin commands today
   come from a table built on the host; the chip only decides whether to emit and on which pin (`TODOS.md` #37).
 - **Audio quality** in real acoustics.
+- **Live agent runs between simulation and board.** Sim-to-Silicon (Q-94) compares the normative trace sessions
+  only; a run with a cloud LLM is not deterministic (TSK-I3b-06).
 - **Tier-2 and tier-3 targets** (`simulation_coverage.md` §7, Q-13; see narrowed commitments in §1.1).
 
 ## 7. HAL Porting Guide for OEM Partners
