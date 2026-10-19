@@ -5,6 +5,8 @@ date and is not kept in step with later decisions. The task or decision that use
 
 | Report | Date | What it answered | Used by |
 |:---|:---|:---|:---|
+| [`esp32sim-velxio-spike-2026-10-19.md`](esp32sim-velxio-spike-2026-10-19.md) | 2026-10-19 | Do esp32sim and Velxio run our ESP32-S3 firmware, match QEMU, and add pins, screen or audio? | TSK-I3-02 · emulator choice (open) |
+| [`esp32sim-box3-feasibility-2026-10-19.md`](esp32sim-box3-feasibility-2026-10-19.md) | 2026-10-19 | How much work for esp32sim to emulate a Box-3 (screen, touch, speaker, microphone) so those checks run without a board? | TSK-I2f-18, TSK-I2f-19 · TSK-I7-03 |
 | [`esp-emulator-spike-2026-10-19.md`](esp-emulator-spike-2026-10-19.md) | 2026-10-19 | Does our ESP32-S3 firmware boot on esp-emulator and reach the same gate verdicts as QEMU? | TSK-I3-02 · Q-92 (4) |
 | [`thi-truong-tich-hop-2026-10-04.md`](thi-truong-tich-hop-2026-10-04.md) | 2026-10-04 | The device-integration market for AI agents | Q-67 · `architecture/16-ecosystem-landscape.md` |
 | [`uoc-luong-mvp-2026-09-30.md`](uoc-luong-mvp-2026-09-30.md) | 2026-09-30 | Re-estimate of MVP scope (forecasts superseded by Q-72, Q-77) | TSK-I2a-01 |
