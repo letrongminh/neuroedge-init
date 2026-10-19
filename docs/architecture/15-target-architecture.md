@@ -404,18 +404,23 @@ launch data showing people stuck installing the box (Q-74 step 2, Q-92 (8)).
   or locally within the home network; the cloud's shared channel gateway forwards messages but cannot forge approvals.
 - **Follow-up tasks:** verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); passkey approvals: I2g (Q-92 (9)); Profile B (Q-79, Q-83): TSK-I2f-10 → I2f-17; all-in-one chip (Q-93): TSK-I2f-18 → I2f-20, TSK-I7-03; Profile A contract and legacy System 2: TSK-I2d-26, TSK-I2d-27.
 
-### 6.11 Sim-to-Silicon: `neuroedge dev` stage 1 (`planned · Q-94`, I3b)
+### 6.11 Sim-to-Silicon: neurosim stage 1 (`planned · Q-94`, I3b)
 
-An experiment beside the launch path: one pre-built ESP32-S3-BOX-3 image runs unchanged in a pinned esp32sim and on
-the real board, so an idea runs before the board arrives. Design: [`neuroedge-dev.md`](../business/neuroedge-dev.md).
+An experiment beside the launch path, shipped as a separate product: one pre-built ESP32-S3-BOX-3 image runs unchanged
+in a pinned esp32sim and on the real board, so an idea runs before the board arrives. Design: `docs/design.md` of
+`letrongminh/neurosim`.
 
 ```
- neuroedge new ── board.toml, agent.toml (Blueprint or picked parts; no secrets)
+ letrongminh/neurosim (MIT)        this repository                 neuroclaw (MIT)
+ ──────────────────────────        ───────────────                 ───────────────
+ neurosim new  ─ board.toml,       neuroedge (library):             NeuroClaw-ESP
+   agent.toml (no secrets)  ◄────  Blueprints, gate lint           (brain, pinned)
+        │                                                               │
+ neurosim sim  ─ pinned esp32sim ◄ Box-3 image (release asset): ◄───────┘
+   pins, screen ► own view          gate + ne_hal + ne_config
+   config, secrets → NVS            + NE1 traces
         │
- neuroedge sim ── pinned esp32sim (box3) + pre-built image ◄── config: pins, PWM, ADC → NVS
-        │            pins, screen ► Studio view          ◄── secrets: OS keychain → NVS
-        │            NE1 traces, same gate as every target
- neuroedge flash ─ same image + same config → Box-3 over USB; done when `NE_SELFTEST PASS` is read
+ neurosim flash ─ same image + config → Box-3 over USB; done on `NE_SELFTEST PASS`
 ```
 
 - **Same firmware, run-time configuration.** The user's machine needs no Docker and no ESP-IDF: the image carries the
@@ -436,7 +441,7 @@ the real board, so an idea runs before the board arrives. Design: [`neuroedge-de
 2. **Product Requirements Document:**
    - [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Non-functional Requirements; §15 Decision Log: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`, `Q-52`, `Q-53`, `Q-54`, `Q-55`, `Q-62`, `Q-71`, `Q-72`; Appendix D.2 Wire protocol).
    - [`product-proposal.md`](../business/product-proposal.md) (Blueprint positioning, three loops — source for §6).
-   - [`neuroedge-dev.md`](../business/neuroedge-dev.md) (Sim-to-Silicon experiment, Q-94 — source for §6.11).
+   - `letrongminh/neurosim` `docs/design.md` (Sim-to-Silicon experiment, Q-94 — source for §6.11).
 3. **Format Specifications:**
    - [`core_contracts.md`](../spec/core_contracts.md) (APIs, `board.toml`, `agent.toml`, gates, HAL, traces)
 4. **Detailed Design Notes:**

@@ -35,9 +35,9 @@ Blueprint** (automation template shared via Blueprint Exchange); a NeuroEdge Blu
 an HA blueprint in its package. Gates and contracts form the trust layer across all three loops; all new paths still traverse
 the backbone below.
 
-**Experiment (`planned · Q-94`).** [Q-94](../../roadmap/neuroedge-prd.md#15-decision-log) tests a second way in: build a smart AI thing on
-ESP32 before the board arrives — `neuroedge new`, `neuroedge sim` on a simulated Box-3, `neuroedge flash` of the same
-image to the board (I3b, [`15`](15-target-architecture.md) §6.11). The backbone and the gate are unchanged; the gate stays out of sight for
+**Experiment (`planned · Q-94`).** [Q-94](../../roadmap/neuroedge-prd.md#15-decision-log) tests a second way in, as a separate product: **neurosim**
+(`letrongminh/neurosim`, MIT) builds a smart AI thing on ESP32 before the board arrives — `neurosim new`, `neurosim sim`
+on a simulated Box-3, `neurosim flash` of the same image, built here with NeuroClaw-ESP inside, to the board (I3b, [`15`](15-target-architecture.md) §6.11). The backbone and the gate are unchanged; the gate stays out of sight for
 harmless parts. A checkpoint after I3b decides whether this becomes the positioning.
 
 ### 1.1 Product ethos — six promises
@@ -341,7 +341,7 @@ roadmap task — `test_architecture_progress.py` checks both.
 | Signed OTA, rollback | Update chip firmware signed, with automatic rollback | `neuroedge build --target esp32s3` OTA image | QEMU only | qemu ●, board ○ | `partial` | `python/tests/test_ota_markers.py`, `.github/workflows/firmware-qemu.yml` |
 | One-chip Profile B | Run brain and gate on one ESP32-S3, labelled as a risk | Profile B firmware | QEMU only; Wi-Fi setup on a board is TSK-I2f-13 | qemu ●, board ○ | `partial` | `python/tests/test_firmware_brain.py` |
 | 24/7 missions | Give a device a 24/7 mission in plain words; it reports and asks on chat | `mission.v1` contract | — | laptop ○ | `planned` | TSK-I2d-04, `docs/spec/missions.md` |
-| Sim to board | Run an idea on a simulated Box-3 with pins and screen, then flash the same image to a real Box-3 (Q-94 experiment) | `neuroedge sim`, `neuroedge flash` | — (spikes done: esp32sim runs the image with QEMU's trace) | laptop ○, board ○ | `planned` | TSK-I3b-04, `docs/reports/esp32sim-box3-feasibility-2026-10-19.md` |
+| Sim to board | Run an idea on a simulated Box-3 with pins and screen, then flash the same image to a real Box-3 (Q-94 experiment) | `neurosim sim`, `neurosim flash` (separate repository) | — (spikes done: esp32sim runs the image with QEMU's trace) | laptop ○, board ○ | `planned` | TSK-I3b-04, `docs/reports/esp32sim-box3-feasibility-2026-10-19.md` |
 | Blueprints | Pack a working device as a Blueprint; others install it with one command | `neuroedge blueprint pack`, `blueprint install` | — (specification approved, Q-86) | laptop ○ | `planned` | TSK-I2e-02, `docs/spec/blueprint.md` |
 
 ### 6.2 By target

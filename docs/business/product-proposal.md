@@ -25,9 +25,9 @@ greenhouse, the air), asks a person only when a rule says so, and is run through
 configuration (BRD §1, §4). Makers launch first by packaging a device with its rules and brain settings
 as a **Blueprint**; families receive the experience through those Blueprints (Q-72, Q-85 (2)).
 
-**Experiment (Q-94).** A second way in is being tested for makers who stall waiting for a board: build a
-smart AI thing on a simulated ESP32-S3-BOX-3, then flash the same firmware to the real one, with the gate
-underneath and out of sight for harmless parts ([`neuroedge-dev.md`](neuroedge-dev.md), increment I3b). A
+**Experiment (Q-94).** A second way in is being tested for makers who stall waiting for a board, as a
+separate MIT product, **neurosim** (`letrongminh/neurosim`): build a smart AI thing on a simulated
+ESP32-S3-BOX-3, then flash the same firmware, NeuroClaw-ESP and the gate inside, to the real one (increment I3b). A
 checkpoint after I3b decides whether it becomes the positioning; until then this page stands.
 
 > Alpha. NeuroEdge is not a certified safety function (no SIL, no PL); gates do not replace emergency
