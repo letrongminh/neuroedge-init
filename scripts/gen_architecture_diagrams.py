@@ -535,11 +535,11 @@ def e08_deployment() -> Diagram:
     ]
     # Q-83: Profile B — brain and gate in one ESP32-S3 image; the same contract through nc_gate calls
     d.groups.append(Group("profb", 40, 1620, 1720, 180,
-                          "Profile B — one chip, risk=single_chip · Q-79 · Q-83 · I2f", "planned"))
+                          "Profile B — one chip, all-in-one, risk=single_chip · Q-79 · Q-83 · Q-93 · I2f", "planned"))
     d.boxes += [
         Box("onechip", 70, 1660, 820, 110, "ESP32-S3 — one image",
             ("NeuroClaw-ESP ─ nc_gate ─ ne_brain_bridge ─ ne_gate ─ token ─ pins",
-             "approve: board button or owner callback · I2f"), "device", "planned"),
+             "screen + voice channel (Q-93) · approve: button, touch, command word, owner"), "device", "planned"),
         Box("onechipcfg", 940, 1660, 790, 110, "Built and kept by the box",
             ("neuroedge build --target esp32s3 --brain neuroclaw",
              "pinned NeuroClaw-ESP · signed OTA of the whole image · I2f"), "container", "planned"),

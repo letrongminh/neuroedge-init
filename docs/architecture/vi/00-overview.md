@@ -163,7 +163,7 @@ flowchart TD
 
 Not drawn: robot bridges (ROS 2, Nav2) left the roadmap with Q-77; an ESPHome component has no task yet.
 
-### 2.2 Two parts, two deployment profiles (Q-83)
+### 2.2 Two parts, two deployment profiles (Q-83, Q-93)
 
 The user messages the **brain** — [NeuroClaw](https://github.com/letrongminh/neuroclaw),
 a separate repository (Q-76, Q-80). The **box** is this repository. The split follows one rule:
@@ -177,11 +177,20 @@ The product ships two ways, one contract (the tool list and `tool-result.v1`), t
 
 ```text
  Profile A — Full                                    Profile B — One chip (risk=single_chip)
- 📱 chat ─► NeuroClaw (brain, own OS user,           📱 Telegram ─► [ ESP32-S3, one image:
-            other machine, or Cloud)                                 NeuroClaw-ESP ─ nc_gate ─►
-            ══ MCP · HTTPS · mTLS ══►                                ne_brain_bridge ─► ne_gate
-            NeuroEdge box: gate ─► pins                              ─► token ─► pins ]
+ 📱 chat ─► NeuroClaw (brain, own OS user,           📱 Telegram ─┐
+            other machine, or Cloud)                  🎙 voice ───┼─► [ ESP32-S3, one image:
+            ══ MCP · HTTPS · mTLS ══►                 🖐 screen ──┘     NeuroClaw-ESP ─ nc_gate ─►
+            NeuroEdge box: gate ─► pins                                ne_brain_bridge ─► ne_gate
+                                                                       ─► token ─► pins ]
 ```
+
+On a board with a screen, microphone and speaker, Profile B is the **all-in-one chip** (Q-93): the
+gate, NeuroClaw-ESP, the LVGL screen and voice in one image, with no NeuroEdge cloud. Voice is a
+channel of NeuroClaw-ESP like Telegram, not a second brain; speech-to-text and text-to-speech stay
+at the provider the owner configures. An `ask` is answered by the board button, a touch on the
+approval card, an on-chip command word while that card is shown, or the owner's Telegram callback;
+cloud speech-to-text never answers one (DP-B-18 → DP-B-22). Built without a board in
+TSK-I2f-18 → I2f-20; checked on a Box-3 in v1.0 (TSK-I7-03).
 
 Requirements, interfaces and test cases of both profiles: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md).
 How the profiles fit the target architecture: [`15`](15-target-architecture.md) §6.10.

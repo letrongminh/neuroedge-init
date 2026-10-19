@@ -404,7 +404,7 @@ launch data showing people stuck installing the box (Q-92).
   - **Profile B — One chip** — **NeuroClaw-ESP**, ESP-IDF component inside `esp32/` of that repo, built into one ESP32-S3 image
     with the gate by `neuroedge build --target esp32s3 --brain neuroclaw`; tool calls pass through `nc_gate` into the box's
     `ne_brain_bridge` and `ne_gate` (function calls, no MCP or TLS between them: they share memory), labeled `risk=single_chip`
-    (`threat_model.md` §2l, TSK-I2f-10 → I2f-17). *Profile B+* — real isolation on one board — is under evaluation (TSK-I2f-17).
+    (`threat_model.md` §2l, TSK-I2f-10 → I2f-20). On a board with a screen, microphone and speaker it is the **all-in-one chip** (Q-93): the LVGL screen and a voice channel of NeuroClaw-ESP join the same image (DP-B-18 → DP-B-22). *Profile B+* — real isolation on one board — is under evaluation (TSK-I2f-17).
 
   Other workers (upstream PicoClaw, Claude Desktop, OpenClaw) plug into the same MCP toolset; workers unable to present certificates
   use demo mTLS bridges. Capabilities per run mode, risk labels, and feature gap vs. zclaw, MimiClaw:
@@ -432,7 +432,7 @@ launch data showing people stuck installing the box (Q-92).
   (Telegram client, LLM loop) and gates co-exist on a single multi-dollar chip, no Linux board, no cloud. Microcontrollers lack
   process isolation, so §6.1 boundaries between untrusted brain and gates **do not exist** here; instead: all LLM
   tool calls pass through a typed queue into `ne_gate`, with zero direct LLM → GPIO paths; irreversible actions require on-board
-  buttons or Telegram callbacks from the verified owner ID (chip talks directly to Telegram API, without relays); chip carries label
+  buttons, a touch on the approval card or an on-chip command word while that card is shown (Q-93), or Telegram callbacks from the verified owner ID (chip talks directly to Telegram API, without relays); chip carries label
   `risk=single_chip`. Phase 1 already running on QEMU: boot guard and safe mode, secrets in isolated NVS partition (encrypted
   under `sdkconfig.secure`), serial console, stack guard ([`04`](04-component-device-c4l3.md) §3). The chip's
   brain, NeuroClaw-ESP (Telegram, LLM loop, memory, scheduler), runs on QEMU with mock gates. Joining them into one image is
@@ -443,11 +443,13 @@ launch data showing people stuck installing the box (Q-92).
 ```
  single-chip: 📱 Telegram ──TLS──► ESP32-S3 [ brain ─nc_gate─► ne_brain_bridge ─► ne_gate ] ──► pins
               approving irreversible actions: on-board button, or callback from owner ID
+ all-in-one:  🎙 voice / 🖐 screen ──► same ESP32-S3: voice is a channel of the brain; card drawn from the bridge,
+              touch or on-chip command word answers it; speech-to-text never does (Q-93)
 ```
 
 - **Approvals never route through the brain** (FR-CH-08): irreversible actions are approved via passkey signatures on phone
   or locally within the home network; the cloud's shared channel gateway forwards messages but cannot forge approvals.
-- **Follow-up tasks:** easy-install box TSK-I2e-12, TSK-I2e-13; verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, passkey approvals, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); Profile B (Q-79, Q-83): TSK-I2f-10 → I2f-17; Profile A contract and legacy System 2: TSK-I2d-26, TSK-I2d-27.
+- **Follow-up tasks:** easy-install box TSK-I2e-12, TSK-I2e-13; verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, passkey approvals, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); Profile B (Q-79, Q-83): TSK-I2f-10 → I2f-17; all-in-one chip (Q-93): TSK-I2f-18 → I2f-20, TSK-I7-03; Profile A contract and legacy System 2: TSK-I2d-26, TSK-I2d-27.
 
 ## 7. Sources
 
