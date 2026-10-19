@@ -19,9 +19,26 @@ The `demo/` directory collects demo scenarios and prepared commands for each mil
 
 The `sim` demo runs directly on the local machine (macOS or Linux) rather than inside a Docker container because the visual UI page `--ui` binds only to the loopback address `127.0.0.1`, and Docker on macOS cannot forward the microphone and speaker directly into containers for audio tasks. Conversely, firmware demos (such as I3) run inside Docker using the same environment image as CI (`espressif/idf:v5.4`). For target `linux`, the system requires a real Linux kernel with the `gpio-sim` module (Linux VM), so this portion is proven via CI run logs (`linux-hal` job).
 
-## Customer interview demos
+## What not to say in any demo
 
-In addition to technical demos for each increment in this directory, interview demo scenario documents tailored to customer demand segments (≤ 5 minutes per segment, used to validate business hypotheses) are stored at [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../docs/business/cong-nhu-cau-2026-10-25/demo.md).
+Say it plainly if asked. Every row cites its source in the repository.
+
+| Do not claim it already… | What is true today | Source |
+|:---|:---|:---|
+| Runs on real hardware | No Box-3 or CoreS3 board yet: demos run on `sim` (virtual pins); the chip runs on QEMU and esp-emulator | roadmap §0.1 · Q-92 (4), (5) |
+| Talks through a microphone on the device | A real microphone works only on the laptop (`run --mic`, target `sim`); on-chip voice for the all-in-one chip is planned (TSK-I2f-19); demos type text by default (Q-15) | `docs/user/huong-dan.md` §4.5 · Q-93 |
+| Understands free-form sentences | Needs `neuroedge[cloud]` and a real key; without `[system_two]` only sentences matching `commands.toml` run; CI tests LiteLLM only with `mock_response` | TSK-S2-11 · `CHANGELOG.md` §3.7 |
+| Hands over to a real receptionist (`escalate`) | Blocks, writes the trace, and calls a hook that does nothing | Q-17 · `TODOS.md` #20 |
+| Runs on a real Raspberry Pi | `run --target linux` runs on **virtual** GPIO lines (gpio-sim) in CI, not yet on a Pi | `docs/user/huong-dan.md` §5.1 |
+| Compares timing across targets | `verify` compares **decisions**, not timing | TSK-S4-04 |
+| Updates firmware over a real network | Signed OTA runs only on QEMU; the Box-3 has no Wi-Fi path yet | `docs/user/nap-firmware.md` §6.5 · `TODOS.md` #50 |
+| Manages a fleet (staged OTA, dashboards, remote traces) | Fleet OS was removed from the roadmap | Q-77 · roadmap §6 |
+| Is certified for functional safety | Not certified and not targeted | `docs/spec/threat_model.md` §3b |
+| Signs traces as evidence for third parties | Traces are not signed (approval records are, RFC-0019) | `TODOS.md` #1 |
+| Installs with `pip install neuroedge` | Not on PyPI until the public launch; install from source | roadmap §4.7 (I6) |
+| Packs and installs a NeuroEdge Blueprint | Planned (I2e); not the same thing as a Home Assistant blueprint | roadmap §4.3.5 |
+| Sells Blueprints in a Hub | The Hub is a free static index (I2e); a paid Hub opens only when a maker asks to sell | Q-92 (10) |
+| Runs an operator agent 24/7 that reports and proposes | The box's runtime process (`agent run`) is planned (I2d); NeuroClaw runs next to the box | roadmap §4.3.4 |
 
 ## Adding a demo for a new increment
 

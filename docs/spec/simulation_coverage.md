@@ -2,7 +2,7 @@
 
 **Status:** normative specification, accompanying Q-21 and Q-22 (*decided*) — PRD §15. This document specifies **what**
 runs and tests each cell; which cells are completed is tracked in the status of the corresponding task in `neuroedge-roadmap.md`.
-Tools and licenses: roadmap §3. Layered strategy: `docs/architecture/vi/00-overview.md` §5.2.
+Tools and licenses: roadmap §3. Layered strategy: `docs/architecture/00-overview.md` §5.2.
 
 This document answers one question: **for each HAL primitive on each target, what runs it,
 what tests it, and what cannot yet be tested.** Each cell in the table in §2 has a responsible task;
@@ -518,7 +518,7 @@ in checkout, or `gate_digest` differs from gates compiled from checkout: that wo
 The `gate_digest` check is from RFC-0008 (three canonical traces carry it in
 `gate_evaluation_begin`): host `verify` enforces it across all targets, whereas `replay` on user traces
 only warns, since gates may be tightened intentionally — detailed rules in
-[`10-target-equivalence.md`](../architecture/vi/10-target-equivalence.md) §5.
+[`10-target-equivalence.md`](../architecture/10-target-equivalence.md) §5.
 Missing `--port` ⇒ code 1; missing session for a trace ⇒ ✗. Output clearly attributes which portions were computed by device.
 
 Firmware on QEMU runs on every PR touching `targets/**` or `fixtures/traces/`, and the `uart-trace` job in

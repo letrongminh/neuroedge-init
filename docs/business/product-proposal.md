@@ -56,7 +56,7 @@ and a family cannot yet install without a command line (BRD §11 risk 10). The H
 Pi SD-card image with QR pairing and the affiliate BOM page were cut from I2e (Q-92 (2), archived in
 `roadmap/archive/removed-tasks.md`); installing the box uses the CLI until the home web exists.
 
-The family's way in comes after the public launch (`docs/app-di-dong/`, Q-91, Q-92 (8)): first the **box
+The family's way in comes after the public launch (`docs/business/app-di-dong/`, Q-91, Q-92 (8)): first the **box
 API and a home web** in a browser on the home network (increment I2g: device views, approval cards signed
 with a passkey, replay; the same web serves makers as Studio), then a **native iOS and Android app**
 (React Native, increment I2h) on the same box API, with approval cards signed with Face ID or a
@@ -129,7 +129,7 @@ flowchart LR
 - **Open with transparency (Q-73).** The product labels a risk instead of blocking a flow the user chose
   (for example `risk=single_chip`, `risk=virtual_board`, `risk=remote_approval`).
 
-Further reading: `docs/architecture/README.md`, `docs/architecture/vi/00-overview.md`.
+Further reading: `docs/architecture/README.md`, `docs/architecture/00-overview.md`.
 
 ## 6. Why it is hard to copy
 
@@ -166,7 +166,7 @@ opens on the trigger in its row. No revenue line sits on the safety path (Q-72).
 ## 8. What exists today and what is planned
 
 What works is listed in `README.md` ("Working today") and, in the words of a person using it, in
-`docs/architecture/vi/00-overview.md` §6.1. In short: rules on a laptop with virtual devices, on Linux
+`docs/architecture/00-overview.md` §6.1. In short: rules on a laptop with virtual devices, on Linux
 with emulated pins and on an emulated ESP32-S3 (QEMU); chat through Telegram to NeuroClaw to switch a
 light or open a door with owner confirmation, shown in a live demo; a virtual board with a pin map and
 two extra demo scenarios (a greenhouse and a fuller fish tank) on `sim-virtual`.
@@ -258,7 +258,7 @@ is a hard fork with its own CI (BRD §11 #8, Q-78).
 | Two deployment profiles | `docs/spec/deployment_profiles.md` |
 | Virtual parts and pin map | `docs/spec/virtual_parts.md` |
 | Signed approval records | `docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md` |
-| What works today | `README.md`; `docs/architecture/vi/00-overview.md` §6.1 |
+| What works today | `README.md`; `docs/architecture/00-overview.md` §6.1 |
 | Licence | `LICENSING.md`, Q-45 |
-| Home web and app (Q-91, Q-92; I2g, I2h) | `docs/app-di-dong/README.md` |
+| Home web and app (Q-91, Q-92; I2g, I2h) | `docs/business/app-di-dong/README.md` |
 | Historical proposal (superseded) | `docs/business/proposal-blueprint-2026-10-11.md` |

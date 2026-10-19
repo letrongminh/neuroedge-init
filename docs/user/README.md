@@ -17,7 +17,7 @@ answers the question *"which file to read to know X"* — other files link to co
 | What the system has, what runs today, what to read next — in plain words, no code | [`bat-dau.md`](bat-dau.md) | read first, 5 minutes |
 | **Try it out** | | |
 | Installation and running tests | [`python/README.md`](../../python/README.md) | venv + `pip install -e '.[dev]'` |
-| All CLI commands and expected outputs | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | sole source for command syntax |
+| All CLI commands and expected outputs | [`docs/reference/cli.md`](../reference/cli.md) | sole source for command syntax |
 | What the product does, in which environments, and step-by-step testing | [`huong-dan.md`](huong-dan.md) | capabilities by group (§3–§4) and step-by-step testing scenarios (§5) |
 | Current status | [`trang-thai.md`](trang-thai.md) | machine-generated from roadmap §0 |
 | Try devices without hardware: the samples named by parts, a greenhouse and a full fish tank on the virtual board, with screenshots | [`vi-du-linh-kien-ao.md`](vi-du-linh-kien-ao.md) | `sim` only; TSK-I2d-33, Q-84 |
@@ -28,19 +28,18 @@ answers the question *"which file to read to know X"* — other files link to co
 | Run brain and gate on a single ESP32-S3 (Q-79): serial control console, safe mode, storage for tokens and keys | [`esp32-mot-chip.md`](esp32-mot-chip.md) | Stage 1 and NeuroClaw-ESP on QEMU; firmware embedding and real Wi-Fi awaiting boards |
 | **Understand the product** | | |
 | `FR-*` / `NFR-*` requirements | [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) | decision log is §15 (`Q-N` codes) |
-| Q-72 positioning: three flywheels build · run · share and sell, operator agent, NeuroEdge Blueprint (demand gate removed by Q-92) | [`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md) | direction decided proposal; decision in PRD §15 Q-72, lean path in Q-92; no code yet |
+| Q-72 positioning: three flywheels build · run · share and sell, operator agent, NeuroEdge Blueprint (demand gate removed by Q-92) | [`product-proposal.md`](../business/product-proposal.md) | direction decided proposal; decision in PRD §15 Q-72, lean path in Q-92; no code yet |
 | API specification, gate (Appendix B), HAL, traces | [`core_contracts.md`](../spec/core_contracts.md) | |
 | Decoder for abbreviations (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | sole source |
 | Why Stage 1 went "`sim` wedge first" | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (deleted; `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`) | historical, frozen 2026-09-23 — current plan in roadmap |
 | Minutes of review rounds | `docs/archive/` (deleted, see git history) | archive, non-normative |
 | Overall architecture with live progress (layers, release milestones, items waiting on a person) | [`docs/business/kien-truc-tong-the.html`](../business/kien-truc-tong-the.html) | open in browser; progress blocks generated from roadmap §0 — do not edit them by hand |
-| Demand gate 2026-10-25 (interviews, demos, scoring) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | business documentation; written for the demand gate of Q-72, removed by Q-92 (kept as interview material) |
 | Plan: increment I0–I8 and I2a–I2h, what to do when, forecast dates | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | sole roadmap (Q-39); increment table in §0.2 |
 | Task tables cut by Q-92 (TSK-I2e-06, I2e-10 to I2e-14) | [`removed-tasks.md`](../../roadmap/archive/removed-tasks.md) | codes stay valid |
 | **Removed from roadmap (Q-77), kept for lookup** | | |
 | NeuroEdge Lab design (lab via MCP; replaced by the standard MCP tool set TSK-I2d-23, Q-88) | [`lab_mcp.md`](../spec/lab_mcp.md) | removed items: roadmap §6 |
 | Voice conversation state machine: turns, barge-in, wake-word, STT/TTS | [`docs/spec/voice_fsm.md`](../spec/voice_fsm.md) | voice removed from the roadmap; host code still ships |
-| Design notes — hierarchical robot (FOFOCA) | `docs/architecture/vi/15-target-architecture.md` §4.3 | I14 removed from the roadmap (Q-77); see roadmap §6 |
+| Design notes — hierarchical robot (FOFOCA) | `docs/architecture/15-target-architecture.md` §4.3 | I14 removed from the roadmap (Q-77); see roadmap §6 |
 | **Contributing** | | |
 | Conventions, processes, task completion | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 is the mandatory checklist |
 | Modifying `schemas/` (frozen schemas) | [`docs/rfc/README.md`](../rfc/README.md) | RFC process |

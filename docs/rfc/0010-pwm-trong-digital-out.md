@@ -12,7 +12,7 @@
 | **Approver** | **Lead Architect — mandatory** (touches physical pin paths and extends the RFC-0007 envelope) |
 
 > **When an RFC is required:** `CONTRIBUTING.md` §3 — modifying `schemas/board.v1.json`. Task: TSK-W1-01.
-> Source: FOFOCA robot draft (`docs/architecture/vi/15-target-architecture.md` §4.3), now consolidated into this RFC. Foundation
+> Source: FOFOCA robot draft (`docs/architecture/15-target-architecture.md` §4.3), now consolidated into this RFC. Foundation
 > decisions: `neuroedge-prd.md` §15 Q-52 (PWM pack in MVP), Q-53 (four packs across all three tier-1 targets), Q-55, Q-57
 > (§9). Dependencies: envelope and `max_continuous_ms` lock in [RFC-0007](0007-digital-in-i2c-analog-in-phong-bi.md) §9.5
 > (actuator flag and envelope location per §9 item 5 of that RFC), parameter constraint pattern in [RFC-0005](0005-rang-buoc-tham-so-trong-gate.md).

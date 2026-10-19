@@ -22,7 +22,7 @@ never split off into paid add-ons (PRD P-3).
 
 **Open standards** and **compliance corpus** remain Apache-2.0 so third parties can implement the standards
 and prove compliance via the test harness (criteria A9, A13) without using PolyForm Noncommercial files,
-and to transfer specification governance to a neutral body upon reaching G1 (`docs/architecture/vi/16-ecosystem-landscape.md` §6).
+and to transfer specification governance to a neutral body upon reaching G1 (`docs/architecture/16-ecosystem-landscape.md` §6).
 
 **Third-party plugins and adapters** (Extension SDK, Q-67) reside in their authors' repositories under licenses
 chosen by their authors; NeuroEdge claims no copyright over them. Plugins run alongside the NeuroEdge runtime, so

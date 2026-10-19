@@ -14,7 +14,7 @@
 > **When an RFC is required:** `CONTRIBUTING.md` §3 — modifying `schemas/*.json`. This RFC modifies `schemas/board.v1.json`.
 > Underlying decisions: `neuroedge-prd.md` §15 Q-52 (MVP is full v1.0 comprising four primitive packages, single release,
 > slip schedule rather than cut), Q-53 (four packages mandatory across all three Tier 1 targets; **`analog.in` moved from RFC-motion
-> to this RFC**), Q-55 (NeuroBrain — now NeuroEdge Lab, Q-71 — in MVP). Sources: FOFOCA robot draft (`docs/architecture/vi/15-target-architecture.md` §4.3),
+> to this RFC**), Q-55 (NeuroBrain — now NeuroEdge Lab, Q-71 — in MVP). Sources: FOFOCA robot draft (`docs/architecture/15-target-architecture.md` §4.3),
 > now consolidated into this RFC, and `docs/spec/lab_mcp.md` §7, §8. Tasks: TSK-N0-03 (draft this RFC), TSK-N2-01
 > (envelope hook), TSK-N2-02 (atomic check-and-reserve), TSK-N3-03 (ADC spike).
 

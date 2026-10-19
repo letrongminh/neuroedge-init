@@ -102,7 +102,7 @@ back to grammar or blocks. A gate can deny the `mcp` source specifically via the
 The call above is Profile A. In Profile B the same tools and the same `tool-result.v1` objects
 travel through `nc_gate` function calls inside one ESP32-S3 image (§8.1); an `ask` is answered
 from the board button or the owner's Telegram callback, never over MCP. The mapping, step by
-step, and the requirements: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md) §4.1.
+step, and the requirements: [`docs/spec/deployment_profiles.md`](../spec/deployment_profiles.md) §4.1.
 
 ## 4. A System 2 (LLM) Turn, with an External MCP Server
 
@@ -247,7 +247,7 @@ Voice sessions today run in **virtual time** from a WAV file; real-time sessions
 
 ## 7. Evidence Loop: Record, Replay, Compare
 
-![E-06 · Evidence Loop](../assets/svg/E-06-evidence-loop.svg)
+![E-06 · Evidence Loop](assets/svg/E-06-evidence-loop.svg)
 *Figure E-06 — A session becomes a trace; the trace is recomputed on each target and compared to the golden.*
 
 ```mermaid
@@ -321,7 +321,7 @@ sequenceDiagram
     W-->>N: tool-result.v1 ALLOW
 ```
 
-Each step is a requirement of [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md)
+Each step is a requirement of [`docs/spec/deployment_profiles.md`](../spec/deployment_profiles.md)
 (DP-B-02 → DP-B-08, DP-B-12 for the `NE1` trace lines).
 
 ## 9. Lifecycle of a `linux` Session
@@ -349,7 +349,7 @@ On-chip voice and multi-node flows left the roadmap (Q-77): roadmap §6.
 
 ## 11. Planned Flows Under Q-72 (`planned · Q-72`)
 
-There is no code yet for any flow in this section. They document the target design of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)
+There is no code yet for any flow in this section. They document the target design of [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log)
 for increment I2d (missions and operator agents) and I2e (minimal NeuroEdge Blueprint); progress is in
 roadmap §0.2. Sections requiring an RFC are noted as "pending RFC".
 

@@ -1,11 +1,11 @@
 # 00 · Architecture overview
 
 > **Scope:** entire system, at the highest level. **Sources of truth:** code in `main`; requirements in
-> [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md); progress in
-> [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §0. Conventions for labels `done` / `partial` /
-> `planned`: [`README.md`](../README.md).
+> [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md); progress in
+> [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0. Conventions for labels `done` / `partial` /
+> `planned`: [`README.md`](README.md).
 
-**Purpose of this chapter:** This chapter is for every engineer, architect, and partner who needs a comprehensive overview of the entire NeuroEdge architecture. It answers foundational questions: *What problem does NeuroEdge solve in Physical AI? What mechanism guarantees physical actions never bypass safety gates? How does the system layer and maintain target equivalence between host development machines and $5 edge chips?* Before reading, readers only need a basic understanding of AI agents and embedded control. After this chapter, application developers should read §9 and [`python/README.md`](../../../python/README.md); systems engineers should continue to [`02`](02-container-c4l2.md) and [`03`](03-component-host-c4l3.md); architects should read [`15`](15-target-architecture.md).
+**Purpose of this chapter:** This chapter is for every engineer, architect, and partner who needs a comprehensive overview of the entire NeuroEdge architecture. It answers foundational questions: *What problem does NeuroEdge solve in Physical AI? What mechanism guarantees physical actions never bypass safety gates? How does the system layer and maintain target equivalence between host development machines and $5 edge chips?* Before reading, readers only need a basic understanding of AI agents and embedded control. After this chapter, application developers should read §9 and [`python/README.md`](../../python/README.md); systems engineers should continue to [`02`](02-container-c4l2.md) and [`03`](03-component-host-c4l3.md); architects should read [`15`](15-target-architecture.md).
 
 ## 1. What problem NeuroEdge solves
 
@@ -21,12 +21,12 @@ it cannot be the place that decides whether a physical action is permitted to oc
 NeuroEdge separates those two concerns. Every action proposal — whether from local command grammar, from an LLM, or from
 another agent via MCP — is normalized into a **typed tool call**, and then must pass through a
 **gate**: a safety policy written in YAML, versioned, inheritable, compiled into a deterministic
-decision tree. If the gate yields `ALLOW`, a **one-time verdict token** ([one-time token](../../user/thuat-ngu.md)) is issued, and only
+decision tree. If the gate yields `ALLOW`, a **one-time verdict token** ([one-time token](../user/thuat-ngu.md)) is issued, and only
 that token can open the specific hardware pins for that action. Every fact, verdict, and pin command
-is recorded into a replayable **trace** ([trace](../../user/thuat-ngu.md)). The same gate runs on the simulator (`sim`), on
+is recorded into a replayable **trace** ([trace](../user/thuat-ngu.md)). The same gate runs on the simulator (`sim`), on
 Linux (`linux`), and on the ESP32-S3 chip (`esp32s3`).
 
-**Direction decided, no code yet (`planned · Q-72`).** [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) places the above core into three loops: ① **build** —
+**Direction decided, no code yet (`planned · Q-72`).** [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log) places the above core into three loops: ① **build** —
 existing user MCP clients write contracts through the standard MCP tool set (TSK-I2d-23; Q-77, Q-88); ② **run** — an *operator agent*
 runs continuously on the home machine, executing **mission contracts** and reporting or asking for approval via chat channels
 (I2d); ③ **share, sell** — a **NeuroEdge Blueprint** packages kit, firmware, template contracts, detectors,
@@ -56,14 +56,14 @@ when wired normally-on by default, e.g., normally-closed relays, declared as har
 follow "when unsure, block"; only movement **toward** `safe_state` is always permitted; movement **away from** `safe_state` is subject to
 gates and limits. Existing profiles (`off`; `motion.*` `stop`/`hold`) retain their behavior. Promise 5: owners
 can also approve via paired chat channels using an **approval record** containing a one-time code, expiration, and digest of the exact
-change; LLMs and chat groups can never approve ([`00`](00-overview.md) §9.4). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
+change; LLMs and chat groups can never approve ([`00`](00-overview.md) §9.4). Decision: [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log).
 
 The product grows across eight user-facing release milestones (roadmap §0.5); the architecture of each milestone and how
 each milestone re-proves the six promises is in roadmap §0.5.
 
 ## 2. The system in one diagram
 
-![E-01 · System context](../assets/svg/E-01-system-context.svg)
+![E-01 · System context](assets/svg/E-01-system-context.svg)
 *Figure E-01 — Users, external systems, and NeuroEdge boundaries. Details: [`00`](00-overview.md) §9.*
 
 *How to read Figure E-01:* The diagram shows the entire system context at the highest level: user actors and external systems lie outside the boundary; inside the boundary are NeuroEdge (Python SDK + CLI, C99 firmware), devices (`sim` · `linux` · `esp32s3`), and project files. Solid-bordered boxes represent components that already have code; dashed-bordered boxes represent planned future components (`planned`). Core takeaway: whether originating from typed commands, voice, or network connections, every physical action must pass through the same NeuroEdge safety control boundary.
@@ -72,7 +72,7 @@ each milestone re-proves the six promises is in roadmap §0.5.
 
 From the user's intent, through the AI brain and the extension layer, to the safety box, the hardware and
 the share-and-sell loop. Labels follow the `done` / `partial` / `planned` convention of
-[`README.md`](../README.md); see §6 for the status table.
+[`README.md`](README.md); see §6 for the status table.
 
 ```mermaid
 flowchart TD
@@ -192,7 +192,7 @@ approval card, an on-chip command word while that card is shown, or the owner's 
 cloud speech-to-text never answers one (DP-B-18 → DP-B-22). Built without a board in
 TSK-I2f-18 → I2f-20; checked on a Box-3 in v1.0 (TSK-I7-03).
 
-Requirements, interfaces and test cases of both profiles: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md).
+Requirements, interfaces and test cases of both profiles: [`docs/spec/deployment_profiles.md`](../spec/deployment_profiles.md).
 How the profiles fit the target architecture: [`15`](15-target-architecture.md) §6.10.
 
 ### 2.3 The execution backbone
@@ -255,7 +255,7 @@ When two characteristics conflict, the higher-ranking characteristic wins. Each 
 
 | # | Characteristic | Meaning | Key tactic | Chapter |
 |:---:|:---|:---|:---|:---|
-| 1 | **Safe by default** | All errors lead to block | `budget.fail` defaults to `closed`; `fail: open` does not inherit; full token ledger rejects instead of evicting old tokens | [`05`](05-code-gate-hal-c4l4.md), [PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements) |
+| 1 | **Safe by default** | All errors lead to block | `budget.fail` defaults to `closed`; `fail: open` does not inherit; full token ledger rejects instead of evicting old tokens | [`05`](05-code-gate-hal-c4l4.md), [PRD §9](../../roadmap/neuroedge-prd.md#9-non-functional-requirements) |
 | 2 | **Deterministic and replayable** | Same facts ⇒ same verdict, everywhere | Gate resolution is a pure function; decision tree never reads clock; replay recalculates from recorded facts | [`05`](05-code-gate-hal-c4l4.md), [`06`](06-runtime-flows.md) |
 | 3 | **Cross-environment equivalence** | Agents do not branch on target | Two implementations (Python, C) of the same specification, proven with shared truth tables and vectors | [`10`](10-target-equivalence.md) |
 | 4 | **Auditable** | Reviewers understand without reading code | Gates are human-readable YAML; `gate explain`; traces follow frozen schemas; errors always have three parts | [`07`](07-data-contracts.md) |
@@ -277,7 +277,7 @@ NeuroEdge has three parts, plus the CI pipeline that keeps them aligned:
 
 | Part | What it is | Language | Status |
 |:---|:---|:---|:---|
-| **Package `neuroedge`** (host) | SDK, CLI, gate engine, `sim`/`linux` HAL, models, voice (from WAV files and the laptop microphone `done`; further voice work was removed from the roadmap, Q-77 — [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §6), MCP, Action CI | Python 3.11+ | `done` |
+| **Package `neuroedge`** (host) | SDK, CLI, gate engine, `sim`/`linux` HAL, models, voice (from WAV files and the laptop microphone `done`; further voice work was removed from the roadmap, Q-77 — [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6), MCP, Action CI | Python 3.11+ | `done` |
 | **Firmware `esp32s3`** | `NETR` walker, token ledger, UART trace, generated components for agents, signed OTA | C99 on ESP-IDF v5.4 | `partial` — runs on QEMU; pins not yet driven |
 | **Data contracts** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, UART stream | JSON Schema, TOML, binary | `done`, frozen via RFC |
 | **CI** | Python tests, gpio-sim, QEMU, golden images, OTA, security | GitHub Actions | `done` |
@@ -320,7 +320,7 @@ The tables below are a capability snapshot, not a progress tracking table; task 
 ### 6.1 What a person can do today
 
 What works on `main`, in the words of the person using it. This is the source of the chapter "What it can do
-today" of [`kien-truc-tong-the.html`](../../business/kien-truc-tong-the.html), which
+today" of [`kien-truc-tong-the.html`](../business/kien-truc-tong-the.html), which
 `scripts/gen_architecture_progress.py` writes from it; update a row in the same PR that changes what a person
 can do (CONTRIBUTING.md §8), then run the script. *Reach* marks each place the capability runs — `laptop` (`sim` and host commands), `linux` (Linux on CI,
 gpio-sim), `qemu` (the ESP32-S3 emulator), `board` (a real Raspberry Pi 5 or ESP32-S3) — with `●` works, `◐` in part,
@@ -378,20 +378,20 @@ roadmap task — `test_architecture_progress.py` checks both.
 - **Not a cloud service.** Today NeuroEdge is a library, a CLI, and firmware; there are
   no servers operated by NeuroEdge. *Will change under Q-72 (`planned · Q-72`):* two optional exceptions,
   never on the safety path — relays only pass TLS by SNI without decrypting; Hub index is a
-  static git repository ([PRD §15](../../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
+  static git repository ([PRD §15](../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
   LLMs), opens on launch data showing people stuck installing the box (Q-92); rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
-- **Does not resell inference tokens** (`docs/architecture/vi/15-target-architecture.md` §3.4; PRD §1.4 N4). The provider abstraction layer is self-hosted in core; users operate and pay model providers directly.
-- **Does not implement SLAM or navigation**; robot bridges (ROS 2, Nav2) left the roadmap with Q-77 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14).
-- **No paid marketplace** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).
-- **No automated agent-to-agent payment** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-4).
-- **No custom wake-word training in v1.0** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §3).
+- **Does not resell inference tokens** (`docs/architecture/15-target-architecture.md` §3.4; PRD §1.4 N4). The provider abstraction layer is self-hosted in core; users operate and pay model providers directly.
+- **Does not implement SLAM or navigation**; robot bridges (ROS 2, Nav2) left the roadmap with Q-77 ([`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §14).
+- **No paid marketplace** ([`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §14, PF-3).
+- **No automated agent-to-agent payment** ([`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §14, PF-4).
+- **No custom wake-word training in v1.0** ([`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §3).
 
 For overall planned architecture (to-be architecture) across subsequent phases, see [`15-target-architecture.md`](15-target-architecture.md).
 
 ## 8. Next reading
 
-Role-based reading roadmap is in [`README.md`](../README.md). Beginners start at
-[`python/README.md`](../../../python/README.md).
+Role-based reading roadmap is in [`README.md`](README.md). Beginners start at
+[`python/README.md`](../../python/README.md).
 
 ## 9. System context (C4 L1)
 
@@ -406,7 +406,7 @@ Role-based reading roadmap is in [`README.md`](../README.md). Beginners start at
 
 Figure E-01 in §2 (read notes there). Details of the context follow below.
 
-Dashed-line boxes bearing labels I2d, I2e, or Q-72 represent target designs of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) (`planned · Q-72`), with no code yet:
+Dashed-line boxes bearing labels I2d, I2e, or Q-72 represent target designs of [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log) (`planned · Q-72`), with no code yet:
 **Operating agent** within system boundary (trusted 24/7 runtime + untrusted LLM worker, I2d),
 two user personas for NeuroEdge Blueprint (I2e), and three external systems — chat platforms (I2d), Blueprint Hub
 index (I2e), optional relay (Q-72).
@@ -508,7 +508,7 @@ Four boundary rules, each tested in `docs/spec/threat_model.md` §2b:
    not from LLM text. The reply must target the exact `id`. The runtime checks: sender is paired, not
    a group, nonce unused, unexpired per monotonic clock, digest matches; if all five pass, it enters the existing
    confirmation path with source `chat:<id>`; if any fails, it rejects and traces. LLMs never approve.
-   Pairing lifecycle (revocation, expiration, approval rate limits) deferred in `TODOS.md` #62. Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
+   Pairing lifecycle (revocation, expiration, approval rate limits) deferred in `TODOS.md` #62. Decision: [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log).
 
 Explicitly out of scope: in-process attackers, and certified
 functional safety (`docs/spec/threat_model.md` §3, §3b). Therefore, the operator agent
@@ -524,7 +524,7 @@ Q-71 boundary ([`02`](02-container-c4l2.md) §3).
 | Jev (System 1) | **Only speaker utterance** and typed question for each criterion | Action names, parameters, session facts; MCP calls without spoken words send nothing |
 | STT | Audio chunk of one turn | — |
 | TTS | Response string to read | — |
-| Camera / vision *(`sim`, `linux`: `done`; `esp32s3`: planned)* | To vision models; maker declares `bool`/`level`/`choice` facts with numeric confidence, gate bounds thresholds via `numeric` criteria (Q-54, `docs/architecture/vi/15-target-architecture.md` §4.4) | Traces do not embed raw frames: default stores only SHA-256 hash and size; storing raw frames requires explicit opt-in (`metadata.raw_capture`, phase2 §2.3, TSK-V1b-08) — see [`15`](15-target-architecture.md) §4.4 |
+| Camera / vision *(`sim`, `linux`: `done`; `esp32s3`: planned)* | To vision models; maker declares `bool`/`level`/`choice` facts with numeric confidence, gate bounds thresholds via `numeric` criteria (Q-54, `docs/architecture/15-target-architecture.md` §4.4) | Traces do not embed raw frames: default stores only SHA-256 hash and size; storing raw frames requires explicit opt-in (`metadata.raw_capture`, phase2 §2.3, TSK-V1b-08) — see [`15`](15-target-architecture.md) §4.4 |
 
 Traces by default only store decisions: raw text (typed commands, transcripts) is hashed at the source (NFR-PRIV-03);
 `--raw` is the explicit opt-in to preserve verbatim text, and that trace carries `metadata.anonymized = false` (NFR-PRIV-04).
@@ -532,7 +532,7 @@ Audio is never stored in traces.
 
 #### Data flows of the operator agent (`planned · Q-72`, I2d)
 
-Data flow rules of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) aim to **prevent data leaks** (hacks, prompt injection, exfiltration), without restricting
+Data flow rules of [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log) aim to **prevent data leaks** (hacks, prompt injection, exfiltration), without restricting
 user-constructed flows: every destination declared by users in contracts or configurations receives data permitted
 by the user, including images sent to LLMs. Content rules (e.g. "images do not leave home") are user options enabled
 in contracts, not defaults.

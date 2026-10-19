@@ -1,7 +1,7 @@
 """
 Repository layout discovery.
 
-The monorepo (docs/architecture/vi/15-target-architecture.md §4.1) keeps language-neutral assets outside the
+The monorepo (docs/architecture/15-target-architecture.md §4.1) keeps language-neutral assets outside the
 Python package: `schemas/`, `gates/`, `fixtures/`, `boards/`, `targets/`. The
 SDK has to find them whether it runs from a source checkout, an editable
 install, or an installed wheel — which carries a copy under `neuroedge/_data/`

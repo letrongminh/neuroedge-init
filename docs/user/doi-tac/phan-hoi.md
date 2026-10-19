@@ -42,7 +42,7 @@ TRACE (optional): attach `trace-*.json` — AFTER you inspect it: it contains PA
 ## Questions helping us decide messaging and pricing (`TODOS.md` #19)
 
 This section is **not** part of technical guides; answer during a short debrief conversation after the pilot if you agree. We use an existing question set
-([`docs/business/cong-nhu-cau-2026-10-25/phong-van.md`](../../business/cong-nhu-cau-2026-10-25/phong-van.md)) rather than reprinting it here — asking about what **actually happened** and real costs, not product opinions.
+([`docs/business/cong-nhu-cau-2026-10-25/phong-van.md`](../../business/doi-tac/phong-van.md)) rather than reprinting it here — asking about what **actually happened** and real costs, not product opinions.
 The questions to be asked, and their corresponding sections:
 
 | Topic | Original question | What to record |

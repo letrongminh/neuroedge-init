@@ -168,7 +168,7 @@ Execution of script `scripts/qemu_ota.sh` goes through all 7 phases:
 
 ## 5. What not to say in demo
 
-When presenting to partners, customers, or during demand interviews, the presenter must strictly comply with the "What not to say" catalog in [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../../docs/business/cong-nhu-cau-2026-10-25/demo.md) §0.1 and limitation catalog in [`CHANGELOG.md`](../../CHANGELOG.md) §3.7. Specifically, do not state or claim the following three things:
+When presenting to partners, customers, or during demand interviews, the presenter must strictly comply with the "What not to say" catalog in [`demo/README.md`](../README.md#what-not-to-say-in-any-demo) and limitation catalog in [`CHANGELOG.md`](../../CHANGELOG.md) §3.7. Specifically, do not state or claim the following three things:
 
 1. **Do not say GPIO pins already control real equipment:** Currently the microcontroller HAL is TSK-S4-01; QEMU simulation only proves flash partition logic, C walker, token log, and signatures (Source: [`docs/spec/simulation_coverage.md`](../../docs/spec/simulation_coverage.md) §4, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §1).
 2. **Do not say Box-3 has connected to real Wi-Fi in the wild:** QEMU connects to the network via `open_eth` virtual NIC; on physical ESP32-S3-BOX-3 board, Wi-Fi is only initialized at STA interface level without calling connect or network configuration provisioning (Source: [`docs/spec/simulation_coverage.md`](../../docs/spec/simulation_coverage.md) §4.1, [`docs/user/nap-firmware.md`](../../docs/user/nap-firmware.md) §6.5, `TODOS.md` #50).

@@ -1,5 +1,5 @@
 """
-The host package's dependency graph, as docs/architecture/vi/03-component-host-c4l3.md §2 draws
+The host package's dependency graph, as docs/architecture/03-component-host-c4l3.md §2 draws
 it. A new edge between subpackages is an architecture decision: add it here and to that page in
 the same change, or do not add it.
 

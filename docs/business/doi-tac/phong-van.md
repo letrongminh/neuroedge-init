@@ -1,8 +1,8 @@
-# Hướng dẫn phỏng vấn — cổng nhu cầu 2026-10-25
+# Hướng dẫn phỏng vấn khách hàng
 
 Kiểu **The Mom Test**: hỏi về chuyện đã xảy ra và cái giá thật, không hỏi ý kiến về sản phẩm. Không
-nói về NeuroEdge trước khi xong phần câu hỏi vấn đề. Mã giả thuyết dẫn về `README.md` §2 và
-`cham-diem.md`.
+nói về NeuroEdge trước khi xong phần câu hỏi vấn đề. Viết cho cổng nhu cầu của Q-72 (đã bỏ bởi Q-92); câu hỏi vẫn dùng cho mọi buổi
+phỏng vấn khách hàng.
 
 ## 0. Luật cho người phỏng vấn
 
@@ -29,7 +29,7 @@ Quy ước cột:
   `CEO-T2` (chứng nhận) · `CEO-T3` (đối thủ thật) · `G-e` (chuyến đi hiện trường) · `G-d` (dùng lại
   chính sách). Phần Maker (§5b, Q-72) thêm `M-SELL` (đã làm và bán/chia sẻ thiết bị cho người khác) ·
   `M-PROACT` (thông báo chủ động có ích hay bị tắt) · `M-BYOK` (đang tự trả LLM API) · `M-KIT` (đã mua kit
-  hay BOM theo hướng dẫn); thang chấm ở `cham-diem.md` §1.1.
+  hay BOM theo hướng dẫn).
 - **Mạnh** / **Yếu** — tín hiệu nghe thấy.
 
 ## 1. Mở đầu chung (mọi phân khúc)
@@ -38,7 +38,7 @@ Quy ước cột:
 |:---:|:---|:---|
 | O1 | "Cảm ơn anh/chị. Tôi xin ghi âm/ghi chép để không hiểu sai; bản ghi không chia sẻ ra ngoài nhóm, khi dùng sẽ bỏ tên người và tên công ty. Anh/chị đồng ý chứ?" | Đồng ý ghi; không đồng ý thì chỉ ghi tay |
 | O2 | "Hôm nay tôi không bán gì. Tôi đang tìm hiểu cách các đội xử lý khi thiết bị tự động làm một việc sai ngoài đời thật." | Khung vấn đề, không nhắc sản phẩm |
-| O3 | "Công việc hằng ngày của anh/chị là gì, và phần nào dính tới thiết bị ngoài hiện trường?" | Vai trò; xác nhận đúng người (`README.md` §3) |
+| O3 | "Công việc hằng ngày của anh/chị là gì, và phần nào dính tới thiết bị ngoài hiện trường?" | Vai trò; xác nhận đúng người |
 | O4 | "Trong 12 tháng qua, anh/chị trực tiếp xử lý hay ký tiền cho thiết bị nào?" | Sàng lọc; không có thì chuyển sang hỏi giới thiệu |
 
 ## 2. Khách sạn / nghỉ dưỡng
@@ -127,7 +127,7 @@ Người: kỹ sư tự động hóa, trưởng bảo trì, người phụ trác
 
 Người: maker tự dựng thiết bị bằng Home Assistant, ESPHome, ESP32 hay Raspberry Pi; ưu tiên người **đã từng
 làm thiết bị cho người khác**. Đây là phân khúc người dùng đầu của Q-72, và là nguồn dữ liệu cho điều kiện
-③ của cổng nhu cầu 8 tuần ("≥ 1 maker muốn đóng gói và bán", `README.md`). Vẫn luật §0: hỏi chuyện đã xảy ra,
+③ ("≥ 1 maker muốn đóng gói và bán"). Vẫn luật §0: hỏi chuyện đã xảy ra,
 **không** nhắc NeuroEdge Blueprint, agent vận hành hay Telegram trước phần kết.
 
 | # | Câu hỏi | Mã | Mạnh | Yếu |
@@ -178,7 +178,7 @@ demo tương ứng (`demo.md`, mục "Hỏi sau demo") và E4.
 ## 7. Sau mỗi cuộc (trong 24 giờ)
 
 1. Người ghi làm sạch bản ghi: trích nguyên văn mọi câu có số, ghi thời điểm và ai nói trước.
-2. Trưởng nhóm chấm sơ bộ theo `cham-diem.md` §2; người chấm thứ hai chấm độc lập trước 10-22.
+2. Trưởng nhóm chấm sơ bộ; người chấm thứ hai chấm độc lập.
 3. Điền một dòng vào bảng tổng hợp (mã ẩn danh `HS-01`, `FL-01`, `SH-01`, `IN-01`, `MK-01`…), **không** tên
    người, không tên công ty.
 4. Nếu người đó điền khảo sát, nối mã khảo sát với mã phỏng vấn trong bảng tiếp cận (ngoài kho).

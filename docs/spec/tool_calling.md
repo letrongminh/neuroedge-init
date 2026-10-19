@@ -39,7 +39,7 @@ MCP has **two directions**, and the profile covers both:
 | **A — device calling out** | Agent's System 2 (MCP host) | Agent's own MCP server **and** external MCP servers | §10 |
 
 The profile is the third standard asset of NeuroEdge, alongside gate schemas and trace schemas
-(`docs/architecture/vi/16-ecosystem-landscape.md` §6).
+(`docs/architecture/16-ecosystem-landscape.md` §6).
 
 ## 1. `ToolCall` Envelope
 

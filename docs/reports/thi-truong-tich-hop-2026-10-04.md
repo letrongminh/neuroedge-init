@@ -1,7 +1,7 @@
 # Device Integration Market for AI Agents — 2026-10-04
 
 Landscape report serving as basis for **Q-67** (open platform, `roadmap/neuroedge-prd.md` §15) and design note
-`docs/architecture/vi/16-ecosystem-landscape.md` §4. Core questions: how existing and newly emerging
+`docs/architecture/16-ecosystem-landscape.md` §4. Core questions: how existing and newly emerging
 AI-hardware ecosystems connect devices, where safety gates can be placed, and what they still lack.
 
 **Methodology:** reviewing official documentation and repositories as of 2026-10-04. Entries marked *(secondary)* rely solely on press sources;
@@ -63,4 +63,4 @@ already too late; gate must reside at HAL layer invoked by that code.
 Four universal adapters — MCP proxy, on-device dispatcher (bridge), reverse proxy/bridge, robotics node — cover
 most of the market; each new ecosystem requires only a thin plugin on one of the four forms. What NeuroEdge
 sells is the **unmet capabilities** in §3: value-based gates, fail-closed, shared traces — provided the core remains
-independently usable with open attachment points. Decision: Q-67; architecture: `docs/architecture/vi/16-ecosystem-landscape.md` §4.
+independently usable with open attachment points. Decision: Q-67; architecture: `docs/architecture/16-ecosystem-landscape.md` §4.

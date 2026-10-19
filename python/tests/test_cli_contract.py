@@ -5,7 +5,7 @@ TSK-I6-06 (Q-63) — the CLI contract, pinned.
 which arguments and options are required. This is the literal snapshot of that promise, read
 from the Typer command tree: add, rename or remove a command or an option, make an argument
 required, or turn a flag into a value option, and CI is red until the snapshot, the spec's
-SemVer rule and the CHANGELOG entry move in the same PR. Exit codes are `CHANGELOG.md` §2.3;
+SemVer rule and the CHANGELOG entry move in the same PR. Exit codes are `docs/reference/cli.md` §3;
 their tests live with the commands.
 
 Notation, one line per command (a group's subcommands are listed by their full path):

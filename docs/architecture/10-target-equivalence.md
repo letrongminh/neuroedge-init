@@ -56,7 +56,7 @@ flowchart TB
 
 ## 3. Five Primitives × Three Targets Matrix
 
-![E-07 · Target matrix](../assets/svg/E-07-target-matrix.svg)
+![E-07 · Target matrix](assets/svg/E-07-target-matrix.svg)
 *Figure E-07 — Each cell: backend running it, where it is automated-tested, status.*
 
 | Primitive | `sim` (`sim-default`) | `linux` (`linux-rpi5`) | `esp32s3` (`esp32s3-box-3`) |
@@ -118,7 +118,7 @@ An artifact type matching 0 files ⇒ `NE4004`, exit code 1: no empty "PASS".
 | Port Type | Possible Today? | Notes |
 |:---|:---|:---|
 | **New board for an existing target** (another Linux SBC, another ESP32-S3 board) | Technically yes; but `boards/` only accepts **reference board profiles for the three tier-1 targets** (four files since `sim-rpi5`, RFC-0013) while the target list stays closed (Q-77; `test_boards.py`), and the reference board for `esp32s3` is strictly Box-3 (invariant 6) | Used for internal experimentation; not publishable yet. From I2c (`planned`), community boards outside the repo are loaded via `--board <path>`, self-certified via `board validate`, and never serve as reference boards (TSK-I2c-05) |
-| **New target** (`stm32`, `rp2350`, `jetson`) | **No**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` (Q-77) | RFC-0002 is approved but its code was removed from the roadmap ([`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §6) |
+| **New target** (`stm32`, `rp2350`, `jetson`) | **No**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` (Q-77) | RFC-0002 is approved but its code was removed from the roadmap ([`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6) |
 | **Tier 3 self-tested by community** (Q-13) | No process: the porting kit (I13) was removed from the roadmap (Q-77) | This chapter describes what code exists today and what will change |
 
 The remainder describes the **contract** — which does not change when the target list opens — and immediately reusable code.

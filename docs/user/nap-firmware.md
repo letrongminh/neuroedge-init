@@ -2,7 +2,7 @@
 
 > **Task codes:** TSK-I3-01 · TSK-S6-01…04 · **Requirements:** FR-CLI-02, FR-TGT-03, FR-OTA-01…04.
 > This is the **sole source** describing the flashing and OTA procedures; `build` command syntax is in
-> [`CHANGELOG.md`](../../CHANGELOG.md) §2.3.
+> [`docs/reference/cli.md`](../reference/cli.md) §3.
 
 ## 1. What this firmware does, and what it does not yet do
 
@@ -64,7 +64,7 @@ link at a target build path ⇒ rejected: build never writes through symlinks ou
 
 If the agent is incompatible with the board (missing pins, missing capabilities — FR-HAL-04), gate key is not a C identifier
 (`unlock-door`), `[agent] name`/`version` contains control characters or newlines, UI language is invalid
-(above), or exceeds 32 pins ⇒ prints all issues (how to read: `CHANGELOG.md` §2.4), **exit code 1,
+(above), or exceeds 32 pins ⇒ prints all issues (how to read: `docs/reference/cli.md` §4), **exit code 1,
 writes nothing**.
 
 ## 4. Build and flash onto Box-3

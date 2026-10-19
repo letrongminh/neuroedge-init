@@ -6,8 +6,8 @@
 
 ## 1. Container diagram
 
-![E-02 · Containers](../assets/svg/E-02-containers.svg)
-*Figure E-02 — Containers on dev machines or Linux devices (top), on chip (bottom), and external systems (right). Dashed boxes labeled I2d, I2e, Q-72 represent target designs of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) (`planned · Q-72`): 24/7 runtime, LLM worker, chat platforms, Hub index, relay; LLM workers may run on optional NeuroEdge Cloud (Q-74, I2f, [`15`](15-target-architecture.md) §6.10).*
+![E-02 · Containers](assets/svg/E-02-containers.svg)
+*Figure E-02 — Containers on dev machines or Linux devices (top), on chip (bottom), and external systems (right). Dashed boxes labeled I2d, I2e, Q-72 represent target designs of [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log) (`planned · Q-72`): 24/7 runtime, LLM worker, chat platforms, Hub index, relay; LLM workers may run on optional NeuroEdge Cloud (Q-74, I2f, [`15`](15-target-architecture.md) §6.10).*
 
 ## 2. Container catalog
 
@@ -45,7 +45,7 @@ the home box (the last two rows of the table).
 The two processes reuse the Q-71 boundary: only one process holds HAL, and the MCP client is an untrusted party.
 A worker hit by prompt injection can still only send calls that must pass through gates, unable to touch bot keys, approval
 ledgers, or HAL. If the worker crashes, the runtime continues local reflexes, runs detectors, sends hardcoded template alerts, and
-restarts the worker ([`06`](06-runtime-flows.md)). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
+restarts the worker ([`06`](06-runtime-flows.md)). Decision: [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log).
 
 Consequences today: MCP connections to external servers only survive for a single turn (`TODOS.md` #25), and a stuck I2C
 bus can block the loop for approximately one second (`TODOS.md` #48). With a 24/7 runtime (`planned · Q-72`), both
@@ -56,7 +56,7 @@ resolved before the 24/7 runtime runs on physical hardware.
 ## 4. Communication matrix
 
 Only what is in code is recorded. No latency budgets here are measured; latency thresholds are NFRs
-(PRD §9.1) and their measurement status is in [PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements).
+(PRD §9.1) and their measurement status is in [PRD §9](../../roadmap/neuroedge-prd.md#9-non-functional-requirements).
 
 | Source → Destination | Channel | Format | Controls |
 |:---|:---|:---|:---|
@@ -84,9 +84,9 @@ Only technologies stated in planning documents are listed; everything else is "u
 | Container | Increment | Stated technology | Undecided | Source | Target architecture |
 |:---|:---:|:---|:---|:---|:---|
 | *Fleet OS, Gate Registry, robotics node* | removed (Q-77) | — | — | roadmap §6 | — |
-| **Vision Pipeline** | I2a, I3a (basic); `jetson` and multimodal removed (Q-77) | `vision.in` HAL on `sim`, `linux`, and `esp32s3` (RFC-0012, TSK-V1b-07; Q-53); maker declares `bool`/`level`/`choice` facts with numeric confidence from model labels, gate bounds threshold via `numeric` criteria (Q-54; `docs/architecture/vi/15-target-architecture.md` §4.4), dedicated gate semantics for vision evidence left open (TSK-V3-04); traces do not embed raw frames, raw storage requires explicit opt-in (phase2 §2.3) | Concrete framework choice (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) and models | `docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
+| **Vision Pipeline** | I2a, I3a (basic); `jetson` and multimodal removed (Q-77) | `vision.in` HAL on `sim`, `linux`, and `esp32s3` (RFC-0012, TSK-V1b-07; Q-53); maker declares `bool`/`level`/`choice` facts with numeric confidence from model labels, gate bounds threshold via `numeric` criteria (Q-54; `docs/architecture/15-target-architecture.md` §4.4), dedicated gate semantics for vision evidence left open (TSK-V3-04); traces do not embed raw frames, raw storage requires explicit opt-in (phase2 §2.3) | Concrete framework choice (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) and models | `docs/architecture/15-target-architecture.md` §4.4, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
 
-Q-72 adds the planned containers below (`planned · Q-72`; decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)):
+Q-72 adds the planned containers below (`planned · Q-72`; decision: [Q-72](../../roadmap/neuroedge-prd.md#15-decision-log)):
 
 | Container | Increment | Stated technology | Undecided | Source | Target architecture |
 |:---|:---:|:---|:---|:---|:---|
@@ -104,14 +104,14 @@ What current architecture has already prepared for these containers is in [`15`]
 
 ### 6.1 The big picture
 
-![E-08 · Deployment](../assets/svg/E-08-deployment.svg)
+![E-08 · Deployment](assets/svg/E-08-deployment.svg)
 *Figure E-08 — Three areas: engineer machine, GitHub CI runner machine, device; plus dashed area "home box" (Pi, mini PC, or NAS) running operator agent, alongside chat platforms, relay, and Hub index — `planned · Q-72`. Bottom band: optional NeuroEdge Cloud and small ESP32-S3 home box — conditional, `planned · Q-74`, I2f. Boxes labeled `○ planned` lack hardware or code.*
 
 NeuroEdge has **no server-side services** prior to the v1.1 service tier (I0–I8): no accounts, no brokers, no
 backends. Everything runs on the user's machine or on devices. Fleet OS, the first planned server-side
 service, was removed from the roadmap (Q-77; roadmap §6).
 
-`planned · Q-72` ([Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)): Blueprint positioning adds a **home box** node running 24/7 and two items external to user
+`planned · Q-72` ([Q-72](../../roadmap/neuroedge-prd.md#15-decision-log)): Blueprint positioning adds a **home box** node running 24/7 and two items external to user
 machines, both optional and **never on the safety path**: Hub index (a static git repository, not a
 service, I2e) and relay (the only NeuroEdge-operated service prior to v1.1, passing TLS packets only, without
 decryption). Design: [`15`](15-target-architecture.md) §6.

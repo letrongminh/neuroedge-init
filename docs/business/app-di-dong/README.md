@@ -23,7 +23,7 @@ nút "Xem chi tiết".
 | 4 | [`prototype/index.html`](prototype/index.html) | Bấm thử 8 màn hình mẫu MH-1 → MH-8 (MH để không nhầm với mục tiêu sản phẩm M1–M9) | — |
 
 Mỗi tầng truy vết về tầng trước: SRS §4 nối `BR-APP` và `US-APP` với từng yêu cầu `AP`. Ý nghĩa các
-mã ở [`docs/user/thuat-ngu.md`](../user/thuat-ngu.md).
+mã ở [`docs/user/thuat-ngu.md`](../../user/thuat-ngu.md).
 
 **Mở prototype:** mở thẳng file `prototype/index.html` trong trình duyệt. File tự chứa, không tải gì
 từ mạng, dữ liệu là giả, không nối với hộp.
@@ -33,12 +33,12 @@ từ mạng, dữ liệu là giả, không nối với hộp.
 App là lớp trình bày, không đổi lõi. Những gì đã có quy định ở nơi khác thì SRS tham chiếu mã, không
 chép lại:
 
-* Contract, thẻ duyệt ≤ 5 dòng, approval record, detector, cảnh báo khẩn: [`docs/spec/missions.md`](../spec/missions.md) (Q-87).
-* Cài Blueprint, tham số cài đặt: [`docs/spec/blueprint.md`](../spec/blueprint.md) (Q-86).
-* Hai cách triển khai A và B: [`docs/spec/deployment_profiles.md`](../spec/deployment_profiles.md) (Q-83).
-* Yêu cầu kinh doanh của trợ lý nhà: [`docs/business/brd-ambient-intelligence.md`](../business/brd-ambient-intelligence.md) (Q-85).
-* Bản ghi duyệt có chữ ký, bot duyệt riêng của hộp, ghép chủ hộp: [`docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md`](../rfc/0019-ban-ghi-duyet-co-chu-ky.md) (Q-89).
-* Linh kiện ảo và canvas hoãn: [`docs/spec/virtual_parts.md`](../spec/virtual_parts.md) (Q-84). Đường soạn hợp đồng qua MCP: TSK-I2d-23 (Q-88).
+* Contract, thẻ duyệt ≤ 5 dòng, approval record, detector, cảnh báo khẩn: [`docs/spec/missions.md`](../../spec/missions.md) (Q-87).
+* Cài Blueprint, tham số cài đặt: [`docs/spec/blueprint.md`](../../spec/blueprint.md) (Q-86).
+* Hai cách triển khai A và B: [`docs/spec/deployment_profiles.md`](../../spec/deployment_profiles.md) (Q-83).
+* Yêu cầu kinh doanh của trợ lý nhà: [`docs/business/brd-ambient-intelligence.md`](../brd-ambient-intelligence.md) (Q-85).
+* Bản ghi duyệt có chữ ký, bot duyệt riêng của hộp, ghép chủ hộp: [`docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md`](../../rfc/0019-ban-ghi-duyet-co-chu-ky.md) (Q-89).
+* Linh kiện ảo và canvas hoãn: [`docs/spec/virtual_parts.md`](../../spec/virtual_parts.md) (Q-84). Đường soạn hợp đồng qua MCP: TSK-I2d-23 (Q-88).
 
 Phần chăm sóc người cao tuổi ("Nhà bố mẹ") trong các tài liệu này là hướng sau ra mắt (không thuộc I2g, I2h): PRD §14
 đang hoãn mảng này (Q-72) và R-19 xếp rủi ro pháp lý ở mức cao. App chỉ báo người thân về thay đổi

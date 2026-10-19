@@ -5,7 +5,7 @@
 runs the same `run_stdio`, so the gate, the shutdown and the trace default are one
 path whoever starts the server. `run_http` (`mcp serve --http`, TSK-P2-04) is the same
 session and the same closing behind the authenticated network door of `mcp_http`. `SimSession.load` is the one place the agent is
-wired (docs/architecture/vi/03-component-host-c4l3.md §2), and `mcp_server` the one
+wired (docs/architecture/03-component-host-c4l3.md §2), and `mcp_server` the one
 place a tool call becomes a `ToolCall` (docs/spec/tool_calling.md).
 """
 

@@ -11,7 +11,7 @@
 
 **Scope:** increments **I0** to **I8**, including I2a → I2f and I3a — MVP (v1.0) and Developer Beta (§0.5); everything else Q-77 removed is listed in §6. Sole location recording task status, exit criteria, dependencies, and forecast dates (Q-39).
 
-**Design notes:** `docs/architecture/vi/15-target-architecture.md` §4.4 (vision I2a, I3a) · `docs/architecture/vi/16-ecosystem-landscape.md` §4 (open platform, I2c) · `docs/spec/lab_mcp.md` — historical (Q-77, Q-88)
+**Design notes:** `docs/architecture/15-target-architecture.md` §4.4 (vision I2a, I3a) · `docs/architecture/16-ecosystem-landscape.md` §4 (open platform, I2c) · `docs/spec/lab_mcp.md` — historical (Q-77, Q-88)
 
 **Out of roadmap:** Block 4 (Field AURA) and Block 5 (Commercial Marketplace; minimal Hub in I2e — Q-72) were removed with the rest of Q-77 — §6
 
@@ -56,7 +56,7 @@ All codes and symbols used in this document (`I0`–`I8`, removed codes up to `I
 | **Current phase** | 🟡 **Phase MVP (§0.5)**, lean path of Q-92 — I2d (with its mission core) and I2e lead to the public launch (I6), with `esp32s3` verified on esp-emulator in I3, I3a; no demand gate; remainder of I1, I2a, I2c and Profile B in parallel; partner trial (Q-70) in parallel; voice (I4, I5) removed (Q-77, §6) | Increments and forecast dates: §0.2 |
 | **Open increment** | 🟡 **I2d — Missions and operator agents** (Q-72) | I1 has TSK-I1-02 remaining and Studio (paused until I2g, Q-92) · I0 completed 42 / 42 · details §0.2 |
 | **Next milestone** | **Public launch (I6, PyPI 0.6, free for non-commercial use)** — after I2d, I2e and I3a on esp-emulator (Q-92) | Dates: assumptions in §0.2 · no demand gate (Q-92 (1)); the first adoption signal is launch telemetry (FR-TEL-01) |
-| **Last updated** | **2026-10-19** | Session 2026-10-19 (latest): Q-93 makes Profile B the all-in-one chip — gate, NeuroClaw-ESP, the Box-3 screen and on-chip voice in one ESP32-S3 image; voice is a channel of NeuroClaw-ESP, spoken approval only by on-chip command words; TSK-I2f-18 → I2f-20 without a board, Box-3 checks in I7 (TSK-I7-03). Session 2026-10-19 (later): Q-92 takes the lean path to the public launch — the demand gate is removed, the launch verifies `esp32s3` on esp-emulator (spike TSK-I3-02 done: same gate verdicts as QEMU), real-board checks move to v1.0 (I7), I2e loses four tasks, I2g splits into the home web (I2g) and the native app (I2h), removed-task tables move to `roadmap/archive/removed-tasks.md`. Session 2026-10-19: Q-91 approves the home app as increment I2g (§4.3.7), first after the demand gate; native iOS/Android app in React Native, Studio reopened as the makers' desktop web, four RFCs planned. Session 2026-10-17: Q-90 reconciles the roadmap, PRD and product proposal with the product documents (I2e starts without I2d's mission core; the demand gate is its own milestone, §5.7; commercial licence terms wait for the gate); RFC-0019 approved and TSK-I2d-11 done (Q-89, PR #133). Session 2026-10-16: every sample describes its devices as parts and the page draws servos, motors, inputs and analog channels; greenhouse and full fish tank on the virtual board (TSK-I2d-33). Session 2026-10-16: missions SRS approved (Q-87, `docs/spec/missions.md`, TSK-I2d-01 → I2d-21); pin map approved by the lead engineer, TSK-I2d-32 done (Q-84 phases A, A+ and B complete; canvas C deferred); Blueprint SRS approved (Q-86); the architecture page gains chapter 12, what a person can do today; phone app draft in `docs/app-di-dong/` (proposed, not approved, §8.3); documents synced to Q-77, and Q-88 moves the Lab-only tasks out of I2d (§6). Earlier sessions: `CHANGELOG.md` |
+| **Last updated** | **2026-10-19** | Session 2026-10-19 (latest): Q-93 makes Profile B the all-in-one chip — gate, NeuroClaw-ESP, the Box-3 screen and on-chip voice in one ESP32-S3 image; voice is a channel of NeuroClaw-ESP, spoken approval only by on-chip command words; TSK-I2f-18 → I2f-20 without a board, Box-3 checks in I7 (TSK-I7-03). Session 2026-10-19 (later): Q-92 takes the lean path to the public launch — the demand gate is removed, the launch verifies `esp32s3` on esp-emulator (spike TSK-I3-02 done: same gate verdicts as QEMU), real-board checks move to v1.0 (I7), I2e loses four tasks, I2g splits into the home web (I2g) and the native app (I2h), removed-task tables move to `roadmap/archive/removed-tasks.md`. Session 2026-10-19: Q-91 approves the home app as increment I2g (§4.3.7), first after the demand gate; native iOS/Android app in React Native, Studio reopened as the makers' desktop web, four RFCs planned. Session 2026-10-17: Q-90 reconciles the roadmap, PRD and product proposal with the product documents (I2e starts without I2d's mission core; the demand gate is its own milestone, §5.7; commercial licence terms wait for the gate); RFC-0019 approved and TSK-I2d-11 done (Q-89, PR #133). Session 2026-10-16: every sample describes its devices as parts and the page draws servos, motors, inputs and analog channels; greenhouse and full fish tank on the virtual board (TSK-I2d-33). Session 2026-10-16: missions SRS approved (Q-87, `docs/spec/missions.md`, TSK-I2d-01 → I2d-21); pin map approved by the lead engineer, TSK-I2d-32 done (Q-84 phases A, A+ and B complete; canvas C deferred); Blueprint SRS approved (Q-86); the architecture page gains chapter 12, what a person can do today; phone app draft in `docs/business/app-di-dong/` (proposed, not approved, §8.3); documents synced to Q-77, and Q-88 moves the Lab-only tasks out of I2d (§6). Earlier sessions: `CHANGELOG.md` |
 | **Core CI status** | ✅ **PASS 5083/5083 · SKIP 0** | `python/tests/` 128 test suites; `tests_linux/` 119/119 on kernel; `ui-golden` 66 images; `ota-rollback` phases a–g; `firmware-qemu` added stack guard and six boots via serial console (Q-79); security scanners |
 | **Non-technical blockers** | 🟡 **1 blocking item, for v1.0 only** | 🔴 Box-3, RPi 5 and the CoreS3 camera board are not ordered; they block I7's real-board checks (TSK-S1-10, TSK-I3a-01 and others moved by Q-92) and TSK-I2-01, not the launch: `esp32s3` is verified on esp-emulator (Q-92 (4)) |
 | **Deliberate deferrals** | 📋 [`TODOS.md`](../TODOS.md) | Each item includes activation trigger · demand gate removed by Q-92; open business questions (`TODOS.md` #19) reviewed with launch data |
@@ -415,7 +415,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Entry conditions** | — · RFC open immediately, code awaits RFC approval (§2.3) |
 | **Measurement signal** | Exit criteria below |
 | **Roles** | V1 (lead), V5 (vision), V2 (RFC-motion), tech lead |
-| **Design** | `docs/architecture/vi/15-target-architecture.md` §4.4 · `docs/architecture/vi/15-target-architecture.md` §4.3 · `docs/spec/lab_mcp.md` §7 · RFC-0007, RFC-0009 → RFC-0013 |
+| **Design** | `docs/architecture/15-target-architecture.md` §4.4 · `docs/architecture/15-target-architecture.md` §4.3 · `docs/spec/lab_mcp.md` §7 · RFC-0007, RFC-0009 → RFC-0013 |
 
 | Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -494,11 +494,11 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 | **Entry conditions** | — · code tasks await signing of respective RFCs |
 | **Measurement signal** | M6, A13; number of third-party plugins passing conformance test |
 | **Roles** | V1 (lead), V3; human for TSK-I2c-16 on real HA and TSK-I2c-17 |
-| **Design** | `docs/architecture/vi/16-ecosystem-landscape.md` §4 |
+| **Design** | `docs/architecture/16-ecosystem-landscape.md` §4 |
 
 | Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-I2c-01** | Open platform decision and design (Q-67) | FR-EXT-01→09 | V1 | ✅ 2026-10-04 | `docs/architecture/vi/16-ecosystem-landscape.md` §4 |
+| **TSK-I2c-01** | Open platform decision and design (Q-67) | FR-EXT-01→09 | V1 | ✅ 2026-10-04 | `docs/architecture/16-ecosystem-landscape.md` §4 |
 | **TSK-I2c-02** | RFC-0016: decoupled safety core and Extension SDK | FR-EXT-01→05, FR-EXT-09 | V1 | ✅ 2026-10-04 | `docs/rfc/0016-loi-tach-duoc-va-extension-sdk.md` |
 | **TSK-I2c-03** | RFC-0017: namespaced call source `bridge:<id>` | FR-EXT-03 | V1 | ✅ 2026-10-04 | `docs/rfc/0017-nguon-goi-theo-khong-gian-ten.md` |
 | **TSK-I2c-04** | RFC-0018: remote actuators and safe-off levels | FR-EXT-07 | V1 | ✅ 2026-10-04 | `docs/rfc/0018-co-cau-chap-hanh-tu-xa.md` |
@@ -640,7 +640,7 @@ Q-92 (2) cut the affiliate BOM page, the Home Assistant add-on, the Pi SD image 
 
 ### 4.3.6 I2f — NeuroEdge Cloud and ESP32 home box
 
-**Conditional (Q-74 step 2, Q-92 (8)).** Opens only when launch data shows people blocked by setup, API keys, or self-hosting; if not opened, keep ⏸, do not cut. **Goal:** users only need to chat — "brain" (LLM worker, conversation, mission contract compilation) runs on optional NeuroEdge Cloud and coordinates multiple devices, homes, and people; "spinal cord" (gate, reflexes, approval checks, egress egress, traces) always stays on the home box. **Design:** Q-74 · PRD FR-AGT-10, FR-AGT-11, FR-CH-07 · `docs/architecture/vi/15-target-architecture.md` §6.10 · `docs/spec/threat_model.md` §2k. **Dependencies:** I2e.
+**Conditional (Q-74 step 2, Q-92 (8)).** Opens only when launch data shows people blocked by setup, API keys, or self-hosting; if not opened, keep ⏸, do not cut. **Goal:** users only need to chat — "brain" (LLM worker, conversation, mission contract compilation) runs on optional NeuroEdge Cloud and coordinates multiple devices, homes, and people; "spinal cord" (gate, reflexes, approval checks, egress egress, traces) always stays on the home box. **Design:** Q-74 · PRD FR-AGT-10, FR-AGT-11, FR-CH-07 · `docs/architecture/15-target-architecture.md` §6.10 · `docs/spec/threat_model.md` §2k. **Dependencies:** I2e.
 
 **Exception Q-79, Q-83, Q-93 — Profile B, one chip.** Eleven tasks TSK-I2f-10 → I2f-20 open immediately and continue in parallel (Q-92 (3)): brain (Telegram client, LLM loop) and gate in one ESP32-S3 image, with risk labels; all LLM tool calls route through `ne_brain_bridge` into `ne_gate`. Requirements and test cases: [`docs/spec/deployment_profiles.md`](../docs/spec/deployment_profiles.md) (DP-B-*). Stage 1 and the host-C and QEMU parts run without a board; the on-board parts require the DevKitC N16R8 board (TSK-I3a-08). Guide: [`docs/user/esp32-mot-chip.md`](../docs/user/esp32-mot-chip.md). Q-93 makes Profile B the all-in-one chip: TSK-I2f-18 → I2f-20 add the screen and on-chip voice without a board (host and esp-emulator); their checks on a Box-3 are TSK-I7-03.
 
@@ -679,12 +679,12 @@ Q-92 (2) cut the affiliate BOM page, the Home Assistant add-on, the Pi SD image 
 
 ### 4.3.7 I2g — Box API and home web
 
-**After the public launch, the first increment it opens (Q-91, Q-92 (8)).** **Goal:** a family runs the home from a browser on the home network without writing YAML, gates or contracts; the rules stay in the box and are shown in plain sentences, with details behind "Xem chi tiết". The box API built here is the backend of the native app (I2h). **Requirements:** `docs/app-di-dong/03-srs.md` (AP-*), approved by Q-91.
+**After the public launch, the first increment it opens (Q-91, Q-92 (8)).** **Goal:** a family runs the home from a browser on the home network without writing YAML, gates or contracts; the rules stay in the box and are shown in plain sentences, with details behind "Xem chi tiết". The box API built here is the backend of the native app (I2h). **Requirements:** `docs/business/app-di-dong/03-srs.md` (AP-*), approved by Q-91.
 
 | | |
 |:---|:---|
 | **Entry conditions** | The public launch (I6); I2d's approval records running (TSK-I2d-12); I2e's install flow (TSK-I2e-03) |
-| **Design** | Q-91, Q-92, Q-89, Q-85, Q-73 · `docs/app-di-dong/` · `docs/spec/studio.md` · RFC-0006, RFC-0019 |
+| **Design** | Q-91, Q-92, Q-89, Q-85, Q-73 · `docs/business/app-di-dong/` · `docs/spec/studio.md` · RFC-0006, RFC-0019 |
 
 | Task code | Description | Requirement | Owner | Status | Evidence |
 |:---|:---|:---|:---|:---|:---|
@@ -709,7 +709,7 @@ Q-92 (2) cut the affiliate BOM page, the Home Assistant add-on, the Pi SD image 
 | | |
 |:---|:---|
 | **Entry conditions** | I2g's box API and RFCs |
-| **Design** | Q-91, Q-92 · `docs/app-di-dong/` |
+| **Design** | Q-91, Q-92 · `docs/business/app-di-dong/` |
 
 | Task code | Description | Requirement | Owner | Status | Evidence |
 |:---|:---|:---|:---|:---|:---|
@@ -1001,7 +1001,7 @@ None remaining (Q-77): Track 4 and Track 5 moved to §6.
 
 ### 8.3 Proposed, not approved
 
-None. The phone app proposed in `docs/app-di-dong/` was approved by Q-91 and split by Q-92 into the home web (I2g, §4.3.7) and the native app (I2h, §4.3.8). The restructuring raised with Q-91 (12) is Q-92.
+None. The phone app proposed in `docs/business/app-di-dong/` was approved by Q-91 and split by Q-92 into the home web (I2g, §4.3.7) and the native app (I2h, §4.3.8). The restructuring raised with Q-91 (12) is Q-92.
 
 ---
 

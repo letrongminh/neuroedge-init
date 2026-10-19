@@ -243,7 +243,7 @@ generate code from it. Cost: `CONTRIBUTING.md` §8.1 row "Error code `NE…`" ch
 
 | File | `$id` | Rules |
 |:---|:---|:---|
-| `tool-call.v1.json` | `https://schema.neuroedge.dev/tool-call/v1.json` | PRD §10.3 / FR-GOV-02: path `/v1`; adding optional fields or relaxing `enum` does not bump; renaming, removing, or tightening requires `v2` with transition period (`docs/architecture/vi/16-ecosystem-landscape.md` §6 pillar 3) |
+| `tool-call.v1.json` | `https://schema.neuroedge.dev/tool-call/v1.json` | PRD §10.3 / FR-GOV-02: path `/v1`; adding optional fields or relaxing `enum` does not bump; renaming, removing, or tightening requires `v2` with transition period (`docs/architecture/16-ecosystem-landscape.md` §6 pillar 3) |
 | `tool-result.v1.json` | `…/tool-result/v1.json` | as above |
 | `error.v1.json`, `error-codes.v1.json` | `…/error/v1.json`, `…/error-codes/v1.json` | as above; catalog-specific rules in §3d |
 | `board.v1.json` | unchanged | `schema` key in §3c |

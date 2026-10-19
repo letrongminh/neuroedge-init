@@ -22,7 +22,7 @@
 `vision.in` exists only on paper. Four gaps:
 
 1. **Boards cannot declare cameras.** `sensor.read` returns discrete scalars (RFC-0002 §9.1), not frame streams. Initial experimental shape (integer `width`, `height`, `fps`, free string) could not match against agents.
-2. **No path from model labels to verdicts.** `docs/architecture/vi/15-target-architecture.md` §4.4 intentionally left open the problem of dedicated gate semantics for vision; the existing constraint there (Q-54) works around it: mapping vision to typed facts the gate already knows how to evaluate, thresholds locked in the gate. Syntax and rules for that path do not yet exist.
+2. **No path from model labels to verdicts.** `docs/architecture/15-target-architecture.md` §4.4 intentionally left open the problem of dedicated gate semantics for vision; the existing constraint there (Q-54) works around it: mapping vision to typed facts the gate already knows how to evaluate, thresholds locked in the gate. Syntax and rules for that path do not yet exist.
 3. **No trace rules.** Cameras in private spaces pose greater risk than microphones; precise rules are needed for what gets recorded (NFR-PRIV-01, NFR-PRIV-03), sufficient for `replay` to reproduce verdicts (FR-CI-02).
 4. **No method to prove equivalence.** Vision models run across three targets with different hardware; "gates decide identically" and "models see identically" are two different propositions, neither of which has been tested.
 
@@ -221,7 +221,7 @@ Four previously open points decided by product owner under maximum safety princi
 
 ## 5. Safety Impact
 
-- **Gates no looser and no new vision semantics** (Q-54): `gate.v1`, resolution, and five inheritance principles unchanged. Constraint from `docs/architecture/vi/15-target-architecture.md` §4.4 — mapping vision to typed facts gate already knows how to evaluate, confidence thresholds locked with `numeric` — preserved intact.
+- **Gates no looser and no new vision semantics** (Q-54): `gate.v1`, resolution, and five inheritance principles unchanged. Constraint from `docs/architecture/15-target-architecture.md` §4.4 — mapping vision to typed facts gate already knows how to evaluate, confidence thresholds locked with `numeric` — preserved intact.
 - **Perception never becomes authority:** models supply facts only; all count and confidence thresholds are locked by gates and only narrow under inheritance. Makers cannot loosen thresholds via `agent.toml` because thresholds do not reside there (`bands` rejected).
 - **Single path for confidence:** `confidence_gte` on vision facts rejected at both `neuroedge build` and agent load time, eliminating second path where locking could be omitted (§3c).
 - **`present` and `count` do not stand alone:** Gates using `present` or `count` must include companion `numeric` `confidence` criterion for same label, same zone, in `allow_when` carrying `max_age_ms`. Eliminates risk of frozen cameras repeating "nobody there" frames granting ALLOW for `close_gate` written with `present: false`.

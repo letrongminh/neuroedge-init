@@ -21,7 +21,7 @@ cd /tmp/neuroedge-demo
 ```
 
 > [!IMPORTANT]
-> **What not to say:** Read carefully the table *"What not to say in any demo"* in [`docs/business/cong-nhu-cau-2026-10-25/demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md#01-điều-không-được-nói-trong-bất-kỳ-demo-nào) and unsupported capabilities in [`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet). Absolutely do not say that the system already runs on a real board, receives live microphone voice directly, or parses free-form language outside the command grammar.
+> **What not to say:** Read carefully the table *"What not to say in any demo"* in [`demo/README.md`](../README.md#what-not-to-say-in-any-demo) and unsupported capabilities in [`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet). Absolutely do not say that the system already runs on a real board, receives live microphone voice directly, or parses free-form language outside the command grammar.
 
 ---
 
@@ -216,16 +216,16 @@ Tool calls from an external LLM must comply with Gated Tool Profile v0; the gate
 ## 6. Frequently asked questions during demo
 
 1. **Real hardware:** *"Does the system already run on real boards?"*  
-   → No physical ESP32-S3-BOX-3 board yet; the entire demo currently runs on the `sim` target (virtual pins) or QEMU UART in CI ([`demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md#01-điều-không-được-nói-trong-bất-kỳ-demo-nào) · [`CHANGELOG.md` §3.4, §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet)).
+   → No physical ESP32-S3-BOX-3 board yet; the entire demo currently runs on the `sim` target (virtual pins) or QEMU UART in CI ([`demo/README.md`](../README.md#what-not-to-say-in-any-demo) · [`CHANGELOG.md` §3.4, §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet)).
 
 2. **Live voice:** *"Can we speak directly via real-time microphone?"*  
-   → Voice is currently received from WAV files (`--voice-file`), no real-time microphone session on computer yet ([`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet) · [`demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md#01-điều-không-được-nói-trong-bất-kỳ-demo-nào)).
+   → Voice is currently received from WAV files (`--voice-file`), no real-time microphone session on computer yet ([`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet) · [`demo/README.md`](../README.md#what-not-to-say-in-any-demo)).
 
 3. **Privacy:** *"Does the trace expose raw user text?"*  
    → By default typed/spoken text is SHA-256 hashed at source (`metadata.anonymized = true`), raw text is only stored when passing explicit `--raw` flag (TSK-I1-01, NFR-PRIV-03 in `neuroedge-prd.md`).
 
 4. **Verify scope:** *"What does `neuroedge verify` compare across targets?"*  
-   → Compares gate verdicts and pin commands (decisions only), not execution timing (timing equivalence in TSK-S4-04) ([`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet) · [`demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md#01-điều-không-được-nói-trong-bất-kỳ-demo-nào)).
+   → Compares gate verdicts and pin commands (decisions only), not execution timing (timing equivalence in TSK-S4-04) ([`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-what-the-system-does-not-do-yet) · [`demo/README.md`](../README.md#what-not-to-say-in-any-demo)).
 
 5. **Command exit code:** *"Does `run -c` exit with a non-zero exit code when BLOCKed?"*  
    → No, BLOCK is a valid safety verdict of the gate, not an execution error; the process terminates with exit code 0 ([`run.py`](../../python/neuroedge/cli/run.py)).

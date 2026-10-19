@@ -10,7 +10,7 @@
 
 ## 1. Component diagram
 
-![E-04 · Firmware](../assets/svg/E-04-firmware.svg)
+![E-04 · Firmware](assets/svg/E-04-firmware.svg)
 *Figure E-04 — Firmware components, build-time generated data, and boot sequence.*
 
 **How to read the diagram:** Boxes represent firmware components and memory partitions on the ESP32-S3 chip; solid arrows show boot flow and direct function calls, dashed arrows show data generated at build time or emitted externally. Core takeaway: firmware executes sequentially in `app_main`, and self-tests must pass 100% before any physical action is permitted.
@@ -196,7 +196,7 @@ by the application, never resident in components.
 
 **Q-3 Budget** (SRAM ≥ 120 KB and PSRAM ≥ 2 MB for application, firmware ≤ 3.5 MB) is checked incrementally
 in CI: image size, remaining static RAM of board configs, boot-time heap on QEMU. Measurements
-and conditions are in [`memory_spike_report.md`](../../reports/memory_spike_report.md) §4.1 — this represents a
+and conditions are in [`memory_spike_report.md`](../reports/memory_spike_report.md) §4.1 — this represents a
 **floor**, not a final Q-3 verdict, pending boards and audio hardware.
 
 ## 6. `ne_ota` — signed updates
@@ -229,7 +229,7 @@ stateDiagram-v2
   the written slot, ensuring no subsequent boot falls into a rejected image.
 - **Limitations:** pre-Secure Boot and no eFuse anti-rollback (TSK-S6-05); OTA does not update the
   bootloader; frozen images without auto-restart revert only on power cycle. Procedures and
-  definitions for each `NE_OTA` line: [`docs/user/nap-firmware.md`](../../user/nap-firmware.md) §6.
+  definitions for each `NE_OTA` line: [`docs/user/nap-firmware.md`](../user/nap-firmware.md) §6.
 
 ## 7. `ne_ui` — device UI (unlinked)
 
@@ -238,7 +238,7 @@ Nine screens (`ne_ui_show_boot`, `idle`, `voice`, `confirm`, `verdict`, `degrade
 to build on computers for **golden image** comparison on each PR (33 cases × 2 languages, test harness under
 ASan/UBSan). Deterministic rendering: no clocks, no randomness, no animations. Agent text is data:
 strictly validated UTF-8, truncated with ellipsis `…`. Languages: `ne_ui_init` returns `false` and renders nothing if the language
-lacks a font table. Specification: [`docs/spec/ui.md`](../../spec/ui.md). Connecting the interface into firmware awaits display
+lacks a font table. Specification: [`docs/spec/ui.md`](../spec/ui.md). Connecting the interface into firmware awaits display
 drivers (TSK-S4-01); projects generated for agents today do not copy `ui/`.
 
 ## 8. Build and verification
@@ -258,4 +258,4 @@ drivers (TSK-S4-01); projects generated for agents today do not copy `ui/`.
 | UI golden images | `scripts/run_ui_golden.sh` | job `ui-golden` |
 | UART traces to `trace.v1`, on-chip `verify` | `neuroedge record --port`, `verify --targets esp32s3` | job `uart-trace` |
 
-Full list and trigger conditions for each job: `CHANGELOG.md` §2.5.
+Full list and trigger conditions for each job: `docs/reference/cli.md` §5.
