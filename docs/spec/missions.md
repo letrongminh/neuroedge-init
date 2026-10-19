@@ -1,6 +1,6 @@
 # NeuroEdge Missions and the operator runtime — Software Requirements Specification
 
-**Status:** approved for TSK-I2d-01 → I2d-21 (Q-71, Q-72, Q-73, Q-83; decisions of §7 are Q-87). Structure follows ISO/IEC/IEEE
+**Status:** approved for TSK-I2d-01 → I2d-21 (Q-71, Q-72, Q-73, Q-83; decisions of §7 are Q-87; MS-FT-04 amended by Q-92). Structure follows ISO/IEC/IEEE
 29148:2018 §9.6. This file is the one place for how a mission contract is written, checked,
 approved and run, and for the box's 24/7 runtime that runs it (CONTRIBUTING.md §8.1). PRD FR-MSN-01
 → 14, FR-AGT-01 → 09, FR-CH-01 → 06, FR-EGR-01 → 04, FR-TRC-11 → 13, FR-TGT-07, FR-CLI-14, FR-CLI-15
@@ -266,7 +266,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 | MS-FT-01 | `sim` shall run a fish tank physics model: water temperature from heater, room and volume; dissolved oxygen from temperature, air pump and fish load; deterministic for a seed; fast-forward 30 days in under 5 minutes on CI; events for network, brain, chat and power outages injected by the scenario (G1). | Prove a month before buying a tank. | FR-TGT-07 | T |
 | MS-FT-02 | The fish tank shall ship a reference contract (`fixtures/agents/aquarium/missions/`) with: keep 25–28 °C, heater off above 30 °C for > 10 min (obligation), air pump never off except by the owner (forbid, and `safe_state = on` with an interlock on a reference `sim` board for the tank in `boards/`, TSK-I2d-03), an oxygen-trend detector, quiet hours for the light, `budget.llm` $2/month, `budget.messages` 5/day. | The first contract is the reference Blueprints copy. | FR-DX-09, J8, J9 | T |
 | MS-FT-03 | The 30-day G1 run of MS-FT-02 shall meet A15 → A22 that apply on G1: contradictions refused (A15); outages keep reflexes and alerts (A16); violating commands, including the brain's "tắt sục khí cho yên tĩnh", blocked (A17); no undeclared egress (A18); ≥ 1 correct oxygen-trend detection and reported LLM cost < $2 (A19); A20 suite; A21 corpus; every segment replays (A22). | The acceptance of I2d, measured. | A15 → A22, NFR-COST-01 | T |
-| MS-FT-04 | On `linux` (gpio-sim, G2) `agent run` with the fish tank contract shall run in CI for a scheduled long job with restarts injected, and once for two weeks on a lab machine before the demand gate, with its traces kept as evidence. | B7: two weeks unattended. | FR-AGT-01, NFR-REL-06, B7 | D |
+| MS-FT-04 | On `linux` (gpio-sim, G2) `agent run` with the fish tank contract shall run in CI for a scheduled long job with restarts injected; before the public launch, once for three days without error plus a stress test on simulation; for v1.0, once for two weeks on a lab machine; traces kept as evidence. | Three days unattended before strangers install it, two weeks before v1.0 (Q-92 (6)). | FR-AGT-01, NFR-REL-06 | D |
 
 ### 3.14 Non-functional requirements (MS-NF)
 
@@ -403,7 +403,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-FT-01-1 | MS-FT-01 | integration | Same seed → same 30-day series and verdicts; fast-forward under 5 min on CI; outages injected | planned — TSK-I2d-15 |
 | TC-FT-02-1 | MS-FT-02 | integration | Reference contract checks, explains in ≤ 5 lines, locks, runs | planned — TSK-I2d-19 |
 | TC-FT-03-1 | MS-FT-03 | integration | 30-day run asserts A15 → A22 that apply on G1 | planned — TSK-I2d-19 |
-| TC-FT-04-1 | MS-FT-04 | demonstration | Scheduled CI job with injected restarts; two-week run on a lab machine with traces kept | planned — TSK-I2d-16 |
+| TC-FT-04-1 | MS-FT-04 | demonstration | Scheduled CI job with injected restarts; three-day run and a simulation stress test before launch; two-week run on a lab machine for v1.0; traces kept | planned — TSK-I2d-16 |
 | TC-MNF-01-1 | MS-NF-01 | integration | Compile time and per-decision latency measured on the CI Linux runner and reported | planned — TSK-I2d-05 |
 | TC-MNF-02-1 | MS-NF-02 | integration | RSS sampled over the 30-day G1 run on `linux` | planned — TSK-I2d-16 |
 
@@ -433,7 +433,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | FR-EGR-01 → 04 | MS-EG-01 → 04 |
 | FR-TRC-11 → 13 | MS-TS-01 → 04 |
 | FR-DX-10 | MS-LB-01, MS-LB-02 |
-| FR-TGT-07, A15 → A22, B7 | MS-FT-01 → 04 |
+| FR-TGT-07, A15 → A22 | MS-FT-01 → 04 |
 | FR-CLI-14, FR-CLI-15 | MS-CH-01, MS-CP-01, MS-AP-01, MS-AP-05, §4.3 |
 | FR-AGT-10 → 12, FR-CH-07, FR-CH-08, FR-EGR-05 | out of scope (§1.2) |
 

@@ -91,7 +91,7 @@ Q-72 adds the planned containers below (`planned · Q-72`; decision: [Q-72](../.
 | Container | Increment | Stated technology | Undecided | Source | Target architecture |
 |:---|:---:|:---|:---|:---|:---|
 | **24/7 Runtime + LLM worker** | I2d | systemd service; LiteLLM (BYOK, local models supported); local MCP between processes | Worker network restriction mechanism (dedicated user + firewall, or runtime proxy) | Q-72, Q-71 | [`15`](15-target-architecture.md) |
-| **Blueprint Hub index** | I2e | Static index repository like I2c plugin index; URL + digest; migrates to OCI Gate Registry after demand gate | Repository host, index format | Q-72 | [`15`](15-target-architecture.md), [`16`](16-ecosystem-landscape.md) |
+| **Blueprint Hub index** | I2e | Static index repository like I2c plugin index; URL + digest; the paid Hub opens when a maker asks to sell (Q-92) | Repository host, index format | Q-72 | [`15`](15-target-architecture.md), [`16`](16-ecosystem-landscape.md) |
 | **Relay** (optional) | — | Pass-through TLS pipe routing destination by SNI, no decryption (Nabu Casa SniTun pattern) | Hosting location, certificates, pricing | Q-72 | [`15`](15-target-architecture.md) |
 
 What current architecture has already prepared for these containers is in [`15`](15-target-architecture.md) §8.
@@ -127,7 +127,7 @@ decryption). Design: [`15`](15-target-architecture.md) §6.
 | **GitHub Actions** | `ubuntu-latest` | five workflows in §3 | ✅ |
 | **Self-hosted runner with Box-3** | label `[self-hosted, esp32s3-box-3]` | `memory-spike` job in `nightly-hardware.yml` | ○ planned (TSK-S1-10, TSK-S4-05) |
 | **Raspberry Pi 5 + I2S HAT** | Linux, profile `boards/linux-rpi5.toml` | `neuroedge --target linux`: libgpiod, hwmon, audio | ○ planned (TSK-I2-01) |
-| **ESP32-S3-BOX-3** | firmware from `neuroedge build --target esp32s3` | on-chip gate, UART traces to host, OTA | ○ planned (TSK-S4-12) — runs on QEMU |
+| **ESP32-S3-BOX-3** | firmware from `neuroedge build --target esp32s3` | on-chip gate, UART traces to host, OTA | ○ planned (TSK-S4-12) — runs on QEMU and esp-emulator; real board for v1.0 (Q-92) |
 | **ESP32-S3, one image** (Profile B, Q-83) | firmware from `neuroedge build --target esp32s3 --brain neuroclaw` | NeuroClaw-ESP, `ne_brain_bridge`, `ne_gate`, tokens and HAL in one image; `risk=single_chip`; requirements DP-B-* of `docs/spec/deployment_profiles.md` | ✅ on QEMU (TSK-I2f-14, I2f-16, job `brain-firmware`); on a board with TSK-I2f-13 |
 | **OTA image server** | any static HTTP(S) server | serves signed application images | ✅ on QEMU (`qemu_ota.sh` uses `python3 -m http.server` on 127.0.0.1) |
 | **Model and voice providers** | external services via HTTPS | language models, STT, TTS, Jev | ✅ optional; no network calls by default |
@@ -194,7 +194,7 @@ Concrete steps are in the workflow files themselves. Current green/red status: r
 
 ### 6.6 Not yet deployed
 
-- **No NeuroEdge servers prior to v1.1** — except the optional relay of Q-72 (`planned`, limited exception of Q-10: no decryption, not on the safety path). Q-74 (conditional, after demand gate) adds optional NeuroEdge Cloud running LLM workers; trusted runtime remains on the home box ([`15`](15-target-architecture.md) §6.10). Fleet OS, Gate Registry, a tiered robot cluster and a Jetson vision node were removed from the roadmap (Q-77): see roadmap §6.
+- **No NeuroEdge servers prior to v1.1** — except the optional relay of Q-72 (`planned`, limited exception of Q-10: no decryption, not on the safety path). Q-74 (conditional, opens on launch data, Q-92) adds optional NeuroEdge Cloud running LLM workers; trusted runtime remains on the home box ([`15`](15-target-architecture.md) §6.10). Fleet OS, Gate Registry, a tiered robot cluster and a Jetson vision node were removed from the roadmap (Q-77): see roadmap §6.
 - **NeuroEdge Lab was removed from the roadmap (Q-77, Q-88).** MCP clients author contracts through the standard tool set (TSK-I2d-23); privilege separation of `mcp serve` is in [`15`](15-target-architecture.md) §4.2 and `docs/spec/threat_model.md` §2c.
 - **24/7 Home box not yet deployed (`planned · Q-72`, I2d, I2e).** Today no background processes run continuously ([`02`](02-container-c4l2.md) §3). The 24/7 runtime, LLM worker, chat platforms, Hub index, and relay above are design: [`15`](15-target-architecture.md) §6. Runs in simulation first (G1 `sim`, G2 `linux` on `gpio-sim`, G3 ESP32 firmware on Espressif QEMU — Wokwi, Velxio pending Q-21, Q-69 reconciliation, G4 ESPHome host), physical hardware purchased later.
 - **No real boards in CI.** All on-chip evidence today comes from QEMU and host C tests; silicon

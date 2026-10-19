@@ -1,6 +1,6 @@
 # Ứng dụng di động NeuroEdge ("app nhà"): user stories
 
-> **Đã duyệt bởi Q-91 (2026-10-19); increment I2g, chờ sau cổng nhu cầu 2026-12-06.** **Thay đổi 2026-10-19:** bản nháp
+> **Đã duyệt bởi Q-91 (2026-10-19); đồng bộ theo Q-92 (2026-10-19): I2g (API hộp + web nhà, đầu tiên sau ra mắt) rồi I2h (app gốc trên cùng backend); không có cổng nhu cầu.** **Thay đổi 2026-10-19:** bản nháp
 > 2026-10-16 thành bản đã duyệt; ứng dụng là app gốc iOS và Android (React Native). Mọi mã `Q-N`, `TSK-*`, `FR-*`, `MS-*`,
 > `BL-*` dưới đây là mã đã có, được dẫn lại để truy vết, không phải nội dung mới.
 > **Tài liệu cùng bộ:** `02-brd.md` (yêu cầu kinh doanh `BR-APP-nn`), `03-srs.md` (yêu cầu phần mềm
@@ -21,7 +21,7 @@ suốt:
   bệnh, không phát hiện té ngã**; chỉ báo người thân về thay đổi thói quen. Các story gắn "(eldercare)"
   chỉ áp dụng khi ngành dọc đó được mở bằng một quyết định mới.
 
-Mức ưu tiên (Must / Should / Could) là cho **increment I2g, sau cổng nhu cầu** (Q-91 (1)); các story gắn eldercare
+Mức ưu tiên (Must / Should / Could) là cho **các increment I2g (web nhà) và I2h (app), sau ra mắt công khai** (Q-91, Q-92 (8)); các story gắn eldercare
 và chuỗi leo thang hoãn cùng ngành dọc người cao tuổi (Q-91 (7)).
 
 Mã màn hình `MH-n` trỏ tới `prototype/index.html`. Không dùng `M1` … `M8` vì `M1`–`M9` trong repo là mục
@@ -365,7 +365,7 @@ hỏng hay mất mạng thay vì tưởng nhà bình thường.
 3. **Cho** chưa có relay, **khi** tôi mở Cài đặt, **thì** mục này ghi chưa bật và nêu lý do (cần relay
    hoặc cloud, Q-74).
 
-Dẫn: BR-APP-07; FR-EGR-05 (relay tùy chọn), Q-74 (bước 2, sau cổng nhu cầu), Q-91 (7) (hoãn cùng ngành dọc người cao tuổi).
+Dẫn: BR-APP-07; FR-EGR-05 (relay tùy chọn), Q-74 (bước 2, mở theo dữ liệu ra mắt, Q-92 (8)), Q-91 (7) (hoãn cùng ngành dọc người cao tuổi).
 
 ---
 

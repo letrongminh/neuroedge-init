@@ -1,5 +1,7 @@
 # Cổng nhu cầu 2026-10-25 (Q-20)
 
+> **Đã bỏ (Q-92, 2026-10-19):** cổng nhu cầu 8 tuần (2026-12-06) và các điều kiện B6–B8 đã bị xoá; không còn cổng nào chặn ra mắt. Thư mục này giữ lại làm tư liệu: bộ câu hỏi phỏng vấn vẫn dùng được, do chủ sản phẩm xử lý ngoài roadmap. Các đoạn dưới đây là bản ghi lịch sử.
+
 > **Ngày cổng: 2026-12-06 (Q-72).** Tên thư mục giữ ngày gốc của Q-20.
 
 > **Cổng nhu cầu khôi phục (Q-72, đảo Q-56).** Cổng có hiệu lực là **cổng 8 tuần** của Q-72; ngày, ba

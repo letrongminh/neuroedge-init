@@ -1,8 +1,8 @@
 # App nhà trên điện thoại: từ user story đến prototype
 
-> **Trạng thái:** Đã duyệt bởi Q-91 (2026-10-19); increment I2g, chờ sau cổng nhu cầu 2026-12-06.
+> **Trạng thái:** Đã duyệt bởi Q-91 (2026-10-19); **đồng bộ theo Q-92 (2026-10-19):** kế hoạch tách làm hai increment sau ra mắt công khai: **I2g = API hộp + web nhà** (đầu tiên) và **I2h = app gốc React Native** trên cùng backend. Cổng nhu cầu đã bỏ, không gì chờ nó.
 > Q-91 (`roadmap/neuroedge-prd.md` §15) đã trả lời các câu hỏi mở `AP-D-01` → `AP-D-17`; SRS là bản đã duyệt
-> cho I2g (task `TSK-I2g-01` → `TSK-I2g-13`, SRS §7). Trước cổng nhu cầu thư mục này không đổi phạm vi nào.
+> cho I2g (SRS §7: `TSK-I2g-01` → `TSK-I2g-05` và `TSK-I2f-08` thuộc I2g; `TSK-I2g-06` → `TSK-I2g-13` thuộc I2h). Ký duyệt có hai đường, cả hai giữ: passkey trong web nhà (TSK-I2f-08, nay thuộc I2g) và Face ID/vân tay trong app.
 
 ## Vì sao có thư mục này
 
@@ -40,7 +40,7 @@ chép lại:
 * Bản ghi duyệt có chữ ký, bot duyệt riêng của hộp, ghép chủ hộp: [`docs/rfc/0019-ban-ghi-duyet-co-chu-ky.md`](../rfc/0019-ban-ghi-duyet-co-chu-ky.md) (Q-89).
 * Linh kiện ảo và canvas hoãn: [`docs/spec/virtual_parts.md`](../spec/virtual_parts.md) (Q-84). Đường soạn hợp đồng qua MCP: TSK-I2d-23 (Q-88).
 
-Phần chăm sóc người cao tuổi ("Nhà bố mẹ") trong các tài liệu này là hướng sau cổng nhu cầu: PRD §14
+Phần chăm sóc người cao tuổi ("Nhà bố mẹ") trong các tài liệu này là hướng sau ra mắt (không thuộc I2g, I2h): PRD §14
 đang hoãn mảng này (Q-72) và R-19 xếp rủi ro pháp lý ở mức cao. App chỉ báo người thân về thay đổi
 thói quen, không chẩn đoán, không phát hiện bệnh.
 
@@ -62,7 +62,20 @@ và không có task. Đã sửa:
 * Câu hỏi mở `AP-D-nn`: các câu đã có quyết định được đánh dấu kèm mã, phần còn lại giữ mở; thêm
   AP-D-12 → AP-D-17. SRS §7 liệt kê thêm các task đã có trong roadmap.
 
-## Thay đổi 2026-10-19
+## Thay đổi 2026-10-19 (Q-92)
+
+Q-92 bỏ cổng nhu cầu 2026-12-06 và tách increment I2g của Q-91 làm hai (roadmap §4.3.7, §4.3.8):
+
+* **I2g, API hộp + web nhà**, mở đầu tiên sau ra mắt công khai (I6): TSK-I2g-01 → TSK-I2g-05 (bốn RFC, API hộp
+  dùng chung, web nhà cho gia đình và Studio cho maker) và TSK-I2f-08 (ký duyệt bằng passkey trong web).
+* **I2h, app gốc** (React Native) trên cùng API hộp, sau I2g: TSK-I2g-06 → TSK-I2g-13.
+* Không gì chờ cổng nhu cầu; chỉ số của app đặt bằng dữ liệu ra mắt (TSK-I2g-12). TSK-I2e-13 (ảnh SD cho Pi)
+  đã cắt (Q-92 (2); lưu ở `roadmap/archive/removed-tasks.md`): cài hộp bằng CLI đến khi có web nhà.
+* Truy cập ngoài nhà qua relay/cloud (I2f) mở theo dữ liệu ra mắt cho thấy người kẹt ở bước cài hộp (Q-74, Q-92 (8)).
+
+Các mục "Thay đổi" bên dưới là bản ghi theo ngày; câu nói về cổng nhu cầu trong đó đã bị Q-92 thay.
+
+## Thay đổi 2026-10-19 (Q-91)
 
 Q-91 chuyển bản nháp thành SRS đã duyệt cho increment I2g (Home app), chờ sau cổng nhu cầu 2026-12-06; K1–K5
 trước cổng không đổi (Q-85). Đã sửa:

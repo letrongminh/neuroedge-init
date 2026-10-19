@@ -3,10 +3,11 @@
 
 > **Định vị (Q-82):** *"The Physical AI that really does things, safely by design."*
 > **Phiên bản:** 1.1.0 · **Ngày:** 15 tháng 10, 2026
-> **Trạng thái:** **Đã duyệt** (chủ sản phẩm, 15/10/2026) — quyết định **Q-85** trong PRD §15. Các yêu
-> cầu chảy vào SRS (§12); phần hoãn mở lại chỉ với `Q-N` mới.
-> **Tài liệu liên quan:** `roadmap/neuroedge-prd.md` (Q-45, Q-72, Q-73, Q-74, Q-77, Q-82, Q-83),
-> `docs/spec/deployment_profiles.md`, `docs/business/cong-nhu-cau-2026-10-25/`,
+> **Trạng thái:** **Đã duyệt** (chủ sản phẩm, 15/10/2026) — quyết định **Q-85** trong PRD §15; **đồng bộ
+> theo Q-92 (19/10/2026)**: không còn cổng nhu cầu, K1–K3 (= B6–B8) đã xoá. Các yêu cầu chảy vào SRS
+> (§12); phần hoãn mở lại theo điều kiện ở §9 hoặc bằng `Q-N` mới.
+> **Tài liệu liên quan:** `roadmap/neuroedge-prd.md` (Q-45, Q-72, Q-73, Q-74, Q-77, Q-82, Q-83, Q-92),
+> `docs/spec/deployment_profiles.md`, `docs/business/cong-nhu-cau-2026-10-25/` (tư liệu lưu, cổng đã bỏ theo Q-92),
 > `docs/business/proposal-blueprint-2026-10-11.md`.
 
 ---
@@ -23,15 +24,20 @@ Bản 1.0 (vào repo cùng commit `c0b5b9e`) được rà lại ngày 15/10/2026
    BRD mô tả điều gia đình nhận được; thứ tự ra mắt giữ đúng Q-72: maker làm Blueprint trước, gia đình
    dùng qua sản phẩm của maker. Người dùng kính thông minh dời sang Phụ lục A (Q-77 đã bỏ voice; bộ công
    cụ của Meta còn ở dạng developer preview).
-3. **KPI gắn với cổng nhu cầu 8 tuần** (Q-72) và các NFR đã có. Bỏ "≥ 90% thao tác im lặng" (đo cấu
-   hình, và thưởng cho việc nới luật) và "giữ chân 90 ngày" (không đo kịp trước cổng).
+3. **KPI gắn với các NFR đã có.** Bỏ "≥ 90% thao tác im lặng" (đo cấu hình, và thưởng cho việc nới
+   luật) và "giữ chân 90 ngày" (không đo kịp trước khi ra mắt). Bản gốc còn gắn KPI với cổng nhu cầu
+   8 tuần (Q-72); Q-92 bỏ cổng đó, xem điểm 9.
 4. **Chi phí:** theo NFR-COST-01 (kịch bản bể cá 30 ngày < 2 USD), không phải 3 USD/tháng.
 5. **Mô hình kinh doanh là giả thuyết**, mở theo đúng điều kiện đã chốt (Q-72, Q-74), không ghi giá.
-6. **Lộ trình theo roadmap:** I2d (2026-11-11), I2e (2026-11-25), cổng nhu cầu (2026-12-06).
+6. **Lộ trình theo roadmap:** ngày của I2d, I2e và ra mắt công khai theo roadmap §0.2 (Q-92 bỏ mốc cổng nhu cầu 2026-12-06).
 7. **Thêm:** đối thủ (§2.2), bằng chứng và mức tin cậy cho từng nỗi đau (§2.1), rủi ro mới (§11),
    các câu hỏi chờ duyệt (§12). Bỏ cách nói tuyệt đối ("an toàn tuyệt đối", "chặn đứng").
 8. **Chỉnh ngày 17/10/2026 (Q-90):** token theo Q-74 (§5, §9 H3); BNFR-2 là trần chi phí mỗi kỳ; BR-3 trỏ tới
    `docs/spec/missions.md` MS-RT-09.
+9. **Chỉnh ngày 19/10/2026 (Q-92):** bỏ cổng nhu cầu; K1–K3 (= B6–B8) bị xoá, K4 và K5 giữ (§3); tín hiệu
+   chấp nhận đầu tiên là telemetry ẩn danh của bản ra mắt (FR-TEL-01); cắt khỏi I2e: trang BOM affiliate,
+   add-on Home Assistant, ảnh SD Pi kèm ghép đôi QR, khung Pi + ESP32 (H1, §4, §11 #10 đổi theo); ra mắt
+   công khai chạy trên esp-emulator, không chờ bo mạch; gia đình đến qua web nhà (I2g) rồi app (I2h).
 
 ---
 
@@ -95,20 +101,21 @@ Mọi nỗi đau dưới đây là **giả thuyết của đội**; chưa có cu
 
 ## 3. Mục tiêu và chỉ số
 
-### 3.1 Trước cổng nhu cầu (đến 2026-12-06)
+### 3.1 Chỉ số theo dõi
+
+Không có cổng nhu cầu (Q-92 (1)); K1–K3 (người ngoài tự cài, chạy liên tục 2 tuần, maker muốn bán) đã
+xoá cùng B6–B8. Tín hiệu chấp nhận đầu tiên là telemetry ẩn danh của bản ra mắt: bật mặc định, có thông
+báo lần chạy đầu và một lệnh tắt (FR-TEL-01).
 
 | Mã | Chỉ số | Ngưỡng | Nguồn đã chốt | Đo bằng |
 |:---:|:---|:---|:---|:---|
-| **K1** | Người ngoài đội tự cài một Blueprint và chạy được | ≥ 3 người | Q-72 điều kiện ① | Phiên đo A14 (TSK-I2e-09) |
-| **K2** | Chạy liên tục trên giả lập G2/G3 | ≥ 1 người, 2 tuần | Q-72 điều kiện ② | Trace phân đoạn |
-| **K3** | Maker muốn đóng gói và bán Blueprint của mình | ≥ 1 maker | Q-72 điều kiện ③ | Phỏng vấn `phong-van.md` §5b |
 | **K4** | Chi phí LLM kịch bản bể cá 30 ngày | < 2 USD | NFR-COST-01 | G1 tua nhanh |
 | **K5** | Tin nhắn không khẩn trong ngày nằm trong ngân sách; không hành động nào ra thiết bị mà không qua gate | 100% | NFR-COST-02, bất biến của hộp | Trace 30 ngày G1 |
 
-### 3.2 Sau cổng (chỉ đo khi cổng đạt)
+### 3.2 Sau khi ra mắt
 
 Tỷ lệ còn dùng sau 90 ngày, số lần hỏi người / ngày / hộ, số Blueprint bán, doanh thu mỗi Blueprint.
-Ngưỡng đặt sau khi có dữ liệu từ K1–K3.
+Ngưỡng đặt sau khi có dữ liệu ra mắt.
 
 ---
 
@@ -116,15 +123,15 @@ Ngưỡng đặt sau khi có dữ liệu từ K1–K3.
 
 | Phân khúc | Vai trò | Thứ tự ra mắt | Cần gì trước tiên |
 |:---|:---|:---|:---|
-| **Gia đình** có nhiều thiết bị thông minh, không có thời gian cấu hình kịch bản | **Khách hàng đích của trải nghiệm** (chủ sản phẩm, 15/10/2026): người hưởng "quản gia tĩnh lặng" | Thứ hai: đến qua Blueprint của maker | Cài không cần CLI: add-on Home Assistant, ảnh thẻ nhớ cho Pi, ghép đôi bằng QR (TSK-I2e-12, I2e-13, Q-74 bước 1, theo lịch roadmap); duyệt qua Telegram |
-| **Maker / micro-OEM ngách** (bể cá, ấp trứng, nhà nấm, sấy nông sản) | Bên làm và bán Blueprint cho gia đình | **Đầu tiên** (Q-72); điều kiện ③ của cổng đo nhóm này | Kit, `neuroedge add`, giả lập, `blueprint pack` |
+| **Gia đình** có nhiều thiết bị thông minh, không có thời gian cấu hình kịch bản | **Khách hàng đích của trải nghiệm** (chủ sản phẩm, 15/10/2026): người hưởng "quản gia tĩnh lặng" | Thứ hai: đến qua Blueprint của maker | Cài không cần CLI bằng web nhà (I2g) rồi app (I2h) sau ra mắt (Q-91, Q-92 (8)); trước đó cài bằng CLI và duyệt qua Telegram (add-on HA và ảnh SD đã cắt, Q-92 (2)) |
+| **Maker / micro-OEM ngách** (bể cá, ấp trứng, nhà nấm, sấy nông sản) | Bên làm và bán Blueprint cho gia đình | **Đầu tiên** (Q-72); tín hiệu đầu tiên là telemetry ra mắt, rồi một maker xin bán (§9 H2) | Kit, `neuroedge add`, giả lập, `blueprint pack` |
 | Người dùng kính thông minh | — | Hoãn (Phụ lục A) | — |
 
 ---
 
 ## 5. Phạm vi
 
-| | Đến cổng nhu cầu | Sau cổng (nếu đạt) | Ngoài phạm vi |
+| | Đến ra mắt công khai | Sau ra mắt (theo điều kiện §9) | Ngoài phạm vi |
 |:---|:---|:---|:---|
 | **NeuroClaw** | Hội thoại qua Telegram; nhận nhiệm vụ theo mục tiêu; ngữ cảnh từ cảm biến của hộp; trí nhớ ngắn hạn và tóm tắt ngày | Trí nhớ dài hạn có tìm kiếm; thời tiết, giá điện | Thiết bị đeo (Phụ lục A) |
 | **NeuroEdge** | Gate có điều kiện, hỏi người, trace; hợp đồng nhiệm vụ → envelope + watchdog; runtime 24/7; Blueprint pack/install | Hub có thu phí, Cloud | Bán lại token (N4); Cloud chỉ kèm token nếu Q-74 bước 2 mở và một `Q-N` mới sửa N4 (Q-90) |
@@ -183,14 +190,14 @@ profile triển khai: `docs/spec/deployment_profiles.md` (Q-83).
 
 ## 9. Mô hình kinh doanh (giả thuyết)
 
-Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều kiện đã chốt:
+Không ghi giá trước khi có dữ liệu ra mắt. Mỗi nguồn thu mở theo điều kiện đã chốt:
 
 | Giả thuyết | Mở khi | Ràng buộc |
 |:---|:---|:---|
-| **H1 — Hoa hồng kit** (BOM có liên kết affiliate) | Đã trong kế hoạch | FR-BP-07, trang riêng ngoài kit |
-| **H2 — Hub Blueprint có thu phí** | Sau cổng, nếu điều kiện ③ đạt | Q-72; Hub tối thiểu (miễn phí, tĩnh) có trước (FR-BP-05) |
-| **H3 — NeuroEdge Cloud** (bộ não chạy sẵn cho người không muốn tự vận hành) | Q-74 bước 2, khi số liệu cổng cho phép | BYOK là mặc định, không bán lại token (N4). Gói Cloud chỉ được kèm token nếu Q-74 bước 2 mở và một `Q-N` mới sửa N4 (Q-90); khoá BYOK không rời hộp (NFR-SEC-13) |
-| **H4 — Giấy phép thương mại** cho doanh nghiệp nhúng vào sản phẩm | Sau cổng (chủ sản phẩm, 15/10/2026) | Loại giấy phép của lõi **đã chốt**: PolyForm Noncommercial (Q-45, Q-72); bán Blueprint hay thiết bị là dùng thương mại, cần giấy phép thương mại. Điều khoản và giá của giấy phép thương mại để sau cổng. NeuroClaw là fork của PicoClaw (MIT) — giữ thông báo bản quyền gốc |
+| **H1 — Hoa hồng kit** (BOM có liên kết affiliate) | Đã cắt khỏi I2e (Q-92 (2), TSK-I2e-06 lưu ở `roadmap/archive/removed-tasks.md`); chỉ quay lại bằng `Q-N` mới | FR-BP-07, trang riêng ngoài kit |
+| **H2 — Hub Blueprint có thu phí** | Khi có maker xin bán (Q-92 (10)) | Q-72; Hub tối thiểu (miễn phí, tĩnh) có trước (FR-BP-05) |
+| **H3 — NeuroEdge Cloud** (bộ não chạy sẵn cho người không muốn tự vận hành) | Q-74 bước 2, khi dữ liệu ra mắt cho thấy người kẹt ở bước cài hộp (Q-92 (8)) | BYOK là mặc định, không bán lại token (N4). Gói Cloud chỉ được kèm token nếu Q-74 bước 2 mở và một `Q-N` mới sửa N4 (Q-90); khoá BYOK không rời hộp (NFR-SEC-13) |
+| **H4 — Giấy phép thương mại** cho doanh nghiệp nhúng vào sản phẩm | Khi doanh nghiệp đầu tiên hỏi (Q-92 (10), `TODOS.md` #44) | Loại giấy phép của lõi **đã chốt**: PolyForm Noncommercial (Q-45, Q-72); bán Blueprint hay thiết bị là dùng thương mại, cần giấy phép thương mại. Bản ra mắt miễn phí cho dùng phi thương mại; điều khoản và giá của giấy phép thương mại viết khi doanh nghiệp đầu tiên hỏi. NeuroClaw là fork của PicoClaw (MIT) — giữ thông báo bản quyền gốc |
 
 ---
 
@@ -199,9 +206,12 @@ Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều k
 | Mốc | Ngày (roadmap) | Kết quả cho BRD này |
 |:---|:---|:---|
 | I2d — Nhiệm vụ, runtime 24/7 | roadmap §0.2 | BR-3, BR-4; K4, K5 trên G1 |
-| I2e — Blueprint tối thiểu | roadmap §0.2 | BR-5; K1; add-on HA và ảnh thẻ nhớ (TSK-I2e-12, I2e-13) theo lịch roadmap |
-| **Cổng nhu cầu 8 tuần** | **2026-12-06** | K1–K3 quyết định nhánh: tiếp tục, đổi hướng, hoặc dừng thương mại |
-| Sau cổng | Theo nhánh | BR-1 mở rộng (thời tiết, giá điện), BR-2 dài hạn, H2–H4, Phụ lục A |
+| I2e — Blueprint rút gọn | roadmap §0.2 | BR-5; Blueprint mang hợp đồng nhiệm vụ và bộ phát hiện từ khi ra mắt (Q-92 (7)); cài bằng CLI |
+| **Ra mắt công khai (I6, PyPI 0.6)** | roadmap §0.5 | I2d + I2e + I3/I3a xác minh trên esp-emulator; chạy 3 ngày liên tục không lỗi và kiểm tra tải trên giả lập; không chờ bo mạch, cổng hay điều khoản giấy phép (Q-92 (4), (6)) |
+| I2g — API hộp và web nhà | roadmap §4.3.7 | Sau ra mắt: gia đình dùng từ trình duyệt, duyệt bằng passkey (Q-92 (8), (9)) |
+| I2h — App gốc | roadmap §4.3.8 | Sau I2g: app iOS/Android trên cùng API, duyệt bằng Face ID / vân tay |
+| v1.0 (I7) | roadmap §4.8 | Kiểm tra trên bo thật: secure boot, mã hoá flash, chạy 24 giờ và 2 tuần, camera, chân thật, mất điện (Q-92 (5)) |
+| Sau ra mắt, theo điều kiện §9 | Theo dữ liệu | BR-1 mở rộng (thời tiết, giá điện), BR-2 dài hạn, H2–H4, Phụ lục A |
 
 ---
 
@@ -209,16 +219,16 @@ Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều k
 
 | # | Rủi ro | Mức | Giảm thiểu |
 |:---:|:---|:---:|:---|
-| 1 | **Nhu cầu chưa được chứng minh:** chưa phỏng vấn được maker nào | Cao | Cổng nhu cầu (K1–K3); phỏng vấn `phong-van.md` §5b trước khi viết thêm tính năng |
+| 1 | **Nhu cầu chưa được chứng minh:** chưa phỏng vấn được maker nào, và không còn cổng kiểm trước khi ra mắt (Q-92) | Cao | Telemetry ẩn danh của bản ra mắt là tín hiệu đầu tiên (FR-TEL-01); phỏng vấn do chủ sản phẩm xử lý ngoài roadmap |
 | 2 | **Nền tảng lớn tự thêm lớp an toàn** (Google Home MCP đã cấm mở khoá, giới hạn tần suất); với phân khúc gia đình, đây là cạnh tranh trực tiếp với Alexa+ và Gemini for Home | Rất cao | Khác biệt ở điều mà nền tảng không làm: luật có điều kiện theo cảm biến, hỏi người tại nhà, trace phát lại, chạy offline trên chip, maker tự đóng gói |
-| 3 | **Đối thủ cùng luận điểm** (Spatial OS trên Home Assistant) | Trung bình | Đi cùng HA thay vì cạnh tranh (add-on, RFC-0018); tốc độ ra kit bể cá chạy được |
+| 3 | **Đối thủ cùng luận điểm** (Spatial OS trên Home Assistant) | Trung bình | Đi cùng HA thay vì cạnh tranh (đường G4, RFC-0018; add-on đã cắt khỏi I2e theo Q-92); tốc độ ra kit bể cá chạy được |
 | 4 | **Trùng tên "Blueprint"** với *Home Assistant Blueprints* (từ 12/2020, có Blueprint Exchange) | Trung bình | Quyết định đổi tên hoặc giữ (§12 câu 5) trước khi công bố Hub |
 | 5 | AI suy luận sai do cảm biến nhiễu | Cao | Mọi lệnh qua gate; cảm biến lỗi → không đọc được → gate chặn (fail-closed) |
 | 6 | Chi phí token tăng | Trung bình | Trần chi phí mỗi kỳ (BNFR-2), bộ phát hiện tất định lọc trước |
 | 7 | Lo ngại riêng tư | Cao | Cục bộ trước, chạy offline được (BNFR-3) |
 | 8 | **Bộ não dựa trên dự án thượng nguồn còn sớm** (PicoClaw khuyến cáo chưa dùng production trước v1.0) | Trung bình | NeuroClaw là hard fork có CI riêng; hộp không tin bộ não nên lỗi bộ não không thành lỗi an toàn |
-| 9 | Nguồn lực: một người + AI | Cao | Phạm vi §5 cắt theo cổng; mọi thứ sau cổng chỉ mở với `Q-N` mới |
-| 10 | **Gia đình chưa cài được:** sản phẩm hôm nay cần CLI; add-on HA và ảnh thẻ nhớ chưa làm | Cao | Gia đình đến qua Blueprint của maker; TSK-I2e-12, I2e-13 theo lịch; Q-74 bước 2 nếu người thử kẹt ở cài đặt |
+| 9 | Nguồn lực: một người + AI | Cao | Phạm vi §5 cắt theo Q-92; mọi thứ sau ra mắt mở theo điều kiện §9 hoặc `Q-N` mới |
+| 10 | **Gia đình chưa cài được:** sản phẩm cần CLI đến khi có web nhà (I2g); add-on HA và ảnh SD đã cắt (TSK-I2e-12, I2e-13, Q-92 (2)) | Cao | Gia đình đến qua Blueprint của maker; web nhà rồi app sau ra mắt (I2g, I2h); Q-74 bước 2 nếu dữ liệu ra mắt cho thấy người kẹt ở cài đặt |
 | 11 | **Hai phân khúc kéo hai hướng:** gia đình cần cài đặt dễ, maker cần công cụ đóng gói | Trung bình | Một Blueprint chung (bể cá) phục vụ cả hai: maker đóng gói, gia đình cài |
 
 ---
@@ -227,9 +237,9 @@ Không ghi giá trước cổng nhu cầu. Mỗi nguồn thu mở theo điều k
 
 | # | Câu hỏi | Trả lời |
 |:---:|:---|:---|
-| 1 | Phân khúc chính | **Gia đình là khách hàng đích của BRD; maker ra mắt trước theo Q-72** (§4). Không đổi roadmap hay cổng nhu cầu. |
-| 2 | Hoãn đến sau cổng | **Thiết bị đeo, Hub thu phí, NeuroEdge Cloud, điều khoản giấy phép thương mại** |
-| 3 | KPI trước cổng | **K1–K5** (§3.1) |
+| 1 | Phân khúc chính | **Gia đình là khách hàng đích của BRD; maker ra mắt trước theo Q-72** (§4). Không đổi roadmap. (Cổng nhu cầu nhắc ở bản 15/10 đã bỏ theo Q-92.) |
+| 2 | Hoãn (nay mở theo điều kiện §9, Q-92) | **Thiết bị đeo, Hub thu phí, NeuroEdge Cloud, điều khoản giấy phép thương mại** |
+| 3 | KPI | Bản 15/10 chọn K1–K5; Q-92 xoá K1–K3, còn **K4, K5** (§3.1) |
 | 4 | Tên "Blueprint" | **Giữ trong I2e, quyết trước khi công bố Hub**, dựa trên phản hồi của maker |
 
 Đã ghi thành Q-85 (PRD §15). BR-3 và BR-4 vào SRS nhiệm vụ; BR-5 vào SRS Blueprint; BR-1, BR-2 là việc

@@ -370,7 +370,7 @@ roadmap task — `test_architecture_progress.py` checks both.
   no servers operated by NeuroEdge. *Will change under Q-72 (`planned · Q-72`):* two optional exceptions,
   never on the safety path — relays only pass TLS by SNI without decrypting; Hub index is a
   static git repository ([PRD §15](../../../roadmap/neuroedge-prd.md#15-decision-log)). *Conditional under Q-74:* optional NeuroEdge Cloud for the "brain" (chat,
-  LLMs), unlocked after demand gates if metrics require; rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
+  LLMs), opens on launch data showing people stuck installing the box (Q-92); rules and reflexes remain strictly at home ([`15`](15-target-architecture.md) §6.10).
 - **Does not resell inference tokens** (`docs/architecture/vi/15-target-architecture.md` §3.4; PRD §1.4 N4). The provider abstraction layer is self-hosted in core; users operate and pay model providers directly.
 - **Does not implement SLAM or navigation**; robot bridges (ROS 2, Nav2) left the roadmap with Q-77 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14).
 - **No paid marketplace** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).

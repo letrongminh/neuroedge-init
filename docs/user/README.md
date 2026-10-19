@@ -23,19 +23,20 @@ answers the question *"which file to read to know X"* — other files link to co
 | Try devices without hardware: the samples named by parts, a greenhouse and a full fish tank on the virtual board, with screenshots | [`vi-du-linh-kien-ao.md`](vi-du-linh-kien-ao.md) | `sim` only; TSK-I2d-33, Q-84 |
 | Build real devices from five kits (BOM, wiring diagrams, from out-of-the-box to live run) | [`kit-phan-cung.md`](kit-phan-cung.md) | villa smart lock, voice assistant, machine room monitor, gate camera, window blinds; unverified on real hardware |
 | Partner pilots: shield Home Assistant, Python agents, or device APIs with a gate (pilot run, Q-70) | [`doi-tac/README.md`](doi-tac/README.md) | three runnable guides from wheel, boundary pages, feedback form; agreement list and test sessions in [`docs/business/doi-tac/`](../business/doi-tac/buoi-do.md) |
-| Flash your agent onto ESP32-S3-BOX-3 (or QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; sole source for flashing procedure |
+| Flash your agent onto ESP32-S3-BOX-3 (or QEMU, esp-emulator) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; sole source for flashing procedure |
 | Chat with home: connect the NeuroClaw brain to the box, choose open or bounded brain | [`chat-voi-nha.md`](chat-voi-nha.md) | runs with `sim`; keys and tokens for demo script |
 | Run brain and gate on a single ESP32-S3 (Q-79): serial control console, safe mode, storage for tokens and keys | [`esp32-mot-chip.md`](esp32-mot-chip.md) | Stage 1 and NeuroClaw-ESP on QEMU; firmware embedding and real Wi-Fi awaiting boards |
 | **Understand the product** | | |
 | `FR-*` / `NFR-*` requirements | [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) | decision log is §15 (`Q-N` codes) |
-| Q-72 positioning: three flywheels build · run · share and sell, operator agent, NeuroEdge Blueprint, 8-week demand gate | [`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md) | direction decided proposal; decision in PRD §15 Q-72; no code yet |
+| Q-72 positioning: three flywheels build · run · share and sell, operator agent, NeuroEdge Blueprint (demand gate removed by Q-92) | [`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md) | direction decided proposal; decision in PRD §15 Q-72, lean path in Q-92; no code yet |
 | API specification, gate (Appendix B), HAL, traces | [`core_contracts.md`](../spec/core_contracts.md) | |
 | Decoder for abbreviations (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | sole source |
 | Why Stage 1 went "`sim` wedge first" | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (deleted; `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`) | historical, frozen 2026-09-23 — current plan in roadmap |
 | Minutes of review rounds | `docs/archive/` (deleted, see git history) | archive, non-normative |
 | Overall architecture with live progress (layers, release milestones, items waiting on a person) | [`docs/business/kien-truc-tong-the.html`](../business/kien-truc-tong-the.html) | open in browser; progress blocks generated from roadmap §0 — do not edit them by hand |
-| Demand gate 2026-10-25 (interviews, demos, scoring) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | business documentation; data for 8-week demand gate (Q-72, reversing Q-56) |
-| Plan: increment I0–I8 and I2a–I2f, what to do when, forecast dates | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | sole roadmap (Q-39); increment table in §0.2 |
+| Demand gate 2026-10-25 (interviews, demos, scoring) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | business documentation; written for the demand gate of Q-72, removed by Q-92 (kept as interview material) |
+| Plan: increment I0–I8 and I2a–I2h, what to do when, forecast dates | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | sole roadmap (Q-39); increment table in §0.2 |
+| Task tables cut by Q-92 (TSK-I2e-06, I2e-10 to I2e-14) | [`removed-tasks.md`](../../roadmap/archive/removed-tasks.md) | codes stay valid |
 | **Removed from roadmap (Q-77), kept for lookup** | | |
 | NeuroEdge Lab design (lab via MCP; replaced by the standard MCP tool set TSK-I2d-23, Q-88) | [`lab_mcp.md`](../spec/lab_mcp.md) | removed items: roadmap §6 |
 | Voice conversation state machine: turns, barge-in, wake-word, STT/TTS | [`docs/spec/voice_fsm.md`](../spec/voice_fsm.md) | voice removed from the roadmap; host code still ships |

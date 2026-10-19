@@ -554,8 +554,9 @@ INCREMENTS = {
     "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I2c": "Open platform: plug-in SDK",
     "I2d": "Missions and operating agent", "I2e": "NeuroEdge Blueprint MVP",
     "I2f": "Cloud brain · one-chip profile",
-    "I2g": "Home app on the phone",
-    "I3": "Gate on a real Box-3",
+    "I2g": "Box API and home web",
+    "I2h": "Home app on the phone",
+    "I3": "Gate on esp32s3",
     "I3a": "New primitives on esp32s3", "I6": "Public release", "I7": "v1.0 = MVP",
     "I8": "Developer Beta",
 }
@@ -583,7 +584,7 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
 MILESTONES = {
     1: "Try it on a laptop", 2: "Real devices on a Raspberry Pi", 3: "The gate on a $5 chip",
     4: "Build and run by chat, share a Blueprint", 5: "Public launch: first outside users",
-    6: "v1.0: ready to ship in products", 7: "Developer Beta", 8: "One chat and a home app for many devices",
+    6: "v1.0: ready to ship in products", 7: "Developer Beta", 8: "One chat, a home web and app for many devices",
 }
 
 
@@ -683,7 +684,7 @@ def e10_horizons() -> Diagram:
         ("q74", "Q-73 / Q-74 / Q-83 — deployment profiles, open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10", "planned", [
             ("profiles", "Deployment profiles A / B", ("A: brain + box, MCP over mTLS", "B: one ESP32-S3 image · Q-83"), "container", "planned"),
             ("verify", "User-declared verification", ("spoken code · face · phone biometrics", "risk label, never AI-answered · I2d"), "gate", "planned"),
-            ("ncloud", "NeuroEdge Cloud (optional)", ("profile A brain, one per user", "after the demand gate · I2f · Q-85"), "external", "planned"),
+            ("ncloud", "NeuroEdge Cloud (optional)", ("profile A brain, one per user", "on launch data · I2f · Q-92"), "external", "planned"),
             ("homebox", "Home box: Pi / HA add-on / ESP32", ("the spine stays at home", "easy install I2e · ESP32 I2f"), "device", "planned"),
             ("network", "Multi-node, multi-home network", ("signed rules per node, scope caps", "self-lock on anomaly · I2f"), "component", "planned"),
             ("roles", "People with roles", ("who commands, who approves", "time-boxed guests · I2f"), "person", "planned"),
@@ -763,12 +764,12 @@ def e11_ecosystem() -> Diagram:
         ("fleet", "NeuroClaw · MCP clients", ("brain: Go (A) · ESP32 (B) · Q-83",), "partial"),
         ("index", "Community plug-in index", ("search/install · not a Marketplace · I2c",), "planned"),
         ("aura", "Claw-family agents", ("ESP-Claw · zclaw · MimiClaw",), "planned"),
-        ("market", "Blueprint Hub (paid)", ("after the 8-week gate · Q-72",), "planned"),
+        ("market", "Blueprint Hub (paid)", ("when a maker asks to sell · Q-92",), "planned"),
         ("chat", "Chat platforms", ("Telegram first · Slack · Zalo · I2d",), "planned"),
         ("hub", "Blueprint Hub index", ("static index · revenue share later · I2e",), "planned"),
         ("relay", "Relay (optional)", ("TLS pass-through · paid option · Q-72",), "planned"),
         ("kits", "Kit suppliers", ("BOM links · kit commission · Q-72",), "planned"),
-        ("ncloud", "NeuroEdge Cloud (optional)", ("subscription, after the gate · I2f",), "planned"),
+        ("ncloud", "NeuroEdge Cloud (optional)", ("subscription, on launch data · I2f",), "planned"),
     ]
     for i, (pid, title, lines, status) in enumerate(platforms):
         d.boxes.append(Box(pid, 1424, 140 + i * 118, 332, 96, title, lines, "external", status))

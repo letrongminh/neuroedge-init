@@ -138,7 +138,7 @@
 <rect x="736" y="1114" width="326" height="124" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="899.0" y="1153.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">NeuroEdge Cloud (optional)</text>
 <text x="899.0" y="1173.9" font-size="12.5" fill="#475569" text-anchor="middle">profile A brain, one per user</text>
-<text x="899.0" y="1192.1" font-size="12.5" fill="#475569" text-anchor="middle">after the demand gate · I2f · Q-85</text>
+<text x="899.0" y="1192.1" font-size="12.5" fill="#475569" text-anchor="middle">on launch data · I2f · Q-92</text>
 <text x="899.0" y="1210.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1074" y="1114" width="326" height="124" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1237.0" y="1153.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Home box: Pi / HA add-on / ESP32</text>

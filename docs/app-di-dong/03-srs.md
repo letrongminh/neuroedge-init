@@ -1,7 +1,7 @@
 # Ứng dụng di động NeuroEdge ("app nhà"): đặc tả yêu cầu phần mềm (SRS)
 
-> **Đã duyệt bởi Q-91 (2026-10-19); increment I2g, chờ sau cổng nhu cầu 2026-12-06.** Q-91 trả lời các câu
-> hỏi mở `AP-D-01` → `AP-D-17` (§6) và mở task `TSK-I2g-01` → `TSK-I2g-13` (§7). Yêu cầu nào dựa vào một RFC chưa
+> **Đã duyệt bởi Q-91 (2026-10-19); đồng bộ theo Q-92 (2026-10-19): I2g = API hộp + web nhà (đầu tiên, sau ra mắt công khai), I2h = app gốc React Native trên cùng backend; không gì chờ cổng nhu cầu (đã bỏ).** Q-91 trả lời các câu
+> hỏi mở `AP-D-01` → `AP-D-17` (§6); task ở §7 chia giữa I2g và I2h. Yêu cầu nào dựa vào một RFC chưa
 > có được ghi "(cần RFC)". **Thay đổi 2026-10-19:** bản nháp 2026-10-16 thành bản đã duyệt; ứng dụng là app gốc iOS
 > và Android (không còn web di động). Cấu trúc theo ISO/IEC/IEEE 29148:2018 §9.6,
 > như `docs/spec/missions.md`. Mọi mã đã có được dẫn lại thay vì chép lại (`CONTRIBUTING.md` §8.1).
@@ -73,7 +73,7 @@ mọi phán quyết, kể cả vùng màu (AP-ZN-07). Trong nhà, lời duyệt 
 
 | Mã | Màn hình | Nội dung chính |
 |:---|:---|:---|
-| **MH-1** | Nhà | Biểu ngữ khẩn; thẻ "Bể cá phòng khách" (26,8 °C, "Ổn"); thẻ "Nhà bố mẹ" ("Cần chú ý", mẫu ngành dọc sau cổng); dòng "1 đề xuất chờ bạn duyệt"; thanh tab Nhà, Chat, Thiết bị, Hoạt động, Cài đặt. |
+| **MH-1** | Nhà | Biểu ngữ khẩn; thẻ "Bể cá phòng khách" (26,8 °C, "Ổn"); thẻ "Nhà bố mẹ" ("Cần chú ý", mẫu ngành dọc sau này); dòng "1 đề xuất chờ bạn duyệt"; thanh tab Nhà, Chat, Thiết bị, Hoạt động, Cài đặt. |
 | **MH-2** | Chat | Hỏi về bể; thẻ đề xuất "Không bật sưởi khi nước từ 28 °C" (đang 29 °C) với nhãn vùng, "Nếu áp dụng hôm qua: chặn thêm 1 lần", nút Chỉnh / Duyệt; gợi ý nhanh. |
 | **MH-3** | Thiết bị | Nhóm theo không gian; máy sưởi, máy sục khí có khóa, nhiệt độ nước; thiết bị nhà bố mẹ; "Thêm thiết bị". |
 | **MH-4** | Chi tiết máy sưởi | Biểu đồ 24 giờ với đường ngưỡng; luật dạng câu có nhãn vùng; giới hạn phần cứng khóa; lần chặn gần nhất; thanh trượt ba vùng. |
@@ -118,8 +118,8 @@ mẫu của ngành dọc người cao tuổi, hoãn (Q-72, R-19, Q-91 (7)), khô
    sau khi task tương ứng xong (§5, §7).
 3. Q-73 (minh bạch thay vì cấm đoán, ba bất biến) và Q-38 (không là chức năng an toàn được chứng nhận)
    luôn áp dụng.
-4. Hỗ trợ hai bản chính mới nhất của iOS và của Android; ngưỡng hiệu năng đặt trong thiết kế I2g và đo trên điện thoại thật (Q-91 (2), AP-NF-06).
-5. I2g bắt đầu sau cổng nhu cầu 2026-12-06 bằng một `Q-N` mở nó (Q-91 (1)); trước đó chưa có gì ở đây có hiệu lực lịch.
+4. Hỗ trợ hai bản chính mới nhất của iOS và của Android; ngưỡng hiệu năng đặt trong thiết kế I2h và đo trên điện thoại thật (Q-91 (2), AP-NF-06).
+5. I2g mở đầu tiên sau ra mắt công khai (I6), I2h sau I2g (Q-92 (8)); không gì chờ cổng nhu cầu. Chưa có ngày: dòng nào trong tài liệu này cũng không phải cam kết lịch. Duyệt có hai đường, cả hai giữ: passkey trong web nhà (TSK-I2f-08, thuộc I2g) và Face ID/vân tay trong app (TSK-I2g-01 là RFC chung).
 
 ---
 
@@ -264,14 +264,14 @@ cầu đó **dựa vào** mã ấy và không chép lại.
 |:---|:---|:---|:---|:---|
 | AP-AL-01 | Cảnh báo khẩn phải do bot của hộp gửi từ mẫu tiếng Việt cố định, không qua LLM, không bị gộp hay giữ lại bởi ngân sách tin nhắn. | Cảnh báo đến cả khi không có bộ não. | BR-APP-07; US-APP-02; MS-RT-07, FR-AGT-06, NFR-COST-02 | T |
 | AP-AL-02 | Cảnh báo trên ứng dụng phải có nút "Đã biết"; bấm là xác nhận của người đã ghép, ghi vào trace và dừng chuỗi leo thang. "Đã biết" không áp dụng thay đổi nào. Chưa có quy định đã duyệt cho "Đã biết" và chuỗi leo thang (MS-RT-07 chỉ có cảnh báo mẫu cố định, MS-TS-04 không có sự kiện xác nhận); hoãn cùng ngành dọc người cao tuổi (Q-91 (7)), cần RFC sự kiện trace (mở rộng TSK-I2d-13). | Xác nhận khác duyệt. | BR-APP-07; US-APP-02; FR-CH-04; Q-91 (7) | T |
-| AP-AL-03 | Chuỗi leo thang (ngành dọc sau) phải theo danh sách người có thứ tự và thời gian chờ chỉnh được: hỏi tại chỗ trước, rồi người thứ nhất qua nhiều kênh, chưa xác nhận thì người kế, lặp đến khi có xác nhận. Hoãn cùng ngành dọc người cao tuổi (Q-91 (7), R-19); thêm sự kiện trace hay trường mới thì cần RFC; thời gian chờ mặc định đặt khi ngành dọc mở (AP-D-07). Không thuộc I2g. | Cảnh báo chắc chắn đến nơi. | BR-APP-07; US-APP-02, US-APP-12; MS-RT-07, MS-TS-04, CONTRIBUTING.md §3; AP-D-07, Q-91 (7) | T |
+| AP-AL-03 | Chuỗi leo thang (ngành dọc sau) phải theo danh sách người có thứ tự và thời gian chờ chỉnh được: hỏi tại chỗ trước, rồi người thứ nhất qua nhiều kênh, chưa xác nhận thì người kế, lặp đến khi có xác nhận. Hoãn cùng ngành dọc người cao tuổi (Q-91 (7), R-19); thêm sự kiện trace hay trường mới thì cần RFC; thời gian chờ mặc định đặt khi ngành dọc mở (AP-D-07). Không thuộc I2g hay I2h. | Cảnh báo chắc chắn đến nơi. | BR-APP-07; US-APP-02, US-APP-12; MS-RT-07, MS-TS-04, CONTRIBUTING.md §3; AP-D-07, Q-91 (7) | T |
 | AP-AL-04 | Ứng dụng phải hiện chuỗi leo thang đang ở bước nào và giờ của bước kế. | Người nhận biết còn bao lâu. | BR-APP-07; US-APP-02 | D |
 | AP-AL-05 | Câu hỏi tại chỗ (ngành dọc sau) phải nhận "Tôi ổn" từ thiết bị cục bộ đã ghép (nút bấm hoặc trang cục bộ; giọng nói đã bỏ, Q-77); tín hiệu từ bộ não hay ứng dụng MCP phải bị coi là không hợp lệ. | Xác minh nghĩa là một con người. | BR-APP-07; US-APP-17; MS-CH-07, FR-CH-05, Q-73, TSK-I2d-20, TSK-I2d-21 | T |
 | AP-AL-06 | Kênh báo của I2g là push không nội dung qua APNs và FCM (AP-AL-11) và bot Telegram của hộp; Zalo là P1 (FR-CH-01). Mỗi kênh thêm (Zalo, SMS qua 4G, gọi tự động) phải là một đích khai báo, chỉ thêm được khi duyệt tại nhà. | Đích dữ liệu mới không duyệt qua chat. | BR-APP-07; US-APP-13; FR-CH-01, TSK-I2d-12, MS-EG-01, MS-AP-04; AP-D-05, Q-91 (7) | T |
 | AP-AL-11 | Tín hiệu đẩy qua APNs và FCM chỉ được nói "có việc cần bạn", không mang nội dung thẻ, giá trị cảm biến hay tên thiết bị; ứng dụng tải chi tiết qua mạng nhà khi mở. Khi không tới được hộp, ứng dụng chỉ báo là chưa tải được. | Nội dung không rời khỏi nhà qua Apple hay Google. | BR-APP-07, BR-APP-02; US-APP-02, US-APP-13, US-APP-15; Q-91 (7), MS-EG-01; TSK-I2g-10 | T |
 | AP-AL-07 | Khi kênh chat sập, cảnh báo phải hiện ở trang cục bộ và nằm trong hàng đợi giữ giờ gốc. | Cảnh báo không mất. | BR-APP-07; US-APP-13; MS-RT-08 | T |
 | AP-AL-08 | Người nhận leo thang chỉ nhận cảnh báo khẩn và không có quyền duyệt. Người nhận khác chủ hộp cần FR-CH-07 (TSK-I2f-05): Q-89 chỉ ghép một chủ, và nhóm chat không bao giờ ghép (MS-CH-01). | Quyền tối thiểu. | BR-APP-07; US-APP-12, US-APP-18; FR-CH-07 | T |
-| AP-AL-09 | Hộp mất liên lạc phải được báo cho người nhận kèm giờ tín hiệu cuối; việc canh phải do relay ngoài nhà làm, nên cần relay hoặc cloud (Q-74 bước 2, sau cổng nhu cầu); FR-EGR-05 định relay là đường hầm TLS trong suốt, chưa có nhiệm vụ canh hộp. Ngưỡng im lặng đặt cùng ngành dọc người cao tuổi (AP-D-07, Q-91 (7)). Không thuộc I2g. | Hộp chết thì không tự báo được. | BR-APP-07; US-APP-18; FR-EGR-05, Q-74; AP-D-04, AP-D-07 | T |
+| AP-AL-09 | Hộp mất liên lạc phải được báo cho người nhận kèm giờ tín hiệu cuối; việc canh phải do relay ngoài nhà làm, nên cần relay hoặc cloud (Q-74 bước 2, mở theo dữ liệu ra mắt, Q-92 (8)); FR-EGR-05 định relay là đường hầm TLS trong suốt, chưa có nhiệm vụ canh hộp. Ngưỡng im lặng đặt cùng ngành dọc người cao tuổi (AP-D-07, Q-91 (7)). Không thuộc I2g. | Hộp chết thì không tự báo được. | BR-APP-07; US-APP-18; FR-EGR-05, Q-74; AP-D-04, AP-D-07 | T |
 | AP-AL-10 | Câu chữ cảnh báo của ngành dọc người cao tuổi chỉ được nói về thay đổi thói quen; không chẩn đoán, không nói té ngã. | Rủi ro pháp lý và y tế. | BR-APP-07; US-APP-02, US-APP-17; Q-72, Q-38, R-19 | I |
 
 ### 3.12 Cài đặt, rủi ro, ngân sách (ST)
@@ -288,14 +288,14 @@ cầu đó **dựa vào** mã ấy và không chép lại.
 
 ### 3.13 Đo lường (MT)
 
-> Chỉ số của ứng dụng (BR-APP-10) là tiêu chí thoát của I2g, không sửa Q-85 (3); K1–K5 trước cổng không đổi. Ngưỡng đặt bằng dữ liệu cổng (Q-91 (10), TSK-I2g-12).
+> Chỉ số của ứng dụng (BR-APP-10) là tiêu chí thoát của I2h; không có cổng nhu cầu (Q-92). Ngưỡng đặt bằng dữ liệu ra mắt (Q-91 (10), TSK-I2g-12).
 
 | ID | Yêu cầu | Lý do | Nguồn | Kiểm chứng |
 |:---|:---|:---|:---|:---|
 | AP-MT-01 | Ứng dụng phải ghi tại hộp, cục bộ, sự kiện cần cho ba chỉ số: gỡ luật mặc định (AP-KD-04), chặn đúng/chặn oan, và chấp nhận vùng vàng (AP-ZN-04). Thêm loại sự kiện trace là sửa trace chuẩn (cần RFC). | Cổng nhu cầu cần số đo. | BR-APP-10; TSK-I2e-07, TSK-I2g-12; Q-91 (10); MS-TS-04, CONTRIBUTING.md §3 | T |
 | AP-MT-02 | Mục bị chặn phải có cách người dùng đánh dấu "chặn đúng" hoặc "chặn oan"; định nghĩa của "oan" đặt trong I2g cùng ngưỡng (AP-MT-04). | Không có nhãn thì không đo được. | BR-APP-10; US-APP-11; AP-D-08, Q-91 (10); TSK-I2g-12 | D |
 | AP-MT-03 | Sự kiện đo không được chứa tên Blueprint, digest, URL, giá trị cảm biến hay nội dung chat, và theo chính sách ẩn danh, opt-out của FR-TEL-01 (FR-TEL-07, BL-NF-02); roadmap TSK-I2e-07 đã sửa theo cùng chính sách (Q-90). | Đếm mà không theo dõi người. | BR-APP-10; TSK-I2e-07; BL-NF-02, MS-EG-01 | T |
-| AP-MT-04 | Ngưỡng đạt của các chỉ số và ngưỡng hiệu năng (AP-NF-06) không được ghi cứng trong ứng dụng; chúng là tiêu chí thoát của I2g, đặt bằng dữ liệu cổng. | Không tự đặt ngưỡng. | BR-APP-10; AP-D-08, Q-91 (10); TSK-I2g-12 | I |
+| AP-MT-04 | Ngưỡng đạt của các chỉ số và ngưỡng hiệu năng (AP-NF-06) không được ghi cứng trong ứng dụng; chúng là tiêu chí thoát của I2h, đặt bằng dữ liệu ra mắt. | Không tự đặt ngưỡng. | BR-APP-10; AP-D-08, Q-91 (10); TSK-I2g-12 | I |
 
 ### 3.14 Phi chức năng (NF)
 
@@ -354,7 +354,7 @@ cầu đó **dựa vào** mã ấy và không chép lại.
 
 ## 5. Kiểm chứng
 
-Kế hoạch kiểm chứng cho I2g (task ở §7): **chưa có test case; tạo khi I2g mở sau cổng nhu cầu 2026-12-06.**
+Kế hoạch kiểm chứng cho I2g và I2h (task ở §7): **chưa có test case; tạo khi I2g mở sau ra mắt công khai (Q-92).**
 Không dòng nào dưới đây là cam kết lịch.
 
 | Nhóm | Phương pháp dự kiến | Điều kiện để kiểm chứng |
@@ -377,11 +377,11 @@ Không dòng nào dưới đây là cam kết lịch.
 | **AP-D-01** | Vùng vàng có tồn tại không? | **Đã quyết (Q-91 (8)):** vùng vàng tồn tại: giá trị ngoài khoảng maker nhưng trong giới hạn giá trị của `board.v1` được phép sau khi chấp nhận rõ ràng, kèm nhãn rủi ro; sửa BL-IN-04 qua RFC `blueprint.v1` (TSK-I2g-03). Bối cảnh cũ: Giá trị ngoài khoảng đã khai bị hỏi lại hoặc từ chối theo BL-IN-04 (TC-IN-04-1); hợp đồng chỉ siết, không nới (MS-CP-02); Q-73 bất biến (b): luật đã khai chạy đúng như đã khai. MS-CT-06 chỉ yêu cầu tham số mở khai kiểu và khoảng. Một giá trị ngoài khoảng qua `sensor_facts` (ví dụ ngưỡng `water_hot` của bể cá) làm đổi luật hiệu lực của gate sưởi. Chủ sản phẩm chọn: (a) cho phép ngoài khoảng maker với nhãn rủi ro và chấp nhận rõ ràng, hoặc (b) từ chối giá trị ngoài khoảng maker. Nếu (a), `blueprint.v1` (TSK-I2e-01) phải khai điều đó và MS-CP-02 phải còn đúng. | AP-ZN-01, AP-ZN-04 |
 | **AP-D-02** | Có cần passkey (vân tay) sớm hơn I2f không? | **Đã quyết (Q-91 (5)):** cần sớm hơn FR-CH-08: ứng dụng ký lời duyệt bằng khóa thiết bị mở bằng Face ID hoặc vân tay, một nguồn người mới, cần RFC sửa RFC-0006 và RFC-0019 (TSK-I2g-01). Bối cảnh cũ: Q-89 và RFC-0019 cho duyệt từ xa qua bot của hộp mà không cần passkey; RFC-0019 giữ passkey là phương thức sau. Còn mở: ứng dụng có cần nó sớm hơn FR-CH-08 (TSK-I2f-08, chưa có code) không. | AP-AV-03, AP-AV-04 |
 | **AP-D-03** | Dạng ứng dụng: web di động, ứng dụng gốc hay Zalo Mini App? Cách thay cho đẩy thông báo màn hình khóa? | **Đã quyết (Q-91 (2), (7)):** app gốc iOS và Android bằng React Native; thay cho đẩy màn hình khóa là push không nội dung qua APNs và FCM cùng bot Telegram (TSK-I2g-10). Bối cảnh cũ: Nút của bot duyệt nằm ngay trong cuộc chat (RFC-0019), nên duyệt bằng bot không cần liên kết tới thẻ; trang cục bộ chỉ nghe 127.0.0.1 (AP-D-12). Vân tay và đẩy thông báo trên web (đặc biệt iOS) khó. | AP-SH-01, AP-CD-10 |
-| **AP-D-04** | Truy cập từ ngoài nhà cần relay hoặc cloud (Q-74): làm trước hay sau cổng nhu cầu? | **Đã quyết (Q-74), xác nhận ở Q-91 (11):** bước 2 chờ số đo của cổng nhu cầu 2026-12-06 và chỉ mở nếu số đo cho thấy người thử kẹt ở cài đặt, khóa API hay tự lưu trữ; phê duyệt không đi qua relay (FR-EGR-05). Phần riêng của ứng dụng: màn hình nói rõ giới hạn (AP-SH-04). | AP-SH-04, AP-AL-09, AP-ST-07 |
+| **AP-D-04** | Truy cập từ ngoài nhà cần relay hoặc cloud (Q-74): làm trước hay sau ra mắt? | **Đã quyết (Q-74), xác nhận ở Q-91 (11), điều kiện mở theo Q-92 (8):** bước 2 mở sau ra mắt và chỉ khi dữ liệu ra mắt cho thấy người kẹt ở bước cài hộp; phê duyệt không đi qua relay (FR-EGR-05). Phần riêng của ứng dụng: màn hình nói rõ giới hạn (AP-SH-04). | AP-SH-04, AP-AL-09, AP-ST-07 |
 | **AP-D-05** | Ưu tiên kênh Zalo so với Telegram? | **Đã quyết (Q-91 (7)):** Telegram và push không nội dung trước; Zalo giữ P1 (FR-CH-01). Bối cảnh cũ: Lời duyệt gắn với `chat:telegram:<id>` (RFC-0019, Q-89); duyệt qua Zalo cần mở rộng bot duyệt (sửa RFC). FR-CH-01: Telegram trước, Zalo sau (P1). Gia đình ở Việt Nam dùng Zalo là nhận định sản phẩm, chưa đo. Còn mở: thứ tự cho cảnh báo. | AP-AL-06 |
 | **AP-D-06** | Luật mặc định theo loại sinh thành tệp tường minh, có chấp nhận không? | **Đã quyết (CONTRIBUTING.md §3), xác nhận ở Q-91 (11):** Không cần RFC: gate cho thiết bị mới do `neuroedge add part` sinh (VP-PT-07), thêm gate vào `gates/` là PR thường (`CONTRIBUTING.md` §3), mặc định về giá trị chỉ do Blueprint khai (MS-CT-06). Mặc định ngầm trong runtime vẫn cần RFC. Cách khóa gate sinh ra: AP-D-15. | AP-KD-01, AP-KD-02 |
 | **AP-D-07** | Thời gian chờ mặc định của chuỗi leo thang và ngưỡng hộp im lặng? | **Đã quyết (Q-91 (7)):** chuỗi leo thang hoãn cùng ngành dọc người cao tuổi (Q-72, R-19); thời gian chờ và ngưỡng im lặng đặt khi ngành dọc mở. Bối cảnh cũ: Chưa có đặc tả đã duyệt cho chuỗi leo thang (MS-RT-07 là cảnh báo mẫu cố định, không xác nhận). Thảo luận thiết kế nêu ví dụ 2 phút (hỏi tại chỗ), 5 phút (người thứ hai), 10 phút (relay); chỉ là ví dụ chưa quyết. | AP-AL-03, AP-AL-09 |
-| **AP-D-08** | "Chặn oan" định nghĩa thế nào; ngưỡng đạt của ba chỉ số là bao nhiêu? | **Đã quyết (Q-91 (10)):** Q-85 (3) không sửa; chỉ số của ứng dụng (gồm "chặn oan") và ngưỡng là tiêu chí thoát của I2g, đặt bằng dữ liệu cổng (TSK-I2g-12). Bối cảnh cũ: Trước cổng chỉ có K1–K5 (Q-85 (3)); xem AP-D-16. BR-APP-10; Q-72 (B6–B8). | AP-MT-02, AP-MT-04 |
+| **AP-D-08** | "Chặn oan" định nghĩa thế nào; ngưỡng đạt của ba chỉ số là bao nhiêu? | **Đã quyết (Q-91 (10)):** Q-85 (3) không sửa; chỉ số của ứng dụng (gồm "chặn oan") và ngưỡng là tiêu chí thoát của I2h, đặt bằng dữ liệu ra mắt (TSK-I2g-12; Q-92 bỏ cổng nhu cầu). Bối cảnh cũ (trước Q-92): K1–K5 trước cổng (Q-85 (3)); xem AP-D-16. BR-APP-10. | AP-MT-02, AP-MT-04 |
 | **AP-D-09** | Chạy lại cấu hình đề xuất trên trace có cần RFC không? | **Đã quyết (CONTRIBUTING.md §3), xác nhận ở Q-91 (11):** Chạy chỉ đọc không nằm trong danh sách RFC của `CONTRIBUTING.md` §3; sự kiện trace mới cho đoạn trace thì cần RFC (TSK-I2d-13). Studio đã có `POST /api/gates/<name>/whatif` và `POST /api/traces/<name>/replay` (`docs/spec/studio.md`). | AP-WI-01, AP-WI-02 |
 | **AP-D-10** | Studio đang tạm dừng (Q-72): tái dùng làm nền ứng dụng hay xây trang riêng? | **Đã quyết (Q-91 (4)):** Studio mở lại làm trang web máy tính cho maker; ứng dụng và Studio dùng chung một API hộp (TSK-I2g-05). Bối cảnh cũ: Studio chỉ nghe 127.0.0.1 và đang tạm dừng (`docs/spec/studio.md`); xem AP-D-12. | AP-SH-01 |
 | **AP-D-11** | Trình duyệt hỗ trợ và ngưỡng thời gian phản hồi? | **Đã quyết (Q-91 (2)):** hai bản chính mới nhất của iOS và Android; ngưỡng hiệu năng đặt trong thiết kế I2g, đo trên điện thoại thật. Chưa có số liệu. | AP-NF-06 |
@@ -396,9 +396,9 @@ Không dòng nào dưới đây là cam kết lịch.
 
 ## 7. Phụ thuộc vào task hiện có
 
-Mã đã có trong `roadmap/neuroedge-roadmap.md`, cộng các task của increment I2g do Q-91 mở (một dòng mỗi task; chi tiết và trạng thái ở roadmap).
+Mã đã có trong `roadmap/neuroedge-roadmap.md`, cộng các task do Q-91 mở và Q-92 chia làm hai increment (một dòng mỗi task; chi tiết và trạng thái ở roadmap §4.3.7, §4.3.8). Mã `TSK-I2g-06` → `TSK-I2g-13` giữ nguyên dù nay thuộc I2h.
 
-**Task của I2g (Q-91), chờ sau cổng nhu cầu 2026-12-06:**
+**Task của I2g, API hộp và web nhà (sau ra mắt công khai, Q-92 (8)):**
 
 | Task | Nội dung |
 |:---|:---|
@@ -406,14 +406,20 @@ Mã đã có trong `roadmap/neuroedge-roadmap.md`, cộng các task của increm
 | TSK-I2g-02 | RFC: giới hạn giá trị trong `board.v1` (vùng khóa) |
 | TSK-I2g-03 | RFC: vùng vàng trong `blueprint.v1` (khoảng maker so với giới hạn giá trị; sửa BL-IN-04) |
 | TSK-I2g-04 | RFC: khóa gate và linh kiện do ứng dụng sinh (`gate lint` cộng duyệt ký sinh trắc tại nhà) |
-| TSK-I2g-05 | API hộp dùng chung cho ứng dụng và Studio; Studio mở lại làm trang web máy tính cho maker (TSK-I1-04) |
+| TSK-I2g-05 | API hộp dùng chung cho web nhà và ứng dụng; web nhà cho gia đình; Studio mở lại làm trang web cho maker (TSK-I1-04) |
+| TSK-I2f-08 | Duyệt ký bằng passkey trong web nhà, hộp tự xác minh chữ ký (chuyển từ I2f sang I2g theo Q-92 (9)); nguồn duyệt sinh trắc của app là TSK-I2g-01 |
+
+**Task của I2h, app gốc (sau I2g, Q-92 (8)):**
+
+| Task | Nội dung |
+|:---|:---|
 | TSK-I2g-06 | Vỏ ứng dụng React Native: ghép đôi, Nhà, Thiết bị, Chi tiết thiết bị, Cài đặt (MH-1, MH-3, MH-4, MH-7) |
 | TSK-I2g-07 | Thẻ duyệt trong ứng dụng: ≤ 5 dòng cộng phần bổ sung, ký sinh trắc, đồng ý cài Blueprint (MH-2, MH-8) |
 | TSK-I2g-08 | Hoạt động và chạy lại với trace hôm qua (MH-5) |
 | TSK-I2g-09 | Trình hướng dẫn thiết bị sinh gate và linh kiện (MH-6), trên `sim` và board thật |
 | TSK-I2g-10 | Push không nội dung qua APNs và FCM |
 | TSK-I2g-11 | Kênh ứng dụng trong NeuroClaw (kho `letrongminh/neuroclaw`) |
-| TSK-I2g-12 | Chỉ số của ứng dụng, "chặn oan" và ngưỡng hiệu năng từ dữ liệu cổng |
+| TSK-I2g-12 | Chỉ số của ứng dụng, "chặn oan" và ngưỡng hiệu năng từ dữ liệu ra mắt |
 | TSK-I2g-13 | Bản thử: TestFlight và Google Play internal testing |
 
 **Task đã có:**
@@ -437,5 +443,6 @@ Mã đã có trong `roadmap/neuroedge-roadmap.md`, cộng các task của increm
 | TSK-I2c-16 | Cơ cấu chấp hành từ xa và "off debt" (AP-DV-09, AP-DV-11) |
 | TSK-I2e-01, TSK-I2e-03 | Blueprint và xem trước cài đặt (AP-CD-09, AP-KD-06) |
 | TSK-I2e-07 | Mốc đo cục bộ theo FR-TEL-07 (AP-MT) |
-| TSK-I2e-13 | Ảnh Pi và ghép Telegram bằng QR (AP-SH-02) |
-| TSK-I2f-05, TSK-I2f-08 | Vai trò nhiều người (AP-AV-07, AP-ST-01); passkey FR-CH-08, mà duyệt sinh trắc của I2g đi trước (AP-AV-04) |
+| TSK-I2e-13 | Đã cắt (Q-92 (2); lưu ở `roadmap/archive/removed-tasks.md`): ảnh SD cho Pi và ghép bằng QR không còn; AP-SH-02 chỉ còn mã dùng một lần hiện trên hộp, cài hộp bằng CLI đến khi có web nhà |
+| TSK-I2f-05 | Vai trò nhiều người (AP-AV-07, AP-ST-01) |
+| TSK-I2f-08 | Passkey FR-CH-08 trong web nhà, nay thuộc I2g (bảng trên); duyệt sinh trắc của app đi song song (AP-AV-04) |

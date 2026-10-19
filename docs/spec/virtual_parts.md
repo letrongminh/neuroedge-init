@@ -28,7 +28,7 @@ In scope, in three phases (Q-84):
 | **A** | A virtual board derived from the agent, on `sim` only, labelled `risk=virtual_board` | VP-VB-* | TSK-I2d-29 | decided |
 | **B** | A catalogue of universal part kinds, `[sim.parts]` in agent.toml, `neuroedge add part` | VP-PT-* | TSK-I2d-30 | decided |
 | **A+** | A per-board pin map in agent.toml, so an agent keeps its pin names from `sim` to a real board (the Zephyr overlay pattern) | VP-PM-* | TSK-I2d-32 | decided; its PR needs the lead engineer's approval (VP-PM-06) |
-| **C** | A drag-and-drop canvas on the sim page that writes `[sim.parts]` | VP-CV-* | TSK-I2d-31 | deferred: reopens with data after the 2026-12-06 demand gate (Q-77, Q-84) |
+| **C** | A drag-and-drop canvas on the sim page that writes `[sim.parts]` | VP-CV-* | TSK-I2d-31 | deferred: reopens with launch data (Q-77, Q-84, Q-92) |
 
 Out of scope: gate semantics and their authoring (`core_contracts.md`; a gate is never drawn,
 VP-CV-03), the `board.v1` and `trace.v1` schemas (unchanged, VP-NF-01), electrical simulation
