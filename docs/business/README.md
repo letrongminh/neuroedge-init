@@ -13,7 +13,7 @@ own truths and the others cite it (`CONTRIBUTING.md` §8.1).
 
 ## Where the other truths live
 
-- **neurosim** (Q-94 experiment, separate product for makers): repository `letrongminh/neurosim`.
+- **neurosim** (Q-94, separate product for makers): repository `letrongminh/neurosim`, its plan in `docs/`.
 - **Decisions:** [`roadmap/neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §15 (`Q-N`).
 - **Progress and dates:** [`roadmap/neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.
 - **The safety model in plain words:** [`docs/user/an-toan.md`](../user/an-toan.md).

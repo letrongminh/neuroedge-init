@@ -72,8 +72,8 @@
 <text x="465.0" y="794.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="608" y="690" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="739.0" y="719.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I3b</text>
-<text x="739.0" y="739.9" font-size="12.5" fill="#475569" text-anchor="middle">Sim-to-Silicon (experiment)</text>
-<text x="739.0" y="758.0" font-size="12.5" fill="#475569" text-anchor="middle">0/8 tasks</text>
+<text x="739.0" y="739.9" font-size="12.5" fill="#475569" text-anchor="middle">Images for neurosim</text>
+<text x="739.0" y="758.0" font-size="12.5" fill="#475569" text-anchor="middle">0/4 tasks</text>
 <text x="739.0" y="776.1" font-size="12.5" fill="#475569" text-anchor="middle">after Q-94</text>
 <text x="739.0" y="794.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="60" y="896" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
