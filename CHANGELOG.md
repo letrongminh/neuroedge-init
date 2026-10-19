@@ -30,6 +30,7 @@ The package has not yet released any public versions; before going public there 
 
 #### Added
 
+- **Architecture page: technical detail and the end-user journey.** `docs/business/kien-truc-tong-the.html` gains chapter 1b (every part on one path: sources, untrusted brain, the two transports, the box's dispatch → gate → envelope → token → HAL, ASK, missions, trace, gateways, three targets) and chapter 4b (from install to ALLOW / ASK / BLOCK, a person's approval, review and 24/7 missions). Stale text fixed: Home Assistant add-on removed (Q-92 (2)), home web and app, voice and screen added as planned, System 2 marked legacy, esp-emulator next to QEMU, sources through Q-93.
 - **Product documentation trimmed and reorganised.** Three read-only audits (stale content after Q-77, Q-92 and Q-93; truths restated in several places; structure by reader) led to:
   - **New entry points:** `docs/README.md` (one router per reader), `docs/business/README.md`, `docs/reports/README.md`, and `docs/user/an-toan.md` (the safety model in plain words). The root README links all three.
   - **Moves:** `docs/architecture/vi/` (written in English) flattened into `docs/architecture/`; `docs/app-di-dong/` → `docs/business/app-di-dong/`; CHANGELOG §2 → [`docs/reference/cli.md`](docs/reference/cli.md).

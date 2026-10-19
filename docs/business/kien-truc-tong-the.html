@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Hand-drawn architecture (2026-10-14, after Q-83); source of truth: docs/architecture/ (CONTRIBUTING.md §8.1).
+<!-- Hand-drawn architecture (2026-10-19, through Q-93); source of truth: docs/architecture/ (CONTRIBUTING.md §8.1).
      Progress blocks between GENERATED markers are written by scripts/gen_architecture_progress.py from the roadmap — do not edit them by hand. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NeuroEdge Architecture</title>
@@ -340,9 +340,11 @@ details .tbl { margin-top: 10px; border: 0 }
   <nav class="toc" aria-label="Chapters">
     <a href="#s0"><span>00</span>Overview</a>
     <a href="#s1"><span>01</span>The brain asks, the box decides</a>
+    <a href="#s1b"><span>1b</span>Every part, one path</a>
     <a href="#s2"><span>02</span>Five layers, from user to device</a>
     <a href="#s3"><span>03</span>One path to the hardware</a>
     <a href="#s4"><span>04</span>One message, three outcomes</a>
+    <a href="#s4b"><span>4b</span>From install to a running home</a>
     <a href="#s5"><span>05</span>Two ways to deploy</a>
     <a href="#s6"><span>06</span>One gate, three targets</a>
     <a href="#s7"><span>07</span>The evidence loop</a>
@@ -367,7 +369,7 @@ details .tbl { margin-top: 10px; border: 0 }
 
 <!-- ============ OPENING ============ -->
 <header class="hero" id="s0">
-  <div><div class="eyebrow">Chapter 0 · Overview · main branch, 2026-10-14</div>
+  <div><div class="eyebrow">Chapter 0 · Overview · main branch, 2026-10-19</div>
   <h1>The Physical AI that <em>really</em> does things, safely by design.</h1></div>
   <p class="lede">AI that <strong>acts for real</strong>: it switches relays, opens valves, locks doors. <strong>Safe by design</strong>: the model only proposes and the gate decides; no token, no action; when in doubt, block (Q-82).</p>
   <div class="try">
@@ -409,7 +411,7 @@ details .tbl { margin-top: 10px; border: 0 }
       <text x="20" y="34" class="zl c-muted">USERS</text>
       <rect x="10" y="48" width="160" height="78" rx="10" class="box"/>
       <text x="26" y="80" class="em">📱</text><text x="58" y="78" class="t">Owner</text>
-      <text x="26" y="106" class="s">Telegram · web page</text>
+      <text x="26" y="106" class="s">Telegram · home web, app</text>
       <rect x="10" y="236" width="160" height="78" rx="10" class="box"/>
       <text x="26" y="268" class="em">🤖</text><text x="58" y="266" class="t">Other AIs</text>
       <text x="26" y="294" class="s">Claude, OpenClaw…</text>
@@ -468,12 +470,22 @@ details .tbl { margin-top: 10px; border: 0 }
       <text x="248" y="414" class="s">a brain per user · I2f</text>
       <rect x="470" y="370" width="260" height="56" rx="10" class="box-plan"/>
       <text x="486" y="402" class="em">📦</text><text x="518" y="396" class="t">Blueprint + Hub</text>
-      <text x="518" y="414" class="s">package, share, sell · I2e</text>
+      <text x="518" y="414" class="s">package, share · I2e</text>
       <path d="M320 370 V162" class="ln-plan" marker-end="url(#ap)"/>
       <path d="M600 370 V342" class="ln-plan" marker-end="url(#ap)"/>
     </svg>
   </div>
   <p class="cap">The dashed red line is the trust boundary: everything to its left can only <em>ask</em>. Inside the box, the green path opens only when the gate says ALLOW.</p>
+</section>
+
+<!-- ============ 1b. TECHNICAL DETAIL ============ -->
+<section id="s1b">
+  <div class="head"><div><div class="eyebrow">Chapter 1b · Technical detail</div><h2>Every part, one path</h2></div>
+    <span class="more">details: <a href="../architecture/02-container-c4l2.md">02</a> · <a href="../architecture/05-code-gate-hal-c4l4.md">05</a> · <a href="../spec/deployment_profiles.md">SRS</a></span></div>
+  <div class="fig">
+    <svg viewBox="0 0 680 690" role="img" aria-label="Commands from Telegram, the home web and app, or voice reach an untrusted brain; the brain calls the trusted box over MCP with mTLS or nc_gate; inside the box a call passes dispatch, the gate, the envelope and a single-use token before the HAL drives sim, linux or esp32s3; a person answers ASK directly at the box"><text x="40" y="18" class="zl c-muted">COMMANDS COME FROM</text><rect x="40" y="30" width="180" height="50" rx="8" class="box"/><text x="130" y="46" text-anchor="middle" dominant-baseline="central" class="t">💬 Telegram</text><text x="130" y="65" text-anchor="middle" dominant-baseline="central" class="s">owner chats</text><rect x="250" y="30" width="180" height="50" rx="8" class="box-plan"/><text x="340" y="46" text-anchor="middle" dominant-baseline="central" class="t">📱 Home web, app</text><text x="340" y="65" text-anchor="middle" dominant-baseline="central" class="s">I2g · I2h, planned</text><rect x="460" y="30" width="180" height="50" rx="8" class="box-plan"/><text x="550" y="46" text-anchor="middle" dominant-baseline="central" class="t">🎙 Voice, screen</text><text x="550" y="65" text-anchor="middle" dominant-baseline="central" class="s">all-in-one chip · Q-93</text><path d="M130 80 L130 116" class="ln" marker-end="url(#am)"/><path d="M340 80 L340 116" class="ln" marker-end="url(#am)"/><path d="M550 80 L550 116" class="ln" marker-end="url(#am)"/><rect x="40" y="120" width="600" height="104" rx="14" class="zone-un"/><text x="56" y="140" class="zl c-blk">UNTRUSTED · THE BRAIN</text><text x="300" y="140" class="s">the LLM runs at a provider the owner picks</text><rect x="56" y="156" width="180" height="52" rx="8" class="box"/><text x="146" y="173" text-anchor="middle" dominant-baseline="central" class="t">🧠 NeuroClaw (Go)</text><text x="146" y="192" text-anchor="middle" dominant-baseline="central" class="s">other machine or cloud</text><rect x="250" y="156" width="180" height="52" rx="8" class="box"/><text x="340" y="173" text-anchor="middle" dominant-baseline="central" class="t">🧠 NeuroClaw-ESP (C)</text><text x="340" y="192" text-anchor="middle" dominant-baseline="central" class="s">same chip as the box</text><rect x="444" y="156" width="180" height="52" rx="8" class="box"/><text x="534" y="173" text-anchor="middle" dominant-baseline="central" class="t">🤖 Claude, MCP agents</text><text x="534" y="192" text-anchor="middle" dominant-baseline="central" class="s">any client</text><path d="M146 208 L146 238" class="ln" marker-end="url(#am)"/><path d="M340 208 L340 238" class="ln" marker-end="url(#am)"/><path d="M534 208 L534 238" class="ln" marker-end="url(#am)"/><rect x="56" y="240" width="270" height="34" rx="8" class="box"/><text x="191" y="257" text-anchor="middle" dominant-baseline="central" class="s">Profile A: MCP · HTTPS · mTLS</text><rect x="354" y="240" width="270" height="34" rx="8" class="box"/><text x="489" y="257" text-anchor="middle" dominant-baseline="central" class="s">Profile B: nc_gate calls on the chip</text><path d="M191 274 L191 298" class="ln" marker-end="url(#am)"/><path d="M489 274 L489 298" class="ln" marker-end="url(#am)"/><rect x="40" y="300" width="600" height="210" rx="14" class="zone-tr"/><text x="56" y="320" class="zl c-ok">TRUSTED · THE NEUROEDGE BOX</text><text x="320" y="320" class="s">one path to a pin; any doubt is a BLOCK</text><rect x="56" y="340" width="104" height="56" rx="8" class="box-core"/><text x="108" y="359" text-anchor="middle" dominant-baseline="central" class="t">dispatch()</text><text x="108" y="378" text-anchor="middle" dominant-baseline="central" class="s">type check</text><rect x="172" y="340" width="104" height="56" rx="8" class="box-gate"/><text x="224" y="359" text-anchor="middle" dominant-baseline="central" class="t">⚖️ Gate</text><text x="224" y="378" text-anchor="middle" dominant-baseline="central" class="s">NETR, own facts</text><rect x="288" y="340" width="104" height="56" rx="8" class="box-core"/><text x="340" y="359" text-anchor="middle" dominant-baseline="central" class="t">Envelope</text><text x="340" y="378" text-anchor="middle" dominant-baseline="central" class="s">can only refuse</text><rect x="404" y="340" width="104" height="56" rx="8" class="box-core"/><text x="456" y="359" text-anchor="middle" dominant-baseline="central" class="t">🔑 Token</text><text x="456" y="378" text-anchor="middle" dominant-baseline="central" class="s">single use</text><rect x="520" y="340" width="104" height="56" rx="8" class="box-core"/><text x="572" y="359" text-anchor="middle" dominant-baseline="central" class="t">HAL</text><text x="572" y="378" text-anchor="middle" dominant-baseline="central" class="s">pins, sensors</text><path d="M160 368 L170 368" class="ln-gate" marker-end="url(#ag)"/><path d="M276 368 L286 368" class="ln-gate" marker-end="url(#ag)"/><path d="M392 368 L402 368" class="ln-gate" marker-end="url(#ag)"/><path d="M508 368 L518 368" class="ln-gate" marker-end="url(#ag)"/><rect x="56" y="428" width="134" height="56" rx="8" class="box-gate"/><text x="123" y="447" text-anchor="middle" dominant-baseline="central" class="t">🙋 ASK</text><text x="123" y="466" text-anchor="middle" dominant-baseline="central" class="s">a person answers</text><rect x="204" y="428" width="134" height="56" rx="8" class="box-plan"/><text x="271" y="447" text-anchor="middle" dominant-baseline="central" class="t">Missions 24/7</text><text x="271" y="466" text-anchor="middle" dominant-baseline="central" class="s">mission.v1 · I2d</text><rect x="352" y="428" width="134" height="56" rx="8" class="box-core"/><text x="419" y="447" text-anchor="middle" dominant-baseline="central" class="t">📝 Trace</text><text x="419" y="466" text-anchor="middle" dominant-baseline="central" class="s">replay, verify</text><rect x="500" y="428" width="124" height="56" rx="8" class="box-core"/><text x="562" y="447" text-anchor="middle" dominant-baseline="central" class="t">🔌 Gateways</text><text x="562" y="466" text-anchor="middle" dominant-baseline="central" class="s">proxy, guard</text><path d="M40 55 L20 55 L20 456 L54 456" class="ln-gate" stroke-dasharray="5 4" marker-end="url(#ag)"/><path d="M130 510 L130 538" class="ln-ok" marker-end="url(#ao)"/><path d="M340 510 L340 538" class="ln-ok" marker-end="url(#ao)"/><path d="M550 510 L550 538" class="ln-ok" marker-end="url(#ao)"/><rect x="40" y="540" width="180" height="56" rx="8" class="box"/><text x="130" y="559" text-anchor="middle" dominant-baseline="central" class="t">💻 sim</text><text x="130" y="578" text-anchor="middle" dominant-baseline="central" class="s">laptop, virtual pins</text><rect x="250" y="540" width="180" height="56" rx="8" class="box"/><text x="340" y="559" text-anchor="middle" dominant-baseline="central" class="t">🐧 linux</text><text x="340" y="578" text-anchor="middle" dominant-baseline="central" class="s">Pi 5, gpio-sim</text><rect x="460" y="540" width="180" height="56" rx="8" class="box"/><text x="550" y="559" text-anchor="middle" dominant-baseline="central" class="t">⚡ esp32s3</text><text x="550" y="578" text-anchor="middle" dominant-baseline="central" class="s">QEMU, esp-emulator</text><text x="40" y="618" class="zl c-muted">AROUND IT</text><rect x="40" y="628" width="180" height="50" rx="8" class="box"/><text x="130" y="644" text-anchor="middle" dominant-baseline="central" class="t">⌨️ CLI</text><text x="130" y="663" text-anchor="middle" dominant-baseline="central" class="s">gate lint, verify, build</text><rect x="250" y="628" width="180" height="50" rx="8" class="box"/><text x="340" y="644" text-anchor="middle" dominant-baseline="central" class="t">✓ CI</text><text x="340" y="663" text-anchor="middle" dominant-baseline="central" class="s">3 targets, same verdict</text><rect x="460" y="628" width="180" height="50" rx="8" class="box-plan"/><text x="550" y="644" text-anchor="middle" dominant-baseline="central" class="t">📦 Blueprint</text><text x="550" y="663" text-anchor="middle" dominant-baseline="central" class="s">pack, install · I2e</text></svg>
+  </div>
+  <p class="cap">The dashed red line on the left is a person's approval: it goes straight to the box and never through the brain (DP-COM-04). Dashed grey boxes are planned.</p>
 </section>
 
 <!-- ============ 2. FIVE LAYERS ============ -->
@@ -482,11 +494,11 @@ details .tbl { margin-top: 10px; border: 0 }
     <span class="more">details: <a href="../architecture/00-overview.md">00 §2.1</a></span></div>
   <div class="layers">
     <div class="layer l1"><span class="n">1</span><h3><span class="ic">🧠</span>Interaction and brain</h3>
-      <div class="pills"><span class="pill">Telegram</span><span class="pill">NeuroClaw</span><span class="pill">Claude Desktop</span><span class="pill">OpenClaw</span></div>
+      <div class="pills"><span class="pill">Telegram</span><span class="pill">NeuroClaw</span><span class="pill">Claude Desktop</span><span class="pill">OpenClaw</span><span class="pill dashed">home web · app (I2g, I2h)</span><span class="pill dashed">voice · screen (Profile B, Q-93)</span></div>
       <!-- GENERATED:layer-1 --><div class="incs"><div class="inc partial" title="I2d — Missions and operator agents: 9 of 37 tasks done, in progress"><span class="id">I2d</span><span class="nm">Missions and operator agents</span><span class="bar" role="img" aria-label="I2d — Missions and operator agents: 9 of 37 tasks done, in progress"><i style="width:24%"></i></span><span class="nb">9/37</span></div></div><!-- /GENERATED:layer-1 --></div>
     <div class="down">▼ requests only, never touches hardware</div>
     <div class="layer l2"><span class="n">2</span><h3><span class="ic">🔌</span>Extension layer</h3>
-      <div class="pills"><span class="pill">mcp serve + mTLS</span><span class="pill">proxy mcp</span><span class="pill">proxy http</span><span class="pill">Home Assistant</span><span class="pill">neuroedge.guard</span><span class="pill dashed">HA add-on</span></div>
+      <div class="pills"><span class="pill">mcp serve + mTLS</span><span class="pill">proxy mcp</span><span class="pill">proxy http</span><span class="pill">Home Assistant</span><span class="pill">neuroedge.guard</span></div>
       <!-- GENERATED:layer-2 --><div class="incs"><div class="inc partial" title="I2c — Open platform: 11 of 20 tasks done, in progress"><span class="id">I2c</span><span class="nm">Open platform</span><span class="bar" role="img" aria-label="I2c — Open platform: 11 of 20 tasks done, in progress"><i style="width:55%"></i></span><span class="nb">11/20</span></div></div><!-- /GENERATED:layer-2 --></div>
     <div class="down">▼ typed tool calls</div>
     <div class="layer l3"><span class="n">3</span><h3><span class="ic">🛡️</span>The safety box</h3>
@@ -532,7 +544,7 @@ details .tbl { margin-top: 10px; border: 0 }
       <text x="22" y="40" class="zl c-blk">CALLERS</text>
       <text x="24" y="66" class="s">🧠 NeuroClaw</text>
       <text x="24" y="88" class="s">🤖 Claude via MCP</text>
-      <text x="24" y="110" class="s">💬 LLM System 2</text>
+      <text x="24" y="110" class="s">💬 System 2 (legacy, off)</text>
       <text x="24" y="132" class="s">⌨️ typed commands</text>
       <text x="24" y="154" class="s">🔌 proxy mcp/http</text>
       <path d="M160 95 H186" class="ln" marker-end="url(#bm)"/>
@@ -600,6 +612,16 @@ details .tbl { margin-top: 10px; border: 0 }
       <div class="res">🔒 Nothing happens; the reason is reported<small>when in doubt, block; the trace is kept for replay</small></div>
     </div>
   </div>
+</section>
+
+<!-- ============ 4b. END-USER JOURNEY ============ -->
+<section id="s4b">
+  <div class="head"><div><div class="eyebrow">Chapter 4b · The end-user journey</div><h2>From install to a home that runs itself</h2></div>
+    <span class="more">details: <a href="../user/an-toan.md">safety in plain words</a> · <a href="app-di-dong/README.md">home web and app</a></span></div>
+  <div class="fig">
+    <svg viewBox="0 0 680 650" role="img" aria-label="A user installs and picks a device, connects to the home, says what they want; the box checks and either acts (ALLOW), asks the owner (ASK) or refuses (BLOCK); after a person approves, the box checks again and acts; finally the user reviews traces and hands over 24/7 missions"><rect x="170" y="30" width="340" height="56" rx="8" class="box"/><text x="340" y="49" text-anchor="middle" dominant-baseline="central" class="t">1 · Install and pick a device</text><text x="340" y="68" text-anchor="middle" dominant-baseline="central" class="s">pip install, a kit, a Blueprint, or flash the chip</text><path d="M340 86 L340 114" class="ln" marker-end="url(#am)"/><rect x="170" y="116" width="340" height="56" rx="8" class="box"/><text x="340" y="135" text-anchor="middle" dominant-baseline="central" class="t">2 · Connect to the home</text><text x="340" y="154" text-anchor="middle" dominant-baseline="central" class="s">owner's Telegram, home web, app, voice</text><path d="M340 172 L340 200" class="ln" marker-end="url(#am)"/><rect x="170" y="202" width="340" height="56" rx="8" class="box"/><text x="340" y="221" text-anchor="middle" dominant-baseline="central" class="t">3 · Say what you want</text><text x="340" y="240" text-anchor="middle" dominant-baseline="central" class="s">“lights off”, “let the guest in”, “tell me if the tank gets hot”</text><path d="M340 258 L340 286" class="ln" marker-end="url(#am)"/><rect x="170" y="288" width="340" height="56" rx="8" class="box-gate"/><text x="340" y="307" text-anchor="middle" dominant-baseline="central" class="t">4 · The box checks</text><text x="340" y="326" text-anchor="middle" dominant-baseline="central" class="s">reads its own sensors, applies the gate</text><path d="M340 344 L340 368 L130 368 L130 392" class="ln-ok" marker-end="url(#ao)"/><path d="M340 344 L340 392" class="ln-gate" marker-end="url(#ag)"/><path d="M340 344 L340 368 L550 368 L550 392" class="ln-blk" marker-end="url(#am)"/><rect x="40" y="394" width="180" height="56" rx="8" class="box-ok"/><text x="130" y="413" text-anchor="middle" dominant-baseline="central" class="t">✅ Done</text><text x="130" y="432" text-anchor="middle" dominant-baseline="central" class="s">ALLOW, within limits</text><rect x="250" y="394" width="180" height="56" rx="8" class="box-gate"/><text x="340" y="413" text-anchor="middle" dominant-baseline="central" class="t">🙋 Ask the owner</text><text x="340" y="432" text-anchor="middle" dominant-baseline="central" class="s">ASK, a card that expires</text><rect x="460" y="394" width="180" height="56" rx="8" class="box-blk"/><text x="550" y="413" text-anchor="middle" dominant-baseline="central" class="t">🔒 Not done</text><text x="550" y="432" text-anchor="middle" dominant-baseline="central" class="s">BLOCK, reason reported</text><path d="M340 450 L340 478" class="ln-gate" marker-end="url(#ag)"/><rect x="250" y="480" width="180" height="56" rx="8" class="box-gate"/><text x="340" y="499" text-anchor="middle" dominant-baseline="central" class="t">A person approves</text><text x="340" y="518" text-anchor="middle" dominant-baseline="central" class="s">button, touch, fingerprint</text><path d="M250 508 L130 508 L130 452" class="ln-ok" marker-end="url(#ao)"/><path d="M40 422 L24 422 L24 610 L168 610" class="ln" marker-end="url(#am)"/><path d="M550 450 L550 610 L512 610" class="ln" marker-end="url(#am)"/><rect x="170" y="582" width="340" height="56" rx="8" class="box"/><text x="340" y="601" text-anchor="middle" dominant-baseline="central" class="t">5 · Review, hand over missions</text><text x="340" y="620" text-anchor="middle" dominant-baseline="central" class="s">trace and replay; the box watches and reports 24/7</text></svg>
+  </div>
+  <p class="cap">Every request ends in one of three outcomes. An approved request is checked again before it runs. Home web and app are planned (I2g, I2h); voice and touch approval belong to the all-in-one chip (Q-93); 24/7 missions arrive with I2d.</p>
 </section>
 
 <!-- ============ 5. TWO WAYS TO DEPLOY ============ -->
@@ -694,7 +716,7 @@ details .tbl { margin-top: 10px; border: 0 }
       <rect x="510" y="10" width="120" height="40" rx="8" class="box-ok"/><text x="526" y="35" class="t">💻 sim</text>
       <rect x="510" y="60" width="120" height="40" rx="8" class="box-ok"/><text x="526" y="85" class="t">🐧 linux</text>
       <rect x="510" y="155" width="120" height="40" rx="8" class="box"/><text x="526" y="180" class="t">⚡ esp32s3</text>
-      <text x="510" y="214" class="m">C99 · stack ≤ 512 B · QEMU</text>
+      <text x="510" y="214" class="m">C99 · ≤ 512 B · QEMU, esp-emulator</text>
       <path d="M630 30 C690 30 690 110 716 112" class="ln-ok" marker-end="url(#co)"/>
       <path d="M630 80 C680 80 690 112 716 114" class="ln-ok" marker-end="url(#co)"/>
       <path d="M630 175 C690 175 690 118 716 116" class="ln-ok" marker-end="url(#co)"/>
@@ -807,7 +829,7 @@ details .tbl { margin-top: 10px; border: 0 }
 <!-- ============ 10. THREE PRODUCT LOOPS ============ -->
 <section id="s10">
   <div class="head"><div><div class="eyebrow">Chapter 10 · Product direction · Q-72</div><h2>Build → Run → Share</h2></div>
-    <span class="more">details: <a href="product-proposal.md">Blueprint proposal</a></span></div>
+    <span class="more">details: <a href="product-proposal.md">product proposal</a></span></div>
   <div class="fig narrow">
     <svg viewBox="0 0 960 200" role="img" aria-label="Three loops: build contracts over MCP, run them with the operator agent, share them as Blueprints">
       <defs><marker id="em" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-p"/></marker></defs>
@@ -860,7 +882,7 @@ details .tbl { margin-top: 10px; border: 0 }
     <div class="myth"><span class="wrong">The gate engine issues tokens</span><span><code>TokenLedger</code> in <code>actions/</code> issues them.</span></div>
     <div class="myth"><span class="wrong">A token is a cryptographic signature</span><span>It is a random nonce in the process's ledger, used once per pin.</span></div>
     <div class="myth"><span class="wrong">Network down → instant BLOCK</span><span>It falls back to the local command grammar first; it blocks only when no fallback exists.</span></div>
-    <div class="myth"><span class="wrong">esp32s3 already drives devices</span><span>The gate runs on QEMU; it does not drive pins yet (TSK-S4-01).</span></div>
+    <div class="myth"><span class="wrong">esp32s3 already drives devices</span><span>The gate runs on QEMU and esp-emulator (Q-92 (4)); it does not drive pins yet (TSK-S4-01).</span></div>
     <div class="myth"><span class="wrong">Muse Bridge and a plugin marketplace exist</span><span>Muse left the roadmap (Q-77). The only plugin so far is an Actuator: Home Assistant.</span></div>
   </div>
 </section>
@@ -868,7 +890,7 @@ details .tbl { margin-top: 10px; border: 0 }
 <footer class="sources">
   <div class="eyebrow">Sources in the repo</div>
   <span><code>docs/architecture/00-overview.md</code> §1, §2.1–§2.3, §5.1, §6 · <code>15-target-architecture.md</code> §6.10 · <code>16-ecosystem-landscape.md</code> §4 · figures E-01 → E-11 in <code>docs/architecture/assets/svg/</code></span>
-  <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-83 · <code>docs/spec/deployment_profiles.md</code> · <code>docs/spec/threat_model.md</code> · repo <code>letrongminh/neuroclaw</code></span>
+  <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-93 · <code>docs/spec/deployment_profiles.md</code> · <code>docs/spec/threat_model.md</code> · repo <code>letrongminh/neuroclaw</code></span>
 </footer>
 
 </div>
