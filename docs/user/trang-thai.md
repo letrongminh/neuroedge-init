@@ -4,18 +4,18 @@
 # Project status
 
 > Generated from [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> the single source of truth for progress. Source last updated: **2026-10-19**.
+> the single source of truth for progress. Source last updated: **2026-10-20**.
 
 ## Executive status
 
 | Indicator | Current status |
 |:---|:---|
-| Current phase | 🟡 **Phase MVP (§0.5)**, lean path of Q-92 — I2d (with its mission core) and I2e lead to the public launch (I6), with `esp32s3` verified on esp-emulator in I3, I3a; no demand gate; remainder of I1, I2a, I2c and Profile B in parallel; images for neurosim (I3b, Q-94) beside the launch path; partner trial (Q-70) in parallel; voice (I4, I5) removed (Q-77, §6) |
+| Current phase | 🟡 **Phase MVP (§0.5)**, lean path of Q-92 — I2d (with its mission core) and I2e lead to the public launch (I6), with `esp32s3` verified on esp-emulator in I3, I3a; no demand gate; remainder of I1, I2a, I2c and Profile B in parallel; partner trial (Q-70) in parallel; voice (I4, I5) removed (Q-77, §6) |
 | Open increment | 🟡 **I2d — Missions and operator agents** (Q-72) |
 | Next milestone | **Public launch (I6, PyPI 0.6, free for non-commercial use)** — after I2d, I2e and I3a on esp-emulator (Q-92) |
 | Core CI status | ✅ **PASS 5083/5083 · SKIP 0** |
 | Non-technical blockers | 🟡 **1 blocking item, for v1.0 only** |
-| Last updated | **2026-10-19** |
+| Last updated | **2026-10-20** |
 
 ## Increments
 
@@ -34,7 +34,6 @@
 |  | **I2h — Native home app** | after I2g | **0 / 8** | ⏸ Opens after I2g (Q-92 (8)) | native app + NeuroClaw app channel |
 |  | **I3 — Gate on `esp32s3`** | after I2e | **7 / 12** | 🟡 Boardless portion complete (firmware generated for agent on QEMU, LVGL interface with golden images); esp-emulator spike done (TSK-I3-02): same gate verdicts as QEMU; CI job next (TSK-I3-04); board tasks moved to I7 (Q-92 (5)) | tag `v0.3.0` + firmware (internal) |
 |  | **I3a — Extended primitives on `esp32s3`** | after I2e | **0 / 9** | ⏳ Not started | tag `v0.3.1` + firmware (internal) |
-|  | **I3b — Images for neurosim (Q-94)** | after Q-94 | **0 / 4** | ⏳ Not started; spikes done (esp32sim runs the image with QEMU's trace, Box-3 board prototype) | images as release assets |
 | **Public** | **I6 — Public launch** | after I2d, I2e, I3a | **7 / 11** | 🟡 Secret scanning, SBOM, public Python API, network MCP with authentication, integrator contracts in `schemas/` (RFC-0015) complete; RFC-0014 approved (Q-65); awaiting I2d, I2e, I3a | PyPI `v0.6.0` — first external release |
 | **v1.0 = MVP** | **I7 — v1.0** | after I6 | **4 / 20** | 🟡 Action pinning, attestation complete; signed A/B OTA + rollback complete on QEMU; awaiting I6 and boards | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | after I7 | **0 / 1** | ⏳ Not started | `1.0.x` (patches only) |
