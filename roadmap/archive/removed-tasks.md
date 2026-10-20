@@ -4,6 +4,18 @@ Task rows removed from the roadmap. They are kept so that code, documents and hi
 code still resolve (roadmap §2.4 R8); none of them is planned. Re-opening any of them needs a new `Q-N`
 that moves the row back into an increment of `roadmap/neuroedge-roadmap.md`. Every status is ⏸.
 
+## Moved to neurosim (2026-10-19)
+
+neurosim plans its own product in `letrongminh/neurosim` (its D-9); NeuroEdge keeps the images, the gate and the checks (I3b, Q-94).
+
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-I3b-01** | Pinned esp32sim fork: `box3` board (screen on `SPI2_HOST`, GT911 touch, ES8311 speaker, ES7210 microphones with the full-duplex I2S fix and WAV input), non-zero exit on a panic loop, per-platform binaries with checksums as release assets | FR-TGT-03, FR-CI-06 | V2 | ⏸ Moved to `letrongminh/neurosim` N-1, N-2 (its D-9) — was: Not started | esp32sim fork · `docs/reports/` |
+| **TSK-I3b-02** | Spike: networking from esp32sim to a cloud LLM and Telegram (joining the virtual AP, DHCP, DNS, TLS); a host bridge if NAT fails, with the parity it loses written down | FR-CH-01, FR-TGT-04 | V2 | ⏸ Moved to `letrongminh/neurosim` N-7 (its D-9) — was: Not started | `docs/reports/` |
+| **TSK-I3b-04** | `neurosim new` part picker, `neurosim sim`, `neurosim flash`; secrets in the OS keychain (fallback `.neurosim/secrets`, mode 0600) into NVS or `ne_config`; defined behaviour when a TOML file changes while `sim` runs | FR-DX-04, FR-TGT-03 | V1 | ⏸ Moved to `letrongminh/neurosim` N-4 (its D-9) — was: Not started | `letrongminh/neurosim` |
+| **TSK-I3b-05** | neurosim's own view for `neurosim sim`: pins and the simulated screen (Studio stays paused) | FR-HAL-01 | V3 | ⏸ Moved to `letrongminh/neurosim` N-5 (its D-9) — was: Not started | `letrongminh/neurosim` |
+| **TSK-I3b-08** | Checkpoint measurement (Q-94 (7)): the founder's baseline log taken before I3b opens (setup minutes, idea-to-running minutes); signal 2 measured from `new` → first `sim` run (FR-TEL-01) or a written manual protocol | FR-TEL-01 | product owner | ⏸ Moved to `letrongminh/neurosim` N-17 and its checkpoint (its D-9) — was: Not started | `docs/reports/` |
+
 ## Removed by Q-92 (2026-10-19)
 
 The lean path to the public launch (PRD §15 Q-92) removed the demand gate milestone and four I2e tasks.

@@ -318,7 +318,7 @@ Launch is verified on simulation and esp-emulator; real hardware is needed for v
 |:---|:---|:---|
 | **G1** | `sim` with physical model (e.g. aquarium temperature and dissolved oxygen), fast-forwarded 30 days | contract logic, detectors, budgets, 30-day trace size |
 | **G2** | `linux` on `gpio-sim` | real `linux` HAL, 24/7 runtime under systemd |
-| **G3** | ESP32 firmware on Espressif QEMU and esp-emulator (release target, Q-92 (4)); esp32sim for `neuroedge sim` with pins, screen and the Box-3 (Q-94, I3b); Velxio cannot boot the board image (no PSRAM) | MCU reflexes, `ne_gate`; with esp32sim also pins and screen |
+| **G3** | ESP32 firmware on Espressif QEMU and esp-emulator (release target, Q-92 (4)); esp32sim for neurosim, with pins, screen and board models (Q-94, I3b); Velxio cannot boot the board image (no PSRAM) | MCU reflexes, `ne_gate`; with esp32sim also pins and screen |
 | **G4** | ESPHome host platform | Home Assistant-style device integration |
 
 Simulation does not catch wiring errors, electrical noise, or Wi-Fi flakiness (accepted consequences under Q-72).
@@ -404,35 +404,33 @@ launch data showing people stuck installing the box (Q-74 step 2, Q-92 (8)).
   or locally within the home network; the cloud's shared channel gateway forwards messages but cannot forge approvals.
 - **Follow-up tasks:** verification steps TSK-I2d-20, TSK-I2d-21; NeuroEdge brain and worker isolation TSK-I2d-22 → TSK-I2d-24; cloud dedicated instances, ESP32 tier, mesh network, and user roles: increment I2f (conditional, roadmap §4.3.6); passkey approvals: I2g (Q-92 (9)); Profile B (Q-79, Q-83): TSK-I2f-10 → I2f-17; all-in-one chip (Q-93): TSK-I2f-18 → I2f-20, TSK-I7-03; Profile A contract and legacy System 2: TSK-I2d-26, TSK-I2d-27.
 
-### 6.11 Sim-to-Silicon: neurosim stage 1 (`planned · Q-94`, I3b)
+### 6.11 Images for neurosim (`planned · Q-94`, I3b)
 
-An experiment beside the launch path, shipped as a separate product: one pre-built ESP32-S3-BOX-3 image runs unchanged
-in a pinned esp32sim and on the real board, so an idea runs before the board arrives. Design: `docs/design.md` of
-`letrongminh/neurosim`.
+**neurosim** (`letrongminh/neurosim`, MIT) is a separate maker product: a web app and CLI that emulate the ESP32
+family in the browser (esp32sim in WebAssembly), let an AI build the device, and flash the same image to the board.
+Its plan lives in its `docs/`. This repository supplies the part that must stay trustworthy:
 
 ```
- letrongminh/neurosim (MIT)        this repository                 neuroclaw (MIT)
- ──────────────────────────        ───────────────                 ───────────────
- neurosim new  ─ board.toml,       neuroedge (library):             NeuroClaw-ESP
-   agent.toml (no secrets)  ◄────  Blueprints, gate lint           (brain, pinned)
-        │                                                               │
- neurosim sim  ─ pinned esp32sim ◄ Box-3 image (release asset): ◄───────┘
-   pins, screen ► own view          gate + ne_hal + ne_config
-   config, secrets → NVS            + NE1 traces
-        │
- neurosim flash ─ same image + config → Box-3 over USB; done on `NE_SELFTEST PASS`
+ letrongminh/neurosim (MIT)              this repository (I3b)              neuroclaw (MIT)
+ ──────────────────────────              ─────────────────────              ───────────────
+ web app · CLI · build, relay,           one pre-built image per board  ◄── NeuroClaw-ESP
+ share and engine services               (DevKitC-S3 first, then Box-3):    (brain, pinned)
+        │  board.toml, agent.toml,         gate + ne_hal + ne_config
+        │  gates (gate lint) ───────────►  + NE1 traces, run-time config
+        │                                        │ release asset
+ esp32sim (browser or CLI) ◄─────────────────────┤
+ real board over USB       ◄─────────────────────┘  same image; done on `NE_SELFTEST PASS`
 ```
 
-- **Same firmware, run-time configuration.** The user's machine needs no Docker and no ESP-IDF: the image carries the
-  drivers for digital in and out, PWM, ADC and the Box-3's screen, touch, speaker and microphones; a fail-closed parser
-  allocates pins from NVS (TSK-I3b-03). A bus part outside that set goes through `neuroedge build`.
-- **Gate unchanged.** Every action still passes dispatch → gate → token → HAL; Blueprints ship ALLOW gates for harmless
-  parts. Hiding the gate by default is an RFC (TSK-I3b-07) because it changes resolution semantics.
-- **Parity, scoped.** The normative trace sessions must give the same masked NE1 trace in esp32sim and on the board
-  (TSK-I3b-06); live runs with a cloud LLM are not deterministic and are not compared. If esp32sim's NAT path fails
-  (TSK-I3b-02), a host bridge carries the LLM call and parity covers gate, pins and screen only.
+- **Run-time configuration.** A user's machine needs no ESP-IDF for the no-code lane: the image carries the drivers for
+  digital in and out, PWM, ADC (and the Box-3's own screen, touch and audio); a fail-closed parser allocates pins from
+  NVS (TSK-I3b-03, I3b-09). Other parts need a build.
+- **Gate unchanged.** Every action still passes dispatch → gate → token → HAL; every gate neurosim's AI writes passes
+  `neuroedge gate lint`. Hiding the gate by default is an RFC (TSK-I3b-07) because it changes resolution semantics.
+- **Parity, scoped.** For each board, the normative trace sessions give the same masked NE1 trace in esp32sim and on the
+  board (TSK-I3b-06); live runs with a cloud LLM are not compared.
 - **Secrets** stay out of TOML files and Blueprints and land in `ne_config`, labelled `risk=readable_flash` until NVS
-  encryption (stage 2, `TODOS.md` #71).
+  encryption (`TODOS.md` #71).
 
 ## 7. Sources
 
@@ -441,7 +439,7 @@ in a pinned esp32sim and on the real board, so an idea runs before the board arr
 2. **Product Requirements Document:**
    - [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Non-functional Requirements; §15 Decision Log: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`, `Q-52`, `Q-53`, `Q-54`, `Q-55`, `Q-62`, `Q-71`, `Q-72`; Appendix D.2 Wire protocol).
    - [`product-proposal.md`](../business/product-proposal.md) (Blueprint positioning, three loops — source for §6).
-   - `letrongminh/neurosim` `docs/design.md` (Sim-to-Silicon experiment, Q-94 — source for §6.11).
+   - `letrongminh/neurosim` `docs/design.md` (neurosim, Q-94 — source for §6.11).
 3. **Format Specifications:**
    - [`core_contracts.md`](../spec/core_contracts.md) (APIs, `board.toml`, `agent.toml`, gates, HAL, traces)
 4. **Detailed Design Notes:**
