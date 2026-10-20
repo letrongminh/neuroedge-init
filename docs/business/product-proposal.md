@@ -1,6 +1,6 @@
 # NeuroEdge: product proposal
 
-**Status:** current as of Q-94 (2026-10-19). **Owner of this page:** the product owner. This is a
+**Status:** current as of Q-94, amended 2026-10-20. **Owner of this page:** the product owner. This is a
 synthesis for a partner, investor or new team member; it is read in about 15 minutes. It **references**
 the documents that own each truth and does not copy them (`CONTRIBUTING.md` §8.1): requirements live in
 the SRS, dates and progress in `roadmap/neuroedge-roadmap.md` §0.2, business requirements and KPIs in
@@ -25,10 +25,9 @@ greenhouse, the air), asks a person only when a rule says so, and is run through
 configuration (BRD §1, §4). Makers launch first by packaging a device with its rules and brain settings
 as a **Blueprint**; families receive the experience through those Blueprints (Q-72, Q-85 (2)).
 
-**neurosim (Q-94).** A second way in is a separate MIT product for makers who stall waiting for a board,
-**neurosim** (`letrongminh/neurosim`): the ESP32 family emulated in the browser, an AI that builds the device,
-and the same firmware, NeuroClaw-ESP and the gate inside, flashed to the real board. NeuroEdge supplies those images
-(increment I3b); neurosim plans its own scope and checkpoint, and this page stands.
+**neurosim (Q-94).** A separate MIT product for makers who stall waiting for a board, **neurosim**
+(`letrongminh/neurosim`), started from NeuroEdge's ESP32-S3 firmware and has been independent since 2026-10-20: it
+owns its copy, and NeuroEdge supplies nothing to it. This page stands.
 
 > Alpha. NeuroEdge is not a certified safety function (no SIL, no PL); gates do not replace emergency
 > stops or hardware interlocks (`README.md`). Claims stay honest: most hardware is emulated today, so

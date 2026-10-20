@@ -557,7 +557,7 @@ INCREMENTS = {
     "I2g": "Box API and home web",
     "I2h": "Home app on the phone",
     "I3": "Gate on esp32s3",
-    "I3a": "New primitives on esp32s3", "I3b": "Images for neurosim", "I6": "Public release", "I7": "v1.0 = MVP",
+    "I3a": "New primitives on esp32s3", "I6": "Public release", "I7": "v1.0 = MVP",
     "I8": "Developer Beta",
 }
 ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"

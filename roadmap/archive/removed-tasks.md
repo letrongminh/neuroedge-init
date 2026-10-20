@@ -6,7 +6,7 @@ that moves the row back into an increment of `roadmap/neuroedge-roadmap.md`. Eve
 
 ## Moved to neurosim (2026-10-19)
 
-neurosim plans its own product in `letrongminh/neurosim` (its D-9); NeuroEdge keeps the images, the gate and the checks (I3b, Q-94).
+neurosim plans its own product in `letrongminh/neurosim` (its D-9); NeuroEdge keeps the images, the gate and the checks (I3b, Q-94). *Superseded on 2026-10-20: see the next section.*
 
 | Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -136,3 +136,14 @@ One row per task is preserved so code and docs cross-references remain traceable
 | **TSK-V1a-04** | Tighten three test invariants by tier | FR-HAL-04, FR-TGT-08 | V1 | ⏸ Removed from roadmap (Q-77) | `python/tests/test_boards.py` |
 | **TSK-V1a-05** | CLI: `board validate`, `board show` | FR-HAL-05 | V1 | ⏸ Removed from roadmap (Q-77) | `python/neuroedge/cli/main.py` |
 | **TSK-V1a-06** | Update `unknown_target.json` counter-example corpus | FR-TRC-08 | V1 | ⏸ Removed from roadmap (Q-77) | `fixtures/traces/expected_errors.yaml` |
+
+## Removed with I3b (2026-10-20)
+
+neurosim became independent (its D-16; Q-94 amended 2026-10-20): it copied `targets/esp32s3/` at d72d66a and owns its firmware, gate and checks. I3b and its last four tasks leave the roadmap.
+
+| Task code | Work item | PRD requirement | Owner | Status | Deliverable (artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-I3b-09** | Pre-built ESP32-S3-DevKitC-1 N16R8 image (neurosim's first board, its D-8): gate, NeuroClaw-ESP, `ne_hal`, configured at run time like TSK-I3b-03; published as a release asset | FR-HAL-02, FR-TGT-03 | V2 | ⏸ Removed with I3b (2026-10-20); neurosim owns this work (its N-3, N-16) | `targets/esp32s3/` |
+| **TSK-I3b-03** | Run-time configuration of a pre-built image: a fail-closed parser for the pins, PWM and ADC of `board.toml` and `agent.toml` (conflicts refused) written to NVS; re-estimated first with a one-PWM, one-ADC spike; then the Box-3 image on the same parser | FR-HAL-02, FR-TGT-03 | V2 | ⏸ Removed with I3b (2026-10-20); neurosim owns this work (its N-3, N-16) | `targets/esp32s3/` |
+| **TSK-I3b-06** | Real-board check, one report per board in neurosim's order (each board bought after the previous passes): flash, a deliberately failed flash and its recovery, the same masked NE1 trace for the normative trace sessions on board and in esp32sim, what esp32sim does not model listed | FR-TGT-04 | V2 + product owner | ⏸ Removed with I3b (2026-10-20); neurosim owns this work (its N-3, N-16) | `docs/reports/` |
+| **TSK-I3b-07** | Hidden-gate RFC, writing only: a part that can cause real harm, or is unclassified, is gated; harmless parts run without a prompt; `neuroedge gate lint` invariants kept | FR-GOV-04 | V1 + tech lead | ⏸ Removed with I3b (2026-10-20); neurosim decides its gate by its own D-N (its D-18) | `docs/rfc/` |
